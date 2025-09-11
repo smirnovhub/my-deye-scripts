@@ -1,0 +1,125 @@
+#!/usr/bin/python3.9
+
+import os
+import sys
+import argparse
+import traceback
+
+sys.path.append('modules')
+import common_modules
+common_modules.import_dirs(['src'])
+
+from time import perf_counter
+from deye_loggers import DeyeLoggers
+from deye_file_lock import lock_path
+from deye_file_locker import DeyeFileLocker
+from deye_exceptions import DeyeKnownException
+from deye_register_processor import DeyeRegisterProcessor
+
+class DeyeArgumentParser(argparse.ArgumentParser):
+  def error(self, message):
+    sys.stderr.write(f'{os.path.basename(__file__)}: error: {message}\n')
+    sys.exit(2)
+
+parser = DeyeArgumentParser(description = 'read/write deye parameters',
+  formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50, width=100))
+
+loggers = DeyeLoggers()
+inverters_list = list(loggers.loggers.keys())
+inverters_str = ','.join(inverters_list)
+
+parser.add_argument('-v', '--verbose-output', action='store_true', help='verbose output')
+parser.add_argument('-c', '--caching-time', type=int, default=3, help='caching time for requests')
+parser.add_argument('-p', '--print-addresses', action='store_true', help='print register addresses')
+parser.add_argument('-i', '--inverter', help=f'specify inverter ({inverters_str})', default='master')
+parser.add_argument('-a', '--get-all', action='store_true', help='get all parameters')
+parser.add_argument('-o', '--only-accumulated', action='store_true', help='get only accumulated parameters for all inverters')
+parser.add_argument('-f', '--forecast', action='store_true', help='get battery forecast registers')
+parser.add_argument('-t', '--test', action='store_true', help='get test registers')
+parser.add_argument('--get-all-read-only', action='store_true', help='get all read only parameters')
+parser.add_argument('--get-all-read-write', action='store_true', help='get all read/write parameters')
+
+start = perf_counter()
+current = perf_counter()
+
+locker = None
+
+try:
+  processor = DeyeRegisterProcessor()
+  processor.add_command_line_parameters(parser)
+  create_processor = perf_counter() - current
+  current = perf_counter()
+  
+  args = parser.parse_args()
+
+  inverters = getattr(args, 'inverter').strip().split(',')
+  
+  loggers_list = []
+  
+  for inverter in inverters:
+    if not inverter:
+      continue
+  
+    if inverter not in loggers.loggers:
+      parser.error(f'Inverter \'{inverter}\' is unknown. Pls use these: {inverters_str}')
+      exit()
+    else:
+      loggers_list.append(loggers.loggers[inverter])
+  
+  inverter = 'master' # for test
+  
+  if len(sys.argv) == 1 or not any((lambda: type(e) is str or type(e) is int or (type(e) is bool and e == True))() for e in vars(args).values()):
+    parser.print_help()
+    exit()
+  
+  parse_invertors = perf_counter() - current
+  current = perf_counter()
+
+  # Initialize locker
+  lockfile = os.path.join(lock_path, 'inverter.lock')
+  locker = DeyeFileLocker(os.path.basename(__file__), lockfile, verbose = args.verbose_output == True)
+
+  locker.acquire()
+
+  get_lock = perf_counter() - current
+  current = perf_counter()
+  
+  if processor.check_parameters(parser, args):
+    check_parameters = perf_counter() - current
+    current = perf_counter()
+    processor.enqueue_registers(parser, args, loggers = loggers_list)
+    enqueue_registers = perf_counter() - current
+    current = perf_counter()
+    processor.process_registers(parser)
+    process_registers = perf_counter() - current
+    current = perf_counter()
+    processor.process_parameters(parser, args)
+    process_parameters = perf_counter() - current
+    current = perf_counter()
+except DeyeKnownException as e:
+  print(f'{os.path.basename(__file__)}: An exception occurred: {str(e)}')
+  sys.exit(1)
+except Exception as e:
+  callstack = traceback.format_exc()
+  print(f'{os.path.basename(__file__)}: An exception occurred: {str(e)}\n{callstack}')
+  sys.exit(1)
+finally:
+  processor.disconnect(parser)
+  if locker is not None:
+    locker.release()
+
+disconnect = perf_counter() - current
+
+total = create_processor + parse_invertors + get_lock + check_parameters +\
+  enqueue_registers + process_registers + process_parameters + disconnect
+
+if False:
+  print(f'create processor took   : {round(create_processor, 3):.3f} s')
+  print(f'parse invertors took    : {round(parse_invertors, 3):.3f} s')
+  print(f'get lock took           : {round(get_lock, 3):.3f} s')
+  print(f'check parameters took   : {round(check_parameters, 3):.3f} s')
+  print(f'enqueue registers took  : {round(enqueue_registers, 3):.3f} s')
+  print(f'process registers took  : {round(process_registers, 3):.3f} s')
+  print(f'process parameters took : {round(process_parameters, 3):.3f} s')
+  print(f'disconnect took         : {round(disconnect, 3):.3f} s')
+  print(f'total took              : {round(total, 3):.3f} s')
