@@ -18,6 +18,7 @@ class MasterInfoRegisters(DeyeRegisters):
       self.grid_external_ct_power_register,
       self.load_power_register,
       self.pv1_power_register,
+      self.pv2_power_register,
       self.gen_power_register,
       self.inverter_ac_temperature_register,
       self.inverter_dc_temperature_register,
