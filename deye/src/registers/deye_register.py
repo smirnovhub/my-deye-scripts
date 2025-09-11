@@ -3,6 +3,7 @@ from typing import List
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_exceptions import DeyeNotImplementedException
 from deye_exceptions import DeyeValueException
+from deye_register_average_type import DeyeRegisterAverageType
 
 class DeyeRegister:
   def enqueue(self, interactor: DeyeModbusInteractor):
@@ -28,6 +29,10 @@ class DeyeRegister:
   @property
   def type_name(self):
     self.not_implemented('type_name')
+
+  @property
+  def avg_type(self) -> DeyeRegisterAverageType:
+    self.not_implemented('avg_type')
 
   @property
   def address(self):

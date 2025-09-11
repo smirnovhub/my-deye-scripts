@@ -12,6 +12,7 @@ from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeUnknownException
 from pysolarmanv5 import NoSocketAvailableError
 from deye_modbus_interactor import DeyeModbusInteractor
+from deye_register_average_type import DeyeRegisterAverageType
 
 class DeyeRegisterProcessor:
   def __init__(self):
@@ -66,9 +67,10 @@ class DeyeRegisterProcessor:
       for interactor in self.interactors:
         for register in self.get_registers_to_process(parser, args):
           try:
-            value = register.read([interactor])
-            addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
-            print(f'{interactor.name}_{register.name}{addr_list} = {value} {register.suffix}');
+            if interactor.is_master or register.avg_type != DeyeRegisterAverageType.only_master:
+              value = register.read([interactor])
+              addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
+              print(f'{interactor.name}_{register.name}{addr_list} = {value} {register.suffix}');
           except Exception as e:
             self.handle_exception(e, f'Error while reading register {register.name} from {interactor.name}')
 

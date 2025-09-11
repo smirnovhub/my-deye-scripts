@@ -74,6 +74,10 @@ class BaseDeyeRegister(DeyeRegister):
     return 'int'
 
   @property
+  def avg_type(self) -> DeyeRegisterAverageType:
+    return self._avg
+
+  @property
   def address(self):
     return self._address
 
