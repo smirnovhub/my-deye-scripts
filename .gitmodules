@@ -1,0 +1,8 @@
+[submodule "modules/uModbus"]
+	path = modules/uModbus
+	url = https://github.com/AdvancedClimateSystems/uModbus.git
+	branch = master
+[submodule "modules/pysolarmanv5"]
+	path = modules/pysolarmanv5
+	url = https://github.com/jmccrohan/pysolarmanv5.git
+	branch = main
