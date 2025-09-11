@@ -13,7 +13,7 @@ class DeyeLoggers:
 
   @property
   def slave1(self):
-    return self._loggers['slave1']
+    return self._loggers.get('slave1', None)
 
   @property
   def loggers(self):

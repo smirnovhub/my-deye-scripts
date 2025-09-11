@@ -1,0 +1,16 @@
+# /etc/systemd/system/telebot.service
+
+[Unit]
+Description=Telegram bot
+After=network.target
+
+[Service]
+User=dmitry
+WorkingDirectory=/home/dmitry/git/scripts/deye/telebot
+ExecStart=/home/dmitry/git/scripts/deye/telebot/telebot
+Restart=always
+RestartSec=5
+DevicePolicy=closed
+
+[Install]
+WantedBy=multi-user.target

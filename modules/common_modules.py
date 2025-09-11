@@ -8,7 +8,8 @@ modules_dir = Path(__file__).parent
 # List of common modules
 modules = [
   'uModbus',
-  'pysolarmanv5'
+  'pysolarmanv5',
+  'pyTelegramBotAPI'
 ]
 
 # Add specific module directories to sys.path so they can be imported

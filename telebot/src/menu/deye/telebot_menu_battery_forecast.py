@@ -1,0 +1,67 @@
+import telebot
+
+from telebot_deye_helper import *
+from deye_loggers import DeyeLoggers
+from deye_registers_holder import DeyeRegistersHolder
+from forecast_registers import ForecastRegisters
+from telebot_menu_command import TelebotMenuCommand
+from telebot_menu_item import TelebotMenuItem
+
+class TelebotMenuBatteryForecast(TelebotMenuItem):
+  def __init__(self, bot, is_authorized_func):
+    self.bot = bot
+    self.is_authorized = is_authorized_func
+
+  @property
+  def command(self) -> TelebotMenuCommand:
+    return TelebotMenuCommand.deye_battery_forecast
+
+  def get_commands(self):
+    return [
+      telebot.types.BotCommand(command='forecast', description='Battery forecast'),
+    ]
+
+  def register_handlers(self):
+    commands = [cmd.command for cmd in self.get_commands()]
+    @self.bot.message_handler(commands = commands)
+    def handle(message):
+      if not self.is_authorized(message, self.command):
+        return
+
+      self.bot.send_message(message.chat.id, self.get_forecast(), parse_mode='HTML')
+
+  def get_forecast(self):
+    def creator(prefix):
+      return ForecastRegisters(prefix)
+
+    try:
+      loggers = DeyeLoggers()
+      holder = DeyeRegistersHolder(loggers = loggers.loggers_list, register_creator = creator, **holder_kwargs)
+      holder.connect_and_read()
+    except Exception as e:
+      return f'Error while creating DeyeRegistersHolder: {str(e)}'
+    finally:
+      holder.disconnect()
+
+    try:
+      soc = holder.master_registers.battery_soc_register
+      current = holder.accumulated_registers.battery_current_register
+      power = holder.accumulated_registers.battery_power_register
+
+      result = ""
+
+      result += f'{soc.description}: {soc.value} {soc.suffix}\n'
+      result += f'{current.description}: {current.value} {current.suffix}\n'
+      result += f'{power.description}: {power.value} {power.suffix}\n'
+
+      if abs(current.value) < 0.1:
+        result += '<b>Battery is in idle mode</b>'
+        return result
+
+      register = holder.accumulated_registers.charge_forecast_register if current.value < 0 else holder.accumulated_registers.discharge_forecast_register
+      val = register.value.strip('"')
+
+      result += f'<b>{val}</b>'
+      return result
+    except Exception as e:
+      return str(e)

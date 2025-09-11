@@ -6,3 +6,7 @@
 	path = modules/pysolarmanv5
 	url = https://github.com/jmccrohan/pysolarmanv5.git
 	branch = main
+[submodule "modules/pyTelegramBotAPI"]
+	path = modules/pyTelegramBotAPI
+	url = https://github.com/eternnoir/pyTelegramBotAPI.git
+	branch = master
