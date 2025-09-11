@@ -24,10 +24,9 @@ class TodayPvProductionEnergyCostRegister(BaseDeyeRegister):
     return super().read(interactors)
 
   def read_internal(self, interactor: DeyeModbusInteractor):
-    costs = DeyeEnergyCost()
-    cost = costs.current_cost
+    energy_cost = DeyeEnergyCost()
     production = self._pv_production_register.value
 
-    value = round(production * cost, 2)
+    value = round(production * energy_cost.current_cost, 2)
 
     return value

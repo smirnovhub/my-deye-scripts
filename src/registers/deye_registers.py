@@ -1,5 +1,6 @@
 from typing import List
 
+from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
 from charge_forecast_register import ChargeForecastRegister
 from discharge_forecast_register import DischargeForecastRegister
@@ -28,6 +29,7 @@ from system_work_mode_writable_deye_register import SystemWorkModeWritableDeyeRe
 
 class DeyeRegisters:
   def __init__(self, prefix: str = ''):
+    energy_cost = DeyeEnergyCost()
     self._prefix = prefix
     self._ac_couple_frz_high_register = FloatWritableDeyeRegister(329, 50, 52, 'ac_couple_frz_high', 'AC Couple Frz High', 'Hz', DeyeRegisterAverageType.only_master).with_scale(100)
     self._backup_delay_register = IntWritableDeyeRegister(311, 0, 3600, 'backup_delay', 'Backup Delay', 'ms', DeyeRegisterAverageType.only_master)
@@ -98,8 +100,8 @@ class DeyeRegisters:
     self._zero_export_power_register = IntWritableDeyeRegister(206, 0, 100, 'zero_export_power', 'Zero Export Power', 'W', DeyeRegisterAverageType.only_master)
     self._pv_total_current_register = SumDeyeRegister([self.pv1_current_register, self.pv2_current_register], 'pv_total_current', 'PV Total current', 'A', DeyeRegisterAverageType.special)
     self._pv_total_power_register = SumDeyeRegister([self.pv1_power_register, self.pv2_power_register], 'pv_total_power', 'PV Total power', 'W', DeyeRegisterAverageType.special)
-    self._today_production_cost_register = TodayPvProductionEnergyCostRegister(self._today_production_register, 'today_production_cost', 'Today Production Cost', 'UAH', DeyeRegisterAverageType.special)
-    self._total_production_cost_register = TotalPvProductionEnergyCostRegister(self._total_production_register, 'total_production_cost', 'Total Production Cost', 'UAH', DeyeRegisterAverageType.special)
+    self._today_production_cost_register = TodayPvProductionEnergyCostRegister(self._today_production_register, 'today_production_cost', 'Today Production Cost', energy_cost.currency_code, DeyeRegisterAverageType.special)
+    self._total_production_cost_register = TotalPvProductionEnergyCostRegister(self._total_production_register, 'total_production_cost', 'Total Production Cost', energy_cost.currency_code, DeyeRegisterAverageType.special)
 
     self._inverter_self_consumption_power_register = InverterSelfConsumptionPowerRegister(
       pv_total_power_register = self.pv_total_power_register,
