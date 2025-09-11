@@ -1,6 +1,6 @@
 class DeyeEnergyCost:
-  # to add new price just add current total pv production (in kWh)
-  # as key and new price (in UAH) as value
+  # To add new price just add current total pv production (in kWh)
+  # as a key and add a new price for kWh as value
   @property
   def energy_costs(self):
     return {
@@ -10,5 +10,9 @@ class DeyeEnergyCost:
     }
 
   @property
-  def current_cost(self):
+  def currency_code(self) -> str:
+    return 'USD'
+
+  @property
+  def current_cost(self) -> float:
     return list(self.energy_costs.values())[-1]
