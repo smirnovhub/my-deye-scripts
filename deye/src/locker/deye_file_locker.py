@@ -76,7 +76,7 @@ class DeyeFileLocker:
       self.log(f"{self.name}: WARNING: lock is already acquired on {self.path}")
       return
 
-    self.trim_file(self.log_filename, 1024)
+    self.trim_file(self.log_filename, 1024 * 1024)
 
     self.lockfile = open(self.path, "a+")
     self.acquire_time = time.time()
