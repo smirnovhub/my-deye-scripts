@@ -37,8 +37,8 @@ class DeyeFileLocker:
       print(message)
 
   def trim_file(self, filename, trim_size):
-    # wait while file increased up to 1024 * 1024 bytes and then trim
-    max_size = trim_size + 1024 * 1024
+    # wait while file increased up to 20% and then trim
+    max_size = int(round(trim_size * 1.2))
     file_size = os.path.getsize(filename)
     if file_size <= max_size:
       return  # trimming not needed
@@ -76,7 +76,7 @@ class DeyeFileLocker:
       self.log(f"{self.name}: WARNING: lock is already acquired on {self.path}")
       return
 
-    self.trim_file(self.log_filename, 1024 * 1024 * 3)
+    self.trim_file(self.log_filename, 1024 * 1024)
 
     self.lockfile = open(self.path, "a+")
     self.acquire_time = time.time()
