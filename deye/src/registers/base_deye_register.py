@@ -62,15 +62,15 @@ class BaseDeyeRegister(DeyeRegister):
     return self.read_internal(master_interactor)
 
   @property
-  def can_write(self):
+  def can_write(self) -> bool:
     return False
 
   @property
-  def can_accumulate(self):
+  def can_accumulate(self) -> bool:
     return self._avg != DeyeRegisterAverageType.none and self._avg != DeyeRegisterAverageType.only_master
 
   @property
-  def type_name(self):
+  def type_name(self) -> str:
     return 'int'
 
   @property
@@ -78,26 +78,26 @@ class BaseDeyeRegister(DeyeRegister):
     return self._avg
 
   @property
-  def address(self):
+  def address(self) -> int:
     return self._address
 
   @property
-  def addresses(self):
+  def addresses(self) -> List[int]:
     addr_list = []
     for i in range(self.quantity):
        addr_list.append(self.address + i)
     return addr_list
 
   @property
-  def quantity(self):
+  def quantity(self) -> int:
     return self._quantity
 
   @property
-  def name(self):
+  def name(self) -> str:
     return self._name
 
   @property
-  def description(self):
+  def description(self) -> str:
     return self._description
 
   @property
@@ -105,13 +105,13 @@ class BaseDeyeRegister(DeyeRegister):
     return self._value
 
   @property
-  def suffix(self):
+  def suffix(self) -> str:
     return self._suffix
 
   @property
-  def min_value(self):
+  def min_value(self) -> float:
     return self._min_value
 
   @property
-  def max_value(self):
+  def max_value(self) -> float:
     return self._max_value

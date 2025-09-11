@@ -20,13 +20,13 @@ class DeyeRegisterProcessor:
     self.interactors = []
     self.master_interactor = None
 
-  def get_arg_name(self, register: DeyeRegister, action: str):
+  def get_arg_name(self, register: DeyeRegister, action: str) -> str:
     return f'--{action}-{register.name.replace("_", "-")}'
 
-  def get_arg_desc(self, register: DeyeRegister, action: str):
+  def get_arg_desc(self, register: DeyeRegister, action: str) -> str:
     return f'{action} {register.name.replace("_", " ")}' if not register.suffix else f'{action} {register.name.replace("_", " ")}, {register.suffix.replace("%", "%%")}'
 
-  def get_write_limit_desc(self, register: DeyeRegister):
+  def get_write_limit_desc(self, register: DeyeRegister) -> str:
     return f'from {register.min_value} to {register.max_value}'
 
   def get_register_type(self, register: DeyeRegister):
@@ -62,10 +62,10 @@ class DeyeRegisterProcessor:
     except Exception as e:
       self.handle_exception(e, 'Error while checking parameters')
 
-  def process_parameters(self, parser: argparse.ArgumentParser, args: argparse.Namespace):
+  def process_parameters(self, args: argparse.Namespace):
     if len(self.interactors) < 2 or args.only_accumulated == False:
       for interactor in self.interactors:
-        for register in self.get_registers_to_process(parser, args):
+        for register in self.get_registers_to_process(args):
           try:
             if interactor.is_master or register.avg_type != DeyeRegisterAverageType.only_master:
               value = register.read([interactor])
@@ -75,7 +75,7 @@ class DeyeRegisterProcessor:
             self.handle_exception(e, f'Error while reading register {register.name} from {interactor.name}')
 
     if len(self.interactors) > 1:
-      for register in self.get_registers_to_process(parser, args):
+      for register in self.get_registers_to_process(args):
         try:
           if register.can_accumulate:
             value = register.read(self.interactors)
@@ -91,14 +91,14 @@ class DeyeRegisterProcessor:
           value = getattr(args, arg_name)
           if value != None:
             if self.master_interactor == None:
-              raise RuntimeError('You can write only to master inverter')
+              raise DeyeKnownException('You can write only to master inverter')
             register.write(self.master_interactor, value)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             print(f'{self.master_interactor.name}_{register.name}{addr_list} = {value} {register.suffix}')
       except Exception as e:
         self.handle_exception(e, f'Error while writing register {register.name}')
 
-  def enqueue_registers(self, parser: argparse.ArgumentParser, args: argparse.Namespace, loggers: List[DeyeLogger]):
+  def enqueue_registers(self, args: argparse.Namespace, loggers: List[DeyeLogger]):
     for logger in loggers:
       try:
         interactor = DeyeModbusInteractor(logger = logger, socket_timeout = 10, caching_time = args.caching_time, verbose = args.verbose_output == True)
@@ -109,13 +109,13 @@ class DeyeRegisterProcessor:
         self.handle_exception(e, f'Error while creating DeyeModbusInteractor({logger.name})')
 
     for interactor in self.interactors:
-      for register in self.get_registers_to_process(parser, args):
+      for register in self.get_registers_to_process(args):
         try:
           register.enqueue(interactor)
         except Exception as e:
           self.handle_exception(e, f'Error while enqueue register {register.name} to interactor {interactor.name}')
 
-  def get_registers_to_process(self, parser: argparse.ArgumentParser, args: argparse.Namespace):
+  def get_registers_to_process(self, args: argparse.Namespace) -> List[DeyeRegister]:
     result = []
 
     if args.get_all == True:
@@ -143,9 +143,9 @@ class DeyeRegisterProcessor:
 
     return result
 
-  def process_registers(self, parser: argparse.ArgumentParser):
+  def process_registers(self):
     try:
-      tasks = []
+      tasks: List[RaisingThread] = []
       for interactor in self.interactors:
         tasks.append(RaisingThread(target = interactor.process_enqueued_registers))
 
@@ -158,14 +158,14 @@ class DeyeRegisterProcessor:
     except Exception as e:
       self.handle_exception(e, 'Error while reading registers')
 
-  def disconnect(self, parser: argparse.ArgumentParser):
+  def disconnect(self):
     for interactor in self.interactors:
       try:
         interactor.disconnect()
       except Exception as e:
         self.handle_exception(e, f'Error while disconnecting {interactor.name}')
 
-  def handle_exception(self, exception, message):
+  def handle_exception(self, exception: Exception, message: str):
     try:
       raise exception
     except DeyeKnownException:

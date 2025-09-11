@@ -87,13 +87,13 @@ try:
   if processor.check_parameters(parser, args):
     check_parameters = perf_counter() - current
     current = perf_counter()
-    processor.enqueue_registers(parser, args, loggers = loggers_list)
+    processor.enqueue_registers(args, loggers = loggers_list)
     enqueue_registers = perf_counter() - current
     current = perf_counter()
-    processor.process_registers(parser)
+    processor.process_registers()
     process_registers = perf_counter() - current
     current = perf_counter()
-    processor.process_parameters(parser, args)
+    processor.process_parameters(args)
     process_parameters = perf_counter() - current
     current = perf_counter()
 except DeyeKnownException as e:
@@ -104,7 +104,7 @@ except Exception as e:
   print(f'{os.path.basename(__file__)}: An exception occurred: {str(e)}\n{callstack}')
   sys.exit(1)
 finally:
-  processor.disconnect(parser)
+  processor.disconnect()
   if locker is not None:
     locker.release()
 
