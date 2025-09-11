@@ -19,15 +19,15 @@ class DeyeRegister:
     self.not_implemented('read_internal()')
 
   @property
-  def can_write(self):
+  def can_write(self) -> bool:
     self.not_implemented('can_write')
 
   @property
-  def can_accumulate(self):
+  def can_accumulate(self) -> bool:
     self.not_implemented('can_accumulate')
 
   @property
-  def type_name(self):
+  def type_name(self) -> str:
     self.not_implemented('type_name')
 
   @property
@@ -35,23 +35,23 @@ class DeyeRegister:
     self.not_implemented('avg_type')
 
   @property
-  def address(self):
+  def address(self) -> int:
     self.not_implemented('address')
 
   @property
-  def addresses(self):
+  def addresses(self) -> List[int]:
     self.not_implemented('address')
 
   @property
-  def quantity(self):
+  def quantity(self) -> int:
     self.not_implemented('quantity')
 
   @property
-  def name(self):
+  def name(self) -> str:
     self.not_implemented('name')
 
   @property
-  def description(self):
+  def description(self) -> str:
     self.not_implemented('description')
 
   @property
@@ -59,19 +59,19 @@ class DeyeRegister:
     self.not_implemented('value')
 
   @property
-  def suffix(self):
+  def suffix(self) -> str:
     self.not_implemented('suffix')
 
   @property
-  def min_value(self):
+  def min_value(self) -> float:
     self.not_implemented('min_value')
 
   @property
-  def max_value(self):
+  def max_value(self) -> float:
     self.not_implemented('max_value')
 
-  def error(self, message):
+  def error(self, message: str):
     raise DeyeValueException(f'{type(self).__name__}.{message}')
 
-  def not_implemented(self, message):
+  def not_implemented(self, message: str):
     raise DeyeNotImplementedException(f'{type(self).__name__}.{message} is not implemented')
