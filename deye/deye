@@ -1,4 +1,4 @@
-#!/usr/bin/python3.9
+#!/usr/bin/python
 
 import os
 import sys
@@ -7,7 +7,7 @@ import traceback
 
 sys.path.append('../modules')
 import common_modules
-common_modules.import_dirs(['src'])
+common_modules.import_dirs(['src', '../common'])
 
 from time import perf_counter
 from deye_loggers import DeyeLoggers
