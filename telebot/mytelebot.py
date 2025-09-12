@@ -2,7 +2,7 @@ import telebot
 
 from telebot_menu_command import TelebotMenuCommand
 from telebot_menu_master_info import TelebotMenuMasterInfo
-from telebot_menu_slave1_info import TelebotMenuSlave1Info
+from telebot_menu_slave_info import TelebotMenuSlaveInfo
 from telebot_menu_all_info import TelebotMenuAllInfo
 from telebot_menu_master_settings import TelebotMenuMasterSettings
 from telebot_menu_battery_forecast import TelebotMenuBatteryForecast
@@ -24,7 +24,7 @@ class MyTelebot:
     authorized_menu_items = [
       TelebotMenuAllInfo(bot, is_authorized_func = self.is_authorized),
       TelebotMenuMasterInfo(bot, is_authorized_func = self.is_authorized),
-      TelebotMenuSlave1Info(bot, is_authorized_func = self.is_authorized),
+      TelebotMenuSlaveInfo(bot, is_authorized_func = self.is_authorized),
       TelebotMenuMasterSettings(bot, is_authorized_func = self.is_authorized),
       TelebotMenuBatteryForecast(bot, is_authorized_func = self.is_authorized),
       TelebotMenuWritebleRegisters(bot, is_authorized_func = self.is_authorized),

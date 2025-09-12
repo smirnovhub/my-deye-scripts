@@ -1,24 +1,29 @@
+from typing import List
 from deye_logger import DeyeLogger
 
 class DeyeLoggers:
   def __init__(self):
-    self._loggers = {
-      'master': DeyeLogger(name ='master', ip = '192.168.0.73', serial = 1234567890),
-#      'slave1': DeyeLogger(name = 'slave1', ip = '192.168.0.75', serial = 1234567890),
-    }
+    self._master_logger = DeyeLogger(name = 'master', ip = '192.168.0.73', serial = 1234567890)
+    self._loggers = [
+      self._master_logger,
+#      DeyeLogger(name = 'slave1', ip = '192.168.0.75', serial = 1234567890)
+    ]
 
   @property
-  def master(self):
-    return self._loggers['master']
+  def master(self) -> DeyeLogger:
+    return self._master_logger
 
   @property
-  def slave1(self):
-    return self._loggers.get('slave1', None)
-
-  @property
-  def loggers(self):
+  def loggers(self) -> List[DeyeLogger]:
     return self._loggers.copy()
 
   @property
-  def loggers_list(self):
-    return list(self._loggers.values())
+  def count(self) -> int:
+    return len(self._loggers)
+
+  def get_logger_by_name(self, name: str) -> DeyeLogger:
+    for logger in self._loggers:
+      if logger.name == name:
+        return logger
+    return None
+  
