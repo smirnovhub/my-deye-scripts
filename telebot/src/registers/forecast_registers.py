@@ -1,8 +1,8 @@
 from typing import List
 from deye_register import DeyeRegister
-from deye_registers import DeyeRegisters
+from deye_registers_factory import DeyeRegistersFactory
 
-class ForecastRegisters(DeyeRegisters):
+class ForecastRegisters(DeyeRegistersFactory.get_registers_class()):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
 
