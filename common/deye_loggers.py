@@ -6,7 +6,7 @@ class DeyeLoggers:
     self._master_logger = DeyeLogger(name = 'master', ip = '192.168.0.73', serial = 1234567890)
     self._loggers = [
       self._master_logger,
-#      DeyeLogger(name = 'slave1', ip = '192.168.0.75', serial = 1234567890)
+#      DeyeLogger(name = 'slave1', ip = '192.168.0.75', serial = 1234567890),
     ]
 
   @property
