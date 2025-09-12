@@ -16,9 +16,9 @@ from deye_registers_factory import DeyeRegistersFactory
 
 class DeyeRegisterProcessor:
   def __init__(self):
-    self.registers = DeyeRegistersFactory.create_registers()
     self.interactors = []
     self.master_interactor = None
+    self.registers = DeyeRegistersFactory.create_registers()
 
   def get_arg_name(self, register: DeyeRegister, action: str) -> str:
     return f'--{action}-{register.name.replace("_", "-")}'
