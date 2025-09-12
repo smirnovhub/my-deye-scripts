@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 
 # The -u option in Python runs the interpreter in unbuffered mode.
 # That means:
