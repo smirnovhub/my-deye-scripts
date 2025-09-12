@@ -5,7 +5,6 @@ from typing import List
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
-from deye_registers import DeyeRegisters
 from raising_thread import RaisingThread
 from deye_file_lock import lock_path
 from deye_file_locker import DeyeFileLocker
@@ -14,8 +13,9 @@ from deye_exceptions import DeyeNoSocketAvailableException
 from deye_exceptions import DeyeValueException
 from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeUnknownException
-from deye_modbus_interactor import DeyeModbusInteractor
 from pysolarmanv5 import NoSocketAvailableError
+from deye_modbus_interactor import DeyeModbusInteractor
+from deye_registers_factory import DeyeRegistersFactory
 
 class DeyeRegistersHolder:
   def __init__(self, loggers: List[DeyeLogger], **kwargs):
@@ -44,7 +44,7 @@ class DeyeRegistersHolder:
         if register_creator != None:
           self._registers[logger.name] = register_creator(logger.name)
         else:
-          self._registers[logger.name] = DeyeRegisters(prefix = logger.name)
+          self._registers[logger.name] = DeyeRegistersFactory.create_registers(prefix = logger.name)
 
         if interactor.is_master:
           self._master_interactor = interactor
@@ -80,7 +80,7 @@ class DeyeRegistersHolder:
     if register_creator != None:
       accumulated_registers = register_creator(self.accumulated_prefix)
     else:
-      accumulated_registers = DeyeRegisters(prefix = self.accumulated_prefix)
+      accumulated_registers = DeyeRegistersFactory.create_registers(prefix = self.accumulated_prefix)
 
     self._registers[self.accumulated_prefix] = accumulated_registers
 

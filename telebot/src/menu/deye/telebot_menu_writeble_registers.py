@@ -3,17 +3,17 @@ import telebot
 
 from telebot_deye_helper import *
 from deye_loggers import DeyeLoggers
-from deye_registers import DeyeRegisters
 from single_register import SingleRegister
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_command import TelebotMenuCommand
 from telebot_menu_item import TelebotMenuItem
+from deye_registers_factory import DeyeRegistersFactory
 
 class TelebotMenuWritebleRegisters(TelebotMenuItem):
   def __init__(self, bot, is_authorized_func):
     self.bot = bot
     self.is_authorized = is_authorized_func
-    self.registers = DeyeRegisters()
+    self.registers = DeyeRegistersFactory.create_registers()
 
   @property
   def command(self) -> TelebotMenuCommand:

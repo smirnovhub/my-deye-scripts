@@ -4,7 +4,6 @@ import argparse
 from typing import List
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
-from deye_registers import DeyeRegisters
 from raising_thread import RaisingThread
 from deye_exceptions import DeyeQueueIsEmptyException
 from deye_exceptions import DeyeNoSocketAvailableException
@@ -13,12 +12,13 @@ from deye_exceptions import DeyeUnknownException
 from pysolarmanv5 import NoSocketAvailableError
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
+from deye_registers_factory import DeyeRegistersFactory
 
 class DeyeRegisterProcessor:
   def __init__(self):
-    self.registers = DeyeRegisters()
     self.interactors = []
     self.master_interactor = None
+    self.registers = DeyeRegistersFactory.create_registers()
 
   def get_arg_name(self, register: DeyeRegister, action: str) -> str:
     return f'--{action}-{register.name.replace("_", "-")}'
