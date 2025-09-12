@@ -109,10 +109,6 @@ class DeyeRegistersHolder:
     return self._registers[self._all_loggers.master.name]
 
   @property
-  def slave1_registers(self):
-    return self._registers[self._all_loggers.slave1.name]
-
-  @property
   def accumulated_registers(self):
     return self._registers[self.accumulated_prefix]
 

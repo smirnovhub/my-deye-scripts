@@ -36,7 +36,7 @@ class TelebotMenuBatteryForecast(TelebotMenuItem):
 
     try:
       loggers = DeyeLoggers()
-      holder = DeyeRegistersHolder(loggers = loggers.loggers_list, register_creator = creator, **holder_kwargs)
+      holder = DeyeRegistersHolder(loggers = loggers.loggers, register_creator = creator, **holder_kwargs)
       holder.connect_and_read()
     except Exception as e:
       return f'Error while creating DeyeRegistersHolder: {str(e)}'

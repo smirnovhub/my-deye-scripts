@@ -2,7 +2,7 @@ from typing import List
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 
-class Slave1InfoRegisters(DeyeRegisters):
+class SlaveInfoRegisters(DeyeRegisters):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
 

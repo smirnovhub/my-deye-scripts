@@ -25,7 +25,9 @@ parser = DeyeArgumentParser(description = 'read/write deye parameters',
   formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50, width=100))
 
 loggers = DeyeLoggers()
-inverters_list = list(loggers.loggers.keys())
+inverters_list = []
+for logger in loggers.loggers:
+  inverters_list.append(logger.name)
 inverters_str = ','.join(inverters_list)
 
 parser.add_argument('-v', '--verbose-output', action='store_true', help='verbose output')
@@ -60,14 +62,15 @@ try:
     if not inverter:
       continue
   
-    if inverter not in loggers.loggers:
+    logger = loggers.get_logger_by_name(inverter)
+    if logger is None:
       parser.error(f'Inverter \'{inverter}\' is unknown. Pls use these: {inverters_str}')
       exit()
     else:
-      loggers_list.append(loggers.loggers[inverter])
+      loggers_list.append(logger)
   
-  inverter = 'master' # for test
-  
+  loggers_list.sort(key = lambda logger: logger.name)
+
   if len(sys.argv) == 1 or not any((lambda: type(e) is str or type(e) is int or (type(e) is bool and e == True))() for e in vars(args).values()):
     parser.print_help()
     exit()

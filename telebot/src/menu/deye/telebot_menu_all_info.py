@@ -18,7 +18,7 @@ class TelebotMenuAllInfo(TelebotMenuItem):
     return TelebotMenuCommand.deye_all_info
 
   def get_commands(self) -> List[telebot.types.BotCommand]:
-    if self.loggers.slave1 is not None:    
+    if self.loggers.count > 1:
       return [
         telebot.types.BotCommand(command = 'all_info', description = 'All info'),
       ]
@@ -38,7 +38,7 @@ class TelebotMenuAllInfo(TelebotMenuItem):
         return AccumulatedInfoRegisters(prefix)
 
       try:
-        holder = DeyeRegistersHolder(loggers = self.loggers.loggers_list, register_creator = creator, **holder_kwargs)
+        holder = DeyeRegistersHolder(loggers = self.loggers.loggers, register_creator = creator, **holder_kwargs)
         holder.connect_and_read()
       except Exception as e:
         self.bot.send_message(message.chat.id, f'Error while creating DeyeRegistersHolder: {str(e)}')
