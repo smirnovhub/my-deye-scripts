@@ -26,4 +26,3 @@ class DeyeLoggers:
       if logger.name == name:
         return logger
     return None
-  
