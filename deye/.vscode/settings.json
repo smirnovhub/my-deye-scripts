@@ -14,6 +14,7 @@
     "src/logger",
     "src/registers",
     "src/registers/enum",
+    "src/registers/inverters",
     "src/registers/read_only",
     "src/registers/read_write",
     "src/solarman",
