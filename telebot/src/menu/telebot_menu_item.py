@@ -8,7 +8,7 @@ class TelebotMenuItem(Enum):
   deye_slave_info = ('{0}_info', '{0} info')
   deye_master_settings = ('master_settings', 'Master settings')
   deye_battery_forecast = ('forecast', 'Battery forecast')
-  deye_writeble_registers = ('{0}', '{0}')
+  deye_writable_registers = ('{0}', '{0}')
 
   unknown_command_echo = ('', '')
 

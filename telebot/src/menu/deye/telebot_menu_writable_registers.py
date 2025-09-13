@@ -9,7 +9,7 @@ from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from deye_registers_factory import DeyeRegistersFactory
 
-class TelebotMenuWritebleRegisters(TelebotMenuItemHandler):
+class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
   def __init__(self, bot, is_authorized_func, is_writable_register_allowed_func):
     self.bot = bot
     self.is_authorized = is_authorized_func
@@ -18,7 +18,7 @@ class TelebotMenuWritebleRegisters(TelebotMenuItemHandler):
 
   @property
   def command(self) -> TelebotMenuItem:
-    return TelebotMenuItem.deye_writeble_registers
+    return TelebotMenuItem.deye_writable_registers
 
   def get_commands(self):
     commands = []
