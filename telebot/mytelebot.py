@@ -1,39 +1,26 @@
 import telebot
 
+from typing import List
+
+from telebot_users import TelebotUsers
+from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item import TelebotMenuItem
+from telebot_logging_handler import TelebotLoggingHandler
+from telebot_menu_request_access import TelebotMenuRequestAccess
+from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_menu_all_info import TelebotMenuAllInfo
 from telebot_menu_master_info import TelebotMenuMasterInfo
 from telebot_menu_slave_info import TelebotMenuSlaveInfo
-from telebot_menu_all_info import TelebotMenuAllInfo
 from telebot_menu_master_settings import TelebotMenuMasterSettings
 from telebot_menu_battery_forecast import TelebotMenuBatteryForecast
 from telebot_menu_writable_registers import TelebotMenuWritableRegisters
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
-from telebot_logging_handler import TelebotLoggingHandler
-from telebot_menu_request_access import TelebotMenuRequestAccess
-from telebot_auth_helper import TelebotAuthHelper
-from telebot_users import TelebotUsers
 
 class MyTelebot:
   def __init__(self, bot: telebot.TeleBot):
     self.bot = bot
     self.users = TelebotUsers()
     self.auth_helper = TelebotAuthHelper()
-
-    default_menu_items = [
-      TelebotMenuRequestAccess(bot),
-    ]
-
-    authorized_menu_items = [
-      TelebotMenuAllInfo(bot, is_authorized_func = self.is_authorized),
-      TelebotMenuMasterInfo(bot, is_authorized_func = self.is_authorized),
-      TelebotMenuSlaveInfo(bot, is_authorized_func = self.is_authorized),
-      TelebotMenuMasterSettings(bot, is_authorized_func = self.is_authorized),
-      TelebotMenuBatteryForecast(bot, is_authorized_func = self.is_authorized),
-      TelebotMenuWritableRegisters(bot, is_authorized_func = self.is_authorized,
-                                   is_writable_register_allowed_func = self.is_command_allowed),
-      # unknown command handler should be always last
-      TelebotMenuUnknownCommandHandler(bot, is_authorized_func = self.is_authorized),
-    ]
 
     def print_commands(bot: telebot.TeleBot, scope, label):
       commands = bot.get_my_commands(scope = scope)
@@ -49,6 +36,13 @@ class MyTelebot:
     # Logging handler
     logger = TelebotLoggingHandler(bot)
     logger.register_handlers()
+
+    default_menu_items = self.get_default_menu_items(bot)
+    authorized_menu_items = self.get_authorized_menu_items(bot)
+    authorized_menu_items.extend(self.get_writable_registers_menu_items(bot))
+
+    # unknown command handler should be always last
+    authorized_menu_items.append(TelebotMenuUnknownCommandHandler(bot, is_authorized_func = self.is_authorized))
 
     default_commands = []
 
@@ -68,7 +62,6 @@ class MyTelebot:
 
     for user in self.users.users:
       allowed_menu_items = self.auth_helper.get_allowed_menu_items(user, authorized_menu_items)
-
       authorized_commands = []
       for menu_item in allowed_menu_items:
         commands = menu_item.get_commands()
@@ -102,3 +95,23 @@ class MyTelebot:
       if not self.auth_helper.is_writable_register_allowed(self.users, user_id, command):
         return False
     return True
+
+  def get_default_menu_items(self, bot) -> List[TelebotMenuItemHandler]:
+    return [
+      TelebotMenuRequestAccess(bot),
+    ]
+
+  def get_authorized_menu_items(self, bot) -> List[TelebotMenuItemHandler]:
+    return [
+      TelebotMenuAllInfo(bot, is_authorized_func = self.is_authorized),
+      TelebotMenuMasterInfo(bot, is_authorized_func = self.is_authorized),
+      TelebotMenuSlaveInfo(bot, is_authorized_func = self.is_authorized),
+      TelebotMenuMasterSettings(bot, is_authorized_func = self.is_authorized),
+      TelebotMenuBatteryForecast(bot, is_authorized_func = self.is_authorized),
+    ]
+
+  def get_writable_registers_menu_items(self, bot) -> List[TelebotMenuItemHandler]:
+    return [
+      TelebotMenuWritableRegisters(bot, is_authorized_func = self.is_authorized,
+                                        is_writable_register_allowed_func = self.is_command_allowed),
+    ]

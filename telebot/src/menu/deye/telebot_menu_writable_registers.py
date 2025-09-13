@@ -41,7 +41,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         return
 
       if not self.is_writable_register_allowed(message.from_user.id, self.command, message.text):
-        self.bot.send_message(message.chat.id, 'Register is not allowed for this user')
+        self.bot.send_message(message.chat.id, 'Changing of this register is not available for this user')
         return
 
       register = self.registers.{register_name}_register
