@@ -1,7 +1,7 @@
 import telebot
 
-from deye_file_lock import *
 from telebot_utils import *
+from deye_file_lock import *
 
 from datetime import datetime
 from telebot_users import TelebotUsers
@@ -31,7 +31,7 @@ class TelebotMenuRequestAccess(TelebotMenuItem):
       last_name = user.last_name or ''
       username = f"@{user.username}" if user.username else None
       phone = message.contact.phone_number if message.contact else None
-      name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else None
+      name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else 'None'
 
       info = (
         f"User ID: {user.id}\n"

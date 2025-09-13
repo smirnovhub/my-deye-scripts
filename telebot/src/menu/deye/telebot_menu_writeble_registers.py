@@ -50,6 +50,11 @@ class TelebotMenuWritebleRegisters(TelebotMenuItem):
       if not self.is_authorized(message, self.command):
         return
 
+      # if we received new command, process it
+      if message.text.startswith('/'):
+        self.bot.process_new_messages([message])
+        return
+
       register = self.registers.{register_name}_register
 
       try:

@@ -22,7 +22,7 @@ class TelebotLoggingHandler:
       user = message.from_user
       first_name = user.first_name or ''
       last_name = user.last_name or ''
-      name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else None
+      name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else 'None'
 
       if users.has_user(user.id):
         self.log_to_file(self.known_users_messages_filename, user.id, name, repr(message.text))
@@ -32,7 +32,7 @@ class TelebotLoggingHandler:
       self.trim_file(self.known_users_messages_filename, self.max_file_size)
       self.trim_file(self.unknown_users_messages_filename, self.max_file_size)
 
-  def log_to_file(self, file_path: str, user_id: int, user_name: str, message: str) -> bool:
+  def log_to_file(self, file_path: str, user_id: int, user_name: str, message: str):
     with open(file_path, "a+", encoding="utf-8") as f:
       try:
         # Acquire exclusive lock for writing
@@ -47,8 +47,8 @@ class TelebotLoggingHandler:
     if not os.path.exists(filename):
       return 
     
-    # wait while file increased up to 1024 * 512 bytes and then trim
-    max_size = trim_size + 1024 * 512
+    # wait while file increased up to 20% and then trim
+    max_size = int(trim_size * 1.2)
     file_size = os.path.getsize(filename)
     if file_size <= max_size:
       return  # trimming not needed

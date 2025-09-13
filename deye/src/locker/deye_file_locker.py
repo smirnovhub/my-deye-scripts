@@ -38,7 +38,7 @@ class DeyeFileLocker:
 
   def trim_file(self, filename, trim_size):
     # wait while file increased up to 20% and then trim
-    max_size = int(round(trim_size * 1.2))
+    max_size = int(trim_size * 1.2)
     file_size = os.path.getsize(filename)
     if file_size <= max_size:
       return  # trimming not needed
