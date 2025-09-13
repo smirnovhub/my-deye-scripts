@@ -30,10 +30,10 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
   def register_handlers(self):
     for register in self.registers.read_write_registers:
-      code = self.get_writable_register_handler(register.name)
+      code = self.get_writable_register_handler(register)
       exec(code, locals())
 
-  def get_writable_register_handler(self, register_name):
+  def get_writable_register_handler(self, register):
     return textwrap.dedent('''\
     @self.bot.message_handler(commands = ['{register_name}'])
     def set_{register_name}(message):
@@ -41,7 +41,14 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         return
 
       if not self.is_writable_register_allowed(message.from_user.id, self.command, message.text):
-        self.bot.send_message(message.chat.id, 'Changing of this register is not available for this user')
+        str = ''
+        num = 1
+        for reg in self.registers.read_write_registers:
+          if self.is_writable_register_allowed(message.from_user.id, self.command, reg.name):
+            str += f'<b>{{num}}. {{reg.description}}:</b>\\n'
+            str += f'/{{reg.name}}\\n'
+            num += 1
+        self.bot.send_message(message.chat.id, f'You can\\'t change <b>{register_description}</b>. Available registers to change:\\n{{str}}', parse_mode='HTML')
         return
 
       register = self.registers.{register_name}_register
@@ -69,7 +76,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         self.bot.send_message(message.chat.id, text)
       except Exception as e:
         self.bot.send_message(message.chat.id, str(e))
-  ''').format(register_name = register_name)
+  ''').format(register_name = register.name, register_description = register.description)
 
   def process_read_write_register_step1(self, register):
     loggers = DeyeLoggers()
