@@ -33,7 +33,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       code = self.get_writable_register_handler(register)
       exec(code, locals())
 
-  def get_writable_register_handler(self, register):
+  def get_writable_register_handler(self, register: DeyeRegister):
     return textwrap.dedent('''\
     @self.bot.message_handler(commands = ['{register_name}'])
     def set_{register_name}(message):
@@ -73,12 +73,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
       try:
         text = self.process_read_write_register_step2(register, message.text)
-        self.bot.send_message(message.chat.id, text)
+        self.bot.send_message(message.chat.id, text, parse_mode='HTML')
       except Exception as e:
         self.bot.send_message(message.chat.id, str(e))
   ''').format(register_name = register.name, register_description = register.description)
 
-  def process_read_write_register_step1(self, register):
+  def process_read_write_register_step1(self, register: DeyeRegister) -> str:
     loggers = DeyeLoggers()
 
     def creator(prefix):
@@ -101,15 +101,15 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     return result
 
-  def process_read_write_register_step2(self, register, text):
+  def process_read_write_register_step2(self, register: DeyeRegister, text: str) -> str:
     try:
       if type(register.value) is int and register.value == int(text):
-        return f'New value ({int(text)}) the same as old value ({register.value}). Do nothing'
+        return f'New value ({int(text)}) is the same as old value ({register.value}). Do nothing'
 
       if type(register.value) is float and register.value == float(text):
-        return f'New value ({float(text)}) the same as old value ({register.value}). Do nothing'
+        return f'New value ({float(text)}) is the same as old value ({register.value}). Do nothing'
 
       value = write_register(register, text)
-      return f'New value written successfully: {value} {register.suffix}'
+      return f'<b>{register.description}</b> changed to {value} {register.suffix}'
     except Exception as e:
       raise Exception('Error while writing registers: ' + str(e))
