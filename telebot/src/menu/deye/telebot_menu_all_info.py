@@ -4,23 +4,23 @@ from telebot_deye_helper import *
 from deye_loggers import DeyeLoggers
 from deye_registers_holder import DeyeRegistersHolder
 from accumulated_info_registers import AccumulatedInfoRegisters
-from telebot_menu_command import TelebotMenuCommand
 from telebot_menu_item import TelebotMenuItem
+from telebot_menu_item_handler import TelebotMenuItemHandler
 
-class TelebotMenuAllInfo(TelebotMenuItem):
+class TelebotMenuAllInfo(TelebotMenuItemHandler):
   def __init__(self, bot, is_authorized_func):
     self.bot = bot
     self.is_authorized = is_authorized_func
     self.loggers = DeyeLoggers()
 
   @property
-  def command(self) -> TelebotMenuCommand:
-    return TelebotMenuCommand.deye_all_info
+  def command(self) -> TelebotMenuItem:
+    return TelebotMenuItem.deye_all_info
 
   def get_commands(self) -> List[telebot.types.BotCommand]:
     if self.loggers.count > 1:
       return [
-        telebot.types.BotCommand(command = 'all_info', description = 'All info'),
+        telebot.types.BotCommand(command = self.command.command, description = self.command.description),
       ]
     return []
 

@@ -4,24 +4,25 @@ from telebot_deye_helper import *
 from deye_loggers import DeyeLoggers
 from deye_registers_holder import DeyeRegistersHolder
 from slave_info_registers import SlaveInfoRegisters
-from telebot_menu_command import TelebotMenuCommand
 from telebot_menu_item import TelebotMenuItem
+from telebot_menu_item_handler import TelebotMenuItemHandler
 
-class TelebotMenuSlaveInfo(TelebotMenuItem):
+class TelebotMenuSlaveInfo(TelebotMenuItemHandler):
   def __init__(self, bot, is_authorized_func):
     self.bot = bot
     self.is_authorized = is_authorized_func
     self.loggers = DeyeLoggers()
 
   @property
-  def command(self) -> TelebotMenuCommand:
-    return TelebotMenuCommand.deye_slave_info
+  def command(self) -> TelebotMenuItem:
+    return TelebotMenuItem.deye_slave_info
 
   def get_commands(self):
     commands = []
     for logger in self.loggers.loggers:
       if logger.name != self.loggers.master.name:
-        commands.append(telebot.types.BotCommand(command = f'{logger.name}_info', description = f'{logger.name.title()} info'))
+        commands.append(telebot.types.BotCommand(command = self.command.command.format(logger.name),
+                                                 description = self.command.description.format(logger.name.title())))
     return commands
 
   def register_handlers(self):

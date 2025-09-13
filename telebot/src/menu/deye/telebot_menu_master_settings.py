@@ -4,21 +4,21 @@ from telebot_deye_helper import *
 from deye_loggers import DeyeLoggers
 from deye_registers_holder import DeyeRegistersHolder
 from master_settings_registers import MasterSettingsRegisters
-from telebot_menu_command import TelebotMenuCommand
 from telebot_menu_item import TelebotMenuItem
+from telebot_menu_item_handler import TelebotMenuItemHandler
 
-class TelebotMenuMasterSettings(TelebotMenuItem):
+class TelebotMenuMasterSettings(TelebotMenuItemHandler):
   def __init__(self, bot, is_authorized_func):
     self.bot = bot
     self.is_authorized = is_authorized_func
 
   @property
-  def command(self) -> TelebotMenuCommand:
-    return TelebotMenuCommand.deye_master_settings
+  def command(self) -> TelebotMenuItem:
+    return TelebotMenuItem.deye_master_settings
 
   def get_commands(self):
     return [
-      telebot.types.BotCommand(command = 'master_settings', description = 'Master settings'),
+      telebot.types.BotCommand(command = self.command.command, description = self.command.description),
     ]
 
   def register_handlers(self):

@@ -5,24 +5,27 @@ from telebot_deye_helper import *
 from deye_loggers import DeyeLoggers
 from single_register import SingleRegister
 from deye_registers_holder import DeyeRegistersHolder
-from telebot_menu_command import TelebotMenuCommand
 from telebot_menu_item import TelebotMenuItem
+from telebot_menu_item_handler import TelebotMenuItemHandler
 from deye_registers_factory import DeyeRegistersFactory
 
-class TelebotMenuWritebleRegisters(TelebotMenuItem):
-  def __init__(self, bot, is_authorized_func):
+class TelebotMenuWritebleRegisters(TelebotMenuItemHandler):
+  def __init__(self, bot, is_authorized_func, is_writable_register_allowed_func):
     self.bot = bot
     self.is_authorized = is_authorized_func
+    self.is_writable_register_allowed = is_writable_register_allowed_func
     self.registers = DeyeRegistersFactory.create_registers()
 
   @property
-  def command(self) -> TelebotMenuCommand:
-    return TelebotMenuCommand.deye_writeble_registers
+  def command(self) -> TelebotMenuItem:
+    return TelebotMenuItem.deye_writeble_registers
 
   def get_commands(self):
     commands = []
     for register in self.registers.read_write_registers:
-      commands.append(telebot.types.BotCommand(command = register.name, description = register.description))
+      command_name = self.command.command.format(register.name)
+      command_description = self.command.description.format(register.description)
+      commands.append(telebot.types.BotCommand(command = command_name, description = command_description))
     return commands
 
   def register_handlers(self):
@@ -35,6 +38,10 @@ class TelebotMenuWritebleRegisters(TelebotMenuItem):
     @self.bot.message_handler(commands = ['{register_name}'])
     def set_{register_name}(message):
       if not self.is_authorized(message, self.command):
+        return
+
+      if not self.is_writable_register_allowed(message.from_user.id, self.command, message.text):
+        self.bot.send_message(message.chat.id, 'Register is not allowed for this user')
         return
 
       register = self.registers.{register_name}_register
