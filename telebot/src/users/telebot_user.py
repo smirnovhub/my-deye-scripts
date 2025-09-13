@@ -17,7 +17,7 @@ class TelebotUser:
     return self._id
 
   @property
-  def allowed_commands(self) -> int:
+  def allowed_commands(self) -> List[TelebotMenuCommand]:
     return self._allowed_commands
 
   def get_allowed_menu_items(self, commands: List[TelebotMenuItem]) -> List[TelebotMenuItem]:

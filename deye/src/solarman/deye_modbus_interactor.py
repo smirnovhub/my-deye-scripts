@@ -17,7 +17,7 @@ class DeyeModbusInteractor:
     return self.logger.name
 
   @property
-  def is_master(self) -> str:
+  def is_master(self) -> bool:
     return self.logger.name == self.loggers.master.name
 
   def clear_registers_queue(self):

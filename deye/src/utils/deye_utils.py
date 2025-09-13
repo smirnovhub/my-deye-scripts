@@ -1,7 +1,7 @@
 import os
 import struct
 
-from typing import Union, List, Tuple
+from typing import Union, List
 from datetime import datetime, timedelta
 from deye_exceptions import DeyeValueException
 
@@ -39,8 +39,8 @@ def to_unsigned_bytes(val: Union[int, List[int]]) -> bytes:
 
 # Convert a sequence of integers (Year, Month, Date, Hour, Minute, Second)
 # to 3 bytes tuple suitable for writing though pysolarman
-def to_inv_time(vals: List[int]) -> Tuple[int]:
-  return struct.unpack('>hhh', struct.pack('>bbbbbb', *vals))  # noqa
+def to_inv_time(vals: List[int]) -> List[int]:
+  return list(struct.unpack('>hhh', struct.pack('>bbbbbb', *vals)))
 
 def format_end_date(date:datetime) -> str:
   date_str1 = date.strftime('%Y-%m-%d')

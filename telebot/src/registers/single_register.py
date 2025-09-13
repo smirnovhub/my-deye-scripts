@@ -1,9 +1,9 @@
-from typing import List
+from typing import List, Union
 from deye_register import DeyeRegister
 from deye_registers_factory import DeyeRegistersFactory
 
 class SingleRegister(DeyeRegistersFactory.get_registers_class()):
-  def __init__(self, register: DeyeRegister, prefix: str = ''):
+  def __init__(self, register: Union[DeyeRegister, None], prefix: str = ''):
     super().__init__(prefix)
     self._register = register
 
