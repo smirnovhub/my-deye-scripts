@@ -1,11 +1,13 @@
 from typing import List
+
+from deye_register import DeyeRegister
 from telebot_menu_item import TelebotMenuItem
 
 class TelebotUser:
   def __init__(self, name: str, id: str,
                allowed_menu_items: List[TelebotMenuItem],
-               allowed_writable_registers: List[str] = [],
-               disabled_writable_registers: List[str] = []):
+               allowed_writable_registers: List[DeyeRegister] = [],
+               disabled_writable_registers: List[DeyeRegister] = []):
     self._name = name
     self._id = id
     # empty - means none allowed
@@ -28,9 +30,9 @@ class TelebotUser:
     return self._allowed_menu_items
   
   @property
-  def allowed_writable_registers(self) -> List[str]:
-    return [register.replace('master_', '') for register in self._allowed_writable_registers]
+  def allowed_writable_registers(self) -> List[DeyeRegister]:
+    return self._allowed_writable_registers.copy()
   
   @property
-  def disabled_writable_registers(self) -> List[str]:
-    return [register.replace('master_', '') for register in self._disabled_writable_registers]
+  def disabled_writable_registers(self) -> List[DeyeRegister]:
+    return self._disabled_writable_registers.copy()

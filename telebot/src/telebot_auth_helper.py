@@ -21,12 +21,14 @@ class TelebotAuthHelper:
   def is_writable_register_allowed(self, users: TelebotUsers, user_id: str, command: str) -> bool:
     user = users.get_user(user_id)
     command = command.lstrip('/')
-    if command in user.disabled_writable_registers:
-      return False
+    for register in user.disabled_writable_registers:
+      if command == register.name:
+        return False
 
     if user.allowed_writable_registers:
-      if command in user.allowed_writable_registers:
-        return True
+      for register in user.allowed_writable_registers:
+        if command == register.name:
+          return True
       return False
 
     return True

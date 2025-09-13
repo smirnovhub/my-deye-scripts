@@ -3,6 +3,7 @@ import telebot
 
 from telebot_deye_helper import *
 from deye_loggers import DeyeLoggers
+from deye_register import DeyeRegister
 from single_register import SingleRegister
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
