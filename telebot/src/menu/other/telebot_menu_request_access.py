@@ -5,20 +5,20 @@ from deye_file_lock import *
 
 from datetime import datetime
 from telebot_users import TelebotUsers
-from telebot_menu_command import TelebotMenuCommand
 from telebot_menu_item import TelebotMenuItem
+from telebot_menu_item_handler import TelebotMenuItemHandler
 
-class TelebotMenuRequestAccess(TelebotMenuItem):
+class TelebotMenuRequestAccess(TelebotMenuItemHandler):
   def __init__(self, bot):
     self.bot = bot
 
   @property
-  def command(self) -> TelebotMenuCommand:
-    return TelebotMenuCommand.request_access
+  def command(self) -> TelebotMenuItem:
+    return TelebotMenuItem.request_access
 
   def get_commands(self):
     return [
-      telebot.types.BotCommand(command = 'request_access', description = 'Request access'),
+      telebot.types.BotCommand(command = self.command.command, description = self.command.description),
     ]
 
   def register_handlers(self):

@@ -1,12 +1,21 @@
 from typing import List
-from telebot_menu_command import TelebotMenuCommand
+
+from deye_register import DeyeRegister
 from telebot_menu_item import TelebotMenuItem
 
 class TelebotUser:
-  def __init__(self, name: str, id: str, allowed_commands: List[TelebotMenuCommand]):
+  def __init__(self, name: str, id: str,
+               allowed_menu_items: List[TelebotMenuItem],
+               allowed_writable_registers: List[DeyeRegister] = [],
+               disabled_writable_registers: List[DeyeRegister] = []):
     self._name = name
     self._id = id
-    self._allowed_commands = allowed_commands
+    # empty - means none allowed
+    self._allowed_menu_items = allowed_menu_items
+    # empty - means all allowed
+    self._allowed_writable_registers = allowed_writable_registers
+    # empty - means none disabled (all allowed)
+    self._disabled_writable_registers = disabled_writable_registers
 
   @property
   def name(self) -> str:
@@ -17,15 +26,13 @@ class TelebotUser:
     return self._id
 
   @property
-  def allowed_commands(self) -> List[TelebotMenuCommand]:
-    return self._allowed_commands
-
-  def get_allowed_menu_items(self, commands: List[TelebotMenuItem]) -> List[TelebotMenuItem]:
-    allowed_items = []
-
-    for command in commands:
-      if command.command in self._allowed_commands:
-        allowed_items.append(command)
-
-    return allowed_items
+  def allowed_menu_items(self) -> List[TelebotMenuItem]:
+    return self._allowed_menu_items
   
+  @property
+  def allowed_writable_registers(self) -> List[DeyeRegister]:
+    return self._allowed_writable_registers.copy()
+  
+  @property
+  def disabled_writable_registers(self) -> List[DeyeRegister]:
+    return self._disabled_writable_registers.copy()
