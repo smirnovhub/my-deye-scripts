@@ -1,6 +1,9 @@
 import telebot
 
+from telebot_constants import *
+from telebot_user_choices import *
 from telebot_deye_helper import *
+
 from deye_loggers import DeyeLoggers
 from deye_registers_holder import DeyeRegistersHolder
 from accumulated_info_registers import AccumulatedInfoRegisters
@@ -9,7 +12,7 @@ from telebot_menu_item_handler import TelebotMenuItemHandler
 
 class TelebotMenuAllInfo(TelebotMenuItemHandler):
   def __init__(self, bot, is_authorized_func):
-    self.bot = bot
+    self.bot: telebot.TeleBot = bot
     self.is_authorized = is_authorized_func
     self.loggers = DeyeLoggers()
 
@@ -28,14 +31,16 @@ class TelebotMenuAllInfo(TelebotMenuItemHandler):
     commands = [cmd.command for cmd in self.get_commands()]
     if not commands:
       return
-  
+
     @self.bot.message_handler(commands = commands)
-    def handle(message):
+    def handle(message: telebot.types.Message):
       if not self.is_authorized(message, self.command):
         return
 
+      registers = AccumulatedInfoRegisters()
+
       def creator(prefix):
-        return AccumulatedInfoRegisters(prefix)
+        return registers
 
       try:
         holder = DeyeRegistersHolder(loggers = self.loggers.loggers, register_creator = creator, **holder_kwargs)
@@ -46,5 +51,29 @@ class TelebotMenuAllInfo(TelebotMenuItemHandler):
       finally:
         holder.disconnect()
 
+      keyboard = None
+      if abs(registers.inverter_system_time_diff_register.value) > inverter_system_time_need_sync_difference_sec:
+        keyboard = get_keyboard_for_register(registers, registers.inverter_system_time_register)
+      #else:
+        #keyboard = get_keyboard_for_choices({'Master info': '/master_info', 'Slave1 info': '/slave1_info'}, 3)
+
       info = get_register_values(holder.accumulated_registers.all_registers)
-      self.bot.send_message(message.chat.id, f'<b>Inverter: all</b>\n{info}', parse_mode='HTML')
+      sent = self.bot.send_message(message.chat.id,
+                                   f'<b>Inverter: all</b>\n{info}',
+                                   reply_markup = keyboard,
+                                   parse_mode = 'HTML')
+      self.bot.clear_step_handler_by_chat_id(message.chat.id)
+      self.bot.register_next_step_handler(message, self.next_step_handler, sent.message_id)
+
+  def next_step_handler(self, message: telebot.types.Message, message_id: int):
+    try:
+      # remove yes/no buttons from previous message
+      self.bot.edit_message_reply_markup(chat_id = message.chat.id, message_id = message_id, reply_markup = None)
+    except Exception:
+      # Ignore exceptions (e.g., "message is not modified")
+      pass
+
+    # if we received new command, process it
+    if message.text.startswith('/'):
+      self.bot.process_new_messages([message])
+      return

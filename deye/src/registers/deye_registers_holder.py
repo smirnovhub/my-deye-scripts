@@ -1,10 +1,11 @@
 import os
 import queue
 
-from typing import List
+from typing import Dict, List
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
+from deye_registers import DeyeRegisters
 from raising_thread import RaisingThread
 from deye_file_lock import lock_path
 from deye_file_locker import DeyeFileLocker
@@ -19,9 +20,9 @@ from deye_registers_factory import DeyeRegistersFactory
 
 class DeyeRegistersHolder:
   def __init__(self, loggers: List[DeyeLogger], **kwargs):
-    self._registers = {}
-    self._interactors = []
-    self._master_interactor = None
+    self._registers: Dict[str, DeyeRegisters] = {}
+    self._interactors: List[DeyeModbusInteractor] = []
+    self._master_interactor: DeyeModbusInteractor = None
     self._loggers = loggers
     self.kwargs = kwargs
     self._all_loggers = DeyeLoggers()
@@ -51,7 +52,7 @@ class DeyeRegistersHolder:
       except Exception as e:
         self.handle_exception(e, f'{type(self).__name__}: error while creating DeyeModbusInteractor({logger.name})')
 
-    tasks = []
+    tasks: List[RaisingThread] = []
 
     for interactor in self._interactors:
       try:
@@ -97,19 +98,19 @@ class DeyeRegistersHolder:
         self.handle_exception(e, f'{type(self).__name__}: error while reading register {register.name}')
 
   @property
-  def accumulated_prefix(self):
+  def accumulated_prefix(self) -> str:
     return 'all'
 
   @property
-  def all_registers(self):
+  def all_registers(self) -> Dict[str, DeyeRegisters]:
     return self._registers
 
   @property
-  def master_registers(self):
+  def master_registers(self) -> DeyeRegisters:
     return self._registers[self._all_loggers.master.name]
 
   @property
-  def accumulated_registers(self):
+  def accumulated_registers(self) -> DeyeRegisters:
     return self._registers[self.accumulated_prefix]
 
   def write_register(self, register: DeyeRegister, value):

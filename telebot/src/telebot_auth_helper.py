@@ -5,7 +5,8 @@ from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_menu_item import TelebotMenuItem
 
 class TelebotAuthHelper:
-  def get_allowed_menu_items(self, user: TelebotUser, items: List[TelebotMenuItemHandler]) -> List[TelebotMenuItemHandler]:
+  def get_allowed_menu_items(self, user: TelebotUser,
+                             items: List[TelebotMenuItemHandler]) -> List[TelebotMenuItemHandler]:
     allowed_items = []
 
     for item in items:

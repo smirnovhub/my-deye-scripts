@@ -57,4 +57,5 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
     if interactor.write_register(self.address, values) != len(values):
       self.error(f'write(): something went wrong while writing {self.description}')
 
+    self._value = value
     return value

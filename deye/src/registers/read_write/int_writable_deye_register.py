@@ -24,4 +24,5 @@ class IntWritableDeyeRegister(IntDeyeRegister):
     if interactor.write_register(self.address, [value]) != 1:
       self.error(f'write(): something went wrong while writing {self.description}')
 
+    self._value = value
     return value

@@ -26,4 +26,5 @@ class FloatWritableDeyeRegister(FloatDeyeRegister):
     if interactor.write_register(self.address, [value]) != 1:
       self.error(f'write(): something went wrong while writing {self.description}')
 
-    return value / self.scale
+    self._value = value / self.scale
+    return self._value
