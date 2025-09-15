@@ -77,7 +77,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       elif diff_seconds > inverter_system_time_does_not_need_sync_threshold_sec:
         self.on_user_confirmation(message.chat.id, True)
       else:
-        self.bot.send_message(message.chat.id, 'The inverter time does not need to be synced', parse_mode = 'HTML')
+        self.bot.send_message(message.chat.id, 'The inverter time is already synced', parse_mode = 'HTML')
 
   def get_available_registers(self, user_id: int) -> str:
     str = ''
