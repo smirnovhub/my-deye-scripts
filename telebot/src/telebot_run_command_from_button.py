@@ -11,16 +11,14 @@ def register_global_callback_handler_for_command_from_button(bot: telebot.TeleBo
   and executed using process_new_messages().
   Otherwise, the callback will be handled as a normal inline button.
   """
-  @bot.callback_query_handler(func = lambda call: True)  # This handler catches ALL callbacks
+  @bot.callback_query_handler(func = lambda call: call.data and call.data.startswith('/'))
   def handle(call: telebot.types.CallbackQuery):
-    data = call.data  # callback_data from the button
-
-    if data and data.startswith('/'):
+    if call.data:
       # If callback_data looks like a command (starts with '/'),
       # we create a fake Message object that contains this command.
       fake_message = TelebotFakeMessage(
         cast(telebot.types.Message, call.message),  # original message object
-        data,  # command text (e.g. "/status")
+        call.data,  # command text (e.g. "/status")
         call.from_user,  # user who clicked the button
       )
 
