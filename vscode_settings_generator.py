@@ -1,3 +1,5 @@
+#!/usr/bin/python3.8
+
 import os
 import sys
 
@@ -19,7 +21,18 @@ settings_text = """{
   "python.linting.pylintEnabled": true,
   "python.linting.flake8Enabled": false,
   "python.formatting.provider": "yapf",
-  "python.envFile": "${workspaceFolder}/.env"
+  "python.envFile": "${workspaceFolder}/.env",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportArgumentType": "error",
+    "reportReturnType": "error",
+    "reportGeneralTypeIssues": "warning",
+    "reportOptionalMemberAccess": "none",
+    "reportOptionalSubscript": "none",
+    "reportOptionalCall": "none",
+    "reportMissingTypeStubs": "none",
+    "reportPrivateUsage": "none", 
+    "reportUnusedImport": "warning"
+  }
 }
 """
 
