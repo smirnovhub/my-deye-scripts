@@ -19,7 +19,6 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     self.is_authorized = is_authorized_func
     self.is_writable_register_allowed = is_writable_register_allowed_func
     self.registers = DeyeRegistersFactory.create_registers()
-    self.time_does_not_need_sync_threshold_sec = 15
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -75,7 +74,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
           'Are you sure to sync inverter time?', self.on_user_confirmation)
         self.bot.clear_step_handler_by_chat_id(message.chat.id)
         self.bot.register_next_step_handler(message, self.user_confirmation_next_step_handler, sent.message_id)
-      elif diff_seconds > self.time_does_not_need_sync_threshold_sec:
+      elif diff_seconds > inverter_system_time_does_not_need_sync_threshold_sec:
         self.on_user_confirmation(message.chat.id, True)
       else:
         self.bot.send_message(message.chat.id, 'The inverter time does not need to be synced', parse_mode = 'HTML')
