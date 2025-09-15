@@ -25,7 +25,6 @@ def get_register_values(registers: List[DeyeRegister]) -> str:
       val = str(register.value).title()
 
     desc = register.description.replace('Inverter ', '')
-    desc = desc.replace('Grid Charging Start SOC', 'Max Charge SOC')
     result += f'{desc}: {val} {register.suffix}\n'
 
   return result
