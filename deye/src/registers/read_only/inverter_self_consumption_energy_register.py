@@ -6,10 +6,17 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
 class InverterSelfConsumptionEnergyRegister(BaseDeyeRegister):
-  def __init__(self, pv_production_register: DeyeRegister,
-               grid_purchased_energy_register: DeyeRegister, grid_feed_in_energy_register: DeyeRegister,
-               battery_charged_energy_register: DeyeRegister, battery_discharged_energy_register: DeyeRegister,
-               load_consumption_register: DeyeRegister, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
+  def __init__(self,
+               pv_production_register: DeyeRegister,
+               grid_purchased_energy_register: DeyeRegister,
+               grid_feed_in_energy_register: DeyeRegister,
+               battery_charged_energy_register: DeyeRegister,
+               battery_discharged_energy_register: DeyeRegister,
+               load_consumption_register: DeyeRegister,
+               name: str,
+               description: str,
+               suffix: str,
+               avg = DeyeRegisterAverageType.none):
     super().__init__(0, 0, name, description, suffix, avg)
 
     self._pv_production_register = pv_production_register
@@ -20,7 +27,7 @@ class InverterSelfConsumptionEnergyRegister(BaseDeyeRegister):
     self._load_consumption_register = load_consumption_register
 
   @property
-  def addresses(self):
+  def addresses(self) -> List[int]:
     return self._pv_production_register.addresses +\
       self._grid_purchased_energy_register.addresses +\
       self._grid_feed_in_energy_register.addresses +\

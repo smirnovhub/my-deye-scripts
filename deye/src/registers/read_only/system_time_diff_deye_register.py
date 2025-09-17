@@ -9,7 +9,7 @@ class SystemTimeDiffDeyeRegister(SystemTimeWritableDeyeRegister):
     super().__init__(address, name, description, suffix, avg)
 
   @property
-  def can_write(self):
+  def can_write(self) -> bool:
     return False
 
   def read_internal(self, interactor: DeyeModbusInteractor):

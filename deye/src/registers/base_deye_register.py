@@ -1,13 +1,19 @@
 from typing import List
 
-from deye_utils import *
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
+from deye_utils import have_second_sign
 
 class BaseDeyeRegister(DeyeRegister):
-  def __init__(self, address: int, quantity: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
+  def __init__(self,
+               address: int,
+               quantity: int,
+               name: str,
+               description: str,
+               suffix: str,
+               avg = DeyeRegisterAverageType.none):
     self._address = address
     self._quantity = quantity
     self._name = name
@@ -85,7 +91,7 @@ class BaseDeyeRegister(DeyeRegister):
   def addresses(self) -> List[int]:
     addr_list = []
     for i in range(self.quantity):
-       addr_list.append(self.address + i)
+      addr_list.append(self.address + i)
     return addr_list
 
   @property

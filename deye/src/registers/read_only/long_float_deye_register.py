@@ -1,7 +1,7 @@
-from deye_utils import *
 from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
+from deye_utils import get_long_register_value
 
 class LongFloatDeyeRegister(BaseDeyeRegister):
   def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):

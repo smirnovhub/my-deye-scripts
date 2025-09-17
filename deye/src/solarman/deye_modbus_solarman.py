@@ -1,14 +1,14 @@
-from deye_utils import *
 from deye_logger import DeyeLogger
 from deye_file_lock import lock_path
 from deye_cache_manager import DeyeCacheManager
 from pysolarmanv5 import PySolarmanV5
+from deye_utils import ensure_dir_exists
 
 class DeyeModbusSolarman:
   def __init__(self, logger: DeyeLogger, **kwargs):
     self.logger = logger
     self.kwargs = kwargs
-    self.modbus = None
+    self.modbus: PySolarmanV5 = None
 
     self.verbose = kwargs.get('verbose', False)
     caching_time = kwargs.get('caching_time', 3)

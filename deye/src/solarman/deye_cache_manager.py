@@ -3,21 +3,27 @@ import re
 import json
 import time
 
-from deye_utils import *
 from datetime import datetime
-from deye_file_lock import *
+from deye_utils import ensure_file_exists
+
+from deye_file_lock import (
+  flock,
+  LOCK_EX,
+  LOCK_SH,
+  LOCK_UN,
+)
 
 # -------------------------------
 # Class for caching register data
 # -------------------------------
 class DeyeCacheManager:
-  def __init__(self, name, cache_path, caching_time, verbose=False):
+  def __init__(self, name: str, cache_path: str, caching_time: int, verbose = False):
     self.name = name
     self.cache_path = cache_path
     self.caching_time = caching_time
     self.verbose = verbose
 
-  def get_cache_filename(self, register_addr, quantity):
+  def get_cache_filename(self, register_addr, quantity) -> str:
     return os.path.join(self.cache_path, f"registers-{self.name}-{register_addr}-{quantity}.json")
 
   def save_to_cache(self, register_addr, quantity, data):
@@ -29,18 +35,23 @@ class DeyeCacheManager:
     if self.verbose:
       print(f"{self.name}: saving cache to {filename}...")
 
-    with open(filename, "r+", encoding="utf-8") as f:
+    with open(filename, "r+", encoding = "utf-8") as f:
       try:
         flock(f, LOCK_EX)
         f.seek(0)
         f.truncate(0)
-        json.dump({
-          "name": self.name,
-          "time": now,
-          "address": register_addr,
-          "quantity": quantity,
-          "data": data
-        }, f, ensure_ascii=False, indent=2)
+        json.dump(
+          {
+            "name": self.name,
+            "time": now,
+            "address": register_addr,
+            "quantity": quantity,
+            "data": data
+          },
+          f,
+          ensure_ascii = False,
+          indent = 2,
+        )
       finally:
         flock(f, LOCK_UN)
 
@@ -66,20 +77,23 @@ class DeyeCacheManager:
       return None
 
     if self.verbose:
-      print(f"{self.name}: cache for address = {register_addr}, quantity = {quantity} will expire in {int(round(self.caching_time - now + mtime))} sec")
+      print(
+        f"{self.name}: cache for address = {register_addr}, quantity = {quantity} will expire in {int(round(self.caching_time - now + mtime))} sec"
+      )
 
-    with open(filename, "r", encoding="utf-8") as f:
+    with open(filename, "r", encoding = "utf-8") as f:
       try:
         flock(f, LOCK_SH)
         content = json.load(f)
       finally:
         flock(f, LOCK_UN)
+
     return content.get("data")
 
   def remove_overlapping(self, register_addr, values):
     # Remove cache files overlapping with the given register range
     to_delete_start = register_addr
-    to_delete_end = register_addr + len(values) - 1  # inclusive
+    to_delete_end = register_addr + len(values) - 1 # inclusive
 
     pattern = re.compile(rf"registers-{re.escape(self.name)}-(\d+)-(\d+)\.json")
 
@@ -93,8 +107,8 @@ class DeyeCacheManager:
         # Extract start address and length from filename
         from_file_start = int(match.group(1))
         length = int(match.group(2))
-        from_file_end = from_file_start + length - 1  # inclusive
-  
+        from_file_end = from_file_start + length - 1 # inclusive
+
         # Check if the write range overlaps with file range
         if not (to_delete_end < from_file_start or to_delete_start > from_file_end):
           if self.verbose:

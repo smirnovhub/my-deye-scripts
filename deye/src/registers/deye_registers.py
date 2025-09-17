@@ -9,7 +9,7 @@ class DeyeRegisters:
 
   @property
   def prefix(self) -> str:
-    return self._prefix 
+    return self._prefix
 
   def get_register_by_name(self, name: str) -> Union[DeyeRegister, None]:
     for register in self.all_registers:
@@ -174,6 +174,10 @@ class DeyeRegisters:
     self.not_implemented('grid_reconnection_time_register')
 
   @property
+  def grid_state_code_register(self) -> DeyeRegister:
+    self.not_implemented('grid_state_code_register')
+
+  @property
   def grid_state_register(self) -> DeyeRegister:
     self.not_implemented('grid_state_register')
 
@@ -282,12 +286,20 @@ class DeyeRegisters:
     self.not_implemented('today_grid_purchased_energy_register')
 
   @property
+  def today_gen_energy_register(self) -> DeyeRegister:
+    self.not_implemented('today_gen_energy_register')
+
+  @property
   def today_load_consumption_register(self) -> DeyeRegister:
     self.not_implemented('today_load_consumption_register')
 
   @property
   def today_production_register(self) -> DeyeRegister:
     self.not_implemented('today_production_register')
+
+  @property
+  def today_production_cost_register(self) -> DeyeRegister:
+    self.not_implemented('today_production_cost_register')
 
   @property
   def total_battery_charged_energy_register(self) -> DeyeRegister:
@@ -306,12 +318,20 @@ class DeyeRegisters:
     self.not_implemented('total_grid_purchased_energy_register')
 
   @property
+  def total_gen_energy_register(self) -> DeyeRegister:
+    self.not_implemented('total_gen_energy_register')
+
+  @property
   def total_load_consumption_register(self) -> DeyeRegister:
     self.not_implemented('total_load_consumption_register')
 
   @property
   def total_production_register(self) -> DeyeRegister:
     self.not_implemented('total_production_register')
+
+  @property
+  def total_production_cost_register(self) -> DeyeRegister:
+    self.not_implemented('total_production_cost_register')
 
   @property
   def zero_export_power_register(self) -> DeyeRegister:

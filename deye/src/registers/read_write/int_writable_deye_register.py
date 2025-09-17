@@ -3,13 +3,20 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
 class IntWritableDeyeRegister(IntDeyeRegister):
-  def __init__(self, address: int, min_value: int, max_value: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
+  def __init__(self,
+               address: int,
+               min_value: int,
+               max_value: int,
+               name: str,
+               description: str,
+               suffix: str,
+               avg = DeyeRegisterAverageType.none):
     super().__init__(address, name, description, suffix, avg)
     self._min_value = min_value
     self._max_value = max_value
 
   @property
-  def can_write(self):
+  def can_write(self) -> bool:
     return True
 
   def write(self, interactor: DeyeModbusInteractor, value):

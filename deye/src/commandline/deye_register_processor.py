@@ -35,15 +35,24 @@ class DeyeRegisterProcessor:
   def add_command_line_parameters(self, parser: argparse.ArgumentParser):
     try:
       for register in self.registers.read_only_registers:
-        parser.add_argument(self.get_arg_name(register, 'get'), action = 'store_true', help = self.get_arg_desc(register, 'get'))
+        parser.add_argument(self.get_arg_name(register, 'get'),
+                            action = 'store_true',
+                            help = self.get_arg_desc(register, 'get'))
 
       for register in self.registers.read_write_registers:
         set_help = f'{self.get_arg_desc(register, "set")} ({self.get_write_limit_desc(register)})' if register.type_name != 'str' else f'{self.get_arg_desc(register, "set")}'
-        parser.add_argument(self.get_arg_name(register, 'get'), action='store_true', help=self.get_arg_desc(register, 'get'))
-        parser.add_argument(self.get_arg_name(register, 'set'), metavar=register.suffix, type = self.get_register_type(register), help=set_help)
+        parser.add_argument(self.get_arg_name(register, 'get'),
+                            action = 'store_true',
+                            help = self.get_arg_desc(register, 'get'))
+        parser.add_argument(self.get_arg_name(register, 'set'),
+                            metavar = register.suffix,
+                            type = self.get_register_type(register),
+                            help = set_help)
 
       for register in self.registers.forecast_registers:
-        parser.add_argument(self.get_arg_name(register, 'get'), action = 'store_true', help = self.get_arg_desc(register, 'get'))
+        parser.add_argument(self.get_arg_name(register, 'get'),
+                            action = 'store_true',
+                            help = self.get_arg_desc(register, 'get'))
 
     except Exception as e:
       self.handle_exception(e, 'Error while adding parameters')
@@ -70,7 +79,7 @@ class DeyeRegisterProcessor:
             if interactor.is_master or register.avg_type != DeyeRegisterAverageType.only_master:
               value = register.read([interactor])
               addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
-              print(f'{interactor.name}_{register.name}{addr_list} = {value} {register.suffix}');
+              print(f'{interactor.name}_{register.name}{addr_list} = {value} {register.suffix}')
           except Exception as e:
             self.handle_exception(e, f'Error while reading register {register.name} from {interactor.name}')
 
@@ -80,7 +89,7 @@ class DeyeRegisterProcessor:
           if register.can_accumulate:
             value = register.read(self.interactors)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
-            print(f'all_{register.name}{addr_list} = {value} {register.suffix}');
+            print(f'all_{register.name}{addr_list} = {value} {register.suffix}')
         except Exception as e:
           self.handle_exception(e, f'Error while reading register {register.name}')
 
@@ -101,7 +110,10 @@ class DeyeRegisterProcessor:
   def enqueue_registers(self, args: argparse.Namespace, loggers: List[DeyeLogger]):
     for logger in loggers:
       try:
-        interactor = DeyeModbusInteractor(logger = logger, socket_timeout = 10, caching_time = args.caching_time, verbose = args.verbose_output == True)
+        interactor = DeyeModbusInteractor(logger = logger,
+                                          socket_timeout = 10,
+                                          caching_time = args.caching_time,
+                                          verbose = args.verbose_output == True)
         self.interactors.append(interactor)
         if interactor.is_master:
           self.master_interactor = interactor

@@ -1,7 +1,7 @@
-from deye_utils import *
 from int_deye_register import IntDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
+from deye_utils import to_signed
 
 class SignedIntDeyeRegister(IntDeyeRegister):
   def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
