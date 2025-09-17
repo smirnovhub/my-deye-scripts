@@ -2,6 +2,9 @@ import telebot
 
 from typing import List
 
+from telebot_user_choices import *
+from telebot_run_command_from_button import *
+
 from telebot_users import TelebotUsers
 from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item import TelebotMenuItem
@@ -9,6 +12,7 @@ from telebot_logging_handler import TelebotLoggingHandler
 from telebot_menu_request_access import TelebotMenuRequestAccess
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_menu_all_info import TelebotMenuAllInfo
+from telebot_menu_sync_time import TelebotMenuSyncTime
 from telebot_menu_master_info import TelebotMenuMasterInfo
 from telebot_menu_slave_info import TelebotMenuSlaveInfo
 from telebot_menu_master_settings import TelebotMenuMasterSettings
@@ -32,6 +36,11 @@ class MyTelebot:
     print_commands(bot, telebot.types.BotCommandScopeAllPrivateChats(), "AllPrivateChats")
     print_commands(bot, telebot.types.BotCommandScopeAllGroupChats(), "AllGroupChats")
     print_commands(bot, telebot.types.BotCommandScopeAllChatAdministrators(), "AllChatAdministrators")
+
+    # Register the global inline button handler for user choices (must be called once at startup)
+    register_global_handler_for_user_choices(bot)
+    # Register the global inline button handler for executing commands via buttons (must be called once at startup)
+    register_global_callback_handler_for_command_from_button(bot)
 
     # Logging handler
     logger = TelebotLoggingHandler(bot)
@@ -70,22 +79,20 @@ class MyTelebot:
             authorized_commands.append(command)
 
       # For test purposes only!
+
 #      if not authorized_commands:
 #        authorized_commands = default_commands
 
-      bot.set_my_commands(
-        authorized_commands,
-        scope = telebot.types.BotCommandScopeChat(chat_id = user.id)
-      )
+      bot.set_my_commands(authorized_commands, scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
 
-  def is_authorized(self, message, item: TelebotMenuItem) -> bool:
-    if not self.users.has_user(message.from_user.id):
+  def is_authorized(self, message: telebot.types.Message, item: TelebotMenuItem) -> bool:
+    if not self.users.has_user(str(message.from_user.id)):
       self.bot.send_message(message.chat.id, 'User is not authorized')
       return False
     return self.is_item_allowed(message, item)
 
-  def is_item_allowed(self, message, item: TelebotMenuItem) -> bool:
-    if not self.auth_helper.is_menu_item_allowed(self.users, message.from_user.id, item):
+  def is_item_allowed(self, message: telebot.types.Message, item: TelebotMenuItem) -> bool:
+    if not self.auth_helper.is_menu_item_allowed(self.users, str(message.from_user.id), item):
       self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
       return False
     return True
@@ -108,10 +115,14 @@ class MyTelebot:
       TelebotMenuSlaveInfo(bot, is_authorized_func = self.is_authorized),
       TelebotMenuMasterSettings(bot, is_authorized_func = self.is_authorized),
       TelebotMenuBatteryForecast(bot, is_authorized_func = self.is_authorized),
+      TelebotMenuSyncTime(bot,
+                          is_authorized_func = self.is_authorized,
+                          is_writable_register_allowed_func = self.is_command_allowed),
     ]
 
   def get_writable_registers_menu_items(self, bot) -> List[TelebotMenuItemHandler]:
     return [
-      TelebotMenuWritableRegisters(bot, is_authorized_func = self.is_authorized,
-                                        is_writable_register_allowed_func = self.is_command_allowed),
+      TelebotMenuWritableRegisters(bot,
+                                   is_authorized_func = self.is_authorized,
+                                   is_writable_register_allowed_func = self.is_command_allowed),
     ]

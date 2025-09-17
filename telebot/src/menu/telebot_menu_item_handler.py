@@ -9,6 +9,6 @@ class TelebotMenuItemHandler:
 
   def get_commands(self) -> List[telebot.types.BotCommand]:
     return []
-  
+
   def register_handlers(self):
     pass

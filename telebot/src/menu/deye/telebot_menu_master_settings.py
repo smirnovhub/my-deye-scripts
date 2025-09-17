@@ -9,22 +9,23 @@ from telebot_menu_item_handler import TelebotMenuItemHandler
 
 class TelebotMenuMasterSettings(TelebotMenuItemHandler):
   def __init__(self, bot, is_authorized_func):
-    self.bot = bot
+    self.bot: telebot.TeleBot = bot
     self.is_authorized = is_authorized_func
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_master_settings
 
-  def get_commands(self):
+  def get_commands(self) -> List[telebot.types.BotCommand]:
     return [
       telebot.types.BotCommand(command = self.command.command, description = self.command.description),
     ]
 
   def register_handlers(self):
     commands = [cmd.command for cmd in self.get_commands()]
+
     @self.bot.message_handler(commands = commands)
-    def handle(message):
+    def handle(message: telebot.types.Message):
       if not self.is_authorized(message, self.command):
         return
 
@@ -42,4 +43,4 @@ class TelebotMenuMasterSettings(TelebotMenuItemHandler):
         holder.disconnect()
 
       info = get_register_values(holder.master_registers.all_registers)
-      self.bot.send_message(message.chat.id, f'<b>Master inverter settings:</b>\n{info}', parse_mode='HTML')
+      self.bot.send_message(message.chat.id, f'<b>Master inverter settings:</b>\n{info}', parse_mode = 'HTML')

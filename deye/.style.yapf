@@ -8,3 +8,4 @@ blank_line_before_nested_class_or_def = false
 blank_lines_between_top_level_imports_and_variables = 1
 blank_lines_around_top_level_definition = 1
 spaces_around_default_or_named_assign = true
+column_limit = 120

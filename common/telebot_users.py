@@ -35,7 +35,7 @@ class TelebotUsers:
   def users(self) -> List[TelebotUser]:
     return self._users.copy()
 
-  def has_user(self, user_id: str) -> bool:
+  def has_user(self, user_id: Union[int, str]) -> bool:
     return any(user.id == str(user_id) for user in self._users)
 
   def get_user(self, user_id: str) -> Union[TelebotUser, None]:

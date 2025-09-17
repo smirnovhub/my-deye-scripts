@@ -3,6 +3,7 @@ import telebot
 from telebot_utils import *
 from deye_file_lock import *
 
+from typing import List
 from datetime import datetime
 from telebot_users import TelebotUsers
 from telebot_menu_item import TelebotMenuItem
@@ -10,21 +11,22 @@ from telebot_menu_item_handler import TelebotMenuItemHandler
 
 class TelebotMenuRequestAccess(TelebotMenuItemHandler):
   def __init__(self, bot):
-    self.bot = bot
+    self.bot: telebot.TeleBot = bot
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.request_access
 
-  def get_commands(self):
+  def get_commands(self) -> List[telebot.types.BotCommand]:
     return [
       telebot.types.BotCommand(command = self.command.command, description = self.command.description),
     ]
 
   def register_handlers(self):
     commands = [cmd.command for cmd in self.get_commands()]
+
     @self.bot.message_handler(commands = commands)
-    def handle(message):
+    def handle(message: telebot.types.Message):
       user = message.from_user
 
       first_name = user.first_name or ''
@@ -33,12 +35,10 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
       phone = message.contact.phone_number if message.contact else None
       name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else 'None'
 
-      info = (
-        f"User ID: {user.id}\n"
-        f"Name: {name}\n"
-        f"Username: {username}\n"
-        f"Phone: {phone}"
-      )
+      info = (f"User ID: {user.id}\n"
+              f"Name: {name}\n"
+              f"Username: {username}\n"
+              f"Phone: {phone}")
 
       users = TelebotUsers()
 
@@ -57,7 +57,7 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
   # If not → append the entry and return True.
   # Entry format: YYYY-MM-DD HH:MM:SS USER_ID
   def add_user_to_file(self, file_path: str, user_id: int, user_name: str) -> bool:
-    with open(file_path, "a+", encoding="utf-8") as f:
+    with open(file_path, "a+", encoding = "utf-8") as f:
       f.seek(0)
 
       # Acquire shared lock for reading

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from deye_register import DeyeRegister
 from deye_exceptions import DeyeNotImplementedException
@@ -10,6 +10,12 @@ class DeyeRegisters:
   @property
   def prefix(self) -> str:
     return self._prefix 
+
+  def get_register_by_name(self, name: str) -> Union[DeyeRegister, None]:
+    for register in self.all_registers:
+      if register.name == name:
+        return register
+    return None
 
   @property
   def all_registers(self) -> List[DeyeRegister]:

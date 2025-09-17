@@ -5,6 +5,7 @@ from datetime import datetime
 from telebot_users import TelebotUsers
 
 from telebot import apihelper
+
 apihelper.ENABLE_MIDDLEWARE = True
 
 class TelebotLoggingHandler:
@@ -33,7 +34,7 @@ class TelebotLoggingHandler:
       self.trim_file(self.unknown_users_messages_filename, self.max_file_size)
 
   def log_to_file(self, file_path: str, user_id: int, user_name: str, message: str):
-    with open(file_path, "a+", encoding="utf-8") as f:
+    with open(file_path, "a+", encoding = "utf-8") as f:
       try:
         # Acquire exclusive lock for writing
         flock(f, LOCK_EX)
@@ -45,23 +46,23 @@ class TelebotLoggingHandler:
 
   def trim_file(self, filename, trim_size):
     if not os.path.exists(filename):
-      return 
-    
+      return
+
     # wait while file increased up to 20% and then trim
     max_size = int(trim_size * 1.2)
     file_size = os.path.getsize(filename)
     if file_size <= max_size:
       return  # trimming not needed
-  
+
     with open(filename, "rb+") as f:
       try:
         # Acquire exclusive lock for writing
         flock(f, LOCK_EX)
-  
+
         # Move to position where last `max_size` bytes start
         f.seek(-trim_size, os.SEEK_END)
         data = f.read()
-  
+
         # Rewrite file with only last `max_size` bytes
         f.seek(0)
         f.write(data)

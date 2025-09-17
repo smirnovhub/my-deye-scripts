@@ -32,8 +32,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
     energy_cost = DeyeEnergyCost()
-    self._ac_couple_frz_high_register = FloatWritableDeyeRegister(329, 50, 52, 'ac_couple_frz_high', 'AC Couple Frz High', 'Hz', DeyeRegisterAverageType.only_master).with_scale(100)
-    self._backup_delay_register = IntWritableDeyeRegister(311, 0, 3600, 'backup_delay', 'Backup Delay', 'ms', DeyeRegisterAverageType.only_master)
+    self._ac_couple_frz_high_register = FloatWritableDeyeRegister(329, 50.5, 52, 'ac_couple_frz_high', 'AC Couple Frz High', 'Hz', DeyeRegisterAverageType.only_master).with_scale(100)
+    self._backup_delay_register = IntWritableDeyeRegister(311, 0, 30000, 'backup_delay', 'Backup Delay', 'ms', DeyeRegisterAverageType.only_master)
     self._battery_bms_charge_current_limit_register = IntDeyeRegister(314, 'battery_bms_charge_current_limit', 'Battery BMS Charge Current Limit', 'A', DeyeRegisterAverageType.only_master)
     self._battery_bms_discharge_current_limit_register = IntDeyeRegister(315, 'battery_bms_discharge_current_limit', 'Battery BMS Discharge Current Limit', 'A', DeyeRegisterAverageType.only_master)
     self._battery_capacity_register = IntDeyeRegister(107, 'battery_capacity', 'Battery Capacity', 'Ah', DeyeRegisterAverageType.only_master)
