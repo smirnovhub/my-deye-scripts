@@ -18,7 +18,7 @@ def ask_confirmation(
   chat_id: int,
   text: str,
   callback: Callable[[int, bool], None],
-):
+) -> telebot.types.Message:
   """
   Sends a message to the specified chat with an inline keyboard that contains
   two options: "Yes" and "No". This function is typically used when the bot
@@ -40,6 +40,9 @@ def ask_confirmation(
     callback (Callable[[int, bool], None]): A function that will be executed once the
                                             user responds. Receives chat_id and a boolean
                                             indicating the confirmation result.
+  
+  Returns:
+    telebot.types.Message: The message object that was sent to the chat.
   """
   keyboard = telebot.types.InlineKeyboardMarkup()
   yes_btn = telebot.types.InlineKeyboardButton("Yes", callback_data = _confirm_yes)
@@ -51,7 +54,14 @@ def ask_confirmation(
   _confirm_callbacks[message.message_id] = callback
 
   bot.clear_step_handler_by_chat_id(message.chat.id)
-  bot.register_next_step_handler(message, _user_confirmation_next_step_handler, bot, message.message_id)
+  bot.register_next_step_handler(
+    message,
+    _user_confirmation_next_step_handler,
+    bot,
+    message.message_id,
+  )
+
+  return message
 
 def _user_confirmation_next_step_handler(message: telebot.types.Message, bot: telebot.TeleBot, message_id: int):
   """
@@ -85,7 +95,7 @@ def ask_choice(
   callback: Callable[[int, str], None],
   max_per_row: int = 5,
   wrong_choice_text: str = 'No such option',
-):
+) -> telebot.types.Message:
   """
   Sends a message to the specified chat with an inline keyboard containing
   a list of options for the user to choose from. Each option is displayed
@@ -116,10 +126,12 @@ def ask_choice(
     wrong_choice_text (str, optional): The message sent when the user enters a value
                                        that does not match any available option.
                                        Defaults to "No such option".
+  
+  Returns:
+    telebot.types.Message: The message object that was sent to the chat.
   """
   if not options:
-    bot.send_message(chat_id, text, parse_mode = "HTML")
-    return
+    return bot.send_message(chat_id, text, parse_mode = "HTML")
 
   keyboard = telebot.types.InlineKeyboardMarkup()
   row: List[telebot.types.InlineKeyboardButton] = []
@@ -137,8 +149,16 @@ def ask_choice(
   _choice_callbacks[message.message_id] = callback
 
   bot.clear_step_handler_by_chat_id(message.chat.id)
-  bot.register_next_step_handler(message, _user_choice_next_step_handler, bot, message.message_id, options,
-                                 wrong_choice_text)
+  bot.register_next_step_handler(
+    message,
+    _user_choice_next_step_handler,
+    bot,
+    message.message_id,
+    options,
+    wrong_choice_text,
+  )
+
+  return message
 
 def ask_advanced_choice(
   bot: telebot.TeleBot,
@@ -146,7 +166,7 @@ def ask_advanced_choice(
   text: str,
   options: Dict[str, str],
   max_per_row: int = 5,
-):
+) -> telebot.types.Message:
   """
   Sends a message with an inline keyboard for the user to select from
   multiple options, where keys are internal identifiers and values are labels.
@@ -164,16 +184,25 @@ def ask_advanced_choice(
     callback: Function to be called later with the chat ID and chosen key.
     max_per_row: Maximum buttons per row (default 5).
     wrong_choice_text: Message sent for invalid input (default "No such option").
+
+  Returns:
+    telebot.types.Message: The message object that was sent to the chat.
   """
   if not options:
-    bot.send_message(chat_id, text, parse_mode = "HTML")
-    return
+    return bot.send_message(chat_id, text, parse_mode = "HTML")
 
   keyboard = get_keyboard_for_choices(options, max_per_row)
   message = bot.send_message(chat_id, text, reply_markup = keyboard, parse_mode = "HTML")
 
   bot.clear_step_handler_by_chat_id(message.chat.id)
-  bot.register_next_step_handler(message, _user_advanced_choice_next_step_handler, bot, message.message_id)
+  bot.register_next_step_handler(
+    message,
+    _user_advanced_choice_next_step_handler,
+    bot,
+    message.message_id,
+  )
+
+  return message
 
 def _user_choice_next_step_handler(message: telebot.types.Message, bot: telebot.TeleBot, message_id: int,
                                    options: List[str], wrong_choice_text: str):

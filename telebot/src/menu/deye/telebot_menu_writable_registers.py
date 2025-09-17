@@ -2,7 +2,7 @@ import telebot
 import textwrap
 import traceback
 
-from typing import List
+from typing import List, cast
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
@@ -14,9 +14,16 @@ from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from deye_registers_factory import DeyeRegistersFactory
-from telebot_utils import remove_inline_buttons_with_delay
+from telebot_user_choices import ask_advanced_choice
+from telebot_constants import undo_button_remove_delay_sec
+
+from telebot_utils import (
+  get_button_by_data,
+  remove_inline_buttons_with_delay,
+)
 
 from telebot_constants import (
+  undo_name,
   buttons_remove_delay_sec,
   sync_inverter_time_str,
   inverter_system_time_need_sync_difference_sec,
@@ -67,6 +74,9 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     def callback(call: telebot.types.CallbackQuery):
       self.bot.answer_callback_query(call.id)
 
+      button = get_button_by_data(cast(telebot.types.Message, call.message), call.data) if call.data else None
+      is_undo_button_pressed = button.text == undo_name if button is not None else False
+
       remove_inline_buttons_with_delay(
         bot = self.bot,
         chat_id = call.message.chat.id,
@@ -92,14 +102,33 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
         return
 
+      old_value = register.value
+
       try:
         text = self.write_register(register, value)
-        self.bot.send_message(call.message.chat.id, text, parse_mode = 'HTML')
       except DeyeKnownException as e:
         self.bot.send_message(call.message.chat.id, str(e))
       except Exception as e:
         self.bot.send_message(call.message.chat.id, str(e))
         print(traceback.format_exc())
+
+      if is_undo_button_pressed or old_value == register.value:
+        self.bot.send_message(call.message.chat.id, text, parse_mode = 'HTML')
+      else:
+        sent = ask_advanced_choice(
+          self.bot,
+          call.message.chat.id,
+          text,
+          {undo_name: f'{register.name}={old_value}'},
+          max_per_row = 2,
+        )
+
+        remove_inline_buttons_with_delay(
+          bot = self.bot,
+          chat_id = call.message.chat.id,
+          message_id = sent.message_id,
+          delay = undo_button_remove_delay_sec,
+        )
 
       self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
 
@@ -184,14 +213,33 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, f'Register value is empty')
       return
 
+    old_value = register.value
+
     try:
       text = self.write_register(register, message.text)
-      self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
     except DeyeKnownException as e:
       self.bot.send_message(message.chat.id, str(e))
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       print(traceback.format_exc())
+
+    if old_value != register.value:
+      sent = ask_advanced_choice(
+        self.bot,
+        message.chat.id,
+        text,
+        {undo_name: f'{register.name}={old_value}'},
+        max_per_row = 2,
+      )
+
+      remove_inline_buttons_with_delay(
+        bot = self.bot,
+        chat_id = message.chat.id,
+        message_id = sent.message_id,
+        delay = undo_button_remove_delay_sec,
+      )
+    else:
+      self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
 
   def get_register_value(self, register: DeyeRegister):
     loggers = DeyeLoggers()
