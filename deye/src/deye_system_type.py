@@ -11,4 +11,4 @@ class DeyeSystemType(enum.Enum):
 
   @property
   def pretty(self):
-    return self.name.replace('_', ' ').title()
+    return self.name.replace('_', '-').title()
