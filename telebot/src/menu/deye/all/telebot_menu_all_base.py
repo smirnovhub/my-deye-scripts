@@ -8,7 +8,7 @@ from telebot_user_choices import ask_advanced_choice
 from telebot_menu_item_handler import TelebotMenuItemHandler
 
 from telebot_constants import (
-  sync_inverter_time_str,
+  sync_inverter_time_button_name,
   inverter_system_time_need_sync_difference_sec,
 )
 
@@ -68,7 +68,7 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
       # add line break for keyboard
       choices[''] = ''
       # add time sync command
-      choices[sync_inverter_time_str] = f'/{TelebotMenuItem.deye_sync_time.command}'
+      choices[sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
 
     info = get_register_values(holder.accumulated_registers.all_registers)
 

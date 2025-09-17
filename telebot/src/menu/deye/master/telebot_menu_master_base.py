@@ -14,7 +14,7 @@ from telebot_deye_helper import (
 )
 
 from telebot_constants import (
-  sync_inverter_time_str,
+  sync_inverter_time_button_name,
   inverter_system_time_need_sync_difference_sec,
 )
 
@@ -68,7 +68,7 @@ class TelebotMenuMasterBase(TelebotMenuItemHandler):
       # add line break for keyboard
       choices[''] = ''
       # add time sync command
-      choices[sync_inverter_time_str] = f'/{TelebotMenuItem.deye_sync_time.command}'
+      choices[sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
 
     info = get_register_values(holder.master_registers.all_registers)
 

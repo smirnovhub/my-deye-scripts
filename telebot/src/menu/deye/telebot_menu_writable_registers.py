@@ -23,9 +23,9 @@ from telebot_utils import (
 )
 
 from telebot_constants import (
-  undo_name,
+  undo_button_name,
   buttons_remove_delay_sec,
-  sync_inverter_time_str,
+  sync_inverter_time_button_name,
   inverter_system_time_need_sync_difference_sec,
 )
 
@@ -75,7 +75,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.answer_callback_query(call.id)
 
       button = get_button_by_data(cast(telebot.types.Message, call.message), call.data) if call.data else None
-      is_undo_button_pressed = button.text == undo_name if button is not None else False
+      is_undo_button_pressed = button.text == undo_button_name if button is not None else False
 
       remove_inline_buttons_with_delay(
         bot = self.bot,
@@ -119,7 +119,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
           self.bot,
           call.message.chat.id,
           text,
-          {undo_name: f'{register.name}={old_value}'},
+          {undo_button_name: f'{register.name}={old_value}'},
           max_per_row = 2,
         )
 
@@ -148,7 +148,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       if diff_seconds > inverter_system_time_need_sync_difference_sec:
         return build_keyboard_for_register(register, [
           {
-            sync_inverter_time_str: f'/{TelebotMenuItem.deye_sync_time.command}'
+            sync_inverter_time_button_name: f'/{TelebotMenuItem.deye_sync_time.command}'
           },
         ])
       else:
@@ -228,7 +228,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         self.bot,
         message.chat.id,
         text,
-        {undo_name: f'{register.name}={old_value}'},
+        {undo_button_name: f'{register.name}={old_value}'},
         max_per_row = 2,
       )
 
