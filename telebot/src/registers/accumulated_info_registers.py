@@ -23,5 +23,5 @@ class AccumulatedInfoRegisters(DeyeRegistersFactory.get_registers_class()):
       self.inverter_ac_temperature_register,
       self.inverter_dc_temperature_register,
       self.battery_temperature_register,
-      self.inverter_system_time_diff_register
+      self.inverter_system_time_diff_register,
     ]

@@ -1,56 +1,51 @@
 import telebot
 
-from telebot_utils import *
-from deye_file_lock import *
-
-from typing import List
 from datetime import datetime
 from telebot_users import TelebotUsers
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_send_message import send_private_telegram_message
+
+from deye_file_lock import (
+  flock,
+  LOCK_EX,
+  LOCK_SH,
+  LOCK_UN,
+)
 
 class TelebotMenuRequestAccess(TelebotMenuItemHandler):
-  def __init__(self, bot):
-    self.bot: telebot.TeleBot = bot
+  def __init__(self, bot: telebot.TeleBot):
+    super().__init__(bot)
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.request_access
 
-  def get_commands(self) -> List[telebot.types.BotCommand]:
-    return [
-      telebot.types.BotCommand(command = self.command.command, description = self.command.description),
-    ]
+  def process_message(self, message: telebot.types.Message):
+    user = message.from_user
 
-  def register_handlers(self):
-    commands = [cmd.command for cmd in self.get_commands()]
+    first_name = user.first_name or ''
+    last_name = user.last_name or ''
+    username = f"@{user.username}" if user.username else None
+    phone = message.contact.phone_number if message.contact else None
+    name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else 'None'
 
-    @self.bot.message_handler(commands = commands)
-    def handle(message: telebot.types.Message):
-      user = message.from_user
+    info = (f"User ID: {user.id}\n"
+            f"Name: {name}\n"
+            f"Username: {username}\n"
+            f"Phone: {phone}")
 
-      first_name = user.first_name or ''
-      last_name = user.last_name or ''
-      username = f"@{user.username}" if user.username else None
-      phone = message.contact.phone_number if message.contact else None
-      name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else 'None'
+    users = TelebotUsers()
 
-      info = (f"User ID: {user.id}\n"
-              f"Name: {name}\n"
-              f"Username: {username}\n"
-              f"Phone: {phone}")
-
-      users = TelebotUsers()
-
-      if users.has_user(user.id):
-        self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
+    if users.has_user(user.id):
+      self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
+    else:
+      result = self.add_user_to_file('data/access_requests.txt', user.id, name)
+      if result:
+        self.bot.send_message(message.chat.id, 'Access requested')
+        send_private_telegram_message(f'<b>Access requested:</b>\n{info}')
       else:
-        result = self.add_user_to_file('data/access_requests.txt', user.id, name)
-        if result:
-          self.bot.send_message(message.chat.id, 'Access requested')
-          send_private_telegram_message(f'<b>Access requested:</b>\n{info}')
-        else:
-          self.bot.send_message(message.chat.id, 'Access already requested')
+        self.bot.send_message(message.chat.id, 'Access already requested')
 
   # Checks if the given user_id exists in the file.
   # If user_id already exists → return False.

@@ -3,6 +3,9 @@ from typing import cast
 
 from telebot_fake_message import TelebotFakeMessage
 
+from telebot_constants import buttons_remove_delay_sec
+from telebot_utils import remove_inline_buttons_with_delay
+
 def register_global_callback_handler_for_command_from_button(bot: telebot.TeleBot):
   """
   Registers a global callback handler that will intercept all button clicks.
@@ -17,9 +20,18 @@ def register_global_callback_handler_for_command_from_button(bot: telebot.TeleBo
       # If callback_data looks like a command (starts with '/'),
       # we create a fake Message object that contains this command.
       fake_message = TelebotFakeMessage(
-        cast(telebot.types.Message, call.message),  # original message object
-        call.data,  # command text (e.g. "/status")
-        call.from_user,  # user who clicked the button
+        cast(telebot.types.Message, call.message), # original message object
+        call.data, # command text (e.g. "/status")
+        call.from_user, # user who clicked the button
+      )
+
+      bot.answer_callback_query(call.id)
+
+      remove_inline_buttons_with_delay(
+        bot = bot,
+        chat_id = call.message.chat.id,
+        message_id = call.message.message_id,
+        delay = buttons_remove_delay_sec,
       )
 
       # Send the fake message into TeleBot's processing pipeline

@@ -5,8 +5,8 @@ from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 
 class TelebotMenuUnknownCommandHandler(TelebotMenuItemHandler):
-  def __init__(self, bot, is_authorized_func):
-    self.bot: telebot.TeleBot = bot
+  def __init__(self, bot: telebot.TeleBot, is_authorized_func):
+    super().__init__(bot)
     self.is_authorized = is_authorized_func
 
   @property

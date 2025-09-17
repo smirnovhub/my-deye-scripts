@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 from deye_register import DeyeRegister
 from deye_registers_factory import DeyeRegistersFactory
 

@@ -30,5 +30,5 @@ class MasterSettingsRegisters(DeyeRegistersFactory.get_registers_class()):
       self.gen_port_mode_register,
       self.system_work_mode_register,
       self.zero_export_power_register,
-      self.ct_ratio_register
+      self.ct_ratio_register,
     ]

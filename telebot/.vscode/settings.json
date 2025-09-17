@@ -22,6 +22,9 @@
     "src",
     "src/menu",
     "src/menu/deye",
+    "src/menu/deye/all",
+    "src/menu/deye/master",
+    "src/menu/deye/slave",
     "src/menu/other",
     "src/registers",
     "src/users"

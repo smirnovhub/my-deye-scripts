@@ -1,35 +1,26 @@
 import telebot
 
-from telebot_deye_helper import *
 from deye_loggers import DeyeLoggers
 from deye_registers_holder import DeyeRegistersHolder
 from forecast_registers import ForecastRegisters
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_deye_helper import holder_kwargs
 
 class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
-  def __init__(self, bot, is_authorized_func):
-    self.bot: telebot.TeleBot = bot
+  def __init__(self, bot: telebot.TeleBot, is_authorized_func):
+    super().__init__(bot)
     self.is_authorized = is_authorized_func
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_battery_forecast
 
-  def get_commands(self) -> List[telebot.types.BotCommand]:
-    return [
-      telebot.types.BotCommand(command = self.command.command, description = self.command.description),
-    ]
+  def process_message(self, message: telebot.types.Message):
+    if not self.is_authorized(message, self.command):
+      return
 
-  def register_handlers(self):
-    commands = [cmd.command for cmd in self.get_commands()]
-
-    @self.bot.message_handler(commands = commands)
-    def handle(message: telebot.types.Message):
-      if not self.is_authorized(message, self.command):
-        return
-
-      self.bot.send_message(message.chat.id, self.get_forecast(), parse_mode = 'HTML')
+    self.bot.send_message(message.chat.id, self.get_forecast(), parse_mode = 'HTML')
 
   def get_forecast(self):
     def creator(prefix):
@@ -40,7 +31,7 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
       holder = DeyeRegistersHolder(loggers = loggers.loggers, register_creator = creator, **holder_kwargs)
       holder.connect_and_read()
     except Exception as e:
-      return f'Error while creating DeyeRegistersHolder: {str(e)}'
+      return f'Error while reading registers: {str(e)}'
     finally:
       holder.disconnect()
 
