@@ -4,7 +4,6 @@ from typing import List
 from deye_system_type import DeyeSystemType
 
 class TelebotMenuItem(Enum):
-  restart = ('restart', 'Restart bot')
   request_access = ('request_access', 'Request access')
 
   # if you want to see all commands in Telegram menu,
