@@ -58,7 +58,8 @@ class DeyeRegistersHolder:
       try:
         for register in list(self.all_registers.values())[0].all_registers:
           register.enqueue(interactor)
-        tasks.append(RaisingThread(target = interactor.process_enqueued_registers, name = interactor.name.title() + "Thread"))
+        tasks.append(
+          RaisingThread(target = interactor.process_enqueued_registers, name = interactor.name.title() + "Thread"))
       except Exception as e:
         self.handle_exception(e, f'{type(self).__name__}: error while enqueue {interactor.name} registers')
 
@@ -126,7 +127,8 @@ class DeyeRegistersHolder:
           interactor.disconnect()
         except Exception as e:
           try:
-            self.handle_exception(e, f'{type(self).__name__}: error while disconnecting from inverter {interactor.name}')
+            self.handle_exception(e,
+                                  f'{type(self).__name__}: error while disconnecting from inverter {interactor.name}')
           except Exception as handled:
             # remember last exception
             last_exception = handled

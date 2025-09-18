@@ -20,5 +20,5 @@ class SlaveInfoRegisters(DeyeRegistersFactory.get_registers_class()):
       self.gen_power_register,
       self.inverter_ac_temperature_register,
       self.inverter_dc_temperature_register,
-      self.inverter_system_time_diff_register
+      self.inverter_system_time_diff_register,
     ]

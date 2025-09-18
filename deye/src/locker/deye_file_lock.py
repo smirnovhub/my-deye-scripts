@@ -16,16 +16,16 @@ if os.name == 'nt':
   # :param file: Open file object
   # :param flags: Combination of LOCK_EX, LOCK_SH, LOCK_NB, LOCK_UN
   def flock(file, flags):
-    length = 1  # Windows locking requires a length; we lock at least 1 byte
+    length = 1 # Windows locking requires a length; we lock at least 1 byte
     if flags & LOCK_UN:
       # Unlock the file
       file.seek(0)
       msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, length)
     else:
       # Lock the file
-      mode = msvcrt.LK_LOCK  # Default blocking lock
+      mode = msvcrt.LK_LOCK # Default blocking lock
       if flags & LOCK_NB:
-        mode = msvcrt.LK_NBLCK  # Non-blocking lock
+        mode = msvcrt.LK_NBLCK # Non-blocking lock
       file.seek(0)
       msvcrt.locking(file.fileno(), mode, length)
 

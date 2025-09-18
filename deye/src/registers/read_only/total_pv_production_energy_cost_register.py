@@ -7,13 +7,17 @@ from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
 
 class TotalPvProductionEnergyCostRegister(BaseDeyeRegister):
-  def __init__(self, pv_production_register: DeyeRegister,
-               name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
+  def __init__(self,
+               pv_production_register: DeyeRegister,
+               name: str,
+               description: str,
+               suffix: str,
+               avg = DeyeRegisterAverageType.none):
     super().__init__(0, 0, name, description, suffix, avg)
     self._pv_production_register = pv_production_register
 
   @property
-  def addresses(self):
+  def addresses(self) -> List[int]:
     return self._pv_production_register.addresses
 
   def enqueue(self, interactor: DeyeModbusInteractor):

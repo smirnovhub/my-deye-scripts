@@ -7,6 +7,7 @@ import traceback
 
 sys.path.append('../modules')
 import common_modules
+
 common_modules.import_dirs(['src', '../common'])
 
 from time import perf_counter
@@ -21,8 +22,9 @@ class DeyeArgumentParser(argparse.ArgumentParser):
     sys.stderr.write(f'{os.path.basename(__file__)}: error: {message}\n')
     sys.exit(2)
 
-parser = DeyeArgumentParser(description = 'read/write deye parameters',
-  formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50, width=100))
+parser = DeyeArgumentParser(
+  description = 'read/write deye parameters',
+  formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position = 50, width = 100))
 
 loggers = DeyeLoggers()
 inverters_list = []
@@ -30,16 +32,16 @@ for logger in loggers.loggers:
   inverters_list.append(logger.name)
 inverters_str = ','.join(inverters_list)
 
-parser.add_argument('-v', '--verbose-output', action='store_true', help='verbose output')
-parser.add_argument('-c', '--caching-time', type=int, default=3, help='caching time for requests')
-parser.add_argument('-p', '--print-addresses', action='store_true', help='print register addresses')
-parser.add_argument('-i', '--inverter', help=f'specify inverter ({inverters_str})', default='master')
-parser.add_argument('-a', '--get-all', action='store_true', help='get all parameters')
-parser.add_argument('-o', '--only-accumulated', action='store_true', help='get only accumulated parameters for all inverters')
-parser.add_argument('-f', '--forecast', action='store_true', help='get battery forecast registers')
-parser.add_argument('-t', '--test', action='store_true', help='get test registers')
-parser.add_argument('--get-all-read-only', action='store_true', help='get all read only parameters')
-parser.add_argument('--get-all-read-write', action='store_true', help='get all read/write parameters')
+parser.add_argument('-v', '--verbose-output', action = 'store_true', help = 'verbose output')
+parser.add_argument('-c', '--caching-time', type = int, default = 3, help = 'caching time for requests')
+parser.add_argument('-p', '--print-addresses', action = 'store_true', help = 'print register addresses')
+parser.add_argument('-i', '--inverter', help = f'specify inverter ({inverters_str})', default = 'master')
+parser.add_argument('-a', '--get-all', action = 'store_true', help = 'get all parameters')
+parser.add_argument('-o', '--only-accumulated', action = 'store_true', help = 'get only accumulated parameters for all inverters')
+parser.add_argument('-f', '--forecast', action = 'store_true', help = 'get battery forecast registers')
+parser.add_argument('-t', '--test', action = 'store_true', help = 'get test registers')
+parser.add_argument('--get-all-read-only', action = 'store_true', help = 'get all read only parameters')
+parser.add_argument('--get-all-read-write', action = 'store_true', help = 'get all read/write parameters')
 
 start = perf_counter()
 current = perf_counter()
@@ -51,30 +53,31 @@ try:
   processor.add_command_line_parameters(parser)
   create_processor = perf_counter() - current
   current = perf_counter()
-  
+
   args = parser.parse_args()
 
   inverters = getattr(args, 'inverter').strip().split(',')
-  
+
   loggers_list = []
-  
+
   for inverter in inverters:
     if not inverter:
       continue
-  
+
     logger = loggers.get_logger_by_name(inverter)
     if logger is None:
       parser.error(f'Inverter \'{inverter}\' is unknown. Pls use these: {inverters_str}')
       exit()
     else:
       loggers_list.append(logger)
-  
+
   loggers_list.sort(key = lambda logger: logger.name)
 
-  if len(sys.argv) == 1 or not any((lambda: type(e) is str or type(e) is int or (type(e) is bool and e == True))() for e in vars(args).values()):
+  if len(sys.argv) == 1 or not any(
+    (lambda: type(e) is str or type(e) is int or (type(e) is bool and e == True))() for e in vars(args).values()):
     parser.print_help()
     exit()
-  
+
   parse_invertors = perf_counter() - current
   current = perf_counter()
 
@@ -86,7 +89,7 @@ try:
 
   get_lock = perf_counter() - current
   current = perf_counter()
-  
+
   if processor.check_parameters(parser, args):
     check_parameters = perf_counter() - current
     current = perf_counter()

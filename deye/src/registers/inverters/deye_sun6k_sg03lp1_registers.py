@@ -410,6 +410,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
     return self._grid_reconnection_time_register
 
   @property
+  def grid_state_code_register(self) -> DeyeRegister:
+    return self._grid_state_code_register
+
+  @property
   def grid_state_register(self) -> DeyeRegister:
     return self._grid_state_register
 
@@ -518,12 +522,20 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
     return self._today_grid_purchased_energy_register
 
   @property
+  def today_gen_energy_register(self) -> DeyeRegister:
+    return self._today_gen_energy_register
+
+  @property
   def today_load_consumption_register(self) -> DeyeRegister:
     return self._today_load_consumption_register
 
   @property
   def today_production_register(self) -> DeyeRegister:
     return self._today_production_register
+
+  @property
+  def today_production_cost_register(self) -> DeyeRegister:
+    return self._today_production_cost_register
 
   @property
   def total_battery_charged_energy_register(self) -> DeyeRegister:
@@ -542,12 +554,20 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
     return self._total_grid_purchased_energy_register
 
   @property
+  def total_gen_energy_register(self) -> DeyeRegister:
+    return self._total_gen_energy_register
+
+  @property
   def total_load_consumption_register(self) -> DeyeRegister:
     return self._total_load_consumption_register
 
   @property
   def total_production_register(self) -> DeyeRegister:
     return self._total_production_register
+
+  @property
+  def total_production_cost_register(self) -> DeyeRegister:
+    return self._total_production_cost_register
 
   @property
   def zero_export_power_register(self) -> DeyeRegister:

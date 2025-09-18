@@ -9,7 +9,7 @@ class TestDeyeRegister(BaseDeyeRegister):
     values = interactor.read_register(self.address, self.quantity)
 
     for idx, x in enumerate(values):
-      print(self.address + idx, '=',  x)
+      print(self.address + idx, '=', x)
 
     value = 0
     return value

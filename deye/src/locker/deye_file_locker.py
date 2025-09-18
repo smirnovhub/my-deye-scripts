@@ -2,16 +2,22 @@ import os
 import time
 import random
 
-from deye_utils import *
-from deye_file_lock import *
 from datetime import datetime
 from deye_exceptions import DeyeFileLockingException
+from deye_utils import ensure_dir_and_file_exists
+
+from deye_file_lock import (
+  flock,
+  LOCK_EX,
+  LOCK_NB,
+  LOCK_UN,
+)
 
 # ---------------------------------------
 # Class for handling exclusive file locks
 # ---------------------------------------
 class DeyeFileLocker:
-  def __init__(self, name, path, verbose=False):
+  def __init__(self, name, path, verbose = False):
     self.name = name
     self.path = path
     self.verbose = verbose
@@ -41,8 +47,8 @@ class DeyeFileLocker:
     max_size = int(trim_size * 1.2)
     file_size = os.path.getsize(filename)
     if file_size <= max_size:
-      return  # trimming not needed
-  
+      return # trimming not needed
+
     with open(filename, "rb+") as f:
       try:
         # Try to acquire exclusive lock (non-blocking)
@@ -52,12 +58,12 @@ class DeyeFileLocker:
         if self.verbose:
           print(f"Could not lock {filename}, skipping trim")
         return
-  
+
       try:
         # Move to position where last `max_size` bytes start
         f.seek(-trim_size, os.SEEK_END)
         data = f.read()
-  
+
         # Rewrite file with only last `max_size` bytes
         f.seek(0)
         f.write(data)
@@ -104,7 +110,8 @@ class DeyeFileLocker:
           self.lockfile.close()
           self.lockfile = None
           self.timedout = True
-          raise DeyeFileLockingException(f"{self.name}: Timeout after {timeout} sec while waiting for lock on {self.path}")
+          raise DeyeFileLockingException(
+            f"{self.name}: Timeout after {timeout} sec while waiting for lock on {self.path}")
         # wait before retrying
         time.sleep(random.uniform(0.15, 0.3))
 

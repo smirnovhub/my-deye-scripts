@@ -1,17 +1,25 @@
-import sys
 from typing import List
 
-from deye_utils import *
-from datetime import datetime
+from datetime import datetime, timedelta
 from deye_register import DeyeRegister
 from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 
+from deye_utils import (
+  format_end_date,
+  format_timedelta,
+)
+
 class ChargeForecastRegister(BaseDeyeRegister):
-  def __init__(self, battery_soc_register: DeyeRegister,
-               battery_capacity_register: DeyeRegister,
-               battery_current_register: DeyeRegister,
-               name: str, description: str, suffix: str):
+  def __init__(
+    self,
+    battery_soc_register: DeyeRegister,
+    battery_capacity_register: DeyeRegister,
+    battery_current_register: DeyeRegister,
+    name: str,
+    description: str,
+    suffix: str,
+  ):
     super().__init__(0, 0, name, description, suffix)
 
     self._battery_soc_register = battery_soc_register
@@ -19,11 +27,11 @@ class ChargeForecastRegister(BaseDeyeRegister):
     self._battery_current_register = battery_current_register
 
   @property
-  def type_name(self):
+  def type_name(self) -> str:
     return 'str'
 
   @property
-  def addresses(self):
+  def addresses(self) -> List[int]:
     addresses = self._battery_soc_register.addresses +\
       self._battery_capacity_register.addresses +\
       self._battery_current_register.addresses

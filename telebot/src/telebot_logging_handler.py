@@ -1,8 +1,13 @@
 import os
 
-from deye_file_lock import *
 from datetime import datetime
 from telebot_users import TelebotUsers
+
+from deye_file_lock import (
+  flock,
+  LOCK_EX,
+  LOCK_UN,
+)
 
 from telebot import apihelper
 
@@ -52,7 +57,7 @@ class TelebotLoggingHandler:
     max_size = int(trim_size * 1.2)
     file_size = os.path.getsize(filename)
     if file_size <= max_size:
-      return  # trimming not needed
+      return # trimming not needed
 
     with open(filename, "rb+") as f:
       try:

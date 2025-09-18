@@ -12,5 +12,5 @@ class ForecastRegisters(DeyeRegistersFactory.get_registers_class()):
       self.battery_capacity_register,
       self.battery_soc_register,
       self.battery_current_register,
-      self.battery_power_register
+      self.battery_power_register,
     ]

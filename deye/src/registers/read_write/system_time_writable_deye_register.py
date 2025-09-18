@@ -1,21 +1,25 @@
 import re
 
-from deye_utils import *
 from datetime import datetime
 from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
+
+from deye_utils import (
+    to_bytes,
+    to_inv_time,
+)
 
 class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
   def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
     super().__init__(address, 3, name, description, suffix, avg)
 
   @property
-  def type_name(self):
+  def type_name(self) -> str:
     return 'str'
 
   @property
-  def can_write(self):
+  def can_write(self) -> bool:
     return True
 
   def read_internal(self, interactor: DeyeModbusInteractor):
@@ -23,10 +27,22 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
     as_bytes = to_bytes(data)
 
     try:
-      value = datetime(2000 + as_bytes[0], as_bytes[1], as_bytes[2], as_bytes[3],
-                                      as_bytes[4], as_bytes[5])
+      value = datetime(
+        2000 + as_bytes[0],
+        as_bytes[1],
+        as_bytes[2],
+        as_bytes[3],
+        as_bytes[4],
+        as_bytes[5],
+      )
     except:
-      value = datetime(1970, 1, 1, 0, 0)
+      value = datetime(
+        1970,
+        1,
+        1,
+        0,
+        0,
+      )
 
     return value
 

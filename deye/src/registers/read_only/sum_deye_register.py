@@ -6,15 +6,20 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
 class SumDeyeRegister(BaseDeyeRegister):
-  def __init__(self, registers: List[DeyeRegister], name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
+  def __init__(self,
+               registers: List[DeyeRegister],
+               name: str,
+               description: str,
+               suffix: str,
+               avg = DeyeRegisterAverageType.none):
     super().__init__(0, 0, name, description, suffix, avg)
     self._registers = registers
 
   @property
-  def addresses(self):
+  def addresses(self) -> List[int]:
     addr_list = []
     for register in self._registers:
-       addr_list.extend(register.addresses)
+      addr_list.extend(register.addresses)
     return list(set(addr_list))
 
   def enqueue(self, interactor: DeyeModbusInteractor):

@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_modbus_solarman import DeyeModbusSolarman
@@ -8,7 +8,7 @@ class DeyeModbusInteractor:
     self.logger = logger
     self.loggers = DeyeLoggers()
     self.solarman = DeyeModbusSolarman(logger, **kwargs)
-    self.registers_queue = dict()
+    self.registers_queue: Dict[int, int] = dict()
     self.verbose = kwargs.get('verbose', False)
     self.max_register_count = 120
 
@@ -25,7 +25,7 @@ class DeyeModbusInteractor:
 
   def enqueue_register(self, register_addr: int, quantity: int):
     for i in range(quantity):
-       self.registers_queue[register_addr + i] = 0
+      self.registers_queue[register_addr + i] = 0
 
   def process_enqueued_registers(self):
     if len(self.registers_queue) == 0:

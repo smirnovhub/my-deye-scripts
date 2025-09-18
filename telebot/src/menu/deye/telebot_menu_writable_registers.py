@@ -1,24 +1,44 @@
-import textwrap
 import telebot
+import textwrap
+import traceback
 
-from typing import cast
-from datetime import datetime, timedelta, timezone
-
-from telebot_constants import *
-from telebot_deye_helper import *
+from typing import List, cast
+from datetime import datetime
 
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
+from deye_registers import DeyeRegisters
 from custom_registers import CustomRegisters
+from deye_exceptions import DeyeKnownException
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
-from telebot_fake_message import TelebotFakeMessage
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from deye_registers_factory import DeyeRegistersFactory
+from telebot_user_choices import ask_advanced_choice
+from telebot_constants import undo_button_remove_delay_sec
+
+from telebot_utils import (
+  get_button_by_data,
+  remove_inline_buttons_with_delay,
+)
+
+from telebot_constants import (
+  undo_button_name,
+  buttons_remove_delay_sec,
+  sync_inverter_time_button_name,
+  inverter_system_time_need_sync_difference_sec,
+)
+
+from telebot_deye_helper import (
+  write_register,
+  build_keyboard_for_register,
+  get_keyboard_for_register,
+  holder_kwargs,
+)
 
 class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot, is_authorized_func, is_writable_register_allowed_func):
-    self.bot: telebot.TeleBot = bot
+    super().__init__(bot)
     self.is_authorized = is_authorized_func
     self.is_writable_register_allowed = is_writable_register_allowed_func
     self.registers = DeyeRegistersFactory.create_registers()
@@ -54,19 +74,15 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     def callback(call: telebot.types.CallbackQuery):
       self.bot.answer_callback_query(call.id)
 
-      try:
-        # remove keyboard from message
-        self.bot.edit_message_reply_markup(chat_id = call.message.chat.id,
-                                           message_id = call.message.message_id,
-                                           reply_markup = None)
-      except Exception:
-        # Ignore exceptions (e.g., "message is not modified")
-        pass
+      button = get_button_by_data(cast(telebot.types.Message, call.message), call.data) if call.data else None
+      is_undo_button_pressed = button.text == undo_button_name if button is not None else False
 
-      msg_time = datetime.fromtimestamp(call.message.date, tz = timezone.utc)
-      if datetime.now(timezone.utc) - msg_time > timedelta(hours = 24):
-        self.bot.send_message(call.message.chat.id, 'Command is expired')
-        return
+      remove_inline_buttons_with_delay(
+        bot = self.bot,
+        chat_id = call.message.chat.id,
+        message_id = call.message.message_id,
+        delay = buttons_remove_delay_sec,
+      )
 
       # format should be: register_name=value
       parts = call.data.split('=', 1)
@@ -86,73 +102,43 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
         return
 
-      # handle special values
-      if value == sync_inverter_time_str:
-        # run /sync_time command
-        message = TelebotFakeMessage(cast(telebot.types.Message, call.message),
-                                     f'/{TelebotMenuItem.deye_sync_time.command}', call.from_user)
-        self.bot.process_new_messages([message])
-        return
+      old_value = register.value
 
       try:
-        text = self.process_read_write_register_step2(register, value)
-        self.bot.send_message(call.message.chat.id, text, parse_mode = 'HTML')
+        text = self.write_register(register, value)
+      except DeyeKnownException as e:
+        self.bot.send_message(call.message.chat.id, str(e))
       except Exception as e:
         self.bot.send_message(call.message.chat.id, str(e))
+        print(traceback.format_exc())
+
+      if is_undo_button_pressed or old_value == register.value:
+        self.bot.send_message(call.message.chat.id, text, parse_mode = 'HTML')
+      else:
+        sent = ask_advanced_choice(
+          self.bot,
+          call.message.chat.id,
+          text,
+          {undo_button_name: f'{register.name}={old_value}'},
+          max_per_row = 2,
+        )
+
+        remove_inline_buttons_with_delay(
+          bot = self.bot,
+          chat_id = call.message.chat.id,
+          message_id = sent.message_id,
+          delay = undo_button_remove_delay_sec,
+        )
 
       self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
 
     return textwrap.dedent('''\
-    import telebot
-    from telebot_deye_helper import *
-
     @self.bot.message_handler(commands = ['{register_name}'])
     def set_{register_name}(message):
-      if not self.is_authorized(message, self.command):
-        return
+      self.process_read_write_register_step1(message, '{register_name}', set_{register_name}_step2)
 
-      if not self.is_writable_register_allowed(message.from_user.id, self.command, '{register_name}'):
-        available_registers = self.get_available_registers(message.from_user.id)
-        self.bot.send_message(message.chat.id, f'You can\\'t change <b>{register_description}</b>. Available registers to change:\\n{{available_registers}}', parse_mode = 'HTML')
-        return
-
-      register = self.registers.{register_name}_register
-
-      try:
-        text = self.process_read_write_register_step1(register)
-        keyboard = self.create_keyboard_for_register(register)
-        sent = self.bot.send_message(message.chat.id, text, reply_markup = keyboard, parse_mode='HTML')
-        self.bot.register_next_step_handler(message, set_{register_name}_step2, sent.message_id)
-      except Exception as e:
-        self.bot.send_message(message.chat.id, str(e))
-  
     def set_{register_name}_step2(message, message_id: int):
-      if not self.is_authorized(message, self.command):
-        return
-
-      # remove buttons from previous message
-      try:
-        self.bot.edit_message_reply_markup(
-            chat_id = message.chat.id,
-            message_id = message_id,
-            reply_markup = None
-        )
-      except Exception:
-        # Ignore exceptions (e.g., "message is not modified")
-        pass
-
-      # if we received new command, process it
-      if message.text.startswith('/'):
-        self.bot.process_new_messages([message])
-        return
-
-      register = self.registers.{register_name}_register
-
-      try:
-        text = self.process_read_write_register_step2(register, message.text)
-        self.bot.send_message(message.chat.id, text, parse_mode='HTML')
-      except Exception as e:
-        self.bot.send_message(message.chat.id, str(e))
+      self.process_read_write_register_step2(message, message_id, '{register_name}')
   ''').format(register_name = register.name, register_description = register.description)
 
   def create_keyboard_for_register(self, register: DeyeRegister):
@@ -161,14 +147,101 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       diff_seconds = int(abs(time_diff.total_seconds()))
       if diff_seconds > inverter_system_time_need_sync_difference_sec:
         return build_keyboard_for_register(register, [
-          [sync_inverter_time_str],
+          {
+            sync_inverter_time_button_name: f'/{TelebotMenuItem.deye_sync_time.command}'
+          },
         ])
       else:
         return None
 
     return get_keyboard_for_register(self.registers, register)
 
-  def process_read_write_register_step1(self, register: DeyeRegister) -> str:
+  def process_read_write_register_step1(self, message: telebot.types.Message, register_name: str, next_step_callback):
+    if not self.is_authorized(message, self.command):
+      return
+
+    register = self.registers.get_register_by_name(register_name)
+    if register is None:
+      self.bot.send_message(message.chat.id, f'Register {register_name} not found')
+      self.bot.clear_step_handler_by_chat_id(message.chat.id)
+      return
+
+    if not self.is_writable_register_allowed(message.from_user.id, self.command, register_name):
+      available_registers = self.get_available_registers(message.from_user.id)
+      self.bot.send_message(
+        message.chat.id,
+        f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
+        parse_mode = 'HTML',
+      )
+      return
+
+    try:
+      text = self.get_register_value(register)
+      keyboard = self.create_keyboard_for_register(register)
+      sent = self.bot.send_message(message.chat.id, text, reply_markup = keyboard, parse_mode = 'HTML')
+      self.bot.register_next_step_handler(message, next_step_callback, sent.message_id)
+    except DeyeKnownException as e:
+      self.bot.send_message(message.chat.id, str(e))
+    except Exception as e:
+      self.bot.send_message(message.chat.id, str(e))
+      print(traceback.format_exc())
+
+  def process_read_write_register_step2(self, message: telebot.types.Message, message_id: int, register_name: str):
+    if not self.is_authorized(message, self.command):
+      return
+
+    # remove buttons from previous message
+    remove_inline_buttons_with_delay(
+      bot = self.bot,
+      chat_id = message.chat.id,
+      message_id = message_id,
+      delay = buttons_remove_delay_sec,
+    )
+
+    # if we received new command, process it
+    if message.text.startswith('/'):
+      self.bot.process_new_messages([message])
+      return
+
+    register = self.registers.get_register_by_name(register_name)
+    if register is None:
+      self.bot.send_message(message.chat.id, f'Register {register_name} not found')
+      self.bot.clear_step_handler_by_chat_id(message.chat.id)
+      return
+
+    if not message.text:
+      self.bot.send_message(message.chat.id, f'Register value is empty')
+      return
+
+    old_value = register.value
+
+    try:
+      text = self.write_register(register, message.text)
+    except DeyeKnownException as e:
+      self.bot.send_message(message.chat.id, str(e))
+    except Exception as e:
+      self.bot.send_message(message.chat.id, str(e))
+      print(traceback.format_exc())
+
+    if old_value != register.value:
+      sent = ask_advanced_choice(
+        self.bot,
+        message.chat.id,
+        text,
+        {undo_button_name: f'{register.name}={old_value}'},
+        max_per_row = 2,
+      )
+
+      remove_inline_buttons_with_delay(
+        bot = self.bot,
+        chat_id = message.chat.id,
+        message_id = sent.message_id,
+        delay = undo_button_remove_delay_sec,
+      )
+    else:
+      self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
+
+  def get_register_value(self, register: DeyeRegister):
     loggers = DeyeLoggers()
 
     def creator(prefix) -> DeyeRegisters:
@@ -177,8 +250,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     try:
       holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
       holder.connect_and_read()
-    except Exception as e:
-      raise Exception(str(e))
     finally:
       holder.disconnect()
 
@@ -191,18 +262,15 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     return result
 
-  def process_read_write_register_step2(self, register: DeyeRegister, text: str) -> str:
-    try:
-      if type(register.value) is int and register.value == int(text):
-        return f'New value ({int(text)}) is the same as old value ({register.value}). Do nothing'
+  def write_register(self, register: DeyeRegister, text: str) -> str:
+    if type(register.value) is int and register.value == int(text):
+      return f'New value ({int(text)} {register.suffix}) is the same as old value. Nothing changed'
 
-      if type(register.value) is float and register.value == float(text):
-        return f'New value ({float(text)}) is the same as old value ({register.value}). Do nothing'
+    if type(register.value) is float and register.value == float(text):
+      return f'New value ({float(text)} {register.suffix}) is the same as old value. Nothing changed'
 
-      value = write_register(register, text)
-      return f'<b>{register.description}</b> changed to {value} {register.suffix}'
-    except Exception as e:
-      raise Exception('Error while writing registers: ' + str(e))
+    value = write_register(register, text)
+    return f'<b>{register.description}</b> changed to {value} {register.suffix}'
 
   def get_available_registers(self, user_id: int) -> str:
     str = ''

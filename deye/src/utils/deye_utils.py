@@ -10,7 +10,7 @@ from deye_exceptions import DeyeValueException
 
 def get_long_register_value(values: List[int], divider: int) -> float:
   value = to_unsigned_bytes(values[::-1])
-  return int.from_bytes(value, byteorder='big') / divider
+  return int.from_bytes(value, byteorder = 'big') / divider
 
 # Convert PDU integer or list with integers to bytes (signed)
 # It's needed for a bunch of Deye registers (SN, Time, etc.)
@@ -42,7 +42,7 @@ def to_unsigned_bytes(val: Union[int, List[int]]) -> bytes:
 def to_inv_time(vals: List[int]) -> List[int]:
   return list(struct.unpack('>hhh', struct.pack('>bbbbbb', *vals)))
 
-def format_end_date(date:datetime) -> str:
+def format_end_date(date: datetime) -> str:
   date_str1 = date.strftime('%Y-%m-%d')
   date_str2 = datetime.now().strftime('%Y-%m-%d')
   date_str3 = (datetime.now() + timedelta(hours = 24)).strftime('%Y-%m-%d')
@@ -51,7 +51,7 @@ def format_end_date(date:datetime) -> str:
     ('tomorrow, ' + date.strftime('%H:%M') if date_str1 == date_str3 else\
     date.strftime('%Y-%m-%d, %H:%M'))
 
-def have_second_sign(num: float):
+def have_second_sign(num: float) -> bool:
   if type(num) is not float:
     return False
 
@@ -63,7 +63,7 @@ def have_second_sign(num: float):
 
   return num % 10 > 0
 
-def format_timedelta(td:timedelta, add_seconds:bool = False) -> str:
+def format_timedelta(td: timedelta, add_seconds: bool = False) -> str:
   seconds = int(td.total_seconds())
 
   if abs(seconds) < 1:
@@ -72,11 +72,11 @@ def format_timedelta(td:timedelta, add_seconds:bool = False) -> str:
     return '1s'
 
   periods = [
-    (' year',  60 * 60 * 24 * 365),
+    (' year', 60 * 60 * 24 * 365),
     (' month', 60 * 60 * 24 * 30),
-    ('d',      60 * 60 * 24),
-    ('h',      60 * 60),
-    ('m',      60),
+    ('d', 60 * 60 * 24),
+    ('h', 60 * 60),
+    ('m', 60),
     #('s',      1)
   ]
 
@@ -87,7 +87,7 @@ def format_timedelta(td:timedelta, add_seconds:bool = False) -> str:
 
   for period_name, period_seconds in periods:
     if abs(seconds) > period_seconds:
-      period_value , seconds = divmod(abs(seconds), period_seconds)
+      period_value, seconds = divmod(abs(seconds), period_seconds)
       strings.append("%s%s" % (period_value, period_name))
 
   sign = "-" if seconds < 0 else ""
@@ -96,16 +96,16 @@ def format_timedelta(td:timedelta, add_seconds:bool = False) -> str:
 # Ensure that the specified directory exists
 # If it does not exist, create it (including all intermediate directories)
 # and apply the specified permissions (mode)
-def ensure_dir_exists(path, mode=0o755):
+def ensure_dir_exists(path, mode = 0o755):
   # Create all parent directories if they do not exist
   if not os.path.exists(path):
-    os.makedirs(path, exist_ok=True)
+    os.makedirs(path, exist_ok = True)
     os.chmod(path, mode)
 
 # Ensure that the specified file exists
 # If it does not exist, create an empty fil
 # and apply the specified permissions (mode)
-def ensure_file_exists(path, mode=0o644):
+def ensure_file_exists(path, mode = 0o644):
   # Create the file itself if it does not exist
   if not os.path.exists(path):
     open(path, 'w').close()
@@ -114,7 +114,7 @@ def ensure_file_exists(path, mode=0o644):
 # Ensure that both the parent directory and the file exist
 # If the directory does not exist, create it with dir_mode
 # If the file does not exist, create it with file_mode
-def ensure_dir_and_file_exists(path, dir_mode=0o755, file_mode=0o644):
+def ensure_dir_and_file_exists(path, dir_mode = 0o755, file_mode = 0o644):
   dir_path = os.path.dirname(path)
   ensure_dir_exists(dir_path, dir_mode)
   ensure_file_exists(path, file_mode)

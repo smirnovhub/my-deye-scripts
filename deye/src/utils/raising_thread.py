@@ -20,9 +20,9 @@ class RaisingThread(threading.Thread):
 
   # Override the join() method so that exceptions from the thread
   # are propagated back to the caller
-  def join(self, timeout=None):
+  def join(self, timeout = None):
     # Wait for the thread to finish, respecting an optional timeout
-    super().join(timeout=timeout)
+    super().join(timeout = timeout)
 
     # If an exception was stored during run(),
     # raise it here in the main thread context
