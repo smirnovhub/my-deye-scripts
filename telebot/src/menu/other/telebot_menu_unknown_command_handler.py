@@ -21,4 +21,4 @@ class TelebotMenuUnknownCommandHandler(TelebotMenuItemHandler):
       if not self.is_authorized(message.from_user.id, message.chat.id):
         return
 
-      self.bot.reply_to(message, 'Unknown command')
+      self.bot.send_message(message.chat.id, f"Unknown command: /\u200B{message.text.strip('/')}")
