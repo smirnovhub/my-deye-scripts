@@ -1,8 +1,14 @@
 import threading
 
-# Custom thread class that remembers exceptions raised during execution
-# and re-raises them when the main thread calls join()
 class RaisingThread(threading.Thread):
+  """
+  A custom Thread subclass that captures exceptions raised during
+  the thread's execution and re-raises them when join() is called.
+
+  This ensures that errors in background threads are not silently
+  ignored and can be handled in the main thread.
+
+  """
 
   # Override the standard run() method of threading.Thread
   # This method is executed when the thread starts
