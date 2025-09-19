@@ -20,6 +20,8 @@
     "../deye/src/solarman",
     "../deye/src/utils",
     "src",
+    "src/choices",
+    "src/handlers",
     "src/menu",
     "src/menu/deye",
     "src/menu/deye/all",
