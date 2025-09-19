@@ -11,10 +11,10 @@ class TodayPvProductionEnergyCostRegister(BaseDeyeRegister):
                pv_production_register: DeyeRegister,
                name: str,
                description: str,
-               suffix: str,
                avg = DeyeRegisterAverageType.none):
-    super().__init__(0, 0, name, description, suffix, avg)
+    self.energy_cost = DeyeEnergyCost()
     self._pv_production_register = pv_production_register
+    super().__init__(0, 0, name, description, self.energy_cost.currency_code, avg)
 
   @property
   def addresses(self) -> List[int]:
@@ -28,9 +28,5 @@ class TodayPvProductionEnergyCostRegister(BaseDeyeRegister):
     return super().read(interactors)
 
   def read_internal(self, interactor: DeyeModbusInteractor):
-    energy_cost = DeyeEnergyCost()
     production = self._pv_production_register.value
-
-    value = round(production * energy_cost.current_cost, 2)
-
-    return value
+    return round(production * self.energy_cost.current_pv_energy_cost, 2)

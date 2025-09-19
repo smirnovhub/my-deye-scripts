@@ -6,34 +6,34 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
 
-class TotalPvProductionEnergyCostRegister(BaseDeyeRegister):
+class TotalGenEnergyCostRegister(BaseDeyeRegister):
   def __init__(self,
-               pv_production_register: DeyeRegister,
+               gen_energy_register: DeyeRegister,
                name: str,
                description: str,
                avg = DeyeRegisterAverageType.none):
     self.energy_cost = DeyeEnergyCost()
+    self._gen_energy_register = gen_energy_register
     super().__init__(0, 0, name, description, self.energy_cost.currency_code, avg)
-    self._pv_production_register = pv_production_register
 
   @property
   def addresses(self) -> List[int]:
-    return self._pv_production_register.addresses
+    return self._gen_energy_register.addresses
 
   def enqueue(self, interactor: DeyeModbusInteractor):
-    self._pv_production_register.enqueue(interactor)
+    self._gen_energy_register.enqueue(interactor)
 
   def read(self, interactors: List[DeyeModbusInteractor]):
-    self._pv_production_register.read(interactors)
+    self._gen_energy_register.read(interactors)
     return super().read(interactors)
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     total_cost = 0
-    production = self._pv_production_register.value
+    gen_energy = self._gen_energy_register.value
 
-    for prod, cost in reversed(list(self.energy_cost.pv_energy_costs.items())):
-      delta = production - prod
+    for prod, cost in reversed(list(self.energy_cost.gen_energy_costs.items())):
+      delta = gen_energy - prod
       total_cost += delta * cost
-      production -= delta
+      gen_energy -= delta
 
     return round(total_cost)

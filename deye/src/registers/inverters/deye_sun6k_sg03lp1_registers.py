@@ -1,6 +1,5 @@
 from typing import List
 
-from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
 from charge_forecast_register import ChargeForecastRegister
 from deye_registers import DeyeRegisters
@@ -26,12 +25,13 @@ from test_deye_register import TestDeyeRegister
 from time_of_use_int_writable_deye_register import TimeOfUseIntWritableDeyeRegister
 from today_pv_production_energy_cost_register import TodayPvProductionEnergyCostRegister
 from total_pv_production_energy_cost_register import TotalPvProductionEnergyCostRegister
+from today_gen_energy_cost_register import TodayGenEnergyCostRegister
+from total_gen_energy_cost_register import TotalGenEnergyCostRegister
 from system_work_mode_writable_deye_register import SystemWorkModeWritableDeyeRegister
 
 class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
-    energy_cost = DeyeEnergyCost()
     self._ac_couple_frz_high_register = FloatWritableDeyeRegister(329, 50.5, 52, 'ac_couple_frz_high', 'AC Couple Frz High', 'Hz', DeyeRegisterAverageType.only_master).with_scale(100)
     self._backup_delay_register = IntWritableDeyeRegister(311, 0, 30000, 'backup_delay', 'Backup Delay', 'ms', DeyeRegisterAverageType.only_master)
     self._battery_bms_charge_current_limit_register = IntDeyeRegister(314, 'battery_bms_charge_current_limit', 'Battery BMS Charge Current Limit', 'A', DeyeRegisterAverageType.only_master)
@@ -101,8 +101,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
     self._zero_export_power_register = IntWritableDeyeRegister(206, 0, 100, 'zero_export_power', 'Zero Export Power', 'W', DeyeRegisterAverageType.only_master)
     self._pv_total_current_register = SumDeyeRegister([self.pv1_current_register, self.pv2_current_register], 'pv_total_current', 'PV Total current', 'A', DeyeRegisterAverageType.special)
     self._pv_total_power_register = SumDeyeRegister([self.pv1_power_register, self.pv2_power_register], 'pv_total_power', 'PV Total power', 'W', DeyeRegisterAverageType.special)
-    self._today_production_cost_register = TodayPvProductionEnergyCostRegister(self._today_production_register, 'today_production_cost', 'Today Production Cost', energy_cost.currency_code, DeyeRegisterAverageType.special)
-    self._total_production_cost_register = TotalPvProductionEnergyCostRegister(self._total_production_register, 'total_production_cost', 'Total Production Cost', energy_cost.currency_code, DeyeRegisterAverageType.special)
+    self._today_production_cost_register = TodayPvProductionEnergyCostRegister(self._today_production_register, 'today_production_cost', 'Today Production Cost', DeyeRegisterAverageType.special)
+    self._total_production_cost_register = TotalPvProductionEnergyCostRegister(self._total_production_register, 'total_production_cost', 'Total Production Cost', DeyeRegisterAverageType.special)
+    self._today_gen_energy_cost_register = TodayGenEnergyCostRegister(self._today_gen_energy_register, 'today_gen_energy_cost', 'Today Gen Energy Cost', DeyeRegisterAverageType.special)
+    self._total_gen_energy_cost_register = TotalGenEnergyCostRegister(self._total_gen_energy_register, 'total_gen_energy_cost', 'Total Gen Energy Cost', DeyeRegisterAverageType.special)
 
     self._inverter_self_consumption_power_register = InverterSelfConsumptionPowerRegister(
       pv_total_power_register = self.pv_total_power_register,
@@ -226,6 +228,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       self._today_inverter_self_consumption_energy_register,
       self._today_load_consumption_register,
       self._today_production_cost_register,
+      self._today_gen_energy_cost_register,
       self._today_production_register,
       self._total_battery_charged_energy_register,
       self._total_battery_discharged_energy_register,
@@ -235,6 +238,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       self._total_inverter_self_consumption_energy_register,
       self._total_load_consumption_register,
       self._total_production_cost_register,
+      self._total_gen_energy_cost_register,
       self._total_production_register,
       self._zero_export_power_register
     ]
@@ -538,6 +542,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
     return self._today_production_cost_register
 
   @property
+  def today_gen_energy_cost_register(self) -> DeyeRegister:
+    return self._today_gen_energy_cost_register
+
+  @property
   def total_battery_charged_energy_register(self) -> DeyeRegister:
     return self._total_battery_charged_energy_register
 
@@ -568,6 +576,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
   @property
   def total_production_cost_register(self) -> DeyeRegister:
     return self._total_production_cost_register
+
+  @property
+  def total_gen_energy_cost_register(self) -> DeyeRegister:
+    return self._total_gen_energy_cost_register
 
   @property
   def zero_export_power_register(self) -> DeyeRegister:
