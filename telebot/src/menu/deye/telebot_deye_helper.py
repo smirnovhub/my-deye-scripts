@@ -279,7 +279,10 @@ def get_choices_of_invertors(
     choices[row_break_str] = row_break_str
 
   if auth_helper.is_menu_item_allowed(user_id, master_command):
-    choices[master_command.description] = f'/{master_command.command}'
+    master_name = loggers.master.name
+    command = master_command.command.format(master_name)
+    description = master_command.description.format(master_name.title())
+    choices[description] = f'/{command}'
 
   if auth_helper.is_menu_item_allowed(user_id, slave_command):
     for logger in loggers.loggers:

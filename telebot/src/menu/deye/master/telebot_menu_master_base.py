@@ -1,5 +1,7 @@
 import telebot
 
+from typing import List
+
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
 from deye_registers_holder import DeyeRegistersHolder
@@ -39,6 +41,13 @@ class TelebotMenuMasterBase(TelebotMenuItemHandler):
   def command(self) -> TelebotMenuItem:
     return self.master_command
 
+  def get_commands(self) -> List[telebot.types.BotCommand]:
+    master_name = self.loggers.master.name
+    return [
+      telebot.types.BotCommand(command = self.command.command.format(master_name),
+                               description = self.command.description.format(master_name.title())),
+    ]
+
   def process_message(self, message: telebot.types.Message):
     if not self.is_authorized(message.from_user.id, message.chat.id):
       return
@@ -75,7 +84,7 @@ class TelebotMenuMasterBase(TelebotMenuItemHandler):
     ask_advanced_choice(
       self.bot,
       message.chat.id,
-      f'<b>Inverter: master</b>\n{info}',
+      f'<b>Inverter: {self.loggers.master.name}</b>\n{info}',
       choices,
       max_per_row = 2,
     )
