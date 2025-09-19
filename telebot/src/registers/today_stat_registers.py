@@ -17,4 +17,5 @@ class TodayStatRegisters(DeyeRegistersFactory.get_registers_class()):
       self.today_battery_charged_energy_register,
       self.today_battery_discharged_energy_register,
       self.today_production_cost_register,
+      self.today_gen_energy_cost_register,
     ]

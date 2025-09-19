@@ -8,16 +8,15 @@ from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_deye_helper import holder_kwargs
 
 class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
-  def __init__(self, bot: telebot.TeleBot, is_authorized_func):
+  def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.is_authorized = is_authorized_func
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_battery_forecast
 
   def process_message(self, message: telebot.types.Message):
-    if not self.is_authorized(message, self.command):
+    if not self.is_authorized(message.from_user.id, message.chat.id):
       return
 
     self.bot.send_message(message.chat.id, self.get_forecast(), parse_mode = 'HTML')

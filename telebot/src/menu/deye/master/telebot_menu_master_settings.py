@@ -12,16 +12,15 @@ from telebot_deye_helper import (
 )
 
 class TelebotMenuMasterSettings(TelebotMenuItemHandler):
-  def __init__(self, bot: telebot.TeleBot, is_authorized_func):
+  def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.is_authorized = is_authorized_func
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_master_settings
 
   def process_message(self, message: telebot.types.Message):
-    if not self.is_authorized(message, self.command):
+    if not self.is_authorized(message.from_user.id, message.chat.id):
       return
 
     def creator(prefix):

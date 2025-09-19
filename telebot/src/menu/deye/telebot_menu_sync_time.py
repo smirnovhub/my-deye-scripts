@@ -7,6 +7,7 @@ from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_exceptions import DeyeKnownException
 from custom_registers import CustomRegisters
+from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item import TelebotMenuItem
 from deye_registers_holder import DeyeRegistersHolder
 from deye_registers_factory import DeyeRegistersFactory
@@ -21,27 +22,27 @@ from telebot_constants import (
 from telebot_deye_helper import (
   holder_kwargs,
   write_register,
+  get_available_registers,
 )
 
 class TelebotMenuSyncTime(TelebotMenuItemHandler):
-  def __init__(self, bot: telebot.TeleBot, is_authorized_func, is_writable_register_allowed_func):
+  def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.is_authorized = is_authorized_func
-    self.is_writable_register_allowed = is_writable_register_allowed_func
     self.registers = DeyeRegistersFactory.create_registers()
+    self.auth_helper = TelebotAuthHelper()
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_sync_time
 
   def process_message(self, message: telebot.types.Message):
-    if not self.is_authorized(message, self.command):
+    if not self.is_authorized(message.from_user.id, message.chat.id):
       return
 
     register = self.registers.inverter_system_time_register
 
-    if not self.is_writable_register_allowed(message.from_user.id, self.command, register.name):
-      available_registers = self.get_available_registers(message.from_user.id)
+    if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register.name):
+      available_registers = get_available_registers(message.from_user.id)
       self.bot.send_message(
         message.chat.id,
         f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
@@ -79,16 +80,6 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       self.on_user_confirmation(message.chat.id, True)
     else:
       self.bot.send_message(message.chat.id, 'The inverter time is already synced', parse_mode = 'HTML')
-
-  def get_available_registers(self, user_id: int) -> str:
-    str = ''
-    num = 1
-    for register in self.registers.read_write_registers:
-      if self.is_writable_register_allowed(user_id, self.command, register.name):
-        str += f'<b>{num}. {register.description}:</b>\n'
-        str += f'/{register.name}\n'
-        num += 1
-    return str
 
   def on_user_confirmation(self, chat_id: int, result: bool):
     if result:

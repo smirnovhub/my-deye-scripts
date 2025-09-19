@@ -5,9 +5,8 @@ from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 
 class TelebotMenuUnknownCommandHandler(TelebotMenuItemHandler):
-  def __init__(self, bot: telebot.TeleBot, is_authorized_func):
+  def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.is_authorized = is_authorized_func
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -19,7 +18,7 @@ class TelebotMenuUnknownCommandHandler(TelebotMenuItemHandler):
   def register_handlers(self):
     @self.bot.message_handler(func = lambda message: message.text and message.text.startswith('/'))
     def handle(message: telebot.types.Message):
-      if not self.is_authorized(message, self.command):
+      if not self.is_authorized(message.from_user.id, message.chat.id):
         return
 
       self.bot.reply_to(message, 'Unknown command')

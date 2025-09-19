@@ -12,13 +12,14 @@ from custom_registers import CustomRegisters
 from deye_exceptions import DeyeKnownException
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
+from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from deye_registers_factory import DeyeRegistersFactory
-from telebot_user_choices import ask_advanced_choice
+from telebot_advanced_choice import ask_advanced_choice
 from telebot_constants import undo_button_remove_delay_sec
 
 from telebot_utils import (
-  get_button_by_data,
+  get_inline_button_by_data,
   remove_inline_buttons_with_delay,
 )
 
@@ -30,18 +31,18 @@ from telebot_constants import (
 )
 
 from telebot_deye_helper import (
+  holder_kwargs,
   write_register,
   build_keyboard_for_register,
   get_keyboard_for_register,
-  holder_kwargs,
+  get_available_registers,
 )
 
 class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
-  def __init__(self, bot: telebot.TeleBot, is_authorized_func, is_writable_register_allowed_func):
+  def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.is_authorized = is_authorized_func
-    self.is_writable_register_allowed = is_writable_register_allowed_func
     self.registers = DeyeRegistersFactory.create_registers()
+    self.auth_helper = TelebotAuthHelper()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -74,7 +75,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     def callback(call: telebot.types.CallbackQuery):
       self.bot.answer_callback_query(call.id)
 
-      button = get_button_by_data(cast(telebot.types.Message, call.message), call.data) if call.data else None
+      button = get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data) if call.data else None
       is_undo_button_pressed = button.text == undo_button_name if button is not None else False
 
       remove_inline_buttons_with_delay(
@@ -93,8 +94,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
         return
 
-      if not self.is_writable_register_allowed(call.from_user.id, self.command, register.name):
-        available_registers = self.get_available_registers(call.from_user.id)
+      if not self.auth_helper.is_writable_register_allowed(call.from_user.id, register.name):
+        available_registers = get_available_registers(call.from_user.id)
         self.bot.send_message(
           call.message.chat.id,
           f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
@@ -111,6 +112,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       except Exception as e:
         self.bot.send_message(call.message.chat.id, str(e))
         print(traceback.format_exc())
+
+      self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
 
       if is_undo_button_pressed or old_value == register.value:
         self.bot.send_message(call.message.chat.id, text, parse_mode = 'HTML')
@@ -129,8 +132,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
           message_id = sent.message_id,
           delay = undo_button_remove_delay_sec,
         )
-
-      self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
 
     return textwrap.dedent('''\
     @self.bot.message_handler(commands = ['{register_name}'])
@@ -157,7 +158,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     return get_keyboard_for_register(self.registers, register)
 
   def process_read_write_register_step1(self, message: telebot.types.Message, register_name: str, next_step_callback):
-    if not self.is_authorized(message, self.command):
+    if not self.is_authorized(message.from_user.id, message.chat.id):
       return
 
     register = self.registers.get_register_by_name(register_name)
@@ -166,8 +167,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.clear_step_handler_by_chat_id(message.chat.id)
       return
 
-    if not self.is_writable_register_allowed(message.from_user.id, self.command, register_name):
-      available_registers = self.get_available_registers(message.from_user.id)
+    if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register_name):
+      available_registers = get_available_registers(message.from_user.id)
       self.bot.send_message(
         message.chat.id,
         f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
@@ -187,7 +188,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       print(traceback.format_exc())
 
   def process_read_write_register_step2(self, message: telebot.types.Message, message_id: int, register_name: str):
-    if not self.is_authorized(message, self.command):
+    if not self.is_authorized(message.from_user.id, message.chat.id):
       return
 
     # remove buttons from previous message
@@ -271,13 +272,3 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     value = write_register(register, text)
     return f'<b>{register.description}</b> changed to {value} {register.suffix}'
-
-  def get_available_registers(self, user_id: int) -> str:
-    str = ''
-    num = 1
-    for register in self.registers.read_write_registers:
-      if self.is_writable_register_allowed(user_id, self.command, register.name):
-        str += f'<b>{num}. {register.description}:</b>\n'
-        str += f'/{register.name}\n'
-        num += 1
-    return str
