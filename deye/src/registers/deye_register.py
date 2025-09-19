@@ -40,7 +40,7 @@ class DeyeRegister:
 
   @property
   def addresses(self) -> List[int]:
-    self.not_implemented('address')
+    self.not_implemented('addresses')
 
   @property
   def quantity(self) -> int:
