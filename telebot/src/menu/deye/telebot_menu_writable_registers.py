@@ -9,6 +9,7 @@ from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from custom_registers import CustomRegisters
+from empty_registers import EmptyRegisters
 from deye_exceptions import DeyeKnownException
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
@@ -32,7 +33,6 @@ from telebot_constants import (
 
 from telebot_deye_helper import (
   holder_kwargs,
-  write_register,
   build_keyboard_for_register,
   get_keyboard_for_register,
   get_available_registers,
@@ -108,10 +108,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       try:
         text = self.write_register(register, value)
       except DeyeKnownException as e:
-        self.bot.send_message(call.message.chat.id, str(e))
+        self.bot.send_message(call.message.chat.id, f'Error while writing register: {str(e)}')
+        return
       except Exception as e:
-        self.bot.send_message(call.message.chat.id, str(e))
+        self.bot.send_message(call.message.chat.id, f'Error while writing register: {str(e)}')
         print(traceback.format_exc())
+        return
 
       self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
 
@@ -219,10 +221,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     try:
       text = self.write_register(register, message.text)
     except DeyeKnownException as e:
-      self.bot.send_message(message.chat.id, str(e))
+      self.bot.send_message(message.chat.id, f'Error while writing register: {str(e)}')
+      return
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      self.bot.send_message(message.chat.id, f'Error while writing register: {str(e)}')
       print(traceback.format_exc())
+      return
 
     if old_value != register.value:
       sent = ask_advanced_choice(
@@ -248,8 +252,9 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     def creator(prefix) -> DeyeRegisters:
       return CustomRegisters([register], prefix)
 
+    holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
+
     try:
-      holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
       holder.connect_and_read()
     finally:
       holder.disconnect()
@@ -270,5 +275,19 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     if type(register.value) is float and register.value == float(text):
       return f'New value ({float(text)} {register.suffix}) is the same as old value. Nothing changed'
 
-    value = write_register(register, text)
+    if type(register.value) is str and register.value == str(text):
+      return f'New value ({str(text)} {register.suffix}) is the same as old value. Nothing changed'
+
+    loggers = DeyeLoggers()
+
+    def creator(prefix):
+      return EmptyRegisters(prefix)
+
+    holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
+
+    try:
+      value = holder.write_register(register, text)
+    finally:
+      holder.disconnect()
+
     return f'<b>{register.description}</b> changed to {value} {register.suffix}'

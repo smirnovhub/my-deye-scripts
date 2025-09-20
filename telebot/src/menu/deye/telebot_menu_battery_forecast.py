@@ -10,6 +10,10 @@ from telebot_deye_helper import holder_kwargs
 class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    loggers = DeyeLoggers()
+    self.holder = DeyeRegistersHolder(loggers = loggers.loggers,
+                                      register_creator = lambda prefix: ForecastRegisters(prefix),
+                                      **holder_kwargs)
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -22,24 +26,19 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
     self.bot.send_message(message.chat.id, self.get_forecast(), parse_mode = 'HTML')
 
   def get_forecast(self):
-    def creator(prefix):
-      return ForecastRegisters(prefix)
-
     try:
-      loggers = DeyeLoggers()
-      holder = DeyeRegistersHolder(loggers = loggers.loggers, register_creator = creator, **holder_kwargs)
-      holder.connect_and_read()
+      self.holder.connect_and_read()
     except Exception as e:
       return f'Error while reading registers: {str(e)}'
     finally:
-      holder.disconnect()
+      self.holder.disconnect()
 
     try:
-      soc = holder.master_registers.battery_soc_register
-      current = holder.accumulated_registers.battery_current_register
-      power = holder.accumulated_registers.battery_power_register
+      soc = self.holder.master_registers.battery_soc_register
+      current = self.holder.accumulated_registers.battery_current_register
+      power = self.holder.accumulated_registers.battery_power_register
 
-      result = ""
+      result = ''
 
       result += f'{soc.description}: {soc.value} {soc.suffix}\n'
       result += f'{current.description}: {current.value} {current.suffix}\n'
@@ -49,7 +48,7 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
         result += '<b>Battery is in idle mode</b>'
         return result
 
-      register = holder.accumulated_registers.charge_forecast_register if current.value < 0 else holder.accumulated_registers.discharge_forecast_register
+      register = self.holder.accumulated_registers.charge_forecast_register if current.value < 0 else self.holder.accumulated_registers.discharge_forecast_register
       val = register.value.strip('"')
 
       result += f'<b>{val}</b>'
