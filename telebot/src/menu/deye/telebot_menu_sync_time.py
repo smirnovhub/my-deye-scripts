@@ -33,8 +33,8 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
 
-    registers = DeyeRegistersFactory.create_registers()
-    self.register = registers.inverter_system_time_register
+    self.registers = DeyeRegistersFactory.create_registers()
+    self.register = self.registers.inverter_system_time_register
 
     self.holder = DeyeRegistersHolder(loggers = [loggers.master],
                                       register_creator = lambda prefix: CustomRegisters([self.register], prefix),
@@ -49,7 +49,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       return
 
     if not self.auth_helper.is_writable_register_allowed(message.from_user.id, self.register.name):
-      available_registers = get_available_registers(message.from_user.id)
+      available_registers = get_available_registers(self.registers, self.auth_helper, message.from_user.id)
       self.bot.send_message(
         message.chat.id,
         f'You can\'t change <b>{self.register.description}</b>. Available registers to change:\n{available_registers}',

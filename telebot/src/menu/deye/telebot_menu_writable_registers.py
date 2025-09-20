@@ -95,7 +95,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         return
 
       if not self.auth_helper.is_writable_register_allowed(call.from_user.id, register.name):
-        available_registers = get_available_registers(call.from_user.id)
+        available_registers = get_available_registers(self.registers, self.auth_helper, call.from_user.id)
         self.bot.send_message(
           call.message.chat.id,
           f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
@@ -170,7 +170,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       return
 
     if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register_name):
-      available_registers = get_available_registers(message.from_user.id)
+      available_registers = get_available_registers(self.registers, self.auth_helper, message.from_user.id)
       self.bot.send_message(
         message.chat.id,
         f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',

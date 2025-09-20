@@ -264,7 +264,7 @@ def get_choices_of_invertors(
 
   return choices
 
-def get_available_registers(user_id: int) -> str:
+def get_available_registers(registers: DeyeRegisters, auth_helper: TelebotAuthHelper, user_id: int) -> str:
   """
   Return a formatted string listing all writable registers available to a user.
 
@@ -278,9 +278,6 @@ def get_available_registers(user_id: int) -> str:
   Returns:
       str: Formatted string with available registers for the user
   """
-  registers = DeyeRegisters()
-  auth_helper = TelebotAuthHelper()
-
   str = ''
   num = 1
   for register in registers.read_write_registers:
