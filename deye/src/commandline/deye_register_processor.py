@@ -1,7 +1,7 @@
 import queue
 import argparse
 
-from typing import List
+from typing import Any, List, Type
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
 from raising_thread import RaisingThread
@@ -29,8 +29,8 @@ class DeyeRegisterProcessor:
   def get_write_limit_desc(self, register: DeyeRegister) -> str:
     return f'from {register.min_value} to {register.max_value}'
 
-  def get_register_type(self, register: DeyeRegister):
-    return int if register.type_name == 'int' else str
+  def get_register_type(self, register: DeyeRegister) -> Type[Any]:
+    return type(register.value)
 
   def add_command_line_parameters(self, parser: argparse.ArgumentParser):
     try:
@@ -40,7 +40,8 @@ class DeyeRegisterProcessor:
                             help = self.get_arg_desc(register, 'get'))
 
       for register in self.registers.read_write_registers:
-        set_help = f'{self.get_arg_desc(register, "set")} ({self.get_write_limit_desc(register)})' if register.type_name != 'str' else f'{self.get_arg_desc(register, "set")}'
+        set_help = f'{self.get_arg_desc(register, "set")} ({self.get_write_limit_desc(register)})' if type(
+          register.value) is not str else f'{self.get_arg_desc(register, "set")}'
         parser.add_argument(self.get_arg_name(register, 'get'),
                             action = 'store_true',
                             help = self.get_arg_desc(register, 'get'))

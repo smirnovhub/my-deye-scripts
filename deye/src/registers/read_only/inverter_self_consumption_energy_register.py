@@ -18,6 +18,7 @@ class InverterSelfConsumptionEnergyRegister(BaseDeyeRegister):
                suffix: str,
                avg = DeyeRegisterAverageType.none):
     super().__init__(0, 0, name, description, suffix, avg)
+    self._value = 0.0
 
     self._pv_production_register = pv_production_register
     self._grid_purchased_energy_register = grid_purchased_energy_register

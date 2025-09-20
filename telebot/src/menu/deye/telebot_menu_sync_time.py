@@ -4,7 +4,6 @@ import traceback
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
-from deye_register import DeyeRegister
 from deye_exceptions import DeyeKnownException
 from custom_registers import CustomRegisters
 from telebot_auth_helper import TelebotAuthHelper
@@ -13,23 +12,33 @@ from deye_registers_holder import DeyeRegistersHolder
 from deye_registers_factory import DeyeRegistersFactory
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_user_choices import ask_confirmation
+from telebot_advanced_choice import ask_advanced_choice
+from telebot_utils import remove_inline_buttons_with_delay
 
 from telebot_constants import (
+  undo_button_name,
+  undo_button_remove_delay_sec,
   inverter_system_time_does_not_need_sync_threshold_sec,
   inverter_system_time_too_big_difference_sec,
 )
 
 from telebot_deye_helper import (
   holder_kwargs,
-  write_register,
   get_available_registers,
 )
 
 class TelebotMenuSyncTime(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.registers = DeyeRegistersFactory.create_registers()
+    loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
+
+    self.registers = DeyeRegistersFactory.create_registers()
+    self.register = self.registers.inverter_system_time_register
+
+    self.holder = DeyeRegistersHolder(loggers = [loggers.master],
+                                      register_creator = lambda prefix: CustomRegisters([self.register], prefix),
+                                      **holder_kwargs)
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -39,41 +48,39 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     if not self.is_authorized(message.from_user.id, message.chat.id):
       return
 
-    register = self.registers.inverter_system_time_register
-
-    if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register.name):
-      available_registers = get_available_registers(message.from_user.id)
+    if not self.auth_helper.is_writable_register_allowed(message.from_user.id, self.register.name):
+      available_registers = get_available_registers(self.registers, self.auth_helper, message.from_user.id)
       self.bot.send_message(
         message.chat.id,
-        f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
+        f'You can\'t change <b>{self.register.description}</b>. Available registers to change:\n{available_registers}',
         parse_mode = 'HTML')
       return
 
-    def creator(prefix):
-      return CustomRegisters([register], prefix)
-
     try:
-      loggers = DeyeLoggers()
-      holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
-      holder.connect_and_read()
+      self.holder.connect_and_read()
     except DeyeKnownException as e:
       self.bot.send_message(message.chat.id, f'Error while reading registers: {str(e)}')
+      return
     except Exception as e:
       self.bot.send_message(message.chat.id, f'Error while reading registers: {str(e)}')
       print(traceback.format_exc())
       return
     finally:
-      holder.disconnect()
+      self.holder.disconnect()
+
+    if not isinstance(self.register.value, datetime):
+      self.bot.send_message(message.chat.id, 'Register type is not datetime', parse_mode = 'HTML')
+      return
 
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    time_diff = register.value - datetime.now()
+    time_diff = self.register.value - datetime.now()
     diff_seconds = int(abs(time_diff.total_seconds()))
     if diff_seconds > inverter_system_time_too_big_difference_sec:
       ask_confirmation(
         self.bot, message.chat.id, f'<b>Warning!</b> '
         f'Difference between inverter time and current time is too big:\n'
         f'Current time: <b>{now}</b>\n'
-        f'Inverter time: <b>{register.value.strftime("%Y-%m-%d %H:%M:%S")}</b>\n'
+        f'Inverter time: <b>{self.register.value.strftime("%Y-%m-%d %H:%M:%S")}</b>\n'
         f'The difference is about {diff_seconds} seconds.\n'
         f'<b>Are you sure to sync inverter time?</b>', self.on_user_confirmation)
     elif diff_seconds > inverter_system_time_does_not_need_sync_threshold_sec:
@@ -84,10 +91,32 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
   def on_user_confirmation(self, chat_id: int, result: bool):
     if result:
       try:
+        old_value = self.register.value
         value = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        register = self.registers.inverter_system_time_register
-        text = self.process_read_write_register_step2(register, value)
-        self.bot.send_message(chat_id, text, parse_mode = 'HTML')
+
+        try:
+          result = self.holder.write_register(self.register, value)
+        finally:
+          self.holder.disconnect()
+
+        text = f'<b>{self.register.description}</b> changed to {result} {self.register.suffix}'
+
+        #self.bot.send_message(chat_id, text, parse_mode = 'HTML')
+        sent = ask_advanced_choice(
+          self.bot,
+          chat_id,
+          text,
+          {undo_button_name: f'{self.register.name}={old_value}'},
+          max_per_row = 2,
+        )
+
+        remove_inline_buttons_with_delay(
+          bot = self.bot,
+          chat_id = chat_id,
+          message_id = sent.message_id,
+          delay = undo_button_remove_delay_sec,
+        )
+
       except DeyeKnownException as e:
         self.bot.send_message(chat_id, f'Error while writing registers: {str(e)}')
       except Exception as e:
@@ -95,13 +124,3 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         print(traceback.format_exc())
     else:
       self.bot.send_message(chat_id, 'Time sync cancelled')
-
-  def process_read_write_register_step2(self, register: DeyeRegister, text: str) -> str:
-    if type(register.value) is int and register.value == int(text):
-      return f'New value ({int(text)}) is the same as old value ({register.value}). Do nothing'
-
-    if type(register.value) is float and register.value == float(text):
-      return f'New value ({float(text)}) is the same as old value ({register.value}). Do nothing'
-
-    value = write_register(register, text)
-    return f'<b>{register.description}</b> changed to {value} {register.suffix}'

@@ -13,6 +13,7 @@ class LongFloatSplittedDeyeRegister(BaseDeyeRegister):
                suffix: str,
                avg = DeyeRegisterAverageType.none):
     super().__init__(address, split_offset + 1, name, description, suffix, avg)
+    self._value = 0.0
     self.split_offset = split_offset
 
   @property

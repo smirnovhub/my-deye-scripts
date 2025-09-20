@@ -21,14 +21,11 @@ class DischargeForecastRegister(BaseDeyeRegister):
     suffix: str,
   ):
     super().__init__(0, 0, name, description, suffix)
+    self._value = ''
 
     self._battery_soc_register = battery_soc_register
     self._battery_capacity_register = battery_capacity_register
     self._battery_current_register = battery_current_register
-
-  @property
-  def type_name(self) -> str:
-    return 'str'
 
   @property
   def addresses(self) -> List[int]:

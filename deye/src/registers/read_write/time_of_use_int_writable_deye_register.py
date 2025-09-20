@@ -12,6 +12,7 @@ class TimeOfUseIntWritableDeyeRegister(BaseDeyeRegister):
                suffix: str,
                avg = DeyeRegisterAverageType.none):
     super().__init__(address, 6, name, description, suffix, avg)
+    self._value = 0
     self._min_value = min_value
     self._max_value = max_value
 

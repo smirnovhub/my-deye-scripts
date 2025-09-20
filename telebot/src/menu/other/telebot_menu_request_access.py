@@ -16,6 +16,7 @@ from deye_file_lock import (
 class TelebotMenuRequestAccess(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    self.users = TelebotUsers()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -34,9 +35,7 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
             f"User name: {user_name}\n"
             f"Phone: {phone}")
 
-    users = TelebotUsers()
-
-    if users.is_user_allowed(user.id):
+    if self.users.is_user_allowed(user.id):
       self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
     else:
       result = self.add_user_to_file('data/access_requests.txt', user.id, name)

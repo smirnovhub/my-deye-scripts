@@ -15,6 +15,7 @@ class TotalGenEnergyCostRegister(BaseDeyeRegister):
     self.energy_cost = DeyeEnergyCost()
     self._gen_energy_register = gen_energy_register
     super().__init__(0, 0, name, description, self.energy_cost.currency_code, avg)
+    self._value = 0.0
 
   @property
   def addresses(self) -> List[int]:

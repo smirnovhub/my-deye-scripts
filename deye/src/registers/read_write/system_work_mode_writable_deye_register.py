@@ -6,6 +6,7 @@ from deye_system_work_mode import DeyeSystemWorkMode
 class SystemWorkModeWritableDeyeRegister(IntDeyeRegister):
   def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
     super().__init__(address, name, description, suffix, avg)
+    self._value = DeyeSystemWorkMode.unknown
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     value = super().read_internal(interactor)

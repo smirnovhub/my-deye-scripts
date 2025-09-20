@@ -16,6 +16,9 @@ class TelebotMenuMasterSettings(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self.loggers = DeyeLoggers()
+    self.holder = DeyeRegistersHolder(loggers = [self.loggers.master],
+                                      register_creator = lambda prefix: MasterSettingsRegisters(prefix),
+                                      **holder_kwargs)
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -32,19 +35,14 @@ class TelebotMenuMasterSettings(TelebotMenuItemHandler):
     if not self.is_authorized(message.from_user.id, message.chat.id):
       return
 
-    def creator(prefix):
-      return MasterSettingsRegisters(prefix)
-
     try:
-      loggers = DeyeLoggers()
-      holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
-      holder.connect_and_read()
+      self.holder.connect_and_read()
     except Exception as e:
       self.bot.send_message(message.chat.id, f'Error while reading registers: {str(e)}')
       return
     finally:
-      holder.disconnect()
+      self.holder.disconnect()
 
     master_name = self.loggers.master.name.title()
-    info = get_register_values(holder.master_registers.all_registers)
+    info = get_register_values(self.holder.master_registers.all_registers)
     self.bot.send_message(message.chat.id, f'<b>{master_name} inverter settings:</b>\n{info}', parse_mode = 'HTML')

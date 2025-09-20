@@ -4,7 +4,14 @@ from deye_register_average_type import DeyeRegisterAverageType
 from deye_utils import to_signed
 
 class SignedIntDeyeRegister(IntDeyeRegister):
-  def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
+  def __init__(
+    self,
+    address: int,
+    name: str,
+    description: str,
+    suffix: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
     super().__init__(address, name, description, suffix, avg)
 
   def read_internal(self, interactor: DeyeModbusInteractor):

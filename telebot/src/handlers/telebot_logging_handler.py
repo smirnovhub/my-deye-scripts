@@ -22,6 +22,7 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     self.known_users_messages_path = 'data/logs/known_users'
     self.unknown_users_messages_path = 'data/logs/unknown_users'
     self.max_file_size = 1024 * 1024 * 1
+    self.users = TelebotUsers()
 
     ensure_dir_exists(self.known_users_messages_path)
     ensure_dir_exists(self.unknown_users_messages_path)
@@ -41,14 +42,12 @@ class TelebotLoggingHandler(TelebotBaseHandler):
                      content = f'text = {repr(button_text)}, data = {repr(call.data)}')
 
   def log_event(self, user: Optional[telebot.types.User], event_type: str, content: str):
-    users = TelebotUsers()
-
     first_name = user.first_name if user and user.first_name else 'None'
     last_name = user.last_name if user and user.last_name else 'None'
 
     name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else 'None'
 
-    if users.is_user_allowed(user.id):
+    if self.users.is_user_allowed(user.id):
       self.log_to_file(self.known_users_messages_path, user.id, name, event_type, content)
     else:
       self.log_to_file(self.unknown_users_messages_path, user.id, name, event_type, content)

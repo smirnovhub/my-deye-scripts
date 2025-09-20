@@ -32,10 +32,12 @@ class TelebotMenuMasterBase(TelebotMenuItemHandler):
   ):
     super().__init__(bot)
     self.loggers = DeyeLoggers()
-    self.registers = registers
     self.all_command: TelebotMenuItem = all_command
     self.master_command: TelebotMenuItem = master_command
     self.slave_command: TelebotMenuItem = slave_command
+    self.holder = DeyeRegistersHolder(loggers = [self.loggers.master],
+                                      register_creator = lambda _: registers,
+                                      **holder_kwargs)
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -52,19 +54,13 @@ class TelebotMenuMasterBase(TelebotMenuItemHandler):
     if not self.is_authorized(message.from_user.id, message.chat.id):
       return
 
-    def creator(prefix):
-      return self.registers
-
-    loggers = DeyeLoggers()
-    holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
-
     try:
-      holder.connect_and_read()
+      self.holder.connect_and_read()
     except Exception as e:
       self.bot.send_message(message.chat.id, f'Error while reading registers: {str(e)}')
       return
     finally:
-      holder.disconnect()
+      self.holder.disconnect()
 
     choices = get_choices_of_invertors(
       user_id = message.from_user.id,
@@ -73,13 +69,14 @@ class TelebotMenuMasterBase(TelebotMenuItemHandler):
       slave_command = self.slave_command,
     )
 
-    if abs(self.registers.inverter_system_time_diff_register.value) > inverter_system_time_need_sync_difference_sec:
+    if abs(self.holder.master_registers.inverter_system_time_diff_register.value
+           ) > inverter_system_time_need_sync_difference_sec:
       # add line break for keyboard
       choices[row_break_str] = row_break_str
       # add time sync command
       choices[sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
 
-    info = get_register_values(holder.master_registers.all_registers)
+    info = get_register_values(self.holder.master_registers.all_registers)
 
     ask_advanced_choice(
       self.bot,

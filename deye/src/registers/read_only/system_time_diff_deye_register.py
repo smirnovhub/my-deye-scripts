@@ -7,6 +7,7 @@ from deye_exceptions import DeyeNotImplementedException
 class SystemTimeDiffDeyeRegister(SystemTimeWritableDeyeRegister):
   def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
     super().__init__(address, name, description, suffix, avg)
+    self._value = 0
 
   @property
   def can_write(self) -> bool:
@@ -15,7 +16,7 @@ class SystemTimeDiffDeyeRegister(SystemTimeWritableDeyeRegister):
   def read_internal(self, interactor: DeyeModbusInteractor):
     value = super().read_internal(interactor)
     now = datetime.now()
-    value = round((value - now).total_seconds())
+    value = int(round((value - now).total_seconds()))
     return value
 
   def write(self, interactor: DeyeModbusInteractor, value):

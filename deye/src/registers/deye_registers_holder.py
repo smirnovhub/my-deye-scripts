@@ -7,7 +7,6 @@ from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from raising_thread import RaisingThread
-from deye_file_lock import lock_path
 from deye_file_locker import DeyeFileLocker
 from deye_exceptions import DeyeQueueIsEmptyException
 from deye_exceptions import DeyeNoSocketAvailableException
@@ -17,6 +16,7 @@ from deye_exceptions import DeyeUnknownException
 from pysolarmanv5 import NoSocketAvailableError
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_registers_factory import DeyeRegistersFactory
+from deye_file_lock import lock_path
 
 class DeyeRegistersHolder:
   def __init__(self, loggers: List[DeyeLogger], **kwargs):
@@ -33,25 +33,28 @@ class DeyeRegistersHolder:
     lockfile = os.path.join(lock_path, 'inverter.lock')
     self.locker = DeyeFileLocker(name, lockfile, verbose = verbose)
 
+    for logger in self._loggers:
+      interactor = DeyeModbusInteractor(logger = logger, **self.kwargs)
+      self._interactors.append(interactor)
+
+      register_creator = self.kwargs.get('register_creator', None)
+      if register_creator != None:
+        self._registers[logger.name] = register_creator(logger.name)
+      else:
+        self._registers[logger.name] = DeyeRegistersFactory.create_registers(prefix = logger.name)
+
+      if interactor.is_master:
+        self._master_interactor = interactor
+
+    if register_creator != None:
+      accumulated_registers = register_creator(self.accumulated_prefix)
+    else:
+      accumulated_registers = DeyeRegistersFactory.create_registers(prefix = self.accumulated_prefix)
+
+    self._registers[self.accumulated_prefix] = accumulated_registers
+
   def connect_and_read(self):
     self.locker.acquire()
-
-    for logger in self._loggers:
-      try:
-        interactor = DeyeModbusInteractor(logger = logger, **self.kwargs)
-        self._interactors.append(interactor)
-
-        register_creator = self.kwargs.get('register_creator', None)
-        if register_creator != None:
-          self._registers[logger.name] = register_creator(logger.name)
-        else:
-          self._registers[logger.name] = DeyeRegistersFactory.create_registers(prefix = logger.name)
-
-        if interactor.is_master:
-          self._master_interactor = interactor
-      except Exception as e:
-        self.handle_exception(e, f'{type(self).__name__}: error while creating DeyeModbusInteractor({logger.name})')
-
     tasks: List[RaisingThread] = []
 
     for interactor in self._interactors:
@@ -79,20 +82,13 @@ class DeyeRegistersHolder:
       except Exception as e:
         self.handle_exception(e, f'{type(self).__name__}: error while reading {interactor.name} registers')
 
-    if register_creator != None:
-      accumulated_registers = register_creator(self.accumulated_prefix)
-    else:
-      accumulated_registers = DeyeRegistersFactory.create_registers(prefix = self.accumulated_prefix)
-
-    self._registers[self.accumulated_prefix] = accumulated_registers
-
-    for register in accumulated_registers.all_registers:
+    for register in self.accumulated_registers.all_registers:
       try:
         register.read(self._interactors)
       except Exception as e:
         self.handle_exception(e, f'{type(self).__name__}: error while reading register {register.name}')
 
-    for register in accumulated_registers.forecast_registers:
+    for register in self.accumulated_registers.forecast_registers:
       try:
         register.read(self._interactors)
       except Exception as e:

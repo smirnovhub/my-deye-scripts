@@ -3,8 +3,16 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
 class IntDeyeRegister(BaseDeyeRegister):
-  def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
+  def __init__(
+    self,
+    address: int,
+    name: str,
+    description: str,
+    suffix: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
     super().__init__(address, 1, name, description, suffix, avg)
+    self._value = 0
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     value = interactor.read_register(self.address, self.quantity)[0]
