@@ -23,21 +23,20 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
 
   def process_message(self, message: telebot.types.Message):
     user = message.from_user
-
-    first_name = user.first_name or ''
-    last_name = user.last_name or ''
-    username = f"@{user.username}" if user.username else None
-    phone = message.contact.phone_number if message.contact else None
-    name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else 'None'
+    first_name = user.first_name if user and user.first_name else 'None'
+    last_name = user.last_name if user and user.last_name else 'None'
+    user_name = f'@{user.username}' if user and user.username else 'None'
+    phone = message.contact.phone_number if message.contact else 'None'
+    name = f'{first_name} {last_name}'.strip()
 
     info = (f"User ID: {user.id}\n"
             f"Name: {name}\n"
-            f"Username: {username}\n"
+            f"User name: {user_name}\n"
             f"Phone: {phone}")
 
     users = TelebotUsers()
 
-    if users.has_user(user.id):
+    if users.is_user_allowed(user.id):
       self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
     else:
       result = self.add_user_to_file('data/access_requests.txt', user.id, name)

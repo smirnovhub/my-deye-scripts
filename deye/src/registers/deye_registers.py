@@ -302,6 +302,10 @@ class DeyeRegisters:
     self.not_implemented('today_production_cost_register')
 
   @property
+  def today_gen_energy_cost_register(self) -> DeyeRegister:
+    self.not_implemented('today_gen_energy_cost_register')
+
+  @property
   def total_battery_charged_energy_register(self) -> DeyeRegister:
     self.not_implemented('total_battery_charged_energy_register')
 
@@ -332,6 +336,10 @@ class DeyeRegisters:
   @property
   def total_production_cost_register(self) -> DeyeRegister:
     self.not_implemented('total_production_cost_register')
+
+  @property
+  def total_gen_energy_cost_register(self) -> DeyeRegister:
+    self.not_implemented('total_gen_energy_cost_register')
 
   @property
   def zero_export_power_register(self) -> DeyeRegister:

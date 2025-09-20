@@ -17,4 +17,5 @@ class TotalStatRegisters(DeyeRegistersFactory.get_registers_class()):
       self.total_battery_charged_energy_register,
       self.total_battery_discharged_energy_register,
       self.total_production_cost_register,
+      self.total_gen_energy_cost_register,
     ]

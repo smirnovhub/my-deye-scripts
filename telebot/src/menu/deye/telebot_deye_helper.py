@@ -7,10 +7,12 @@ from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from empty_registers import EmptyRegisters
+from telebot_auth_helper import TelebotAuthHelper
 from deye_registers_holder import DeyeRegistersHolder
 from deye_system_work_mode import DeyeSystemWorkMode
 from deye_gen_port_mode import DeyeGenPortMode
 from telebot_menu_item import TelebotMenuItem
+from telebot_user_choices_helper import row_break_str
 
 holder_kwargs = {
   'name': 'telebot',
@@ -40,6 +42,7 @@ def get_register_values(registers: List[DeyeRegister]) -> str:
       val = str(register.value).title()
 
     desc = register.description.replace('Inverter ', '')
+    desc = desc.replace('Grid Charging Start SOC', 'Max Charge SOC')
     result += f'{desc}: {val} {register.suffix}\n'
 
   return result
@@ -171,7 +174,7 @@ def get_keyboard_for_register(
       ['15', '20', '25', '30', '35'],
       ['40', '45', '50', '55', '60'],
       ['65', '70', '75', '80', '85'],
-      ['90', '95', '100'],
+      ['90', '93', '95', '97', '100'],
     ])
   elif register.name == registers.zero_export_power_register.name:
     return build_keyboard_for_register(register, [
@@ -244,6 +247,7 @@ def build_keyboard_for_register(
   return keyboard
 
 def get_choices_of_invertors(
+  user_id: int,
   all_command: TelebotMenuItem,
   master_command: TelebotMenuItem,
   slave_command: TelebotMenuItem,
@@ -262,26 +266,58 @@ def get_choices_of_invertors(
   Returns:
       Dict[str, str]: Mapping of button text to callback command.
   """
-  choices: Dict[str, str] = {}
   loggers = DeyeLoggers()
+  auth_helper = TelebotAuthHelper()
 
+  choices: Dict[str, str] = {}
   if loggers.count == 1:
     return choices
 
-  choices[all_command.description] = f'#{all_command.command}'
+  if auth_helper.is_menu_item_allowed(user_id, all_command):
+    choices[all_command.description] = f'/{all_command.command}'
+    # add line break
+    choices[row_break_str] = row_break_str
 
-  # add line break
-  choices[''] = ''
+  if auth_helper.is_menu_item_allowed(user_id, master_command):
+    master_name = loggers.master.name
+    command = master_command.command.format(master_name)
+    description = master_command.description.format(master_name.title())
+    choices[description] = f'/{command}'
 
-  choices[master_command.description] = f'#{master_command.command}'
-
-  for logger in loggers.loggers:
-    if logger.name != loggers.master.name:
-      command = slave_command.command.format(logger.name)
-      description = slave_command.description.format(logger.name.title())
-      choices[description] = f'#{command}'
+  if auth_helper.is_menu_item_allowed(user_id, slave_command):
+    for logger in loggers.loggers:
+      if logger.name != loggers.master.name:
+        command = slave_command.command.format(logger.name)
+        description = slave_command.description.format(logger.name.title())
+        choices[description] = f'/{command}'
 
   return choices
+
+def get_available_registers(user_id: int) -> str:
+  """
+  Return a formatted string listing all writable registers available to a user.
+
+  Iterates over all read/write registers and includes only those
+  that the user is allowed to write to.
+  Each register is numbered and includes its description and command name.
+
+  Args:
+      user_id (int): Telegram user ID to check permissions for
+
+  Returns:
+      str: Formatted string with available registers for the user
+  """
+  registers = DeyeRegisters()
+  auth_helper = TelebotAuthHelper()
+
+  str = ''
+  num = 1
+  for register in registers.read_write_registers:
+    if auth_helper.is_writable_register_allowed(user_id, register.name):
+      str += f'<b>{num}. {register.description}:</b>\n'
+      str += f'/{register.name}\n'
+      num += 1
+  return str
 
 def debug_print(obj):
   """Pretty-print any Python object directly using pprint."""

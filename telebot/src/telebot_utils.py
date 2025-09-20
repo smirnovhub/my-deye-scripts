@@ -3,7 +3,7 @@ import telebot
 
 from typing import Union
 
-def get_button_by_data(
+def get_inline_button_by_data(
   message: telebot.types.Message,
   button_data: str,
 ) -> Union[telebot.types.InlineKeyboardButton, None]:

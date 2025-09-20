@@ -1,8 +1,10 @@
+import io
 import os
 import time
 import random
 
 from datetime import datetime
+
 from deye_exceptions import DeyeFileLockingException
 from deye_utils import ensure_dir_and_file_exists
 
@@ -13,26 +15,49 @@ from deye_file_lock import (
   LOCK_UN,
 )
 
-# ---------------------------------------
-# Class for handling exclusive file locks
-# ---------------------------------------
 class DeyeFileLocker:
-  def __init__(self, name, path, verbose = False):
-    self.name = name
-    self.path = path
-    self.verbose = verbose
-    self.lockfile = None
-    self.timedout = False
+  """
+  Handles exclusive file locking with optional logging and file trimming.
+
+  This class allows safe access to a file by acquiring an exclusive lock,
+  waiting for it if necessary, and releasing it after use. It can log actions
+  to a separate log file and optionally print messages to the console. 
+
+  Features:
+      - Acquire an exclusive lock on a file with timeout support.
+      - Release the lock safely.
+      - Trim log files to a maximum size, keeping only the most recent entries.
+      - Verbose logging for debugging and monitoring.
+      - Cross-platform safe file locking via `flock`.
+
+  Parameters:
+      name (str): Name identifier for logging purposes.
+      path (str): Path to the file to lock.
+      verbose (bool, optional): Whether to print log messages to console.
+                                Defaults to False.
+  """
+  def __init__(self, name: str, path: str, verbose: bool = False) -> None:
+    self.name: str = name
+    self.path: str = path
+    self.verbose: bool = verbose
+    self.lockfile: io.IOBase = None
+    self.timedout: bool = False
 
     # Ensure lock file exists
     ensure_dir_and_file_exists(path, dir_mode = 0o777, file_mode = 0o666)
 
-    self.rnd = random.randint(1000000, 9999999)
-    self.log_filename = f'{os.path.dirname(path)}/locker.log'
+    self.rnd: int = random.randint(1000000, 9999999)
+    self.log_filename: str = f'{os.path.dirname(path)}/locker.log'
 
     ensure_dir_and_file_exists(self.log_filename, dir_mode = 0o777, file_mode = 0o666)
 
-  def log(self, message):
+  def log(self, message: str) -> None:
+    """
+    Log a message to the locker log file and optionally print it.
+
+    Parameters:
+        message (str): The message to log.
+    """
     now = datetime.now()
     date = now.strftime('[%Y-%m-%d %H:%M:%S]')
 
@@ -42,8 +67,15 @@ class DeyeFileLocker:
     if self.verbose:
       print(message)
 
-  def trim_file(self, filename, trim_size):
-    # wait while file increased up to 20% and then trim
+  def trim_file(self, filename: str, trim_size: int) -> None:
+    """
+    Trim the file to a specified size, keeping only the last `trim_size` bytes.
+    Skips trimming if file is not larger than 120% of `trim_size`.
+
+    Parameters:
+        filename (str): Path to the file to trim.
+        trim_size (int): Maximum size of the file after trimming in bytes.
+    """
     max_size = int(trim_size * 1.2)
     file_size = os.path.getsize(filename)
     if file_size <= max_size:
@@ -54,7 +86,7 @@ class DeyeFileLocker:
         # Try to acquire exclusive lock (non-blocking)
         flock(f, LOCK_EX | LOCK_NB)
       except BlockingIOError:
-        # Someone else is working with file — do nothing
+        # Someone else is working with file - do nothing
         if self.verbose:
           print(f"Could not lock {filename}, skipping trim")
         return
@@ -74,10 +106,17 @@ class DeyeFileLocker:
         # Always release lock
         flock(f, LOCK_UN)
 
-  #  Acquire exclusive lock on the file.
-  #  Waits up to 'timeout' seconds before giving up.
-  #  Returns True if lock acquired, False if timeout.
-  def acquire(self, timeout = 15):
+  def acquire(self, timeout: int = 15) -> None:
+    """
+    Acquire an exclusive lock on the file.
+    Waits up to `timeout` seconds before raising an exception.
+
+    Parameters:
+        timeout (int): Maximum time in seconds to wait for the lock.
+
+    Raises:
+        DeyeFileLockingException: If lock could not be acquired within timeout.
+    """
     if self.lockfile is not None:
       self.log(f"{self.name}: WARNING: lock is already acquired on {self.path}")
       return
@@ -115,8 +154,11 @@ class DeyeFileLocker:
         # wait before retrying
         time.sleep(random.uniform(0.15, 0.3))
 
-  def release(self):
-    # Release lock and close file
+  def release(self) -> None:
+    """
+    Release the acquired lock and close the file.
+    Logs the elapsed time the lock was held.
+    """
     if self.lockfile is not None:
       flock(self.lockfile, LOCK_UN)
       self.lockfile.close()

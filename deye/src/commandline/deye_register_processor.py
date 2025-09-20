@@ -16,8 +16,8 @@ from deye_registers_factory import DeyeRegistersFactory
 
 class DeyeRegisterProcessor:
   def __init__(self):
-    self.interactors = []
-    self.master_interactor = None
+    self.interactors: List[DeyeModbusInteractor] = []
+    self.master_interactor: DeyeModbusInteractor = None
     self.registers = DeyeRegistersFactory.create_registers()
 
   def get_arg_name(self, register: DeyeRegister, action: str) -> str:
