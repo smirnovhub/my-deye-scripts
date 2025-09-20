@@ -4,6 +4,7 @@ from deye_modbus_interactor import DeyeModbusInteractor
 class TestDeyeRegister(BaseDeyeRegister):
   def __init__(self, address: int, quantity: int, name: str, description: str, suffix: str):
     super().__init__(address, quantity, name, description, suffix)
+    self._value = 0
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     values = interactor.read_register(self.address, self.quantity)

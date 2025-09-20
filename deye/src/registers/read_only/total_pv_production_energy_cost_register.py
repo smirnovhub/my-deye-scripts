@@ -14,6 +14,7 @@ class TotalPvProductionEnergyCostRegister(BaseDeyeRegister):
                avg = DeyeRegisterAverageType.none):
     self.energy_cost = DeyeEnergyCost()
     super().__init__(0, 0, name, description, self.energy_cost.currency_code, avg)
+    self._value = 0.0
     self._pv_production_register = pv_production_register
 
   @property

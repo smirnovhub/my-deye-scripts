@@ -6,6 +6,7 @@ from deye_gen_port_mode import DeyeGenPortMode
 class GenPortModeWritableDeyeRegister(IntDeyeRegister):
   def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
     super().__init__(address, name, description, suffix, avg)
+    self._value = DeyeGenPortMode.unknown
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     value = super().read_internal(interactor)
