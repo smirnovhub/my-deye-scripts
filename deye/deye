@@ -7,9 +7,9 @@ import traceback
 from typing import List
 
 sys.path.append('../modules')
-import common_modules
+from common_modules import import_dirs
 
-common_modules.import_dirs(['src', '../common'])
+import_dirs(['src', '../common'])
 
 from time import perf_counter
 from deye_logger import DeyeLogger
