@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_exceptions import DeyeNotImplementedException
@@ -27,10 +27,6 @@ class DeyeRegister:
     self.not_implemented('can_accumulate')
 
   @property
-  def type_name(self) -> str:
-    self.not_implemented('type_name')
-
-  @property
   def avg_type(self) -> DeyeRegisterAverageType:
     self.not_implemented('avg_type')
 
@@ -55,7 +51,7 @@ class DeyeRegister:
     self.not_implemented('description')
 
   @property
-  def value(self):
+  def value(self) -> Any:
     self.not_implemented('value')
 
   @property

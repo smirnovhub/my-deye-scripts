@@ -6,9 +6,7 @@ from typing import Dict, List, Union
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
-from empty_registers import EmptyRegisters
 from telebot_auth_helper import TelebotAuthHelper
-from deye_registers_holder import DeyeRegistersHolder
 from deye_system_work_mode import DeyeSystemWorkMode
 from deye_gen_port_mode import DeyeGenPortMode
 from telebot_menu_item import TelebotMenuItem
@@ -16,8 +14,8 @@ from telebot_user_choices_helper import row_break_str
 
 holder_kwargs = {
   'name': 'telebot',
-  'socket_timeout': 7,
-  'caching_time': 15,
+  'socket_timeout': 10,
+  'caching_time': 5,
   #  'verbose': True,
 }
 
@@ -46,33 +44,6 @@ def get_register_values(registers: List[DeyeRegister]) -> str:
     result += f'{desc}: {val} {register.suffix}\n'
 
   return result
-
-def write_register(register: DeyeRegister, value):
-  """
-  Write a value to the given Deye register.
-
-  Connects to the inverter using a DeyeRegistersHolder, writes the value,
-  and ensures the connection is closed afterwards.
-
-  Parameters:
-      register (DeyeRegister): The target register.
-      value: The value to write.
-
-  Returns:
-      The value that was written.
-  """
-  loggers = DeyeLoggers()
-
-  def creator(prefix):
-    return EmptyRegisters(prefix)
-
-  try:
-    holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
-    holder.connect_and_read()
-    value = holder.write_register(register, value)
-    return value
-  finally:
-    holder.disconnect()
 
 def get_keyboard_for_register(
   registers: DeyeRegisters,
@@ -293,7 +264,7 @@ def get_choices_of_invertors(
 
   return choices
 
-def get_available_registers(user_id: int) -> str:
+def get_available_registers(registers: DeyeRegisters, auth_helper: TelebotAuthHelper, user_id: int) -> str:
   """
   Return a formatted string listing all writable registers available to a user.
 
@@ -307,9 +278,6 @@ def get_available_registers(user_id: int) -> str:
   Returns:
       str: Formatted string with available registers for the user
   """
-  registers = DeyeRegisters()
-  auth_helper = TelebotAuthHelper()
-
   str = ''
   num = 1
   for register in registers.read_write_registers:

@@ -6,17 +6,21 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
 from deye_utils import (
-    to_bytes,
-    to_inv_time,
+  to_bytes,
+  to_inv_time,
 )
 
 class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
-  def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
+  def __init__(
+    self,
+    address: int,
+    name: str,
+    description: str,
+    suffix: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
     super().__init__(address, 3, name, description, suffix, avg)
-
-  @property
-  def type_name(self) -> str:
-    return 'str'
+    self._value = ''
 
   @property
   def can_write(self) -> bool:

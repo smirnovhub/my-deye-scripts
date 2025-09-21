@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
@@ -76,10 +76,6 @@ class BaseDeyeRegister(DeyeRegister):
     return self._avg != DeyeRegisterAverageType.none and self._avg != DeyeRegisterAverageType.only_master
 
   @property
-  def type_name(self) -> str:
-    return 'int'
-
-  @property
   def avg_type(self) -> DeyeRegisterAverageType:
     return self._avg
 
@@ -107,7 +103,7 @@ class BaseDeyeRegister(DeyeRegister):
     return self._description
 
   @property
-  def value(self):
+  def value(self) -> Any:
     return self._value
 
   @property

@@ -95,7 +95,7 @@ class DeyeCacheManager:
     to_delete_start = register_addr
     to_delete_end = register_addr + len(values) - 1 # inclusive
 
-    pattern = re.compile(rf"registers-{re.escape(self.name)}-(\d+)-(\d+)\.json")
+    pattern = re.compile(rf"registers-.+-(\d+)-(\d+)\.json")
 
     if self.verbose:
       print(f'{self.name}: removing cached files for registers {[register_addr + i for i in range(len(values))]}...')
