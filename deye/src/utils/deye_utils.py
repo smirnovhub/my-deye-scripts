@@ -1,9 +1,18 @@
 import os
+import re
+import queue
 import struct
+import requests
 
 from typing import Union, List
 from datetime import datetime, timedelta
-from deye_exceptions import DeyeValueException
+
+from deye_exceptions import DeyeConnectionErrorException, DeyeValueException
+from deye_exceptions import DeyeQueueIsEmptyException
+from deye_exceptions import DeyeNoSocketAvailableException
+from deye_exceptions import DeyeKnownException
+from deye_exceptions import DeyeUnknownException
+from pysolarmanv5 import NoSocketAvailableError
 
 # some code is based on githubDante / deye-controller
 # https://github.com/githubDante/deye-controller
@@ -118,3 +127,20 @@ def ensure_dir_and_file_exists(path, dir_mode = 0o755, file_mode = 0o644):
   dir_path = os.path.dirname(path)
   ensure_dir_exists(dir_path, dir_mode)
   ensure_file_exists(path, file_mode)
+
+def get_reraised_exception(exception: Exception, message: str) -> Exception:
+  if isinstance(exception, DeyeKnownException):
+    return exception
+
+  try:
+    raise exception
+  except queue.Empty:
+    return DeyeQueueIsEmptyException(f'{message}: Queue is empty (get() timed out)')
+  except NoSocketAvailableError as e:
+    return DeyeNoSocketAvailableException(f'{message}: {e.__class__.__name__} ({str(e).strip(".")})')
+  except requests.exceptions.ConnectionError as e:
+    match = re.search(r"\[Errno -?\d+\][^')]+", str(e))
+    text = match.group(0) if match else str(e)
+    return DeyeConnectionErrorException(f'{message}: Connection error ({text})')
+  except Exception as e:
+    return DeyeUnknownException(f'{message}: {str(e)}')
