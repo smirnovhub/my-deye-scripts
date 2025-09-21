@@ -59,10 +59,10 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     try:
       self.holder.connect_and_read()
     except DeyeKnownException as e:
-      self.bot.send_message(message.chat.id, f'Error while reading registers: {str(e)}')
+      self.bot.send_message(message.chat.id, str(e))
       return
     except Exception as e:
-      self.bot.send_message(message.chat.id, f'Error while reading registers: {str(e)}')
+      self.bot.send_message(message.chat.id, str(e))
       print(traceback.format_exc())
       return
     finally:
@@ -118,9 +118,9 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         )
 
       except DeyeKnownException as e:
-        self.bot.send_message(chat_id, f'Error while writing registers: {str(e)}')
+        self.bot.send_message(chat_id, str(e))
       except Exception as e:
-        self.bot.send_message(chat_id, f'Error while writing registers: {str(e)}')
+        self.bot.send_message(chat_id, str(e))
         print(traceback.format_exc())
     else:
       self.bot.send_message(chat_id, 'Time sync cancelled')

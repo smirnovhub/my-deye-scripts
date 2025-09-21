@@ -48,7 +48,7 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     try:
       self.holder.connect_and_read()
     except Exception as e:
-      self.bot.send_message(message.chat.id, f'Error while reading registers: {str(e)}')
+      self.bot.send_message(message.chat.id, str(e))
       return
     finally:
       self.holder.disconnect()
