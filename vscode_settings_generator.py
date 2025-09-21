@@ -7,7 +7,11 @@ from typing import List
 from pathlib import Path
 
 sys.path.append('modules')
-import common_modules
+
+from common_modules import (
+  modules,
+  modules_dir,
+)
 
 settings_text = """{
   "python.pythonPath": ".venv/bin/python",
@@ -63,19 +67,28 @@ def process(path: str, base_dirs: List[str]):
   pathes = get_dirs(path, base_dirs)
   text = settings_text.replace('INCLUDES', ',\n    '.join(pathes))
 
-  modules_path = os.path.relpath(common_modules.modules_dir, Path.cwd() / path)
+  modules_path = os.path.relpath(modules_dir, Path.cwd() / path)
 
-  modules_str = f'"{modules_path}",\n' +  '    "' + modules_path + '/' + (f'",\n    "{modules_path}/'.join(common_modules.modules)) + '"'
+  modules_str = f'"{modules_path}",\n' + '    "' + modules_path + '/' + (
+    f'",\n    "{modules_path}/'.join(modules)) + '"'
   text = text.replace('MODULES', modules_str)
   text = text.replace('\\', '/')
 
-  with open(os.path.join(path, '.vscode/settings.json'), 'w', newline = '') as f:
-    f.write(text)
-    f.flush()
+  try:
+    with open(os.path.join(path, '.vscode/settings.json'), 'w', newline = '') as f:
+      f.write(text)
+      f.flush()
+  except Exception as e:
+    print(str(e))
 
-  with open(os.path.join(path, '.style.yapf'), 'w', newline = '') as f:
-    f.write(style_yapf_text)
-    f.flush()
+  try:
+    with open(os.path.join(path, '.style.yapf'), 'w', newline = '') as f:
+      f.write(style_yapf_text)
+      f.flush()
+  except Exception as e:
+    print(str(e))
 
+process('.', ['common'])
+process('common', ['.'])
 process('deye', ['src', '../common'])
 process('telebot', ['src', '../common', '../deye/src'])
