@@ -6,14 +6,13 @@ import argparse
 import traceback
 from typing import List
 
-from deye_logger import DeyeLogger
-
 sys.path.append('../modules')
 import common_modules
 
 common_modules.import_dirs(['src', '../common'])
 
 from time import perf_counter
+from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_file_locker import DeyeFileLocker
 from deye_exceptions import DeyeKnownException
@@ -49,7 +48,10 @@ if loggers.count > 1:
   parser.add_argument('-i', '--inverter', help = f'specify inverter ({inverters_str})', default = loggers.master.name)
 
 parser.add_argument('-a', '--get-all', action = 'store_true', help = 'get all parameters')
-parser.add_argument('-o', '--only-accumulated', action = 'store_true', help = 'get only accumulated parameters for all inverters')
+parser.add_argument('-o',
+                    '--only-accumulated',
+                    action = 'store_true',
+                    help = 'get only accumulated parameters for all inverters')
 parser.add_argument('-f', '--forecast', action = 'store_true', help = 'get battery forecast registers')
 parser.add_argument('-t', '--test', action = 'store_true', help = 'get test registers')
 parser.add_argument('--get-all-read-only', action = 'store_true', help = 'get all read only parameters')
