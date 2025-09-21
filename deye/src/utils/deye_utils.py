@@ -6,13 +6,16 @@ import requests
 
 from typing import Union, List
 from datetime import datetime, timedelta
-
-from deye_exceptions import DeyeConnectionErrorException, DeyeValueException
-from deye_exceptions import DeyeQueueIsEmptyException
-from deye_exceptions import DeyeNoSocketAvailableException
-from deye_exceptions import DeyeKnownException
-from deye_exceptions import DeyeUnknownException
 from pysolarmanv5 import NoSocketAvailableError
+
+from deye_exceptions import (
+  DeyeConnectionErrorException,
+  DeyeKnownException,
+  DeyeNoSocketAvailableException,
+  DeyeQueueIsEmptyException,
+  DeyeUnknownException,
+  DeyeValueException,
+)
 
 # some code is based on githubDante / deye-controller
 # https://github.com/githubDante/deye-controller
