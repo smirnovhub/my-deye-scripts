@@ -11,7 +11,11 @@ from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_registers_factory import DeyeRegistersFactory
 from deye_utils import get_reraised_exception
-from deye_file_lock import lock_path
+
+from deye_file_lock import (
+  lock_path,
+  inverter_lock_file_name,
+)
 
 class DeyeRegistersHolder:
   def __init__(self, loggers: List[DeyeLogger], **kwargs):
@@ -25,7 +29,7 @@ class DeyeRegistersHolder:
     # Initialize locker
     verbose = kwargs.get('verbose', False)
     name = kwargs.get('name', os.path.basename(__file__))
-    lockfile = os.path.join(lock_path, 'inverter.lock')
+    lockfile = os.path.join(lock_path, inverter_lock_file_name)
     self.locker = DeyeFileLocker(name, lockfile, verbose = verbose)
 
     for logger in self._loggers:

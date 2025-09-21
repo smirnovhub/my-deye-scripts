@@ -4,6 +4,9 @@ import os
 import sys
 import argparse
 import traceback
+from typing import List
+
+from deye_logger import DeyeLogger
 
 sys.path.append('../modules')
 import common_modules
@@ -12,10 +15,14 @@ common_modules.import_dirs(['src', '../common'])
 
 from time import perf_counter
 from deye_loggers import DeyeLoggers
-from deye_file_lock import lock_path
 from deye_file_locker import DeyeFileLocker
 from deye_exceptions import DeyeKnownException
 from deye_register_processor import DeyeRegisterProcessor
+
+from deye_file_lock import (
+  lock_path,
+  inverter_lock_file_name,
+)
 
 class DeyeArgumentParser(argparse.ArgumentParser):
   def error(self, message):
@@ -27,9 +34,11 @@ parser = DeyeArgumentParser(
   formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position = 50, width = 100))
 
 loggers = DeyeLoggers()
-inverters_list = []
+
+inverters_list: List[str] = []
 for logger in loggers.loggers:
   inverters_list.append(logger.name)
+
 inverters_str = ','.join(inverters_list)
 
 parser.add_argument('-v', '--verbose-output', action = 'store_true', help = 'verbose output')
@@ -64,7 +73,7 @@ try:
   else:
     inverters = [loggers.master.name]
 
-  loggers_list = []
+  loggers_list: List[DeyeLogger] = []
 
   for inverter in inverters:
     if not inverter:
@@ -72,7 +81,7 @@ try:
 
     logger = loggers.get_logger_by_name(inverter)
     if logger is None:
-      parser.error(f'Inverter \'{inverter}\' is unknown. Pls use these: {inverters_str}')
+      parser.error(f"Inverter '{inverter}' is unknown. Pls use these: {inverters_str}")
       exit()
     else:
       loggers_list.append(logger)
@@ -84,11 +93,11 @@ try:
     parser.print_help()
     exit()
 
-  parse_invertors = perf_counter() - current
+  parse_inverters = perf_counter() - current
   current = perf_counter()
 
   # Initialize locker
-  lockfile = os.path.join(lock_path, 'inverter.lock')
+  lockfile = os.path.join(lock_path, inverter_lock_file_name)
   locker = DeyeFileLocker(os.path.basename(__file__), lockfile, verbose = args.verbose_output == True)
 
   locker.acquire()
@@ -122,12 +131,12 @@ finally:
 
 disconnect = perf_counter() - current
 
-total = create_processor + parse_invertors + get_lock + check_parameters +\
+total = create_processor + parse_inverters + get_lock + check_parameters +\
   enqueue_registers + process_registers + process_parameters + disconnect
 
 if False:
   print(f'create processor took   : {round(create_processor, 3):.3f} s')
-  print(f'parse invertors took    : {round(parse_invertors, 3):.3f} s')
+  print(f'parse invertors took    : {round(parse_inverters, 3):.3f} s')
   print(f'get lock took           : {round(get_lock, 3):.3f} s')
   print(f'check parameters took   : {round(check_parameters, 3):.3f} s')
   print(f'enqueue registers took  : {round(enqueue_registers, 3):.3f} s')
