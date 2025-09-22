@@ -101,7 +101,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
       return False
 
     if not self.users.is_user_allowed(user_id):
-      self.bot.send_message(chat_id, 'User is not authorized')
+      self.bot.send_message(chat_id, f'User {user_id} is not authorized')
       return False
 
     return self._is_item_allowed(user_id, chat_id)
@@ -121,6 +121,6 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
       return False
 
     if not self.auth_helper.is_menu_item_allowed(user_id, self.command):
-      self.bot.send_message(chat_id, 'Command is not allowed for this user')
+      self.bot.send_message(chat_id, f'Command is not allowed for user {user_id}')
       return False
     return True

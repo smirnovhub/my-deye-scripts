@@ -40,10 +40,10 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
     else:
       result = self.add_user_to_file('data/access_requests.txt', user.id, name)
       if result:
-        self.bot.send_message(message.chat.id, 'Access requested')
+        self.bot.send_message(message.chat.id, f'Access requested for user {user.id}')
         send_private_telegram_message(f'<b>Access requested:</b>\n{info}')
       else:
-        self.bot.send_message(message.chat.id, 'Access already requested')
+        self.bot.send_message(message.chat.id, f'Access already requested for user {user.id}')
 
   # Checks if the given user_id exists in the file.
   # If user_id already exists → return False.
