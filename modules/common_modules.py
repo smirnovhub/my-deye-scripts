@@ -9,26 +9,28 @@ modules_dir = Path(__file__).parent
 modules = [
   'uModbus',
   'pysolarmanv5',
-  'pyTelegramBotAPI'
+  'pyTelegramBotAPI',
 ]
 
 # Add specific module directories to sys.path so they can be imported
 for module in modules:
   sys.path.append(f'{str(modules_dir)}/{module}')
 
-# Recursively add all subdirectories of the given base directories to sys.path,
-# excluding hidden folders (names starting with '.') and '__pycache__' folders
-# 
-# Args:
-#   base_dirs (List[str]): A list of base directory paths to scan
-# 
-# Behavior:
-#   - Walks through each base directory recursively
-#   - Checks every subdirectory
-#   - Skips hidden directories (e.g., .git, .venv) and '__pycache__'
-#   - Adds valid directories to sys.path so that Python can import modules from them
-def import_dirs(base_dirs: List[str]):
+def import_dirs(base_path: Path, base_dirs: List[str]):
+  """
+  Recursively add directories to sys.path relative to a given base path
+
+  This function allows Python to import modules from specified directories and
+  all their subdirectories, while skipping hidden folders and __pycache__ directories
+
+  Args:
+      base_path (Path): The base directory from which the relative paths in `base_dirs` are resolved
+      base_dirs (List[str]): List of directory paths relative to `base_path` to be added to sys.path
+  """
   for base in base_dirs:
-    for subdir in Path(base).glob('**/'):
+    dir_path = (base_path / base).resolve()
+    if not dir_path.exists():
+      continue
+    for subdir in dir_path.glob('**/'):
       if subdir.is_dir() and not subdir.name.startswith('.') and subdir.name != '__pycache__':
         sys.path.append(str(subdir))
