@@ -23,9 +23,9 @@ RUN cd my-deye-scripts && git submodule update --init --recursive
 RUN pip install --no-cache-dir requests
 
 # Copy pre-configured configs to container
-COPY deye_loggers.py my-deye-scripts/common/deye_loggers.py
-COPY telebot_credentials.py my-deye-scripts/common/telebot_credentials.py
-COPY telebot_users.py my-deye-scripts/common/telebot_users.py
+COPY common/deye_loggers.py my-deye-scripts/common/deye_loggers.py
+COPY common/telebot_credentials.py my-deye-scripts/common/telebot_credentials.py
+COPY common/telebot_users.py my-deye-scripts/common/telebot_users.py
 
 # Starting the bot
 CMD ["python3", "my-deye-scripts/telebot/telebot"]
