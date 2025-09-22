@@ -1,7 +1,10 @@
 FROM python:3.11-slim
 
+# Set username variable
+ARG USER_NAME=telebot
+
 # Set application directory variable
-ENV APP_DIR=/home/telebot
+ARG APP_DIR=/home/$USER_NAME
 
 # Set the correct time zone according to your actual location.
 # Otherwise, the local time will be incorrect!
@@ -19,11 +22,11 @@ RUN python3 -m pip install --upgrade pip
 RUN ln -s /usr/local/bin/python3 /usr/bin/python3 \
  && ln -s /usr/local/bin/pip3 /usr/bin/pip3
 
-# Create user 'telebot' without password, with home directory
-RUN useradd -m -u 3333 -s /bin/bash telebot
+# Create user without password, with home directory
+RUN useradd -m -u 3333 -s /bin/bash $USER_NAME
 
 # Switch to non-root user
-USER telebot
+USER $USER_NAME
 
 # Install required Python packages
 RUN pip install --no-cache-dir requests
@@ -37,10 +40,10 @@ RUN git clone https://github.com/smirnovhub/my-deye-scripts.git \
  && git submodule update --init --recursive
 
 # Copy pre-configured configs to container
-COPY --chown=telebot:telebot common/deye_loggers.py \
-                             common/telebot_credentials.py \
-                             common/telebot_users.py \
-                             my-deye-scripts/common/
+COPY --chown=$USER_NAME:$USER_NAME common/deye_loggers.py \
+                                common/telebot_credentials.py \
+                                common/telebot_users.py \
+                                my-deye-scripts/common/
 
 # Starting the bot
 CMD ["python3", "my-deye-scripts/telebot/telebot"]
