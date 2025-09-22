@@ -12,10 +12,16 @@
 
 import sys
 
-sys.path.append('../modules')
+from pathlib import Path
+
+current_path = Path(__file__).parent.resolve()
+modules_path = (current_path / '../modules').resolve()
+
+sys.path.append(str(modules_path))
+
 from common_modules import import_dirs
 
-import_dirs(['src', '../deye/src', '../common'])
+import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 import telebot
 from mytelebot import MyTelebot
