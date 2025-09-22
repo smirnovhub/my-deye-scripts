@@ -108,10 +108,10 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       try:
         text = self.write_register(register, value)
       except DeyeKnownException as e:
-        self.bot.send_message(call.message.chat.id, f'Error while writing register: {str(e)}')
+        self.bot.send_message(call.message.chat.id, str(e))
         return
       except Exception as e:
-        self.bot.send_message(call.message.chat.id, f'Error while writing register: {str(e)}')
+        self.bot.send_message(call.message.chat.id, str(e))
         print(traceback.format_exc())
         return
 
@@ -221,10 +221,10 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     try:
       text = self.write_register(register, message.text)
     except DeyeKnownException as e:
-      self.bot.send_message(message.chat.id, f'Error while writing register: {str(e)}')
+      self.bot.send_message(message.chat.id, str(e))
       return
     except Exception as e:
-      self.bot.send_message(message.chat.id, f'Error while writing register: {str(e)}')
+      self.bot.send_message(message.chat.id, str(e))
       print(traceback.format_exc())
       return
 

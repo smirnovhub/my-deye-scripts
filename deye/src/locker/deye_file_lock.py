@@ -7,6 +7,8 @@ LOCK_SH = 0x2 # Shared lock
 LOCK_NB = 0x4 # Non-blocking
 LOCK_UN = 0x8 # Unlock
 
+inverter_lock_file_name = 'inverter.lock'
+
 if os.name == 'nt':
   import msvcrt
   import tempfile

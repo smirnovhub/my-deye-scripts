@@ -1,5 +1,4 @@
 import os
-import queue
 
 from typing import Dict, List
 from deye_logger import DeyeLogger
@@ -8,15 +7,15 @@ from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from raising_thread import RaisingThread
 from deye_file_locker import DeyeFileLocker
-from deye_exceptions import DeyeQueueIsEmptyException
-from deye_exceptions import DeyeNoSocketAvailableException
 from deye_exceptions import DeyeValueException
-from deye_exceptions import DeyeKnownException
-from deye_exceptions import DeyeUnknownException
-from pysolarmanv5 import NoSocketAvailableError
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_registers_factory import DeyeRegistersFactory
-from deye_file_lock import lock_path
+from deye_utils import get_reraised_exception
+
+from deye_file_lock import (
+  lock_path,
+  inverter_lock_file_name,
+)
 
 class DeyeRegistersHolder:
   def __init__(self, loggers: List[DeyeLogger], **kwargs):
@@ -30,7 +29,7 @@ class DeyeRegistersHolder:
     # Initialize locker
     verbose = kwargs.get('verbose', False)
     name = kwargs.get('name', os.path.basename(__file__))
-    lockfile = os.path.join(lock_path, 'inverter.lock')
+    lockfile = os.path.join(lock_path, inverter_lock_file_name)
     self.locker = DeyeFileLocker(name, lockfile, verbose = verbose)
 
     for logger in self._loggers:
@@ -64,7 +63,8 @@ class DeyeRegistersHolder:
         tasks.append(
           RaisingThread(target = interactor.process_enqueued_registers, name = interactor.name.title() + "Thread"))
       except Exception as e:
-        self.handle_exception(e, f'{type(self).__name__}: error while enqueue {interactor.name} registers')
+        raise get_reraised_exception(e,
+                                     f'{type(self).__name__}: error while enqueue {interactor.name} registers') from e
 
     try:
       for task in tasks:
@@ -73,26 +73,27 @@ class DeyeRegistersHolder:
       for task in tasks:
         task.join()
     except Exception as e:
-      self.handle_exception(e, f'{type(self).__name__}: error while reading registers')
+      raise get_reraised_exception(e, f'{type(self).__name__}: error while reading registers') from e
 
     for interactor in self._interactors:
       try:
         for register in self._registers[interactor.name].all_registers:
           register.read([interactor])
       except Exception as e:
-        self.handle_exception(e, f'{type(self).__name__}: error while reading {interactor.name} registers')
+        raise get_reraised_exception(e,
+                                     f'{type(self).__name__}: error while reading {interactor.name} registers') from e
 
     for register in self.accumulated_registers.all_registers:
       try:
         register.read(self._interactors)
       except Exception as e:
-        self.handle_exception(e, f'{type(self).__name__}: error while reading register {register.name}')
+        raise get_reraised_exception(e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
     for register in self.accumulated_registers.forecast_registers:
       try:
         register.read(self._interactors)
       except Exception as e:
-        self.handle_exception(e, f'{type(self).__name__}: error while reading register {register.name}')
+        raise get_reraised_exception(e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
   @property
   def accumulated_prefix(self) -> str:
@@ -113,7 +114,11 @@ class DeyeRegistersHolder:
   def write_register(self, register: DeyeRegister, value):
     if self._master_interactor == None:
       raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
-    return register.write(self._master_interactor, value)
+
+    try:
+      return register.write(self._master_interactor, value)
+    except Exception as e:
+      raise get_reraised_exception(e, f'{type(self).__name__}: error while writing register {register.name}') from e
 
   def disconnect(self):
     last_exception = None
@@ -123,8 +128,8 @@ class DeyeRegistersHolder:
           interactor.disconnect()
         except Exception as e:
           try:
-            self.handle_exception(e,
-                                  f'{type(self).__name__}: error while disconnecting from inverter {interactor.name}')
+            raise get_reraised_exception(
+              e, f'{type(self).__name__}: error while disconnecting from inverter {interactor.name}') from e
           except Exception as handled:
             # remember last exception
             last_exception = handled
@@ -133,15 +138,3 @@ class DeyeRegistersHolder:
 
     if last_exception:
       raise last_exception
-
-  def handle_exception(self, exception, message):
-    try:
-      raise exception
-    except DeyeKnownException:
-      raise
-    except queue.Empty as e:
-      raise DeyeQueueIsEmptyException(f'{message}: Queue is empty (get() timed out)') from e
-    except NoSocketAvailableError as e:
-      raise DeyeNoSocketAvailableException(f'{message}: {e.__class__.__name__}({str(e).strip(".")})') from e
-    except Exception as e:
-      raise DeyeUnknownException(f'{message}: {str(e)}') from e

@@ -13,9 +13,9 @@
 import sys
 
 sys.path.append('../modules')
-import common_modules
+from common_modules import import_dirs
 
-common_modules.import_dirs(['src', '../deye/src', '../common'])
+import_dirs(['src', '../deye/src', '../common'])
 
 import telebot
 from mytelebot import MyTelebot

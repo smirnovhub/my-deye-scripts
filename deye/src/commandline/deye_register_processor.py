@@ -1,18 +1,14 @@
-import queue
 import argparse
 
 from typing import Any, List, Type
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
 from raising_thread import RaisingThread
-from deye_exceptions import DeyeQueueIsEmptyException
-from deye_exceptions import DeyeNoSocketAvailableException
 from deye_exceptions import DeyeKnownException
-from deye_exceptions import DeyeUnknownException
-from pysolarmanv5 import NoSocketAvailableError
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_registers_factory import DeyeRegistersFactory
+from deye_utils import get_reraised_exception
 
 class DeyeRegisterProcessor:
   def __init__(self):
@@ -56,7 +52,7 @@ class DeyeRegisterProcessor:
                             help = self.get_arg_desc(register, 'get'))
 
     except Exception as e:
-      self.handle_exception(e, 'Error while adding parameters')
+      raise get_reraised_exception(e, 'Error while adding parameters') from e
 
   def check_parameters(self, parser: argparse.ArgumentParser, args: argparse.Namespace) -> bool:
     try:
@@ -70,7 +66,7 @@ class DeyeRegisterProcessor:
 
       return True
     except Exception as e:
-      self.handle_exception(e, 'Error while checking parameters')
+      raise get_reraised_exception(e, 'Error while checking parameters') from e
 
   def process_parameters(self, args: argparse.Namespace):
     if len(self.interactors) < 2 or args.only_accumulated == False:
@@ -82,7 +78,8 @@ class DeyeRegisterProcessor:
               addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
               print(f'{interactor.name}_{register.name}{addr_list} = {value} {register.suffix}')
           except Exception as e:
-            self.handle_exception(e, f'Error while reading register {register.name} from {interactor.name}')
+            raise get_reraised_exception(e,
+                                         f'Error while reading register {register.name} from {interactor.name}') from e
 
     if len(self.interactors) > 1:
       for register in self.get_registers_to_process(args):
@@ -92,7 +89,7 @@ class DeyeRegisterProcessor:
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             print(f'all_{register.name}{addr_list} = {value} {register.suffix}')
         except Exception as e:
-          self.handle_exception(e, f'Error while reading register {register.name}')
+          raise get_reraised_exception(e, f'Error while reading register {register.name}') from e
 
     for register in self.registers.read_write_registers:
       try:
@@ -106,7 +103,7 @@ class DeyeRegisterProcessor:
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             print(f'{self.master_interactor.name}_{register.name}{addr_list} = {value} {register.suffix}')
       except Exception as e:
-        self.handle_exception(e, f'Error while writing register {register.name}')
+        raise get_reraised_exception(e, f'Error while writing register {register.name}') from e
 
   def enqueue_registers(self, args: argparse.Namespace, loggers: List[DeyeLogger]):
     for logger in loggers:
@@ -119,14 +116,15 @@ class DeyeRegisterProcessor:
         if interactor.is_master:
           self.master_interactor = interactor
       except Exception as e:
-        self.handle_exception(e, f'Error while creating DeyeModbusInteractor({logger.name})')
+        raise get_reraised_exception(e, f'Error while creating DeyeModbusInteractor({logger.name})') from e
 
     for interactor in self.interactors:
       for register in self.get_registers_to_process(args):
         try:
           register.enqueue(interactor)
         except Exception as e:
-          self.handle_exception(e, f'Error while enqueue register {register.name} to interactor {interactor.name}')
+          raise get_reraised_exception(
+            e, f'Error while enqueue register {register.name} to interactor {interactor.name}') from e
 
   def get_registers_to_process(self, args: argparse.Namespace) -> List[DeyeRegister]:
     result = []
@@ -169,23 +167,11 @@ class DeyeRegisterProcessor:
         task.join()
 
     except Exception as e:
-      self.handle_exception(e, 'Error while reading registers')
+      raise get_reraised_exception(e, 'Error while reading registers') from e
 
   def disconnect(self):
     for interactor in self.interactors:
       try:
         interactor.disconnect()
       except Exception as e:
-        self.handle_exception(e, f'Error while disconnecting {interactor.name}')
-
-  def handle_exception(self, exception: Exception, message: str):
-    try:
-      raise exception
-    except DeyeKnownException:
-      raise
-    except queue.Empty as e:
-      raise DeyeQueueIsEmptyException(f'{message}: Queue is empty (get() timed out)') from e
-    except NoSocketAvailableError as e:
-      raise DeyeNoSocketAvailableException(f'{message}: {e.__class__.__name__}({str(e).strip(".")})') from e
-    except Exception as e:
-      raise DeyeUnknownException(f'{message}: {str(e)}') from e
+        raise get_reraised_exception(e, f'Error while disconnecting {interactor.name}') from e

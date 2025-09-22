@@ -29,7 +29,7 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
     try:
       self.holder.connect_and_read()
     except Exception as e:
-      return f'Error while reading registers: {str(e)}'
+      return str(e)
     finally:
       self.holder.disconnect()
 
