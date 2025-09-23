@@ -10,6 +10,7 @@
 # Docker, or when piping output to journalctl, because you want log
 # messages from print() to show up in real time.
 
+import os
 import sys
 
 from pathlib import Path
@@ -17,6 +18,7 @@ from pathlib import Path
 current_path = Path(__file__).parent.resolve()
 modules_path = (current_path / '../modules').resolve()
 
+os.chdir(current_path)
 sys.path.append(str(modules_path))
 
 from common_modules import import_dirs

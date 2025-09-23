@@ -160,7 +160,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     return get_keyboard_for_register(self.registers, register)
 
   def process_read_write_register_step1(self, message: telebot.types.Message, register_name: str, next_step_callback):
-    if not self.is_authorized(message.from_user.id, message.chat.id):
+    if not self.is_authorized(message):
       return
 
     register = self.registers.get_register_by_name(register_name)
@@ -190,7 +190,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       print(traceback.format_exc())
 
   def process_read_write_register_step2(self, message: telebot.types.Message, message_id: int, register_name: str):
-    if not self.is_authorized(message.from_user.id, message.chat.id):
+    if not self.is_authorized(message):
       return
 
     # remove buttons from previous message

@@ -12,6 +12,8 @@ from telebot_menu_request_access import TelebotMenuRequestAccess
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_menu_all_info import TelebotMenuAllInfo
 from telebot_menu_sync_time import TelebotMenuSyncTime
+from telebot_menu_restart import TelebotMenuRestart
+from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_menu_master_info import TelebotMenuMasterInfo
 from telebot_menu_slave_info import TelebotMenuSlaveInfo
 from telebot_menu_all_today_stat import TelebotMenuAllTodayStat
@@ -23,6 +25,7 @@ from telebot_menu_battery_forecast import TelebotMenuBatteryForecast
 from telebot_menu_writable_registers import TelebotMenuWritableRegisters
 from telebot_menu_master_today_stat import TelebotMenuMasterTodayStat
 from telebot_menu_master_total_stat import TelebotMenuMasterTotalStat
+from telebot_menu_update_and_restart import TelebotMenuUpdateAndRestart
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
 
@@ -32,6 +35,7 @@ class MyTelebot:
     self.users = TelebotUsers()
     self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
+    self.update_checker = TelebotLocalUpdateChecker()
 
     def print_commands(bot: telebot.TeleBot, scope, label):
       commands = bot.get_my_commands(scope = scope)
@@ -43,6 +47,13 @@ class MyTelebot:
     print_commands(bot, telebot.types.BotCommandScopeAllPrivateChats(), "AllPrivateChats")
     print_commands(bot, telebot.types.BotCommandScopeAllGroupChats(), "AllGroupChats")
     print_commands(bot, telebot.types.BotCommandScopeAllChatAdministrators(), "AllChatAdministrators")
+
+    try:
+      # Save the current commit hash when the bot starts
+      # This ensures that future checks can detect local repository changes
+      self.update_checker.update_last_commit_hash()
+    except Exception as e:
+      print(f'Error while updating last commit hash: {str(e)}')
 
     # Register common handlers
     for handler in self.get_common_handlers(bot):
@@ -125,6 +136,8 @@ class MyTelebot:
       TelebotMenuMasterSettings(bot),
       TelebotMenuBatteryForecast(bot),
       TelebotMenuSyncTime(bot),
+      TelebotMenuRestart(bot),
+      TelebotMenuUpdateAndRestart(bot),
     ]
 
   def get_writable_registers_menu_items(self, bot) -> List[TelebotMenuItemHandler]:

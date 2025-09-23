@@ -8,6 +8,8 @@ from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item import TelebotMenuItem
 from deye_exceptions import DeyeKnownException
 from telebot_base_handler import TelebotBaseHandler
+from telebot_local_update_checker import TelebotLocalUpdateChecker
+from telebot_remote_update_checker import TelebotRemoteUpdateChecker
 
 class TelebotMenuItemHandler(TelebotBaseHandler):
   """
@@ -23,6 +25,8 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     self.bot: telebot.TeleBot = bot
     self.users = TelebotUsers()
     self.auth_helper = TelebotAuthHelper()
+    self.local_update_checker = TelebotLocalUpdateChecker()
+    self.remote_update_checker = TelebotRemoteUpdateChecker()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -86,7 +90,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     raise NotImplementedError(
       f'{self.__class__.__name__}: process_message() for command {self.command.command} is not implemented yet')
 
-  def is_authorized(self, user_id: int, chat_id: int) -> bool:
+  def is_authorized(self, message: telebot.types.Message) -> bool:
     """
     Check if the user is authorized to execute this command
 
@@ -97,14 +101,26 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     Returns:
         bool: True if authorized, False otherwise
     """
-    if self.users.is_user_blocked(user_id):
+    if self.users.is_user_blocked(message.from_user.id):
       return False
 
-    if not self.users.is_user_allowed(user_id):
-      self.bot.send_message(chat_id, f'User {user_id} is not authorized')
+    if not self.users.is_user_allowed(message.from_user.id):
+      self.bot.send_message(message.chat.id, f'User {message.from_user.id} is not authorized')
       return False
 
-    return self._is_item_allowed(user_id, chat_id)
+    if not self._is_item_allowed(message.from_user.id, message.chat.id):
+      return False
+
+    try:
+      if self.remote_update_checker.check_for_remote_updates(self.bot, message):
+        return False
+      if self.local_update_checker.check_for_local_updates(self.bot, message):
+        return False
+    except Exception as e:
+      self.bot.send_message(message.chat.id, f'Error while checking for updates: {str(e)}')
+      print(f'Error while checking for updates: {str(e)}')
+
+    return True
 
   def _is_item_allowed(self, user_id: int, chat_id: int) -> bool:
     """
