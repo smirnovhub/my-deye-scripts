@@ -4,12 +4,12 @@ import telebot
 import subprocess
 import urllib.parse
 
-from telebot_file_with_lock import TelebotFileWithLock
+from deye_file_with_lock import DeyeFileWithLock
 from telebot_user_choices import ask_choice
 from deye_utils import ensure_file_exists
 from countdown_with_cancel import countdown_with_cancel
-from telebot_constants import git_repository_local_check_period_sec
 from common_utils import clock_face_one_oclock
+from telebot_constants import git_repository_local_check_period_sec
 
 class TelebotLocalUpdateChecker:
   """
@@ -21,7 +21,7 @@ class TelebotLocalUpdateChecker:
   File-based locking is used to safely read/write state files.
   """
   def __init__(self):
-    self.locker = TelebotFileWithLock()
+    self.locker = DeyeFileWithLock()
 
     self.ask_file_name = 'data/last_local_update_ask_time.txt'
     self.hash_file_name = 'data/last_commit_hash.txt'
@@ -199,7 +199,7 @@ class TelebotLocalUpdateChecker:
     """
     try:
       sfile = self.locker.open_file(self.hash_file_name, 'r')
-      return sfile.readline().strip()
+      return str(sfile.readline().strip())
     except Exception:
       print('Error while loading last commit hash')
       raise

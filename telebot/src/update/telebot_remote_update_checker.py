@@ -4,7 +4,7 @@ import telebot
 import subprocess
 
 from telebot_menu_item import TelebotMenuItem
-from telebot_file_with_lock import TelebotFileWithLock
+from deye_file_with_lock import DeyeFileWithLock
 from deye_utils import ensure_file_exists
 from telebot_advanced_choice import ask_advanced_choice
 from telebot_constants import git_repository_remote_check_period_sec
@@ -19,7 +19,7 @@ class TelebotRemoteUpdateChecker:
   File-based locking is used to safely read/write the timestamp of the last update check.
   """
   def __init__(self):
-    self.locker = TelebotFileWithLock()
+    self.locker = DeyeFileWithLock()
     self.ask_file_name = 'data/last_remote_update_ask_time.txt'
     ensure_file_exists(self.ask_file_name)
 
