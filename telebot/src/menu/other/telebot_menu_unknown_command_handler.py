@@ -18,7 +18,7 @@ class TelebotMenuUnknownCommandHandler(TelebotMenuItemHandler):
   def register_handlers(self):
     @self.bot.message_handler(func = lambda message: message.text and message.text.startswith('/'))
     def handle(message: telebot.types.Message):
-      if not self.is_authorized(message.from_user.id, message.chat.id):
+      if not self.is_authorized(message):
         return
 
       self.bot.send_message(message.chat.id, f"Unknown command: /\u200B{message.text.strip('/')}")

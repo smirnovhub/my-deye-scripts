@@ -8,16 +8,16 @@ from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
 from common_utils import clock_face_one_oclock
 
-class TelebotMenuShutdown(TelebotMenuItemHandler):
+class TelebotMenuRestart(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
 
   @property
   def command(self) -> TelebotMenuItem:
-    return TelebotMenuItem.shutdown
+    return TelebotMenuItem.restart
 
   def process_message(self, message: telebot.types.Message):
-    if not self.is_authorized(message.from_user.id, message.chat.id):
+    if not self.is_authorized(message):
       return
 
     ask_confirmation(
@@ -30,19 +30,19 @@ class TelebotMenuShutdown(TelebotMenuItemHandler):
       countdown_with_cancel(
         bot = self.bot,
         chat_id = chat_id,
-        text = 'Will shutdown in: ',
+        text = 'Will restart in: ',
         seconds = 5,
         on_finish = self.on_finish,
         on_cancel = self.on_cancel,
       )
     else:
-      self.bot.send_message(chat_id, 'Shutdown cancelled')
+      self.bot.send_message(chat_id, 'Restart cancelled')
 
   def on_finish(self, chat_id: int):
     self.bot.send_message(chat_id,
-                          f'{urllib.parse.unquote(clock_face_one_oclock)} Shutting down the bot...',
+                          f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting the bot...',
                           parse_mode = 'HTML')
     os._exit(1)
 
   def on_cancel(self, chat_id: int):
-    self.bot.send_message(chat_id, 'Shutdown cancelled')
+    self.bot.send_message(chat_id, 'Restart cancelled')

@@ -32,7 +32,7 @@ class TelebotMenuMasterSettings(TelebotMenuItemHandler):
     ]
 
   def process_message(self, message: telebot.types.Message):
-    if not self.is_authorized(message.from_user.id, message.chat.id):
+    if not self.is_authorized(message):
       return
 
     try:

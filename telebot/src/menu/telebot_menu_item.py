@@ -5,6 +5,8 @@ from deye_system_type import DeyeSystemType
 
 class TelebotMenuItem(Enum):
   request_access = ('request_access', 'Request access')
+  restart = ('restart', 'Restart bot', DeyeSystemType.none)
+  update_and_restart = ('update_and_restart', 'Update and Restart', DeyeSystemType.none)
 
   # if you want to see all commands in Telegram menu,
   # remove system_type parameter or replace it to DeyeSystemType.any

@@ -20,7 +20,7 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
     return TelebotMenuItem.deye_battery_forecast
 
   def process_message(self, message: telebot.types.Message):
-    if not self.is_authorized(message.from_user.id, message.chat.id):
+    if not self.is_authorized(message):
       return
 
     self.bot.send_message(message.chat.id, self.get_forecast(), parse_mode = 'HTML')

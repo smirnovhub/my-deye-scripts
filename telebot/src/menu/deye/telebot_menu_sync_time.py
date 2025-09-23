@@ -45,7 +45,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     return TelebotMenuItem.deye_sync_time
 
   def process_message(self, message: telebot.types.Message):
-    if not self.is_authorized(message.from_user.id, message.chat.id):
+    if not self.is_authorized(message):
       return
 
     if not self.auth_helper.is_writable_register_allowed(message.from_user.id, self.register.name):
