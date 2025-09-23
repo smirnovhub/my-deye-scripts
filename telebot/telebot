@@ -34,6 +34,10 @@ from common_utils import clock_face_two_oclock_emoji
 
 send_private_telegram_message(f'{clock_face_two_oclock_emoji} Starting telebot...')
 
-bot = telebot.TeleBot(BOT_API_TOKEN)
-telebot = MyTelebot(bot)
-bot.infinity_polling()
+try:
+  bot = telebot.TeleBot(BOT_API_TOKEN)
+  telebot = MyTelebot(bot)
+  bot.infinity_polling()
+except Exception:
+  send_private_telegram_message(f'{large_red_circle_emoji} Telebot unexpectedly stopped working')
+  raise
