@@ -6,7 +6,11 @@ import sys
 from typing import List
 from pathlib import Path
 
-sys.path.append('modules')
+current_path = Path(__file__).parent.resolve()
+modules_path = (current_path / 'modules').resolve()
+
+os.chdir(current_path)
+sys.path.append(str(modules_path))
 
 from common_modules import (
   modules,
