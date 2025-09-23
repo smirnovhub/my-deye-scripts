@@ -96,7 +96,7 @@ class TelebotLocalUpdateChecker:
     """
     def on_finish(chat_id: int):
       bot.send_message(chat_id,
-                       f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting the bot...',
+                       f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting telebot...',
                        parse_mode = 'HTML')
       os._exit(1)
 

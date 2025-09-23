@@ -67,7 +67,7 @@ class TelebotMenuUpdateAndRestart(TelebotMenuItemHandler):
 
   def on_finish(self, chat_id: int):
     self.bot.send_message(chat_id,
-                          f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting the bot...',
+                          f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting telebot...',
                           parse_mode = 'HTML')
     os._exit(1)
 
