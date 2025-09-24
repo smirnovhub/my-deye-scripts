@@ -40,6 +40,7 @@ from telebot_deye_helper import (
 class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    self.loggers = DeyeLoggers()
     self.registers = DeyeRegistersFactory.create_registers()
     self.auth_helper = TelebotAuthHelper()
 
@@ -250,10 +251,9 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
 
   def get_register_value(self, register: DeyeRegister):
-    loggers = DeyeLoggers()
 
     holder = DeyeRegistersHolder(
-      loggers = [loggers.master],
+      loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomRegisters([register], prefix),
       **holder_kwargs,
     )
@@ -273,10 +273,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     return result
 
   def write_register(self, register: DeyeRegister, text: str, old_register_value: Dict[str, int]) -> str:
-    loggers = DeyeLoggers()
-
     holder = DeyeRegistersHolder(
-      loggers = [loggers.master],
+      loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomRegisters([register], prefix),
       **holder_kwargs,
     )
