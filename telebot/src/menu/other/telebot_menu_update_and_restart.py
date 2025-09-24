@@ -24,7 +24,11 @@ class TelebotMenuUpdateAndRestart(TelebotMenuItemHandler):
 
     current_dir = os.path.dirname(__file__)
 
-    git_result = subprocess.run(['git', '-C', current_dir, 'pull'], capture_output = True, text = True)
+    try:
+      git_result = subprocess.run(['git', '-C', current_dir, 'pull'], capture_output = True, text = True)
+    except subprocess.CalledProcessError as e:
+      self.bot.send_message(message.chat.id, 'Git pull failed')
+      return
 
     if git_result.returncode != 0:
       if 'would be overwritten' in git_result.stderr:
