@@ -45,6 +45,9 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
+    if self.has_updates(message):
+      return
+
     try:
       self.holder.connect_and_read()
     except Exception as e:

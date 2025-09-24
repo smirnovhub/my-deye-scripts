@@ -111,16 +111,19 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     if not self._is_item_allowed(message.from_user.id, message.chat.id):
       return False
 
+    return True
+
+  def has_updates(self, message: telebot.types.Message) -> bool:
     try:
       if self.remote_update_checker.check_for_remote_updates(self.bot, message):
-        return False
+        return True
       if self.local_update_checker.check_for_local_updates(self.bot, message):
-        return False
+        return True
     except Exception as e:
       self.bot.send_message(message.chat.id, f'Error while checking for updates: {str(e)}')
       print(f'Error while checking for updates: {str(e)}')
 
-    return True
+    return False
 
   def _is_item_allowed(self, user_id: int, chat_id: int) -> bool:
     """

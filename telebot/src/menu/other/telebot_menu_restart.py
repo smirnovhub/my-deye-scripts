@@ -20,6 +20,9 @@ class TelebotMenuRestart(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
+    if self.has_updates(message):
+      return
+
     ask_confirmation(
       self.bot, message.chat.id, f'<b>Warning!</b> Bot process will be killed '
       'and will <b>not</b> restart automatically if you didn\'t configure it '
