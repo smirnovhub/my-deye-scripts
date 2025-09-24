@@ -118,7 +118,7 @@ class DeyeRegistersHolder:
     try:
       return register.write(self._master_interactor, value)
     except Exception as e:
-      raise get_reraised_exception(e, f'{type(self).__name__}: error while writing register {register.name}') from e
+      raise get_reraised_exception(e, f'{type(self).__name__}: error while writing register') from e
 
   def disconnect(self):
     last_exception = None
