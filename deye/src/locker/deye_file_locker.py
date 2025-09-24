@@ -150,7 +150,7 @@ class DeyeFileLocker:
           self.lockfile = None
           self.timedout = True
           raise DeyeFileLockingException(
-            f"{self.name}: Timeout after {timeout} sec while waiting for lock on {self.path}")
+            f"{type(self).__name__}: timeout after {timeout} sec while waiting for lock on {self.path}")
         # wait before retrying
         time.sleep(random.uniform(0.15, 0.3))
 
