@@ -31,13 +31,24 @@ class TelebotMenuUpdateAndRestart(TelebotMenuItemHandler):
       return
 
     if git_result.returncode != 0:
-      if 'would be overwritten' in git_result.stderr:
+      stderr = git_result.stderr.lower()
+      if 'conflict' in stderr or 'would be overwritten' in stderr:
         self.bot.send_message(message.chat.id, 'Git pull failed: local changes conflict with remote changes')
+      elif 'fatal:' in stderr:
+        index = stderr.find('fatal:') + len('fatal:')
+        newline_index = stderr.find('\n', index)
+
+        if newline_index != -1:
+          error_text = git_result.stderr[index:newline_index].strip()
+        else:
+          error_text = git_result.stderr[index:].strip()
+
+        self.bot.send_message(message.chat.id, f'Git pull failed: {error_text}')
       else:
         self.bot.send_message(message.chat.id, 'Git pull failed')
       return
 
-    if git_result.stdout.strip().startswith('Already up to date'):
+    if 'up to date' in git_result.stdout.lower():
       self.bot.send_message(message.chat.id, 'Already up to date')
       return
 
