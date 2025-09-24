@@ -25,7 +25,7 @@ class DeyeModbusSolarman:
       if self.verbose:
         print(f"{self.logger.name}: reading data from inverter for address = {register_addr}, quantity = {quantity}")
       if self.modbus is None:
-        self.modbus = PySolarmanV5(self.logger.ip, self.logger.serial, port = self.logger.port, **self.kwargs)
+        self.modbus = PySolarmanV5(self.logger.address, self.logger.serial, port = self.logger.port, **self.kwargs)
 
       data = self.modbus.read_holding_registers(register_addr, quantity)
       self.cache_manager.save_to_cache(register_addr, quantity, data)
@@ -34,7 +34,7 @@ class DeyeModbusSolarman:
 
   def write_multiple_holding_registers(self, register_addr, values):
     if self.modbus is None:
-      self.modbus = PySolarmanV5(self.logger.ip, self.logger.serial, port = self.logger.port, **self.kwargs)
+      self.modbus = PySolarmanV5(self.logger.address, self.logger.serial, port = self.logger.port, **self.kwargs)
 
     data = self.modbus.write_multiple_holding_registers(register_addr, values)
     self.cache_manager.remove_overlapping(register_addr, values)
