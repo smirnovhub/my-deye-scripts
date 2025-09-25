@@ -51,6 +51,8 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
         self.bot.send_message(message.chat.id, str(e))
         return
 
+      last_commit = last_commit.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
       self.bot.send_message(
         message.chat.id,
         'Already up to date. '

@@ -33,6 +33,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     try:
       if not is_repository_up_to_date():
         last_commit = get_last_commit_hash_and_comment()
+        last_commit = last_commit.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         self.bot.send_message(
           message.chat.id,
           "Can't revert because repository is not up to date. "
