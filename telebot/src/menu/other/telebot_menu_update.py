@@ -40,9 +40,6 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
     except TelebotGitException as e:
       self.bot.send_message(message.chat.id, f'Git pull failed: {str(e)}')
       return
-    except subprocess.CalledProcessError:
-      self.bot.send_message(message.chat.id, 'Git pull failed')
-      return
 
     if 'up to date' in result.stdout.lower():
       try:

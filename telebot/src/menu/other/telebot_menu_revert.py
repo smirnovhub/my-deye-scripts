@@ -11,6 +11,8 @@ from telebot_advanced_choice import ask_advanced_choice
 from common_utils import clock_face_one_oclock
 
 from telebot_git_helper import (
+  stash_push,
+  stash_pop,
   is_repository_up_to_date,
   revert_to_revision,
   get_last_commits,
@@ -93,7 +95,9 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
         self.bot.send_message(chat_id, f'You are already on {commit_hash[:7]}')
         return
 
+      stash_push()
       result = revert_to_revision(commit_hash)
+      stash_pop()
     except Exception as e:
       self.bot.send_message(chat_id, str(e))
       return

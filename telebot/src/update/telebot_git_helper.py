@@ -14,6 +14,9 @@ def check_git_result_and_raise(result: CompletedProcess):
     return
 
   stderr = result.stderr.lower()
+  if 'no stash entries found' in stderr:
+    return
+
   if 'conflict' in stderr or 'would be overwritten' in stderr:
     raise TelebotGitException('local changes conflict with remote changes')
 
@@ -41,7 +44,7 @@ def is_repository_up_to_date() -> bool:
       bool: True if the repository is synchronized, False otherwise.
 
   Raises:
-      subprocess.CalledProcessError: If the git command fails.
+      TelebotGitException: If the git command fails.
   """
   try:
     current_dir = os.path.dirname(__file__)
@@ -55,13 +58,38 @@ def is_repository_up_to_date() -> bool:
     check_git_result_and_raise(result)
     # If 'up to date' appears in the output, the local branch is synchronized
     return 'up to date' in result.stdout.lower()
-  except subprocess.CalledProcessError as e:
-    # Print the error message if the git command fails
-    print("Error executing 'git remote show origin'")
-    print(e.stderr)
-    raise TelebotGitException(f'git remote show origin failed: {str(e)}')
   except Exception as e:
     raise TelebotGitException(f'git remote show origin failed: {str(e)}')
+
+def stash_push():
+  current_dir = os.path.dirname(__file__)
+  try:
+    # Stash all changes
+    result = subprocess.run(
+      ['git', '-C', current_dir, 'stash', 'push'],
+      capture_output = True,
+      text = True,
+    )
+    check_git_result_and_raise(result)
+  except TelebotGitException as e:
+    raise TelebotGitException(f'git stash push failed: {str(e)}')
+  except Exception as e:
+    raise TelebotGitException(f'git stash push failed: {str(e)}')
+
+def stash_pop():
+  current_dir = os.path.dirname(__file__)
+  try:
+    # Stash all changes
+    result = subprocess.run(
+      ['git', '-C', current_dir, 'stash', 'pop'],
+      capture_output = True,
+      text = True,
+    )
+    check_git_result_and_raise(result)
+  except TelebotGitException as e:
+    raise TelebotGitException(f'git stash pop failed: {str(e)}')
+  except Exception as e:
+    raise TelebotGitException(f'git stash pop failed: {str(e)}')
 
 def revert_to_revision(commit_hash: str) -> str:
   current_dir = os.path.dirname(__file__)
@@ -74,11 +102,6 @@ def revert_to_revision(commit_hash: str) -> str:
     check_git_result_and_raise(result)
     return result.stdout
   except TelebotGitException as e:
-    raise TelebotGitException(f'git reset --hard failed: {str(e)}')
-  except subprocess.CalledProcessError as e:
-    # Print the error message if the git command fails
-    print("Error executing 'git reset --hard'")
-    print(e.stderr)
     raise TelebotGitException(f'git reset --hard failed: {str(e)}')
   except Exception as e:
     raise TelebotGitException(f'git reset --hard failed: {str(e)}')
@@ -118,7 +141,6 @@ def _run_git_command_and_get_result(commands: List[str], command_name: str) -> s
   Raises:
       TelebotGitException: If the command fails for any reason, including:
           - A non-zero exit code detected
-          - subprocess.CalledProcessError
           - Any other unexpected exception
   """
   try:
@@ -130,11 +152,6 @@ def _run_git_command_and_get_result(commands: List[str], command_name: str) -> s
     check_git_result_and_raise(result)
     return result.stdout.strip()
   except TelebotGitException as e:
-    raise TelebotGitException(f'git {command_name} failed: {str(e)}')
-  except subprocess.CalledProcessError as e:
-    # Print the error message if the git command fails
-    print(f"Error executing 'git {command_name}'")
-    print(e.stderr)
     raise TelebotGitException(f'git {command_name} failed: {str(e)}')
   except Exception as e:
     raise TelebotGitException(f'git {command_name} failed: {str(e)}')
