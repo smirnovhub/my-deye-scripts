@@ -108,7 +108,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
           self.bot,
           chat_id,
           text,
-          {undo_button_name: f'{self.register.name}={old_value}'},
+          {undo_button_name: f'/{self.register.name} {old_value}'},
           max_per_row = 2,
         )
 

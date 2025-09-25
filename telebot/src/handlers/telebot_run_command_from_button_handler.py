@@ -39,6 +39,8 @@ class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
           delay = buttons_remove_delay_sec,
         )
 
+        self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
+
         # Send the fake message into TeleBot's processing pipeline
         # This way, the command handler will process it normally
         self.bot.process_new_messages([fake_message])

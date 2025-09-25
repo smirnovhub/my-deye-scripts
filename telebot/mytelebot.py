@@ -25,9 +25,11 @@ from telebot_menu_battery_forecast import TelebotMenuBatteryForecast
 from telebot_menu_writable_registers import TelebotMenuWritableRegisters
 from telebot_menu_master_today_stat import TelebotMenuMasterTodayStat
 from telebot_menu_master_total_stat import TelebotMenuMasterTotalStat
-from telebot_menu_update_and_restart import TelebotMenuUpdateAndRestart
+from telebot_menu_revert import TelebotMenuRevert
+from telebot_menu_update import TelebotMenuUpdate
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
+from telebot_send_message import send_private_telegram_message
 
 class MyTelebot:
   def __init__(self, bot: telebot.TeleBot):
@@ -53,7 +55,9 @@ class MyTelebot:
       # This ensures that future checks can detect local repository changes
       self.update_checker.update_last_commit_hash()
     except Exception as e:
-      print(f'Error while updating last commit hash: {str(e)}')
+      message = f'Error while updating last commit hash: {str(e)}'
+      print(message)
+      send_private_telegram_message(message)
 
     # Register common handlers
     for handler in self.get_common_handlers(bot):
@@ -137,7 +141,8 @@ class MyTelebot:
       TelebotMenuBatteryForecast(bot),
       TelebotMenuSyncTime(bot),
       TelebotMenuRestart(bot),
-      TelebotMenuUpdateAndRestart(bot),
+      TelebotMenuRevert(bot),
+      TelebotMenuUpdate(bot),
     ]
 
   def get_writable_registers_menu_items(self, bot) -> List[TelebotMenuItemHandler]:

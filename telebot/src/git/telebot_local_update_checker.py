@@ -1,13 +1,13 @@
 import os
 import time
 import telebot
-import subprocess
 import urllib.parse
 
 from deye_file_with_lock import DeyeFileWithLock
 from telebot_user_choices import ask_choice
 from deye_utils import ensure_file_exists
 from countdown_with_cancel import countdown_with_cancel
+from telebot_git_helper import get_last_commit_hash
 from common_utils import clock_face_one_oclock
 from telebot_constants import git_repository_local_check_period_sec
 
@@ -83,7 +83,7 @@ class TelebotLocalUpdateChecker:
     """
     Update the saved commit hash file with the current HEAD commit hash.
     """
-    hash = self._get_last_commit_hash()
+    hash = get_last_commit_hash()
     self._save_last_commit_hash(hash)
 
   def _ask_for_restart(self, bot: telebot.TeleBot, chat_id: int):
@@ -119,34 +119,9 @@ class TelebotLocalUpdateChecker:
     Returns:
         bool: True if the current commit hash differs from the last saved hash.
     """
-    current_hash = self._get_last_commit_hash()
+    current_hash = get_last_commit_hash()
     last_hash = self._load_last_commit_hash()
     return len(last_hash) > 0 and len(current_hash) > 0 and last_hash != current_hash
-
-  def _get_last_commit_hash(self) -> str:
-    """
-    Get the current HEAD commit hash of the local repository.
-
-    Returns:
-        str: The commit hash string.
-
-    Raises:
-        subprocess.CalledProcessError: If the git command fails.
-    """
-    current_dir = os.path.dirname(__file__)
-
-    try:
-      result = subprocess.run(["git", "-C", current_dir, "rev-parse", "HEAD"],
-                              capture_output = True,
-                              text = True,
-                              check = True)
-
-      return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-      # Print the error message if the git command fails
-      print("Error executing 'git rev-parse HEAD'")
-      print(e.stderr)
-      raise
 
   def _load_last_local_update_ask_time(self) -> float:
     """

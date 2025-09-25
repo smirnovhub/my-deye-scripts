@@ -2,7 +2,7 @@ import telebot
 import textwrap
 import traceback
 
-from typing import Dict, List, cast
+from typing import Dict, List
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
@@ -11,6 +11,7 @@ from custom_registers import CustomRegisters
 from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeValueException
 from deye_registers_holder import DeyeRegistersHolder
+from telebot_fake_message import TelebotFakeMessage
 from telebot_menu_item import TelebotMenuItem
 from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item_handler import TelebotMenuItemHandler
@@ -19,7 +20,7 @@ from telebot_advanced_choice import ask_advanced_choice
 from telebot_constants import undo_button_remove_delay_sec
 
 from telebot_utils import (
-  get_inline_button_by_data,
+  get_inline_button_by_text,
   remove_inline_buttons_with_delay,
 )
 
@@ -71,72 +72,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     return register is not None
 
   def get_writable_register_handler(self, register: DeyeRegister):
-    @self.bot.callback_query_handler(func = lambda call: self.check_callback_data(call.data))
-    def callback(call: telebot.types.CallbackQuery):
-      self.bot.answer_callback_query(call.id)
-
-      button = get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data) if call.data else None
-      is_undo_button_pressed = button.text == undo_button_name if button is not None else False
-
-      remove_inline_buttons_with_delay(
-        bot = self.bot,
-        chat_id = call.message.chat.id,
-        message_id = call.message.message_id,
-        delay = buttons_remove_delay_sec,
-      )
-
-      # format should be: register_name=value
-      parts = call.data.split('=', 1)
-      register_name, value = parts
-      register = self.registers.get_register_by_name(register_name)
-      if register is None:
-        self.bot.send_message(call.message.chat.id, f'Register {register_name} not found')
-        self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
-        return
-
-      if not self.auth_helper.is_writable_register_allowed(call.from_user.id, register.name):
-        available_registers = get_available_registers(self.registers, self.auth_helper, call.from_user.id)
-        self.bot.send_message(
-          call.message.chat.id,
-          f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
-          parse_mode = 'HTML')
-        self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
-        return
-
-      # Pass dict to change value inside the method
-      old_register_value: Dict[str, int] = {}
-
-      try:
-        text = self.write_register(register, value, old_register_value)
-      except DeyeKnownException as e:
-        self.bot.send_message(call.message.chat.id, str(e))
-        return
-      except Exception as e:
-        self.bot.send_message(call.message.chat.id, str(e))
-        print(traceback.format_exc())
-        return
-
-      old_value = old_register_value[register.name]
-      self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
-
-      if is_undo_button_pressed or old_value == register.value:
-        self.bot.send_message(call.message.chat.id, text, parse_mode = 'HTML')
-      else:
-        sent = ask_advanced_choice(
-          self.bot,
-          call.message.chat.id,
-          text,
-          {undo_button_name: f'{register.name}={old_value}'},
-          max_per_row = 2,
-        )
-
-        remove_inline_buttons_with_delay(
-          bot = self.bot,
-          chat_id = call.message.chat.id,
-          message_id = sent.message_id,
-          delay = undo_button_remove_delay_sec,
-        )
-
     return textwrap.dedent('''\
     @self.bot.message_handler(commands = ['{register_name}'])
     def set_{register_name}(message):
@@ -164,6 +99,18 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
   def process_read_write_register_step1(self, message: telebot.types.Message, register_name: str, next_step_callback):
     if not self.is_authorized(message):
       return
+
+    pos = message.text.find(' ')
+    if message.from_user and pos != -1:
+      param = message.text[pos + 1:].strip()
+      if param:
+        fake_message = TelebotFakeMessage(
+          message,
+          param,
+          message.from_user,
+        )
+        self.process_read_write_register_step2(fake_message, message.id, register_name)
+        return
 
     register = self.registers.get_register_by_name(register_name)
     if register is None:
@@ -232,12 +179,14 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       return
 
     old_value = old_register_value[register.name]
-    if old_value != register.value:
+    is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
+
+    if old_value != register.value and not is_undo_button_pressed:
       sent = ask_advanced_choice(
         self.bot,
         message.chat.id,
         text,
-        {undo_button_name: f'{register.name}={old_value}'},
+        {undo_button_name: f'/{register.name} {old_value}'},
         max_per_row = 2,
       )
 

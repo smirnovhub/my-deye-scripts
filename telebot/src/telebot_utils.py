@@ -29,6 +29,28 @@ def get_inline_button_by_data(
 
   return None
 
+def get_inline_button_by_text(
+  message: telebot.types.Message,
+  button_text: str,
+) -> Union[telebot.types.InlineKeyboardButton, None]:
+  """
+  Retrieve an InlineKeyboardButton from a message by its text.
+
+  :param message: The Telegram message containing the inline keyboard
+  :param button_text: The text of the button to search for
+  :return: The InlineKeyboardButton if found, otherwise None
+  """
+  markup = message.reply_markup
+  if markup is None:
+    return None
+
+  for row in markup.keyboard:
+    for btn in row:
+      if btn.text == button_text:
+        return btn
+
+  return None
+
 def remove_inline_buttons(bot: telebot.TeleBot, chat_id: int, message_id: int) -> None:
   """
   Safely remove inline buttons from a message.

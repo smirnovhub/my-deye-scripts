@@ -21,6 +21,7 @@
     "../deye/src/utils",
     "src",
     "src/choices",
+    "src/git",
     "src/handlers",
     "src/menu",
     "src/menu/deye",
@@ -29,7 +30,6 @@
     "src/menu/deye/registers",
     "src/menu/deye/slave",
     "src/menu/other",
-    "src/update",
     "src/users"
   ],
   "python.analysis.useImportHeuristic": true,

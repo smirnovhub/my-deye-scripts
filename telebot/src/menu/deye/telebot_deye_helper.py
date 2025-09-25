@@ -195,9 +195,9 @@ def build_keyboard_for_register(
 
     if isinstance(row, list):
       # If the row is a list of strings, create buttons with text = label
-      # and callback_data = "{register.name}={label}"
+      # and callback_data = "/{register.name} {value}"
       buttons = [
-        telebot.types.InlineKeyboardButton(text = label, callback_data = f'{register.name}={label}') for label in row
+        telebot.types.InlineKeyboardButton(text = value, callback_data = f'/{register.name} {value}') for value in row
       ]
 
     elif isinstance(row, dict):

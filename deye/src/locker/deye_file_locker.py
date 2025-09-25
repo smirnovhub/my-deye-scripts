@@ -119,7 +119,7 @@ class DeyeFileLocker:
     """
     if self.lockfile is not None:
       self.log(f"{self.name}: WARNING: lock is already acquired on {self.path}")
-      return
+      raise DeyeFileLockingException(f"{type(self).__name__}: lock is already acquired on {self.path}")
 
     self.trim_file(self.log_filename, 1024 * 1024)
 
@@ -167,3 +167,5 @@ class DeyeFileLocker:
       self.log(f"{self.name}: released lock on {self.path} after {round(elapsed, 2)} sec")
     elif not self.timedout:
       self.log(f"{self.name}: WARNING: tried to release lock on {self.path}, but no lock was held")
+      raise DeyeFileLockingException(
+        f"{type(self).__name__}: tried to release lock on {self.path}, but no lock was held")
