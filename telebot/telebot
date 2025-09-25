@@ -30,7 +30,11 @@ from mytelebot import MyTelebot
 
 from telebot_credentials import BOT_API_TOKEN
 from telebot_send_message import send_private_telegram_message
-from common_utils import clock_face_two_oclock_emoji
+
+from common_utils import (
+  clock_face_two_oclock_emoji,
+  large_red_circle_emoji,
+)
 
 send_private_telegram_message(f'{clock_face_two_oclock_emoji} Starting telebot...')
 
