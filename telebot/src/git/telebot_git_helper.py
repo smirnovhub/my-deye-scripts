@@ -13,11 +13,14 @@ def check_git_result_and_raise(result: CompletedProcess):
   if result.returncode == 0:
     return
 
+  stdout = result.stdout.lower()
   stderr = result.stderr.lower()
-  if 'no stash entries found' in stderr:
+  output = stdout + stderr
+
+  if 'no stash entries found' in output:
     return
 
-  if 'conflict' in stderr or 'would be overwritten' in stderr:
+  if 'conflict' in output or 'would be overwritten' in output:
     raise TelebotGitException('local changes conflict with remote changes')
 
   if 'fatal:' in stderr:
