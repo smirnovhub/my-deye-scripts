@@ -4,19 +4,25 @@ import telebot
 import urllib.parse
 import subprocess
 
+from telebot_git_exception import TelebotGitException
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
 from common_utils import clock_face_one_oclock
 
-class TelebotMenuUpdateAndRestart(TelebotMenuItemHandler):
+from telebot_git_helper import (
+  check_git_result_and_raise,
+  get_last_commit_hash_and_comment,
+)
+
+class TelebotMenuUpdate(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
 
   @property
   def command(self) -> TelebotMenuItem:
-    return TelebotMenuItem.update_and_restart
+    return TelebotMenuItem.update
 
   def process_message(self, message: telebot.types.Message):
     if not self.is_authorized(message):
@@ -25,35 +31,36 @@ class TelebotMenuUpdateAndRestart(TelebotMenuItemHandler):
     current_dir = os.path.dirname(__file__)
 
     try:
-      git_result = subprocess.run(['git', '-C', current_dir, 'pull'], capture_output = True, text = True)
-    except subprocess.CalledProcessError as e:
+      result = subprocess.run(
+        ['git', '-C', current_dir, 'pull'],
+        capture_output = True,
+        text = True,
+      )
+      check_git_result_and_raise(result)
+    except TelebotGitException as e:
+      self.bot.send_message(message.chat.id, f'Git pull failed: {str(e)}')
+      return
+    except subprocess.CalledProcessError:
       self.bot.send_message(message.chat.id, 'Git pull failed')
       return
 
-    if git_result.returncode != 0:
-      stderr = git_result.stderr.lower()
-      if 'conflict' in stderr or 'would be overwritten' in stderr:
-        self.bot.send_message(message.chat.id, 'Git pull failed: local changes conflict with remote changes')
-      elif 'fatal:' in stderr:
-        index = stderr.find('fatal:') + len('fatal:')
-        newline_index = stderr.find('\n', index)
+    if 'up to date' in result.stdout.lower():
+      try:
+        last_commit = get_last_commit_hash_and_comment()
+      except Exception as e:
+        self.bot.send_message(message.chat.id, str(e))
+        return
 
-        if newline_index != -1:
-          error_text = git_result.stderr[index:newline_index].strip()
-        else:
-          error_text = git_result.stderr[index:].strip()
-
-        self.bot.send_message(message.chat.id, f'Git pull failed: {error_text}')
-      else:
-        self.bot.send_message(message.chat.id, 'Git pull failed')
-      return
-
-    if 'up to date' in git_result.stdout.lower():
-      self.bot.send_message(message.chat.id, 'Already up to date')
+      self.bot.send_message(
+        message.chat.id,
+        'Already up to date. '
+        f'You are currently on:\n<b>{last_commit}</b>',
+        parse_mode = "HTML",
+      )
       return
 
     pattern = r'\d+ files? changed.*'
-    matches = re.findall(pattern, git_result.stdout)
+    matches = re.findall(pattern, result.stdout)
 
     for match in matches:
       self.bot.send_message(message.chat.id, match)
