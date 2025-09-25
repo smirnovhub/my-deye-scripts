@@ -90,7 +90,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     try:
       last_commit_hash = get_last_commit_hash()
       if last_commit_hash == commit_hash:
-        self.bot.send_message(chat_id, f'You are already on {commit_hash[:8]}')
+        self.bot.send_message(chat_id, f'You are already on {commit_hash[:7]}')
         return
 
       result = revert_to_revision(commit_hash)
