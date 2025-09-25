@@ -23,6 +23,9 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
+    if self.has_updates(message):
+      return
+
     self.bot.send_message(message.chat.id, self.get_forecast(), parse_mode = 'HTML')
 
   def get_forecast(self):

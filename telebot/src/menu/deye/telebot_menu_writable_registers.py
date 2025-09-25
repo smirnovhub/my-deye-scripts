@@ -2,15 +2,14 @@ import telebot
 import textwrap
 import traceback
 
-from typing import List, cast
+from typing import Dict, List, cast
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
-from deye_registers import DeyeRegisters
 from custom_registers import CustomRegisters
-from empty_registers import EmptyRegisters
 from deye_exceptions import DeyeKnownException
+from deye_exceptions import DeyeValueException
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
 from telebot_auth_helper import TelebotAuthHelper
@@ -41,6 +40,7 @@ from telebot_deye_helper import (
 class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    self.loggers = DeyeLoggers()
     self.registers = DeyeRegistersFactory.create_registers()
     self.auth_helper = TelebotAuthHelper()
 
@@ -103,10 +103,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
         return
 
-      old_value = register.value
+      # Pass dict to change value inside the method
+      old_register_value: Dict[str, int] = {}
 
       try:
-        text = self.write_register(register, value)
+        text = self.write_register(register, value, old_register_value)
       except DeyeKnownException as e:
         self.bot.send_message(call.message.chat.id, str(e))
         return
@@ -115,6 +116,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         print(traceback.format_exc())
         return
 
+      old_value = old_register_value[register.name]
       self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
 
       if is_undo_button_pressed or old_value == register.value:
@@ -216,10 +218,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, f'Register value is empty')
       return
 
-    old_value = register.value
+    # Pass dict to change value inside the method
+    old_register_value: Dict[str, int] = {}
 
     try:
-      text = self.write_register(register, message.text)
+      text = self.write_register(register, message.text, old_register_value)
     except DeyeKnownException as e:
       self.bot.send_message(message.chat.id, str(e))
       return
@@ -228,6 +231,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       print(traceback.format_exc())
       return
 
+    old_value = old_register_value[register.name]
     if old_value != register.value:
       sent = ask_advanced_choice(
         self.bot,
@@ -247,12 +251,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
 
   def get_register_value(self, register: DeyeRegister):
-    loggers = DeyeLoggers()
 
-    def creator(prefix) -> DeyeRegisters:
-      return CustomRegisters([register], prefix)
-
-    holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
+    holder = DeyeRegistersHolder(
+      loggers = [self.loggers.master],
+      register_creator = lambda prefix: CustomRegisters([register], prefix),
+      **holder_kwargs,
+    )
 
     try:
       holder.connect_and_read()
@@ -268,24 +272,28 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     return result
 
-  def write_register(self, register: DeyeRegister, text: str) -> str:
-    if type(register.value) is int and register.value == int(text):
-      return f'New value ({int(text)} {register.suffix}) is the same as old value. Nothing changed'
-
-    if type(register.value) is float and register.value == float(text):
-      return f'New value ({float(text)} {register.suffix}) is the same as old value. Nothing changed'
-
-    if type(register.value) is str and register.value == str(text):
-      return f'New value ({str(text)} {register.suffix}) is the same as old value. Nothing changed'
-
-    loggers = DeyeLoggers()
-
-    def creator(prefix):
-      return EmptyRegisters(prefix)
-
-    holder = DeyeRegistersHolder(loggers = [loggers.master], register_creator = creator, **holder_kwargs)
+  def write_register(self, register: DeyeRegister, text: str, old_register_value: Dict[str, int]) -> str:
+    holder = DeyeRegistersHolder(
+      loggers = [self.loggers.master],
+      register_creator = lambda prefix: CustomRegisters([register], prefix),
+      **holder_kwargs,
+    )
 
     try:
+      holder.connect_and_read()
+      old_register_value[register.name] = register.value
+
+      suffix = f' {register.suffix}'.rstrip()
+
+      if type(register.value) is int and register.value == int(text):
+        raise DeyeValueException(f'New value ({int(text)}{suffix}) is the same as old value. Nothing changed')
+
+      if type(register.value) is float and register.value == float(text):
+        raise DeyeValueException(f'New value ({float(text)}{suffix}) is the same as old value. Nothing changed')
+
+      if type(register.value) is str and register.value == str(text):
+        raise DeyeValueException(f'New value ({str(text)}{suffix}) is the same as old value. Nothing changed')
+
       value = holder.write_register(register, text)
     finally:
       holder.disconnect()

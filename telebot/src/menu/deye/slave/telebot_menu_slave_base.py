@@ -53,8 +53,8 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
-    def creator(prefix):
-      return self.registers
+    if self.has_updates(message):
+      return
 
     command_name = message.text.lstrip('/')
     idx = command_name.find('_')
@@ -65,7 +65,11 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, f'Logger with name {slave_name} not found')
       return
 
-    holder = DeyeRegistersHolder(loggers = [logger], register_creator = creator, **holder_kwargs)
+    holder = DeyeRegistersHolder(
+      loggers = [logger],
+      register_creator = lambda _: self.registers,
+      **holder_kwargs,
+    )
 
     try:
       holder.connect_and_read()

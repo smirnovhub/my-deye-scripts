@@ -8,7 +8,7 @@ class DeyeLoggers(DeyeBaseLoggers):
   def master(self) -> DeyeLogger:
     return DeyeLogger(
       name = 'master',
-      ip = '192.168.0.73',
+      address = '192.168.0.73',
       serial = 1234567890,
     )
 
@@ -17,7 +17,7 @@ class DeyeLoggers(DeyeBaseLoggers):
     return [
       #DeyeLogger(
       #  name = 'slave1',
-      #  ip = '192.168.0.75',
+      #  address = '192.168.0.75',
       #  serial = 1234567890,
       #),
     ]

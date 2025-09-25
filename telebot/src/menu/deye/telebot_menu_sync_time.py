@@ -48,6 +48,9 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
+    if self.has_updates(message):
+      return
+
     if not self.auth_helper.is_writable_register_allowed(message.from_user.id, self.register.name):
       available_registers = get_available_registers(self.registers, self.auth_helper, message.from_user.id)
       self.bot.send_message(
@@ -101,7 +104,6 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
 
         text = f'<b>{self.register.description}</b> changed to {result} {self.register.suffix}'
 
-        #self.bot.send_message(chat_id, text, parse_mode = 'HTML')
         sent = ask_advanced_choice(
           self.bot,
           chat_id,
