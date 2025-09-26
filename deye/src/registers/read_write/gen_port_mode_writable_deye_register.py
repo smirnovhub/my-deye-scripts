@@ -26,8 +26,9 @@ class GenPortModeWritableDeyeRegister(IntDeyeRegister):
     register_type = DeyeGenPortMode
 
     if isinstance(value, str):
+      value = value.lower()
       for mode in register_type:
-        if str(mode) == value:
+        if str(mode) == value or mode.pretty.lower() == value:
           value = mode
           break
 

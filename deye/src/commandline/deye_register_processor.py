@@ -116,7 +116,7 @@ class DeyeRegisterProcessor:
           if value != None:
             if self.master_interactor == None:
               raise DeyeKnownException('You can write only to master inverter')
-            register.write(self.master_interactor, value)
+            value = register.write(self.master_interactor, value)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             print(f'{self.master_interactor.name}_{register.name}{addr_list} = {value} {register.suffix}')
       except Exception as e:
