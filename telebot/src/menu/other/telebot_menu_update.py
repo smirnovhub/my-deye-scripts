@@ -7,6 +7,7 @@ import subprocess
 from telebot_git_exception import TelebotGitException
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
 from common_utils import clock_face_one_oclock
@@ -19,6 +20,7 @@ from telebot_git_helper import (
 class TelebotMenuUpdate(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    self.update_checker = TelebotLocalUpdateChecker()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -56,6 +58,9 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
         f'You are currently on:\n<b>{last_commit}</b>',
         parse_mode = "HTML",
       )
+
+      self.update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
+
       return
 
     pattern = r'\d+ files? changed.*'

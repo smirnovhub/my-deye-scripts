@@ -5,6 +5,7 @@ import urllib.parse
 
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
 from telebot_advanced_choice import ask_advanced_choice
@@ -13,6 +14,7 @@ from common_utils import clock_face_one_oclock
 from telebot_git_helper import (
   stash_push,
   stash_pop,
+  stash_clear,
   is_repository_up_to_date,
   revert_to_revision,
   get_last_commits,
@@ -23,6 +25,7 @@ from telebot_git_helper import (
 class TelebotMenuRevert(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    self.update_checker = TelebotLocalUpdateChecker()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -42,6 +45,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
           f'Pls run <b>/update</b> and then try again. You are currently on:\n<b>{last_commit}</b>',
           parse_mode = "HTML",
         )
+        self.update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
         return
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
@@ -90,6 +94,8 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
 
   def do_revert(self, chat_id: int, commit_hash: str):
     try:
+      stash_clear()
+
       last_commit_hash = get_last_commit_hash()
       if last_commit_hash == commit_hash:
         self.bot.send_message(chat_id, f'You are already on {commit_hash[:7]}')
