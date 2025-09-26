@@ -4,9 +4,13 @@ import time
 import random
 
 from datetime import datetime
-
-from deye_exceptions import DeyeFileLockingException
 from deye_utils import ensure_dir_and_file_exists
+
+from lock_exceptions import (
+  DeyeLockTimeoutException,
+  DeyeLockAlreadyAcquiredException,
+  DeyeLockNotHeldException,
+)
 
 from deye_file_lock import (
   flock,
@@ -119,7 +123,7 @@ class DeyeFileLocker:
     """
     if self.lockfile is not None:
       self.log(f"{self.name}: WARNING: lock is already acquired on {self.path}")
-      raise DeyeFileLockingException(f"{type(self).__name__}: lock is already acquired on {self.path}")
+      raise DeyeLockAlreadyAcquiredException(f"{type(self).__name__}: lock is already acquired on {self.path}")
 
     self.trim_file(self.log_filename, 1024 * 1024)
 
@@ -149,7 +153,7 @@ class DeyeFileLocker:
           self.lockfile.close()
           self.lockfile = None
           self.timedout = True
-          raise DeyeFileLockingException(
+          raise DeyeLockTimeoutException(
             f"{type(self).__name__}: timeout after {timeout} sec while waiting for lock on {self.path}")
         # wait before retrying
         time.sleep(random.uniform(0.15, 0.3))
@@ -167,5 +171,5 @@ class DeyeFileLocker:
       self.log(f"{self.name}: released lock on {self.path} after {round(elapsed, 2)} sec")
     elif not self.timedout:
       self.log(f"{self.name}: WARNING: tried to release lock on {self.path}, but no lock was held")
-      raise DeyeFileLockingException(
+      raise DeyeLockNotHeldException(
         f"{type(self).__name__}: tried to release lock on {self.path}, but no lock was held")

@@ -1,14 +1,7 @@
-import enum
+from deye_base_enum import DeyeBaseEnum
 
-class DeyeGenPortMode(enum.Enum):
+class DeyeGenPortMode(DeyeBaseEnum):
   unknown = -1
   generator_input = 0
   smartload_output = 1
   microinverter_input = 2
-
-  def __str__(self):
-    return self.name.replace('_', '-')
-
-  @property
-  def pretty(self):
-    return self.name.replace('_', ' ').title()

@@ -10,6 +10,7 @@ from deye_file_locker import DeyeFileLocker
 from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_registers_factory import DeyeRegistersFactory
+from lock_exceptions import DeyeLockAlreadyAcquiredException
 from deye_utils import get_reraised_exception
 
 from deye_file_lock import (
@@ -52,8 +53,28 @@ class DeyeRegistersHolder:
 
     self._registers[self.accumulated_prefix] = accumulated_registers
 
-  def connect_and_read(self):
-    self.locker.acquire()
+  @property
+  def accumulated_prefix(self) -> str:
+    return 'all'
+
+  @property
+  def all_registers(self) -> Dict[str, DeyeRegisters]:
+    return self._registers
+
+  @property
+  def master_registers(self) -> DeyeRegisters:
+    return self._registers[self._all_loggers.master.name]
+
+  @property
+  def accumulated_registers(self) -> DeyeRegisters:
+    return self._registers[self.accumulated_prefix]
+
+  def read_registers(self):
+    try:
+      self.locker.acquire()
+    except DeyeLockAlreadyAcquiredException:
+      pass
+
     tasks: List[RaisingThread] = []
 
     for interactor in self._interactors:
@@ -95,23 +116,12 @@ class DeyeRegistersHolder:
       except Exception as e:
         raise get_reraised_exception(e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
-  @property
-  def accumulated_prefix(self) -> str:
-    return 'all'
-
-  @property
-  def all_registers(self) -> Dict[str, DeyeRegisters]:
-    return self._registers
-
-  @property
-  def master_registers(self) -> DeyeRegisters:
-    return self._registers[self._all_loggers.master.name]
-
-  @property
-  def accumulated_registers(self) -> DeyeRegisters:
-    return self._registers[self.accumulated_prefix]
-
   def write_register(self, register: DeyeRegister, value):
+    try:
+      self.locker.acquire()
+    except DeyeLockAlreadyAcquiredException:
+      pass
+
     if self._master_interactor == None:
       raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
 

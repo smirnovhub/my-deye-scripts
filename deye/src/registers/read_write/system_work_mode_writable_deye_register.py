@@ -15,9 +15,27 @@ class SystemWorkModeWritableDeyeRegister(IntDeyeRegister):
         return mode
     return DeyeSystemWorkMode.unknown
 
+  @property
+  def can_write(self) -> bool:
+    return True
+
   def write(self, interactor: DeyeModbusInteractor, value):
-    if not isinstance(value, DeyeSystemWorkMode):
-      self.error('write(): value should be of type DeyeSystemWorkMode')
+    register_type = DeyeSystemWorkMode
+
+    if isinstance(value, str):
+      for mode in register_type:
+        if str(mode) == value:
+          value = mode
+          break
+
+      if not isinstance(value, register_type):
+        self.error(f'write(): icorrect value of {register_type.__name__}')
+
+    if not isinstance(value, register_type):
+      self.error(f'write(): value should be of type {register_type.__name__}')
+
+    if value == register_type.unknown:
+      self.error(f'write(): icorrect value of {register_type.__name__}')
 
     val = value.value
     if val < 0:
