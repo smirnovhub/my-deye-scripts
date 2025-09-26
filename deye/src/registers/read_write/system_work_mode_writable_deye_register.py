@@ -4,7 +4,14 @@ from deye_register_average_type import DeyeRegisterAverageType
 from deye_system_work_mode import DeyeSystemWorkMode
 
 class SystemWorkModeWritableDeyeRegister(IntDeyeRegister):
-  def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
+  def __init__(
+    self,
+    address: int,
+    name: str,
+    description: str,
+    suffix: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
     super().__init__(address, name, description, suffix, avg)
     self._value = DeyeSystemWorkMode.unknown
 
@@ -39,7 +46,7 @@ class SystemWorkModeWritableDeyeRegister(IntDeyeRegister):
 
     val = value.value
     if val < 0:
-      self.error('write(): value should be > 0')
+      self.error('write(): value should be >= 0')
 
     if interactor.write_register(self.address, [val]) != 1:
       self.error(f'write(): something went wrong while writing {self.description}')
