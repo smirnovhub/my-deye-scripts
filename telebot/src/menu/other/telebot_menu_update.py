@@ -11,6 +11,7 @@ from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
 from common_utils import clock_face_one_oclock
+from telebot_utils import stop_bot
 
 from telebot_git_helper import (
   check_git_result_and_raise,
@@ -95,7 +96,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
     self.bot.send_message(chat_id,
                           f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting telebot...',
                           parse_mode = 'HTML')
-    os._exit(1)
+    stop_bot(self.bot)
 
   def on_cancel(self, chat_id: int):
     self.bot.send_message(chat_id, 'Restart cancelled')

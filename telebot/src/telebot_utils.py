@@ -1,4 +1,6 @@
+import os
 import threading
+import time
 import telebot
 
 from typing import Union
@@ -81,3 +83,9 @@ def remove_inline_buttons_with_delay(bot: telebot.TeleBot, chat_id: int, message
   timer = threading.Timer(delay, lambda: remove_inline_buttons(bot, chat_id, message_id))
   timer.daemon = True # thread won't block program exit
   timer.start()
+
+def stop_bot(bot: telebot.TeleBot):
+  bot.stop_bot()
+  # exit will never fire if bot has stopped in right way
+  time.sleep(30)
+  os._exit(1)

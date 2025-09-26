@@ -1,4 +1,3 @@
-import os
 import re
 import telebot
 import urllib.parse
@@ -10,6 +9,7 @@ from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
 from telebot_advanced_choice import ask_advanced_choice
 from common_utils import clock_face_one_oclock
+from telebot_utils import stop_bot
 
 from telebot_git_helper import (
   stash_push,
@@ -136,7 +136,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     self.bot.send_message(chat_id,
                           f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting telebot...',
                           parse_mode = 'HTML')
-    os._exit(1)
+    stop_bot(self.bot)
 
   def on_cancel(self, chat_id: int):
     self.bot.send_message(chat_id, 'Restart cancelled')

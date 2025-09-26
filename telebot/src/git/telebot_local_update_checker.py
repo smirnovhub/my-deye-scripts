@@ -1,9 +1,8 @@
-import os
 import time
-from typing import Union
 import telebot
 import urllib.parse
 
+from typing import Union
 from deye_file_with_lock import DeyeFileWithLock
 from telebot_user_choices import ask_choice
 from deye_utils import ensure_file_exists
@@ -11,6 +10,7 @@ from countdown_with_cancel import countdown_with_cancel
 from telebot_git_helper import get_last_commit_hash
 from common_utils import clock_face_one_oclock
 from telebot_constants import git_repository_local_check_period_sec
+from telebot_utils import stop_bot
 
 class TelebotLocalUpdateChecker:
   """
@@ -107,7 +107,7 @@ class TelebotLocalUpdateChecker:
       bot.send_message(chat_id,
                        f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting telebot...',
                        parse_mode = 'HTML')
-      os._exit(1)
+      stop_bot(bot)
 
     def on_cancel(chat_id: int):
       bot.send_message(chat_id, 'Restart cancelled')
