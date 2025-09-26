@@ -87,5 +87,5 @@ def remove_inline_buttons_with_delay(bot: telebot.TeleBot, chat_id: int, message
 def stop_bot(bot: telebot.TeleBot):
   bot.stop_bot()
   # exit will never fire if bot has stopped in right way
-  time.sleep(30)
+  time.sleep(45)
   os._exit(1)
