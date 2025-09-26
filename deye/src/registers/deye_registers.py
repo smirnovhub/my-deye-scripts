@@ -26,7 +26,7 @@ class DeyeRegisters:
     self.not_implemented('forecast_registers')
 
   @property
-  def test_registers(self) -> List[DeyeRegister]:
+  def test_registers(self) -> list[DeyeRegister]:
     self.not_implemented('test_registers')
 
   @property
