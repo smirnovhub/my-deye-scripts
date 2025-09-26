@@ -38,14 +38,14 @@ if os.name == 'nt':
     if flags & LOCK_UN:
       # Unlock the file
       file.seek(0)
-      msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, length)
+      msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, length) # type: ignore
     else:
       # Lock the file
-      mode = msvcrt.LK_LOCK # Default blocking lock
+      mode = msvcrt.LK_LOCK # type: ignore
       if flags & LOCK_NB:
-        mode = msvcrt.LK_NBLCK # Non-blocking lock
+        mode = msvcrt.LK_NBLCK # type: ignore
       file.seek(0)
-      msvcrt.locking(file.fileno(), mode, length)
+      msvcrt.locking(file.fileno(), mode, length) # type: ignore
 
 else:
   import fcntl
