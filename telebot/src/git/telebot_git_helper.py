@@ -5,6 +5,7 @@ import subprocess
 from typing import Dict, List, Tuple
 from subprocess import CompletedProcess
 
+from deye_exceptions import DeyeValueException
 from telebot_git_exception import TelebotGitException
 from telebot_git_exception import TelebotGitException
 
@@ -251,19 +252,19 @@ def get_last_commits(pr_max_count: int = 5, regular_commits_max_count = 10) -> D
     # Count occurrences of each base key
     counts: Dict[str, int] = {}
     for base_key, commit_hash in base_keys:
-      counts[base_key] += 1
+      counts[base_key] = counts.get(base_key, 0) + 1
 
     # Assign keys with suffixes for duplicates
     seen: Dict[str, int] = {}
     for base_key, commit_hash in base_keys:
       if counts[base_key] > 1:
-        seen[base_key] += 1
+        seen[base_key] = seen.get(base_key, 0) + 1
         key = f"{base_key}-{seen[base_key]}"
       else:
         key = base_key
       commits_dict[key] = commit_hash
 
-  except Exception:
-    return commits_dict
+  except Exception as e:
+    raise DeyeValueException(f'{e.__class__.__name__}: {str(e)}')
 
   return commits_dict
