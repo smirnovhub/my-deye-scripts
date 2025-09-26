@@ -205,7 +205,7 @@ def build_keyboard_for_register(
 
   # Iterate over each row in the provided rows
   for row in rows:
-    buttons = []
+    buttons: List[telebot.types.InlineKeyboardButton] = []
 
     if isinstance(row, list):
       # If the row is a list of strings, create buttons with text = label

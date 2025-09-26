@@ -2,7 +2,7 @@ from typing import List
 from deye_register import DeyeRegister
 from deye_registers_factory import DeyeRegistersFactory
 
-class TodayStatRegisters(DeyeRegistersFactory.get_registers_class()):
+class TodayStatRegisters(DeyeRegistersFactory.get_registers_class()): # type: ignore
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
 

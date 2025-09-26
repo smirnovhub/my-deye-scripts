@@ -2,7 +2,7 @@ import telebot
 import textwrap
 import traceback
 
-from typing import Dict, List
+from typing import Any, Dict, List
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
@@ -240,6 +240,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     try:
       holder.read_registers()
       old_register_value[register.name] = register.value
+
+      value: Any = 0
 
       if type(register.value) is int:
         try:

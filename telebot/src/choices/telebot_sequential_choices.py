@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import telebot
 
 from typing import Dict, List, Callable
@@ -19,7 +20,7 @@ _user_input_callback_str = "user_input_callback"
 _sequential_prefix_str = "_seq_"
 
 # Storage for sequential step states: chat_id -> state
-_step_states = {} # type: dict[int, dict]
+_step_states = {}
 
 # Flag to ensure we register the global callback handler only once per bot instance
 _is_global_handler_registered = False

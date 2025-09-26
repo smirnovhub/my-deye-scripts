@@ -3,7 +3,6 @@ import re
 import subprocess
 
 from typing import Dict, List, Tuple
-from collections import defaultdict
 from subprocess import CompletedProcess
 
 from telebot_git_exception import TelebotGitException
@@ -250,12 +249,12 @@ def get_last_commits(pr_max_count: int = 5, regular_commits_max_count = 10) -> D
       base_keys.append((base_key, commit_hash))
 
     # Count occurrences of each base key
-    counts = defaultdict(int)
+    counts: Dict[str, int] = {}
     for base_key, commit_hash in base_keys:
       counts[base_key] += 1
 
     # Assign keys with suffixes for duplicates
-    seen = defaultdict(int)
+    seen: Dict[str, int] = {}
     for base_key, commit_hash in base_keys:
       if counts[base_key] > 1:
         seen[base_key] += 1

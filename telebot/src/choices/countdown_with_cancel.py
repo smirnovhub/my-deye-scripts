@@ -102,11 +102,10 @@ def countdown_with_cancel(
       pass
 
     if called_from_user:
-      if on_cancel:
-        try:
-          on_cancel(chat_id)
-        except Exception:
-          pass
+      try:
+        on_cancel(chat_id)
+      except Exception:
+        pass
     else:
       try:
         on_finish(chat_id)
@@ -167,11 +166,10 @@ def _next_step_handler(
     except Exception:
       pass
 
-    if on_cancel:
-      try:
-        on_cancel(message.chat.id)
-      except Exception:
-        pass
+    try:
+      on_cancel(message.chat.id)
+    except Exception:
+      pass
 
   remove_inline_buttons_with_delay(
     bot = bot,
