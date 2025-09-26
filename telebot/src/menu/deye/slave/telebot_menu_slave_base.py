@@ -32,9 +32,9 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     super().__init__(bot)
     self.loggers = DeyeLoggers()
     self.registers = registers
-    self.all_command: TelebotMenuItem = all_command
-    self.master_command: TelebotMenuItem = master_command
-    self.slave_command: TelebotMenuItem = slave_command
+    self.all_command = all_command
+    self.master_command = master_command
+    self.slave_command = slave_command
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -65,6 +65,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, f'Logger with name {slave_name} not found')
       return
 
+    # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [logger],
       register_creator = lambda _: self.registers,
@@ -72,7 +73,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     )
 
     try:
-      holder.connect_and_read()
+      holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return

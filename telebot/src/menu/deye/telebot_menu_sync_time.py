@@ -30,15 +30,10 @@ from telebot_deye_helper import (
 class TelebotMenuSyncTime(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    loggers = DeyeLoggers()
+    self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
-
     self.registers = DeyeRegistersFactory.create_registers()
     self.register = self.registers.inverter_system_time_register
-
-    self.holder = DeyeRegistersHolder(loggers = [loggers.master],
-                                      register_creator = lambda prefix: CustomRegisters([self.register], prefix),
-                                      **holder_kwargs)
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -59,17 +54,20 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         parse_mode = 'HTML')
       return
 
+    # should be local to avoid issues with locks
+    holder = DeyeRegistersHolder(
+      loggers = [self.loggers.master],
+      register_creator = lambda prefix: CustomRegisters([self.register], prefix),
+      **holder_kwargs,
+    )
+
     try:
-      self.holder.connect_and_read()
-    except DeyeKnownException as e:
-      self.bot.send_message(message.chat.id, str(e))
-      return
+      holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
-      print(traceback.format_exc())
       return
     finally:
-      self.holder.disconnect()
+      holder.disconnect()
 
     if not isinstance(self.register.value, datetime):
       self.bot.send_message(message.chat.id, 'Register type is not datetime', parse_mode = 'HTML')
@@ -97,10 +95,16 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         old_value = self.register.value
         value = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+        # should be local to avoid issues with locks
+        holder = DeyeRegistersHolder(
+          loggers = [self.loggers.master],
+          **holder_kwargs,
+        )
+
         try:
-          result = self.holder.write_register(self.register, value)
+          result = holder.write_register(self.register, value)
         finally:
-          self.holder.disconnect()
+          holder.disconnect()
 
         text = f'<b>{self.register.description}</b> changed to {result} {self.register.suffix}'
 
