@@ -1,9 +1,9 @@
-import io
 import os
 import time
 import random
 
 from datetime import datetime
+from typing import IO, Any, Optional
 from deye_utils import ensure_dir_and_file_exists
 
 from lock_exceptions import (
@@ -44,7 +44,7 @@ class DeyeFileLocker:
     self.name: str = name
     self.path: str = path
     self.verbose: bool = verbose
-    self.lockfile: io.IOBase = None
+    self.lockfile: Optional[IO[Any]] = None
     self.timedout: bool = False
 
     # Ensure lock file exists

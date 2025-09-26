@@ -1,5 +1,6 @@
-from typing import Any, List
+from typing import Any, List, Union
 
+from deye_base_enum import DeyeBaseEnum
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
@@ -20,9 +21,9 @@ class BaseDeyeRegister(DeyeRegister):
     self._description = description
     self._suffix = suffix
     self._avg = avg
-    self._value = 0
-    self._min_value = 0
-    self._max_value = 0
+    self._value: Union[int, float, str, DeyeBaseEnum] = 0
+    self._min_value: Union[int, float] = 0
+    self._max_value: Union[int, float] = 0
     self._loggers = DeyeLoggers()
 
   def enqueue(self, interactor: DeyeModbusInteractor):
@@ -35,7 +36,7 @@ class BaseDeyeRegister(DeyeRegister):
       return self._value
 
     if self._avg == DeyeRegisterAverageType.accumulate or self._avg == DeyeRegisterAverageType.average:
-      value = 0
+      value = 0.0
       second_sign = False
       for interactor in interactors:
         value += self.read_internal(interactor)
@@ -45,10 +46,9 @@ class BaseDeyeRegister(DeyeRegister):
       if self._avg == DeyeRegisterAverageType.average:
         value /= len(interactors)
 
-      if type(value) is float:
-        frac = value % 1
-        digits = 2 if second_sign == True else 1
-        value = int(value) if frac < 0.005 else round(value, digits)
+      frac = value % 1
+      digits = 2 if second_sign == True else 1
+      value = int(value) if frac < 0.005 else round(value, digits)
 
       self._value = value
       return self._value

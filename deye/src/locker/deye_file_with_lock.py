@@ -1,6 +1,6 @@
-import io
 import os
 import time
+from typing import IO, Any, Optional
 
 from lock_exceptions import DeyeLockTimeoutException
 
@@ -31,12 +31,12 @@ class DeyeFileWithLock:
       - Raise `DeyeFileLockingException` if a lock cannot be acquired within the timeout.
   """
   def __init__(self, verbose: bool = False):
-    self.sfile: io.IOBase = None
-    self.path: str = None
-    self.lock_name: str = None
+    self.sfile: Optional[IO[Any]] = None
+    self.path: Optional[str] = None
+    self.lock_name: Optional[str] = None
     self.verbose: bool = verbose
 
-  def _acquire_lock_with_retry(self, file_obj: io.IOBase, lock_type: int, timeout: int = 15) -> None:
+  def _acquire_lock_with_retry(self, file_obj: Optional[IO[Any]], lock_type: int, timeout: int = 15) -> None:
     """
     Acquire a file lock with retries up to the specified timeout.
 
@@ -48,6 +48,9 @@ class DeyeFileWithLock:
     Raises:
         DeyeFileLockingException: If the lock cannot be acquired within the timeout.
     """
+    if file_obj is None:
+      return
+
     start_time = time.time()
     warning_printed = False
     self.lock_name = "exclusive" if lock_type == LOCK_EX else "shared"
@@ -75,7 +78,7 @@ class DeyeFileWithLock:
           raise DeyeLockTimeoutException(f"{self.lock_name}: Timeout while waiting for lock on {self.path}")
         time.sleep(0.25)
 
-  def open_file(self, path: str, mode: str, timeout: int = 15) -> io.IOBase:
+  def open_file(self, path: str, mode: str, timeout: int = 15) -> Optional[IO[Any]]:
     """
     Open a file with proper locking applied based on the access mode.
 

@@ -43,7 +43,8 @@ class KeyValueStore:
     """
     try:
       f = self._locker.open_file(self._filename, "a+")
-      f.seek(0)
+      if f is None:
+        return
       try:
         data = json.load(f)
       except json.JSONDecodeError:
@@ -72,6 +73,8 @@ class KeyValueStore:
     """
     try:
       f = self._locker.open_file(self._filename, "r")
+      if f is None:
+        return None
       try:
         data = json.load(f)
       except json.JSONDecodeError:
