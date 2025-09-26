@@ -94,6 +94,21 @@ def stash_pop():
   except Exception as e:
     raise TelebotGitException(f'git stash pop failed: {str(e)}')
 
+def stash_clear():
+  current_dir = os.path.dirname(__file__)
+  try:
+    # Stash all changes
+    result = subprocess.run(
+      ['git', '-C', current_dir, 'stash', 'clear'],
+      capture_output = True,
+      text = True,
+    )
+    check_git_result_and_raise(result)
+  except TelebotGitException as e:
+    raise TelebotGitException(f'git stash clear failed: {str(e)}')
+  except Exception as e:
+    raise TelebotGitException(f'git stash clear failed: {str(e)}')
+
 def revert_to_revision(commit_hash: str) -> str:
   current_dir = os.path.dirname(__file__)
   try:

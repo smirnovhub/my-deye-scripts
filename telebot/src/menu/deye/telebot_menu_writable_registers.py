@@ -10,6 +10,7 @@ from deye_register import DeyeRegister
 from custom_registers import CustomRegisters
 from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeValueException
+from deye_base_enum import DeyeBaseEnum
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_fake_message import TelebotFakeMessage
 from telebot_menu_item import TelebotMenuItem
@@ -200,7 +201,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
 
   def get_register_value(self, register: DeyeRegister):
-
+    # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomRegisters([register], prefix),
@@ -208,11 +209,16 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     )
 
     try:
-      holder.connect_and_read()
+      holder.read_registers()
     finally:
       holder.disconnect()
 
-    result = f'Current <b>{register.description}</b> value: {register.value} {register.suffix}\n'
+    value = register.value
+
+    if isinstance(value, DeyeBaseEnum):
+      value = value.pretty
+
+    result = f'Current <b>{register.description}</b> value: {value} {register.suffix}\n'
 
     if register.min_value != register.max_value:
       result += f'Enter new value (from {register.min_value} to {register.max_value}):'
@@ -222,29 +228,49 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     return result
 
   def write_register(self, register: DeyeRegister, text: str, old_register_value: Dict[str, int]) -> str:
+    # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomRegisters([register], prefix),
       **holder_kwargs,
     )
 
+    suffix = f' {register.suffix}'.rstrip()
+
     try:
-      holder.connect_and_read()
+      holder.read_registers()
       old_register_value[register.name] = register.value
 
-      suffix = f' {register.suffix}'.rstrip()
+      if type(register.value) is int:
+        try:
+          value = int(text)
+        except Exception:
+          raise DeyeValueException(f'Value type should be int')
+        if register.value == value:
+          raise DeyeValueException(f'New value ({value}{suffix}) is the same as old value. Nothing changed')
 
-      if type(register.value) is int and register.value == int(text):
-        raise DeyeValueException(f'New value ({int(text)}{suffix}) is the same as old value. Nothing changed')
+      if type(register.value) is float:
+        try:
+          value = float(text)
+        except Exception:
+          raise DeyeValueException(f'Value type should be float')
+        if register.value == value:
+          raise DeyeValueException(f'New value ({value}{suffix}) is the same as old value. Nothing changed')
 
-      if type(register.value) is float and register.value == float(text):
-        raise DeyeValueException(f'New value ({float(text)}{suffix}) is the same as old value. Nothing changed')
-
-      if type(register.value) is str and register.value == str(text):
+      if str(register.value) == text:
         raise DeyeValueException(f'New value ({str(text)}{suffix}) is the same as old value. Nothing changed')
 
-      value = holder.write_register(register, text)
+      holder.write_register(register, text)
     finally:
       holder.disconnect()
 
-    return f'<b>{register.description}</b> changed to {value} {register.suffix}'
+    value = register.value
+    old_value = old_register_value[register.name]
+
+    if isinstance(value, DeyeBaseEnum):
+      value = value.pretty
+
+    if isinstance(old_value, DeyeBaseEnum):
+      old_value = old_value.pretty
+
+    return f'<b>{register.description}</b> changed from {old_value} to {value}{suffix}'

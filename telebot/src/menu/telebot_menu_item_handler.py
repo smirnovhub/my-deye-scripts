@@ -22,7 +22,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     Args:
         bot (telebot.TeleBot): The Telegram bot instance
     """
-    self.bot: telebot.TeleBot = bot
+    self.bot = bot
     self.users = TelebotUsers()
     self.auth_helper = TelebotAuthHelper()
     self.local_update_checker = TelebotLocalUpdateChecker()
@@ -117,7 +117,12 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     try:
       if self.remote_update_checker.check_for_remote_updates(self.bot, message):
         return True
-      if self.local_update_checker.check_for_local_updates(self.bot, message):
+      if self.local_update_checker.check_for_local_updates(
+          self.bot,
+          message.chat.id,
+          force = False,
+          message = message,
+      ):
         return True
     except Exception as e:
       self.bot.send_message(message.chat.id, f'Error while checking for updates: {str(e)}')

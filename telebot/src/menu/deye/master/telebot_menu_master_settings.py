@@ -16,9 +16,6 @@ class TelebotMenuMasterSettings(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self.loggers = DeyeLoggers()
-    self.holder = DeyeRegistersHolder(loggers = [self.loggers.master],
-                                      register_creator = lambda prefix: MasterSettingsRegisters(prefix),
-                                      **holder_kwargs)
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -38,14 +35,21 @@ class TelebotMenuMasterSettings(TelebotMenuItemHandler):
     if self.has_updates(message):
       return
 
+    # should be local to avoid issues with locks
+    holder = DeyeRegistersHolder(
+      loggers = [self.loggers.master],
+      register_creator = lambda prefix: MasterSettingsRegisters(prefix),
+      **holder_kwargs,
+    )
+
     try:
-      self.holder.connect_and_read()
+      holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
     finally:
-      self.holder.disconnect()
+      holder.disconnect()
 
     master_name = self.loggers.master.name.title()
-    info = get_register_values(self.holder.master_registers.all_registers)
+    info = get_register_values(holder.master_registers.all_registers)
     self.bot.send_message(message.chat.id, f'<b>{master_name} inverter settings:</b>\n{info}', parse_mode = 'HTML')

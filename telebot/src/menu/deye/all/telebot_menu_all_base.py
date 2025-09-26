@@ -29,13 +29,11 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     slave_command: TelebotMenuItem,
   ):
     super().__init__(bot)
-    self.all_command: TelebotMenuItem = all_command
-    self.master_command: TelebotMenuItem = master_command
-    self.slave_command: TelebotMenuItem = slave_command
-    loggers = DeyeLoggers()
-    self.holder = DeyeRegistersHolder(loggers = loggers.loggers,
-                                      register_creator = lambda _: registers,
-                                      **holder_kwargs)
+    self.loggers = DeyeLoggers()
+    self.registers = registers
+    self.all_command = all_command
+    self.master_command = master_command
+    self.slave_command = slave_command
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -48,13 +46,20 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     if self.has_updates(message):
       return
 
+    # should be local to avoid issues with locks
+    holder = DeyeRegistersHolder(
+      loggers = self.loggers.loggers,
+      register_creator = lambda _: self.registers,
+      **holder_kwargs,
+    )
+
     try:
-      self.holder.connect_and_read()
+      holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
     finally:
-      self.holder.disconnect()
+      holder.disconnect()
 
     choices = get_choices_of_invertors(
       user_id = message.from_user.id,
@@ -64,14 +69,14 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     )
 
     # add button for time sync if needed
-    if abs(self.holder.master_registers.inverter_system_time_diff_register.value
+    if abs(holder.master_registers.inverter_system_time_diff_register.value
            ) > inverter_system_time_need_sync_difference_sec:
       # add line break for keyboard
       choices[row_break_str] = row_break_str
       # add time sync command
       choices[sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
 
-    info = get_register_values(self.holder.accumulated_registers.all_registers)
+    info = get_register_values(holder.accumulated_registers.all_registers)
 
     ask_advanced_choice(
       self.bot,
