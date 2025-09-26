@@ -13,7 +13,7 @@ class TelebotProgressMessage:
     - Registers a next-step handler: if the user sends any message, the progress message will be deleted.
     - Can be hidden manually by calling `hide()`.
     """
-    self.bot: telebot.TeleBot = bot # TeleBot instance
+    self.bot = bot # TeleBot instance
     self._chat_id: int = None # Chat ID (set in show())
     self._text: str = None # Base message text (set in show())
     self._message: telebot.types.Message = None # The sent Telegram message

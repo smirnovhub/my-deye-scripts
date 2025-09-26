@@ -9,7 +9,7 @@ from telebot_utils import remove_inline_buttons_with_delay
 
 class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
   def __init__(self, bot: telebot.TeleBot):
-    self.bot: telebot.TeleBot = bot
+    self.bot = bot
 
   def register_handlers(self):
     """
