@@ -1,14 +1,11 @@
-import enum
+from deye_base_enum import DeyeBaseEnum
 
-class DeyeSystemWorkMode(enum.Enum):
+class DeyeSystemWorkMode(DeyeBaseEnum):
   unknown = -1
   selling_first = 0
   zero_export_to_load = 1
   zero_export_to_ct = 2
 
-  def __str__(self):
-    return self.name.replace("_", "-")
-
   @property
   def pretty(self):
-    return self.name.replace('_', ' ').title().replace('Ct', 'CT')
+    return super().pretty.replace('Ct', 'CT')

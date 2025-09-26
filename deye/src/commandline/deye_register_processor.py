@@ -4,6 +4,7 @@ from typing import Any, List, Type
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
 from raising_thread import RaisingThread
+from deye_base_enum import DeyeBaseEnum
 from deye_exceptions import DeyeKnownException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
@@ -23,33 +24,49 @@ class DeyeRegisterProcessor:
     return f'{action} {register.name.replace("_", " ")}' if not register.suffix else f'{action} {register.name.replace("_", " ")}, {register.suffix.replace("%", "%%")}'
 
   def get_write_limit_desc(self, register: DeyeRegister) -> str:
-    return f'from {register.min_value} to {register.max_value}'
+    if isinstance(register.value, DeyeBaseEnum):
+      return ', '.join(str(enum_item) for enum_item in type(register.value) if enum_item.value >= 0)
+    else:
+      return f'from {register.min_value} to {register.max_value}'
 
   def get_register_type(self, register: DeyeRegister) -> Type[Any]:
-    return type(register.value)
+    if isinstance(register.value, DeyeBaseEnum):
+      return str
+    else:
+      return type(register.value)
 
   def add_command_line_parameters(self, parser: argparse.ArgumentParser):
     try:
       for register in self.registers.read_only_registers:
-        parser.add_argument(self.get_arg_name(register, 'get'),
-                            action = 'store_true',
-                            help = self.get_arg_desc(register, 'get'))
+        parser.add_argument(
+          self.get_arg_name(register, 'get'),
+          action = 'store_true',
+          help = self.get_arg_desc(register, 'get'),
+        )
 
       for register in self.registers.read_write_registers:
         set_help = f'{self.get_arg_desc(register, "set")} ({self.get_write_limit_desc(register)})' if type(
           register.value) is not str else f'{self.get_arg_desc(register, "set")}'
-        parser.add_argument(self.get_arg_name(register, 'get'),
-                            action = 'store_true',
-                            help = self.get_arg_desc(register, 'get'))
-        parser.add_argument(self.get_arg_name(register, 'set'),
-                            metavar = register.suffix,
-                            type = self.get_register_type(register),
-                            help = set_help)
+
+        parser.add_argument(
+          self.get_arg_name(register, 'get'),
+          action = 'store_true',
+          help = self.get_arg_desc(register, 'get'),
+        )
+
+        parser.add_argument(
+          self.get_arg_name(register, 'set'),
+          metavar = register.suffix,
+          type = self.get_register_type(register),
+          help = set_help,
+        )
 
       for register in self.registers.forecast_registers:
-        parser.add_argument(self.get_arg_name(register, 'get'),
-                            action = 'store_true',
-                            help = self.get_arg_desc(register, 'get'))
+        parser.add_argument(
+          self.get_arg_name(register, 'get'),
+          action = 'store_true',
+          help = self.get_arg_desc(register, 'get'),
+        )
 
     except Exception as e:
       raise get_reraised_exception(e, 'Error while adding parameters') from e
@@ -99,7 +116,7 @@ class DeyeRegisterProcessor:
           if value != None:
             if self.master_interactor == None:
               raise DeyeKnownException('You can write only to master inverter')
-            register.write(self.master_interactor, value)
+            value = register.write(self.master_interactor, value)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             print(f'{self.master_interactor.name}_{register.name}{addr_list} = {value} {register.suffix}')
       except Exception as e:

@@ -1,8 +1,8 @@
-import os
 import time
 import telebot
 import urllib.parse
 
+from typing import Union
 from deye_file_with_lock import DeyeFileWithLock
 from telebot_user_choices import ask_choice
 from deye_utils import ensure_file_exists
@@ -10,6 +10,7 @@ from countdown_with_cancel import countdown_with_cancel
 from telebot_git_helper import get_last_commit_hash
 from common_utils import clock_face_one_oclock
 from telebot_constants import git_repository_local_check_period_sec
+from telebot_utils import stop_bot
 
 class TelebotLocalUpdateChecker:
   """
@@ -29,7 +30,13 @@ class TelebotLocalUpdateChecker:
     ensure_file_exists(self.ask_file_name)
     ensure_file_exists(self.hash_file_name)
 
-  def check_for_local_updates(self, bot: telebot.TeleBot, message: telebot.types.Message) -> bool:
+  def check_for_local_updates(
+    self,
+    bot: telebot.TeleBot,
+    chat_id: int,
+    force: bool = False,
+    message: Union[telebot.types.Message, None] = None,
+  ) -> bool:
     """
     Check if the local repository has changed and prompt the user to restart the bot.
 
@@ -43,10 +50,11 @@ class TelebotLocalUpdateChecker:
     Returns:
         bool: True if a user prompt was sent, False otherwise.
     """
-    last_ask_time = self._load_last_local_update_ask_time()
-    if time.time() - last_ask_time < git_repository_local_check_period_sec:
-      # Too soon since the last check; skip
-      return False
+    if not force:
+      last_ask_time = self._load_last_local_update_ask_time()
+      if time.time() - last_ask_time < git_repository_local_check_period_sec:
+        # Too soon since the last check; skip
+        return False
 
     # Save the current check time
     self._save_last_local_update_ask_time(time.time())
@@ -59,14 +67,15 @@ class TelebotLocalUpdateChecker:
 
       def on_choice(chat_id: int, choice: str):
         if choice == 'yes' or choice == yes_choice:
-          self._ask_for_restart(bot, message.chat.id)
+          self._ask_for_restart(bot, chat_id)
         else:
           bot.send_message(chat_id, 'Restart cancelled')
-          bot.process_new_messages([message])
+          if message is not None:
+            bot.process_new_messages([message])
 
       ask_choice(
         bot,
-        message.chat.id,
+        chat_id,
         'The local repository has changed. '
         'For the changes to take effect, need to restart the bot. '
         '<b>Do you want to restart it now?</b>',
@@ -98,7 +107,7 @@ class TelebotLocalUpdateChecker:
       bot.send_message(chat_id,
                        f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting telebot...',
                        parse_mode = 'HTML')
-      os._exit(1)
+      stop_bot(bot)
 
     def on_cancel(chat_id: int):
       bot.send_message(chat_id, 'Restart cancelled')

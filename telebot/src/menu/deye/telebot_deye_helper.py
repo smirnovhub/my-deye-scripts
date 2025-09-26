@@ -7,8 +7,7 @@ from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from telebot_auth_helper import TelebotAuthHelper
-from deye_system_work_mode import DeyeSystemWorkMode
-from deye_gen_port_mode import DeyeGenPortMode
+from deye_base_enum import DeyeBaseEnum
 from telebot_menu_item import TelebotMenuItem
 from telebot_user_choices_helper import row_break_str
 
@@ -34,13 +33,12 @@ def get_register_values(registers: List[DeyeRegister]) -> str:
   """
   result = ""
   for register in registers:
-    if isinstance(register.value, DeyeSystemWorkMode) or isinstance(register.value, DeyeGenPortMode):
+    if isinstance(register.value, DeyeBaseEnum):
       val = register.value.pretty
     else:
       val = str(register.value).title()
 
     desc = register.description.replace('Inverter ', '')
-    desc = desc.replace('Grid Charging Start SOC', 'Max Charge SOC')
     result += f'{desc}: {val} {register.suffix}\n'
 
   return result
@@ -154,6 +152,13 @@ def get_keyboard_for_register(
       ['40', '45', '50', '60'],
       ['70', '80', '90', '100'],
     ])
+  elif isinstance(register.value, DeyeBaseEnum):
+    buttons_dict: Dict[str, str] = {}
+    for enum_item in type(register.value):
+      if enum_item.value >= 0:
+        buttons_dict[enum_item.pretty] = f'/{register.name} {enum_item}'
+        buttons_dict[str(enum_item.value)] = row_break_str
+    return build_keyboard_for_register(register, [buttons_dict])
   return None
 
 def build_keyboard_for_register(
@@ -161,58 +166,76 @@ def build_keyboard_for_register(
   rows: List[Union[List[str], Dict[str, str]]],
 ) -> telebot.types.InlineKeyboardMarkup:
   """
-  Build an inline keyboard for a Telegram bot using a list of rows.
-  
-  Each row in `rows` can be either:
-    1. List[str]: Each string in the list will be used as the button text.
-        The callback_data for each button will be automatically generated
-        as '{register.name}=<button_text>'.
-    2. Dict[str, str]: Each key-value pair represents a button.
-        The key is used as the button text, and the value is used as the
-        callback_data.
+  Build a Telegram InlineKeyboardMarkup for a given Deye register.
 
-  Parameters:
-      register (DeyeRegister): The register object associated with this keyboard.
-                                Its `name` attribute is used when generating
-                                callback_data for List[str] rows.
-      rows (List[Union[List[str], Dict[str, str]]]): The list of rows for the keyboard.
-                                                    Each row can be a list of strings
-                                                    or a dictionary mapping text -> callback.
+  This function generates an inline keyboard where each row corresponds
+  to a list or dictionary of values provided in `rows`. It supports dynamic
+  creation of rows, and can insert line breaks when a special value is encountered.
+
+  Behavior:
+  - If a row is a list of strings, each string becomes a button with:
+      - `text` = the string value
+      - `callback_data` = "/<register.name> <value>"
+  - If a row is a dictionary, each key-value pair becomes a button with:
+      - `text` = key
+      - `callback_data` = value
+  - If the special string row_break_str appears in a list, or as a key or value in a dictionary,
+    a line break is inserted:
+      - All buttons accumulated so far are added as a row
+      - The row_break_str itself is skipped
+  - Both lists and dictionaries can be mixed across rows
+  - Any row that is not a `list` or `dict` will raise a `TypeError`
+
+  Args:
+      register (DeyeRegister): The register for which the keyboard is built.
+          Its `name` attribute is used to construct callback data for list entries.
+      rows (List[Union[List[str], Dict[str, str]]]): A list of rows, where each row is either:
+          - A list of strings representing button labels, or
+          - A dictionary mapping button labels (keys) to callback data (values).
 
   Returns:
-      telebot.types.InlineKeyboardMarkup: The constructed inline keyboard object
-                                          ready to be sent via the Telegram bot.
+      telebot.types.InlineKeyboardMarkup: The constructed inline keyboard ready to be sent
+      with a Telegram message.
 
   Raises:
-      TypeError: If any row in `rows` is not a list of strings or a dict of str->str.
+      TypeError: If a row is not a list or dictionary.
   """
   # Initialize the InlineKeyboardMarkup object that will contain all rows
   keyboard = telebot.types.InlineKeyboardMarkup()
 
   # Iterate over each row in the provided rows
   for row in rows:
-    buttons = [] # Temporary list to hold buttons for the current row
+    buttons = []
 
     if isinstance(row, list):
       # If the row is a list of strings, create buttons with text = label
       # and callback_data = "/{register.name} {value}"
-      buttons = [
-        telebot.types.InlineKeyboardButton(text = value, callback_data = f'/{register.name} {value}') for value in row
-      ]
+      for value in row:
+        if value == row_break_str:
+          if buttons:
+            keyboard.row(*buttons)
+            buttons = []
+          continue
+        buttons.append(telebot.types.InlineKeyboardButton(text = value, callback_data = f'/{register.name} {value}'))
 
     elif isinstance(row, dict):
       # If the row is a dict, each key-value pair becomes a button
       # Key = button text, Value = callback_data
-      buttons = [
-        telebot.types.InlineKeyboardButton(text = text, callback_data = callback) for text, callback in row.items()
-      ]
+      for text, callback in row.items():
+        if text == row_break_str or callback == row_break_str:
+          if buttons:
+            keyboard.row(*buttons)
+            buttons = []
+          continue
+        buttons.append(telebot.types.InlineKeyboardButton(text = text, callback_data = callback))
 
     else:
       # If row is neither list nor dict, raise a clear exception
       raise TypeError(f"build_keyboard_for_register(): row must be List[str] or Dict[str,str], got {type(row)}")
 
-    # Add the buttons of the current row to the keyboard as a single row
-    keyboard.row(*buttons)
+    # Add remaining buttons for the current row
+    if buttons:
+      keyboard.row(*buttons)
 
   # Return the fully constructed keyboard object
   return keyboard

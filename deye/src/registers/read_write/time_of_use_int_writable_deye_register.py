@@ -3,14 +3,16 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
 class TimeOfUseIntWritableDeyeRegister(BaseDeyeRegister):
-  def __init__(self,
-               address: int,
-               min_value: int,
-               max_value: int,
-               name: str,
-               description: str,
-               suffix: str,
-               avg = DeyeRegisterAverageType.none):
+  def __init__(
+    self,
+    address: int,
+    min_value: int,
+    max_value: int,
+    name: str,
+    description: str,
+    suffix: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
     super().__init__(address, 6, name, description, suffix, avg)
     self._value = 0
     self._min_value = min_value

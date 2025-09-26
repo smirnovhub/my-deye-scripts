@@ -56,17 +56,3 @@ class DeyeQueueIsEmptyException(DeyeKnownException):
   and no item could be retrieved before the timeout expired
   """
   pass
-
-class DeyeFileLockingException(DeyeKnownException):
-  """
-  Raised when DeyeFileLocker fails to acquire an exclusive file lock.
-  This exception indicates that the lock file remained busy during the entire
-  waiting period defined by the `timeout` argument in `DeyeFileLocker.acquire()`.
-  """
-  pass
-
-class DeyeEcoflowException(DeyeKnownException):
-  """
-  Raised when Ecoflow error occurred
-  """
-  pass

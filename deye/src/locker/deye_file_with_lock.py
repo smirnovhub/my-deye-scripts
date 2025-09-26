@@ -2,7 +2,7 @@ import io
 import os
 import time
 
-from deye_exceptions import DeyeFileLockingException
+from lock_exceptions import DeyeLockTimeoutException
 
 from deye_file_lock import (
   flock,
@@ -72,7 +72,7 @@ class DeyeFileWithLock:
           if self.sfile:
             self.sfile.close()
             self.sfile = None
-          raise DeyeFileLockingException(f"{self.lock_name}: Timeout while waiting for lock on {self.path}")
+          raise DeyeLockTimeoutException(f"{self.lock_name}: Timeout while waiting for lock on {self.path}")
         time.sleep(0.25)
 
   def open_file(self, path: str, mode: str, timeout: int = 15) -> io.IOBase:
