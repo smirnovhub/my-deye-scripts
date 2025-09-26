@@ -27,6 +27,11 @@ jobs:
           python -m pip install mypy
           python -m pip install types-requests
 
+      - name: Run mypy for deye
+        working-directory: deye
+        run: |
+          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+
       - name: Run mypy for telebot
         working-directory: telebot
         run: |
