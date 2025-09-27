@@ -1,6 +1,8 @@
 import enum
 from typing import Optional
 
+from deye_exceptions import DeyeValueException
+
 class DeyeBaseEnum(enum.Enum):
   def __str__(self):
     """
@@ -28,7 +30,7 @@ class DeyeBaseEnum(enum.Enum):
       - the pretty form (e.g. "Selling First")
 
     If no match is found, returns the member with `value == -1`.
-    Raises ValueError if the enum does not have a member with `value == -1`.
+    Raises DeyeValueException if the enum does not have a member with `value == -1`.
 
     Args:
         value: The input string to parse.
@@ -37,7 +39,7 @@ class DeyeBaseEnum(enum.Enum):
         The matching enum member, or the member with `value == -1` if no match is found.
 
     Raises:
-        ValueError: If the enum does not have a member with `value == -1`.
+        DeyeValueException: If the enum does not have a member with `value == -1`.
     """
     unknown_member: Optional[DeyeBaseEnum] = None
 
@@ -47,7 +49,7 @@ class DeyeBaseEnum(enum.Enum):
         break
 
     if unknown_member is None:
-      raise ValueError(f"{cls.__name__}: enum doesn't have unknown member with value -1")
+      raise DeyeValueException(f"{cls.__name__}: enum doesn't have 'unknown' member with value -1")
 
     if not value:
       return unknown_member
