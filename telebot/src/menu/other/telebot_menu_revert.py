@@ -18,7 +18,7 @@ from telebot_git_helper import (
   is_repository_up_to_date,
   revert_to_revision,
   get_last_commits,
-  get_last_commit_hash,
+  get_last_commit_short_hash,
   get_last_commit_hash_and_comment,
 )
 
@@ -96,9 +96,9 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     try:
       stash_clear()
 
-      last_commit_hash = get_last_commit_hash()
-      if last_commit_hash == commit_hash:
-        self.bot.send_message(chat_id, f'You are already on {commit_hash[:7]}')
+      short_hash = get_last_commit_short_hash()
+      if commit_hash.startswith(short_hash):
+        self.bot.send_message(chat_id, f'You are already on {short_hash}')
         return
 
       stash_push()
