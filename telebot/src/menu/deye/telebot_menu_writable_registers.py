@@ -243,21 +243,25 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
       value: Any = 0
 
-      if type(register.value) is int:
+      if isinstance(register.value, int):
         try:
           value = int(text)
         except Exception:
           raise DeyeValueException(f'Value type should be int')
         if register.value == value:
-          raise DeyeValueException(f'New value ({value}{suffix}) is the same as old value. Nothing changed')
-
-      if type(register.value) is float:
+          raise DeyeValueException(f'New value ({register.value}{suffix}) is the same as old value. Nothing changed')
+      elif isinstance(register.value, float):
         try:
           value = float(text)
         except Exception:
           raise DeyeValueException(f'Value type should be float')
         if register.value == value:
-          raise DeyeValueException(f'New value ({value}{suffix}) is the same as old value. Nothing changed')
+          raise DeyeValueException(f'New value ({register.value}{suffix}) is the same as old value. Nothing changed')
+      elif isinstance(register.value, DeyeBaseEnum):
+        value = register.value.parse(text)
+        if register.value == value:
+          raise DeyeValueException(
+            f'New value ({register.value.pretty}{suffix}) is the same as old value. Nothing changed')
 
       if str(register.value) == text:
         raise DeyeValueException(f'New value ({str(text)}{suffix}) is the same as old value. Nothing changed')
