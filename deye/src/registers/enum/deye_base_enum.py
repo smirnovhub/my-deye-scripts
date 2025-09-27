@@ -18,24 +18,39 @@ class DeyeBaseEnum(enum.Enum):
     return self.name.replace('_', ' ').title()
 
   @classmethod
-  def parse(cls, value: str) -> Optional["DeyeBaseEnum"]:
+  def parse(cls, value: str) -> "DeyeBaseEnum":
     """
-    Parse a string and return the corresponding enum member if a match is found.
+    Parse a string and return the corresponding enum member.
+
     The input string is normalized (trimmed and lowercased) and compared against:
       - the original enum name (e.g. "SELLING_FIRST")
       - the string form via __str__ (e.g. "selling-first")
       - the pretty form (e.g. "Selling First")
 
-    If no match is found, None is returned.
+    If no match is found, returns the member with `value == -1`.
+    Raises ValueError if the enum does not have a member with `value == -1`.
 
     Args:
         value: The input string to parse.
 
     Returns:
-        The matching enum member, or None if no match is found.
+        The matching enum member, or the member with `value == -1` if no match is found.
+
+    Raises:
+        ValueError: If the enum does not have a member with `value == -1`.
     """
+    unknown_member: Optional[DeyeBaseEnum] = None
+
+    for member in cls:
+      if member.value == -1:
+        unknown_member = member
+        break
+
+    if unknown_member is None:
+      raise ValueError(f"{cls.__name__}: enum doesn't have unknown member with value -1")
+
     if not value:
-      return None
+      return unknown_member
 
     value = value.strip().lower()
 
@@ -43,4 +58,4 @@ class DeyeBaseEnum(enum.Enum):
       if value in (member.name.lower(), str(member).lower(), member.pretty.lower()):
         return member
 
-    return None
+    return unknown_member

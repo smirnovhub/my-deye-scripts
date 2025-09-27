@@ -28,16 +28,6 @@ class GenPortModeWritableDeyeRegister(IntDeyeRegister):
     return self._register_type.unknown
 
   def write(self, interactor: DeyeModbusInteractor, value):
-    if isinstance(value, str):
-      value = value.lower()
-      for mode in self._register_type:
-        if str(mode) == value or mode.pretty.lower() == value:
-          value = mode
-          break
-
-      if not isinstance(value, self._register_type):
-        self.error(f'write(): icorrect value of {self._register_type.__name__}')
-
     if not isinstance(value, self._register_type):
       self.error(f'write(): value should be of type {self._register_type.__name__}')
 
@@ -46,7 +36,7 @@ class GenPortModeWritableDeyeRegister(IntDeyeRegister):
 
     val = value.value
     if val < 0:
-      self.error('write(): value should be >= 0')
+      self.error(f'write(): value of {self._register_type.__name__} should be >= 0')
 
     if interactor.write_register(self.address, [val]) != 1:
       self.error(f'write(): something went wrong while writing {self.description}')
