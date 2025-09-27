@@ -65,7 +65,7 @@ def ask_choice(
   options: List[str],
   callback: Callable[[int, str], None],
   max_per_row: int = 5,
-  accept_wrong_choice_from_user_input = False,
+  accept_wrong_choice_from_user_input: bool = False,
   wrong_choice_text: str = 'No such option',
 ) -> telebot.types.Message:
   """

@@ -63,7 +63,7 @@ class TelebotProgressMessage:
         self.bot.edit_message_text(text, self._chat_id, self._message.message_id)
         dots = (dots + 1) % 4
         count += 1
-      except Exception as e:
+      except Exception:
         pass
 
   def _on_user_response(self, message: telebot.types.Message) -> None:

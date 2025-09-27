@@ -7,7 +7,6 @@ from subprocess import CompletedProcess
 
 from deye_exceptions import DeyeValueException
 from telebot_git_exception import TelebotGitException
-from telebot_git_exception import TelebotGitException
 
 _current_dir = os.path.dirname(__file__)
 

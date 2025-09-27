@@ -3,12 +3,12 @@ import threading
 import time
 import telebot
 
-from typing import Union
+from typing import Optional
 
 def get_inline_button_by_data(
   message: telebot.types.Message,
   button_data: str,
-) -> Union[telebot.types.InlineKeyboardButton, None]:
+) -> Optional[telebot.types.InlineKeyboardButton]:
   """
   Retrieve an InlineKeyboardButton from a message by its callback_data.
 
@@ -34,7 +34,7 @@ def get_inline_button_by_data(
 def get_inline_button_by_text(
   message: telebot.types.Message,
   button_text: str,
-) -> Union[telebot.types.InlineKeyboardButton, None]:
+) -> Optional[telebot.types.InlineKeyboardButton]:
   """
   Retrieve an InlineKeyboardButton from a message by its text.
 
