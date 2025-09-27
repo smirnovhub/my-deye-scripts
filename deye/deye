@@ -135,8 +135,7 @@ except Exception as e:
   sys.exit(1)
 finally:
   processor.disconnect()
-  if locker is not None:
-    locker.release()
+  locker.release()
 
 disconnect = perf_counter() - current
 
