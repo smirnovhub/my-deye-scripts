@@ -13,33 +13,36 @@ class GenPortModeWritableDeyeRegister(IntDeyeRegister):
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(address, name, description, suffix, avg)
-    self._value = DeyeGenPortMode.unknown
+    self._register_type = DeyeGenPortMode
+    self._value = self._register_type.unknown
+
+  @property
+  def can_write(self) -> bool:
+    return True
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     value = super().read_internal(interactor)
-    for mode in DeyeGenPortMode:
+    for mode in self._register_type:
       if value == mode.value:
         return mode
-    return DeyeGenPortMode.unknown
+    return self._register_type.unknown
 
   def write(self, interactor: DeyeModbusInteractor, value):
-    register_type = DeyeGenPortMode
-
     if isinstance(value, str):
       value = value.lower()
-      for mode in register_type:
+      for mode in self._register_type:
         if str(mode) == value or mode.pretty.lower() == value:
           value = mode
           break
 
-      if not isinstance(value, register_type):
-        self.error(f'write(): icorrect value of {register_type.__name__}')
+      if not isinstance(value, self._register_type):
+        self.error(f'write(): icorrect value of {self._register_type.__name__}')
 
-    if not isinstance(value, register_type):
-      self.error(f'write(): value should be of type {register_type.__name__}')
+    if not isinstance(value, self._register_type):
+      self.error(f'write(): value should be of type {self._register_type.__name__}')
 
-    if value == register_type.unknown:
-      self.error(f'write(): icorrect value of {register_type.__name__}')
+    if value == self._register_type.unknown:
+      self.error(f'write(): icorrect value of {self._register_type.__name__}')
 
     val = value.value
     if val < 0:

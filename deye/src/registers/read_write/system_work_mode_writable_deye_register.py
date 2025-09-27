@@ -13,37 +13,36 @@ class SystemWorkModeWritableDeyeRegister(IntDeyeRegister):
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(address, name, description, suffix, avg)
-    self._value = DeyeSystemWorkMode.unknown
-
-  def read_internal(self, interactor: DeyeModbusInteractor):
-    value = super().read_internal(interactor)
-    for mode in DeyeSystemWorkMode:
-      if value == mode.value:
-        return mode
-    return DeyeSystemWorkMode.unknown
+    self._register_type = DeyeSystemWorkMode
+    self._value = self._register_type.unknown
 
   @property
   def can_write(self) -> bool:
     return True
 
-  def write(self, interactor: DeyeModbusInteractor, value):
-    register_type = DeyeSystemWorkMode
+  def read_internal(self, interactor: DeyeModbusInteractor):
+    value = super().read_internal(interactor)
+    for mode in self._register_type:
+      if value == mode.value:
+        return mode
+    return self._register_type.unknown
 
+  def write(self, interactor: DeyeModbusInteractor, value):
     if isinstance(value, str):
       value = value.lower()
-      for mode in register_type:
+      for mode in self._register_type:
         if str(mode) == value or mode.pretty.lower() == value:
           value = mode
           break
 
-      if not isinstance(value, register_type):
-        self.error(f'write(): icorrect value of {register_type.__name__}')
+      if not isinstance(value, self._register_type):
+        self.error(f'write(): icorrect value of {self._register_type.__name__}')
 
-    if not isinstance(value, register_type):
-      self.error(f'write(): value should be of type {register_type.__name__}')
+    if not isinstance(value, self._register_type):
+      self.error(f'write(): value should be of type {self._register_type.__name__}')
 
-    if value == register_type.unknown:
-      self.error(f'write(): icorrect value of {register_type.__name__}')
+    if value == self._register_type.unknown:
+      self.error(f'write(): icorrect value of {self._register_type.__name__}')
 
     val = value.value
     if val < 0:
