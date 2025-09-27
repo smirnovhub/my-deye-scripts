@@ -1,7 +1,7 @@
 import telebot
 
 from pprint import pprint
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
@@ -46,7 +46,7 @@ def get_register_values(registers: List[DeyeRegister]) -> str:
 def get_keyboard_for_register(
   registers: DeyeRegisters,
   register: DeyeRegister,
-) -> Union[telebot.types.InlineKeyboardMarkup, None]:
+) -> Optional[telebot.types.InlineKeyboardMarkup]:
   """
   Return a pre-defined inline keyboard for the given register.
 
@@ -222,7 +222,7 @@ def build_keyboard_for_register(
       # If the row is a dict, each key-value pair becomes a button
       # Key = button text, Value = callback_data
       for text, callback in row.items():
-        if text == row_break_str or callback == row_break_str:
+        if row_break_str in (text, callback):
           if buttons:
             keyboard.row(*buttons)
             buttons = []

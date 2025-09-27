@@ -1,4 +1,3 @@
-from typing import Union
 from telebot_user import TelebotUser
 from telebot_users import TelebotUsers
 from telebot_menu_item import TelebotMenuItem
@@ -24,10 +23,14 @@ class TelebotAuthHelper:
     """
     if self.users.is_user_blocked(user_id):
       return False
+
     user = self.users.get_allowed_user(user_id)
+    if user is None:
+      return False
+
     return self.is_menu_item_allowed_for_user(user, item)
 
-  def is_menu_item_allowed_for_user(self, user: Union[TelebotUser, None], item: TelebotMenuItem) -> bool:
+  def is_menu_item_allowed_for_user(self, user: TelebotUser, item: TelebotMenuItem) -> bool:
     """
     Check if a menu item is allowed for a specific TelebotUser instance.
 
@@ -38,9 +41,6 @@ class TelebotAuthHelper:
     Returns:
         bool: True if the menu item is allowed, False otherwise.
     """
-    if user is None:
-      return False
-
     if self.users.is_user_blocked(user.id):
       return False
 

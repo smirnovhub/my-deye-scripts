@@ -20,7 +20,7 @@ def get_keyboard_for_choices(
   row: List[telebot.types.InlineKeyboardButton] = []
 
   for text, data in options.items():
-    if text == row_break_str or data == row_break_str:
+    if row_break_str in (text, data):
       # Commit the current row (if not empty) and start a new one
       if row:
         keyboard.row(*row)

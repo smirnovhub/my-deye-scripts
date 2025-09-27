@@ -68,4 +68,3 @@ def _user_advanced_choice_next_step_handler(message: telebot.types.Message, bot:
   # if we received new command, process it
   if message.text.startswith('/'):
     bot.process_new_messages([message])
-    return

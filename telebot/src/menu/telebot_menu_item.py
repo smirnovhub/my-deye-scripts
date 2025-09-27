@@ -46,7 +46,7 @@ class TelebotMenuItem(Enum):
     return self._system_type
 
   def is_acceptable(self, system_type: DeyeSystemType) -> bool:
-    return self.system_type == DeyeSystemType.any or self.system_type == system_type
+    return self.system_type in (DeyeSystemType.any, system_type)
 
   def __new__(cls, command: str, description: str, system_type: DeyeSystemType = DeyeSystemType.any):
     obj = object.__new__(cls)

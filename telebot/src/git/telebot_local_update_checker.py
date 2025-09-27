@@ -2,7 +2,7 @@ import time
 import telebot
 import urllib.parse
 
-from typing import Union
+from typing import Optional
 from deye_file_with_lock import DeyeFileWithLock
 from telebot_user_choices import ask_choice
 from deye_utils import ensure_file_exists
@@ -35,7 +35,7 @@ class TelebotLocalUpdateChecker:
     bot: telebot.TeleBot,
     chat_id: int,
     force: bool = False,
-    message: Union[telebot.types.Message, None] = None,
+    message: Optional[telebot.types.Message] = None,
   ) -> bool:
     """
     Check if the local repository has changed and prompt the user to restart the bot.
@@ -66,7 +66,7 @@ class TelebotLocalUpdateChecker:
       no_choice = 'No, restart later'
 
       def on_choice(chat_id: int, choice: str):
-        if choice == 'yes' or choice == yes_choice:
+        if choice in ('yes', yes_choice):
           self._ask_for_restart(bot, chat_id)
         else:
           bot.send_message(chat_id, 'Restart cancelled')
