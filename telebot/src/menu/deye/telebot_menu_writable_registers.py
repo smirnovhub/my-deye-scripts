@@ -264,9 +264,10 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
             f'New value ({register.value.pretty}{suffix}) is the same as old value. Nothing changed')
 
       if str(register.value) == text:
-        raise DeyeValueException(f'New value ({str(text)}{suffix}) is the same as old value. Nothing changed')
+        raise DeyeValueException(
+          f'New value ({register.value.pretty}{suffix}) is the same as old value. Nothing changed')
 
-      holder.write_register(register, text)
+      holder.write_register(register, value)
     finally:
       holder.disconnect()
 
