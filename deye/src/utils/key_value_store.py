@@ -45,6 +45,7 @@ class KeyValueStore:
       f = self._locker.open_file(self._filename, "a+")
       if f is None:
         return
+      f.seek(0)
       try:
         data = json.load(f)
       except json.JSONDecodeError:
