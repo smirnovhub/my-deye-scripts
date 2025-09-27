@@ -1,6 +1,6 @@
 import argparse
 
-from typing import Any, List, Type
+from typing import Any, List, Optional, Type
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
 from raising_thread import RaisingThread
@@ -14,7 +14,7 @@ from deye_utils import get_reraised_exception
 class DeyeRegisterProcessor:
   def __init__(self):
     self.interactors: List[DeyeModbusInteractor] = []
-    self.master_interactor: DeyeModbusInteractor = None
+    self.master_interactor: Optional[DeyeModbusInteractor] = None
     self.registers = DeyeRegistersFactory.create_registers()
 
   def get_arg_name(self, register: DeyeRegister, action: str) -> str:

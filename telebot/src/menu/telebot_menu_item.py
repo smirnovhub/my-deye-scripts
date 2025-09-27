@@ -4,6 +4,10 @@ from typing import List
 from deye_system_type import DeyeSystemType
 
 class TelebotMenuItem(Enum):
+  _command: str
+  _description: str
+  _system_type: DeyeSystemType
+
   request_access = ('request_access', 'Request access')
   restart = ('restart', 'Restart bot', DeyeSystemType.none)
   revert = ('revert', 'Revert bot', DeyeSystemType.none)

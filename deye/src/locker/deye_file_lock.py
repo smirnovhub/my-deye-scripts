@@ -1,5 +1,6 @@
-import io
 import os
+
+from typing import IO, Any
 
 # Define flags compatible with fcntl
 LOCK_EX = 0x1 # Exclusive lock
@@ -17,7 +18,7 @@ if os.name == 'nt':
   # Stored in the system's temporary directory.
   lock_path = os.path.join(tempfile.gettempdir(), 'deye')
 
-  def flock(file: io.IOBase, flags: int):
+  def flock(file: IO[Any], flags: int):
     """
     Cross-platform file lock implementation for Windows.
 
@@ -37,14 +38,14 @@ if os.name == 'nt':
     if flags & LOCK_UN:
       # Unlock the file
       file.seek(0)
-      msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, length)
+      msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, length) # type: ignore
     else:
       # Lock the file
-      mode = msvcrt.LK_LOCK # Default blocking lock
+      mode = msvcrt.LK_LOCK # type: ignore
       if flags & LOCK_NB:
-        mode = msvcrt.LK_NBLCK # Non-blocking lock
+        mode = msvcrt.LK_NBLCK # type: ignore
       file.seek(0)
-      msvcrt.locking(file.fileno(), mode, length)
+      msvcrt.locking(file.fileno(), mode, length) # type: ignore
 
 else:
   import fcntl
@@ -54,7 +55,7 @@ else:
   # chmod 1777 /var/lock
   lock_path = '/var/lock/deye'
 
-  def flock(file: io.IOBase, flags: int):
+  def flock(file: IO[Any], flags: int):
     """
     Cross-platform file lock implementation for Unix (Linux/macOS).
 
@@ -76,13 +77,13 @@ else:
     """
     fcntl_flags = 0
     if flags & LOCK_EX:
-      fcntl_flags |= fcntl.LOCK_EX
+      fcntl_flags |= fcntl.LOCK_EX # type: ignore
     if flags & LOCK_SH:
-      fcntl_flags |= fcntl.LOCK_SH
+      fcntl_flags |= fcntl.LOCK_SH # type: ignore
     if flags & LOCK_NB:
-      fcntl_flags |= fcntl.LOCK_NB
+      fcntl_flags |= fcntl.LOCK_NB # type: ignore
     if flags & LOCK_UN:
-      fcntl_flags = fcntl.LOCK_UN
+      fcntl_flags = fcntl.LOCK_UN # type: ignore
 
     # Perform the actual file locking
-    fcntl.flock(file.fileno(), fcntl_flags)
+    fcntl.flock(file.fileno(), fcntl_flags) # type: ignore

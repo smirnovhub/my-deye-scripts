@@ -3,11 +3,13 @@ import re
 import subprocess
 
 from typing import Dict, List, Tuple
-from collections import defaultdict
 from subprocess import CompletedProcess
 
+from deye_exceptions import DeyeValueException
 from telebot_git_exception import TelebotGitException
 from telebot_git_exception import TelebotGitException
+
+_current_dir = os.path.dirname(__file__)
 
 def check_git_result_and_raise(result: CompletedProcess):
   if result.returncode == 0:
@@ -50,10 +52,9 @@ def is_repository_up_to_date() -> bool:
       TelebotGitException: If the git command fails.
   """
   try:
-    current_dir = os.path.dirname(__file__)
     # Run 'git remote show origin' to get information about remote branches
     result = subprocess.run(
-      ["git", "-C", current_dir, "remote", "show", "origin"],
+      ["git", "-C", _current_dir, "remote", "show", "origin"],
       capture_output = True,
       text = True,
     )
@@ -65,11 +66,10 @@ def is_repository_up_to_date() -> bool:
     raise TelebotGitException(f'git remote show origin failed: {str(e)}')
 
 def stash_push():
-  current_dir = os.path.dirname(__file__)
   try:
     # Stash all changes
     result = subprocess.run(
-      ['git', '-C', current_dir, 'stash', 'push'],
+      ['git', '-C', _current_dir, 'stash', 'push'],
       capture_output = True,
       text = True,
     )
@@ -80,11 +80,10 @@ def stash_push():
     raise TelebotGitException(f'git stash push failed: {str(e)}')
 
 def stash_pop():
-  current_dir = os.path.dirname(__file__)
   try:
     # Stash all changes
     result = subprocess.run(
-      ['git', '-C', current_dir, 'stash', 'pop'],
+      ['git', '-C', _current_dir, 'stash', 'pop'],
       capture_output = True,
       text = True,
     )
@@ -95,11 +94,10 @@ def stash_pop():
     raise TelebotGitException(f'git stash pop failed: {str(e)}')
 
 def stash_clear():
-  current_dir = os.path.dirname(__file__)
   try:
     # Stash all changes
     result = subprocess.run(
-      ['git', '-C', current_dir, 'stash', 'clear'],
+      ['git', '-C', _current_dir, 'stash', 'clear'],
       capture_output = True,
       text = True,
     )
@@ -110,10 +108,9 @@ def stash_clear():
     raise TelebotGitException(f'git stash clear failed: {str(e)}')
 
 def revert_to_revision(commit_hash: str) -> str:
-  current_dir = os.path.dirname(__file__)
   try:
     result = subprocess.run(
-      ['git', '-C', current_dir, 'reset', '--hard', commit_hash],
+      ['git', '-C', _current_dir, 'reset', '--hard', commit_hash],
       capture_output = True,
       text = True,
     )
@@ -125,17 +122,14 @@ def revert_to_revision(commit_hash: str) -> str:
     raise TelebotGitException(f'git reset --hard failed: {str(e)}')
 
 def get_last_commit_hash() -> str:
-  current_dir = os.path.dirname(__file__)
   return _run_git_command_and_get_result(
-    ["git", "-C", current_dir, "rev-parse", "HEAD"],
+    ["git", "-C", _current_dir, "rev-parse", "HEAD"],
     'rev-parse HEAD',
   )
 
 def get_last_commit_hash_and_comment() -> str:
-  current_dir = os.path.dirname(__file__)
-
   last_commit = _run_git_command_and_get_result(
-    ["git", "-C", current_dir, "log", "-1", "--pretty=format:%h %ad %s", "--date=short"],
+    ["git", "-C", _current_dir, "log", "-1", "--pretty=format:%h %ad %s", "--date=short"],
     'rev-parse HEAD',
   )
 
@@ -185,11 +179,10 @@ def get_last_commits(pr_max_count: int = 5, regular_commits_max_count = 10) -> D
       dict[str, str]: Dictionary where key is "YYYY-MM-DD <message>-N" and value is the commit hash.
 
   Raises:
-      TelebotGitException: If the git command fails.
+      TelebotGitException: If the git command fails
+      DeyeValueException: If other exception occurred
   """
   commits_dict: Dict[str, str] = {}
-  current_dir = os.path.dirname(__file__)
-
   try:
     # Try to get only merge commits with date
     max_count = pr_max_count
@@ -197,7 +190,7 @@ def get_last_commits(pr_max_count: int = 5, regular_commits_max_count = 10) -> D
       [
         "git",
         "-C",
-        current_dir,
+        _current_dir,
         "log",
         f"-n{max_count}",
         "--grep=Merge pull request #[0-9]+",
@@ -218,7 +211,7 @@ def get_last_commits(pr_max_count: int = 5, regular_commits_max_count = 10) -> D
         [
           "git",
           "-C",
-          current_dir,
+          _current_dir,
           "log",
           f"-n{max_count}",
           "--pretty=format:%H %ad %s",
@@ -250,21 +243,21 @@ def get_last_commits(pr_max_count: int = 5, regular_commits_max_count = 10) -> D
       base_keys.append((base_key, commit_hash))
 
     # Count occurrences of each base key
-    counts = defaultdict(int)
+    counts: Dict[str, int] = {}
     for base_key, commit_hash in base_keys:
-      counts[base_key] += 1
+      counts[base_key] = counts.get(base_key, 0) + 1
 
     # Assign keys with suffixes for duplicates
-    seen = defaultdict(int)
+    seen: Dict[str, int] = {}
     for base_key, commit_hash in base_keys:
       if counts[base_key] > 1:
-        seen[base_key] += 1
+        seen[base_key] = seen.get(base_key, 0) + 1
         key = f"{base_key}-{seen[base_key]}"
       else:
         key = base_key
       commits_dict[key] = commit_hash
 
-  except Exception:
-    return commits_dict
+  except Exception as e:
+    raise DeyeValueException(f'{e.__class__.__name__}: {str(e)}')
 
   return commits_dict

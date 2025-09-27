@@ -42,6 +42,9 @@ class TelebotLoggingHandler(TelebotBaseHandler):
                      content = f'text = {repr(button_text)}, data = {repr(call.data)}')
 
   def log_event(self, user: Optional[telebot.types.User], event_type: str, content: str):
+    if user is None:
+      return
+
     first_name = user.first_name if user and user.first_name else 'None'
     last_name = user.last_name if user and user.last_name else 'None'
 

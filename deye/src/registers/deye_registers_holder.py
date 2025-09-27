@@ -1,6 +1,6 @@
 import os
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
@@ -22,7 +22,7 @@ class DeyeRegistersHolder:
   def __init__(self, loggers: List[DeyeLogger], **kwargs):
     self._registers: Dict[str, DeyeRegisters] = {}
     self._interactors: List[DeyeModbusInteractor] = []
-    self._master_interactor: DeyeModbusInteractor = None
+    self._master_interactor: Optional[DeyeModbusInteractor] = None
     self._loggers = loggers
     self.kwargs = kwargs
     self._all_loggers = DeyeLoggers()

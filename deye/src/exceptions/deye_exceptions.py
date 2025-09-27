@@ -15,11 +15,11 @@ class DeyeException(Exception):
 
     # If stacktrace not provided, try to capture automatically
     if stacktrace:
-      self.stacktrace: str = stacktrace
+      self.stacktrace = stacktrace
     else:
       # format_exc() returns "NoneType: None\n" if called outside of an exception handler
       trace = traceback.format_exc()
-      self.stacktrace: str = trace.strip()
+      self.stacktrace = trace.strip()
 
 class DeyeUnknownException(DeyeException):
   """Base class for unknown exceptions in the Deye apps"""

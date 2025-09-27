@@ -114,7 +114,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       name = 'inverter_self_consumption_power',
       description = 'Inverter Self Consumption Power',
       suffix = 'W',
-      avg = DeyeRegisterAverageType.special
+      avg = DeyeRegisterAverageType.special,
     )
 
     self._today_inverter_self_consumption_energy_register = InverterSelfConsumptionEnergyRegister(
@@ -127,7 +127,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       name = 'today_inverter_self_consumption_energy',
       description = 'Today Inverter Self Consumption Energy',
       suffix = 'kWh',
-      avg = DeyeRegisterAverageType.special
+      avg = DeyeRegisterAverageType.special,
     )
 
     self._total_inverter_self_consumption_energy_register = InverterSelfConsumptionEnergyRegister(
@@ -140,7 +140,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       name = 'total_inverter_self_consumption_energy',
       description = 'Total Inverter Self Consumption Energy',
       suffix = 'kWh',
-      avg = DeyeRegisterAverageType.special
+      avg = DeyeRegisterAverageType.special,
     )
 
     self._charge_forecast_register = ChargeForecastRegister(
@@ -149,7 +149,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       battery_current_register = self._battery_current_register,
       name = 'charge_forecast',
       description = 'Charge Forecast',
-      suffix = ''
+      suffix = '',
     )
 
     self._discharge_forecast_register = DischargeForecastRegister(
@@ -158,13 +158,13 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       battery_current_register = self._battery_current_register,
       name = 'discharge_forecast',
       description = 'Discharge Forecast',
-      suffix = ''
+      suffix = '',
     )
 
     self._test1_register = IntDeyeRegister(316, 'test1', 'Test1', '')
     self._test2_register = TestDeyeRegister(50, 350, 'test2', 'Test2', '')
 
-    self._all_registers = [
+    self._all_registers: List[DeyeRegister] = [
       self._ac_couple_frz_high_register,
       self._backup_delay_register,
       self._battery_bms_charge_current_limit_register,
@@ -240,17 +240,17 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       self._total_production_cost_register,
       self._total_gen_energy_cost_register,
       self._total_production_register,
-      self._zero_export_power_register
+      self._zero_export_power_register,
     ]
 
-    self._forecast_registers = [
+    self._forecast_registers: List[DeyeRegister] = [
       self._charge_forecast_register,
-      self._discharge_forecast_register
+      self._discharge_forecast_register,
     ]
 
-    self._test_registers = [
+    self._test_registers: List[DeyeRegister] = [
       self._test1_register,
-      self._test2_register
+      self._test2_register,
     ]
 
   @property
@@ -460,10 +460,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
   @property
   def load_voltage_register(self) -> DeyeRegister:
     return self._load_voltage_register
-
-  @property
-  def inverter_self_consumption_power_register(self) -> DeyeRegister:
-    return self._inverter_self_consumption_power_register
 
   @property
   def pv1_current_register(self) -> DeyeRegister:
