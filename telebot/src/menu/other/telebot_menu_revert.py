@@ -78,6 +78,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     else:
       self.bot.send_message(message.chat.id, 'Enter commit hash to revert to:')
 
+    self.bot.clear_step_handler_by_chat_id(message.chat.id)
     self.bot.register_next_step_handler(message, self.handle_step2)
 
   def handle_step2(self, message: telebot.types.Message):

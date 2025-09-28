@@ -44,6 +44,7 @@ class TelebotProgressMessage:
     self._thread = threading.Thread(target = self._animate, daemon = True)
     self._thread.start()
     # Register next step handler
+    self.bot.clear_step_handler_by_chat_id(self._message.chat.id)
     self.bot.register_next_step_handler(self._message, self._on_user_response)
 
   def _animate(self) -> None:
