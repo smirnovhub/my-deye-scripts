@@ -6,4 +6,4 @@ inverter_system_time_need_sync_difference_sec = 120
 inverter_system_time_too_big_difference_sec = 900
 buttons_remove_delay_sec = 0
 git_repository_remote_check_period_sec = 60 * 60 * 24
-git_repository_local_check_period_sec = 60 * 60
+git_repository_local_check_period_sec = 60 * 60 * 12
