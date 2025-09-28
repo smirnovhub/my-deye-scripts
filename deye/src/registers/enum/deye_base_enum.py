@@ -4,7 +4,7 @@ from typing import Optional
 from deye_exceptions import DeyeValueException
 
 class DeyeBaseEnum(enum.Enum):
-  def __str__(self):
+  def __str__(self) -> str:
     """
     Return a string representation of the enum member where
     underscores are replaced with dashes.
@@ -12,12 +12,16 @@ class DeyeBaseEnum(enum.Enum):
     return self.name.replace('_', '-')
 
   @property
-  def pretty(self):
+  def pretty(self) -> str:
     """
     Return a human-friendly string representation of the enum member
     where underscores are replaced with spaces and words are title-cased.
     """
     return self.name.replace('_', ' ').title()
+
+  @property
+  def is_unknown(self) -> bool:
+    return self.value == -1
 
   @classmethod
   def parse(cls, value: str) -> "DeyeBaseEnum":
