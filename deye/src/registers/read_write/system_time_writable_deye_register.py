@@ -20,7 +20,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(address, 3, name, description, suffix, avg)
-    self._value = ''
+    self._value = datetime(1970, 1, 1)
 
   @property
   def can_write(self) -> bool:
@@ -40,13 +40,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
         as_bytes[5],
       )
     except:
-      value = datetime(
-        1970,
-        1,
-        1,
-        0,
-        0,
-      )
+      value = datetime(1970, 1, 1)
 
     return value
 
@@ -63,13 +57,13 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
     now = datetime.now()
 
     if as_ints[0] != now.year:
-      self.error('write(): year is wrong')
+      self.error('write(): year is wrong, check your timezone')
 
     if as_ints[1] != now.month:
-      self.error('write(): month is wrong')
+      self.error('write(): month is wrong, check your timezone')
 
     if as_ints[2] != now.day:
-      self.error('write(): day is wrong')
+      self.error('write(): day is wrong, check your timezone')
 
     as_ints[0] -= 2000
     values = to_inv_time(as_ints)

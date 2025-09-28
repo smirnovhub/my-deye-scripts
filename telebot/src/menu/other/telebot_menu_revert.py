@@ -18,7 +18,7 @@ from telebot_git_helper import (
   is_repository_up_to_date,
   revert_to_revision,
   get_last_commits,
-  get_last_commit_hash,
+  get_last_commit_short_hash,
   get_last_commit_hash_and_comment,
 )
 
@@ -78,11 +78,13 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     else:
       self.bot.send_message(message.chat.id, 'Enter commit hash to revert to:')
 
+    self.bot.clear_step_handler_by_chat_id(message.chat.id)
     self.bot.register_next_step_handler(message, self.handle_step2)
 
   def handle_step2(self, message: telebot.types.Message):
     # If we received new command, skip it
     if message.text.startswith('/'):
+      self.bot.process_new_messages([message])
       return
 
     if message.text is not None:
@@ -96,9 +98,9 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     try:
       stash_clear()
 
-      last_commit_hash = get_last_commit_hash()
-      if last_commit_hash == commit_hash:
-        self.bot.send_message(chat_id, f'You are already on {commit_hash[:7]}')
+      short_hash = get_last_commit_short_hash()
+      if commit_hash.startswith(short_hash):
+        self.bot.send_message(chat_id, f'You are already on {short_hash}')
         return
 
       stash_push()

@@ -7,7 +7,6 @@ from subprocess import CompletedProcess
 
 from deye_exceptions import DeyeValueException
 from telebot_git_exception import TelebotGitException
-from telebot_git_exception import TelebotGitException
 
 _current_dir = os.path.dirname(__file__)
 
@@ -127,10 +126,16 @@ def get_last_commit_hash() -> str:
     'rev-parse HEAD',
   )
 
+def get_last_commit_short_hash() -> str:
+  return _run_git_command_and_get_result(
+    ["git", "-C", _current_dir, "rev-parse", "--short", "HEAD"],
+    'rev-parse --short HEAD',
+  )
+
 def get_last_commit_hash_and_comment() -> str:
   last_commit = _run_git_command_and_get_result(
     ["git", "-C", _current_dir, "log", "-1", "--pretty=format:%h %ad %s", "--date=short"],
-    'rev-parse HEAD',
+    'log -1',
   )
 
   match = re.search(r"(.*)Merge pull request #(\d+)", last_commit)

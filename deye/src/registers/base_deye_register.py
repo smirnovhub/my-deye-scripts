@@ -1,4 +1,5 @@
-from typing import Any, List, Union
+from datetime import datetime
+from typing import List, Union
 
 from deye_base_enum import DeyeBaseEnum
 from deye_loggers import DeyeLoggers
@@ -21,7 +22,7 @@ class BaseDeyeRegister(DeyeRegister):
     self._description = description
     self._suffix = suffix
     self._avg = avg
-    self._value: Union[int, float, str, DeyeBaseEnum] = 0
+    self._value: Union[int, float, str, datetime, DeyeBaseEnum] = 0
     self._min_value: Union[int, float] = 0
     self._max_value: Union[int, float] = 0
     self._loggers = DeyeLoggers()
@@ -103,7 +104,7 @@ class BaseDeyeRegister(DeyeRegister):
     return self._description
 
   @property
-  def value(self) -> Any:
+  def value(self) -> Union[int, float, str, datetime, DeyeBaseEnum]:
     return self._value
 
   @property
