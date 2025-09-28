@@ -84,6 +84,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
   def handle_step2(self, message: telebot.types.Message):
     # If we received new command, skip it
     if message.text.startswith('/'):
+      self.bot.process_new_messages([message])
       return
 
     if message.text is not None:
