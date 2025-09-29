@@ -36,4 +36,4 @@ jobs:
       - name: Run deye tests
         working-directory: test
         run: |
-          python deye_test.py
+          python -u deye_test.py
