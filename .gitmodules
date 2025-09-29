@@ -1,12 +1,12 @@
 [submodule "modules/uModbus"]
 	path = modules/uModbus
-	url = https://github.com/AdvancedClimateSystems/uModbus.git
+	url = https://github.com/smirnovhub/uModbus.git
 	branch = master
 [submodule "modules/pysolarmanv5"]
 	path = modules/pysolarmanv5
-	url = https://github.com/jmccrohan/pysolarmanv5.git
+	url = https://github.com/smirnovhub/pysolarmanv5.git
 	branch = main
 [submodule "modules/pyTelegramBotAPI"]
 	path = modules/pyTelegramBotAPI
-	url = https://github.com/eternnoir/pyTelegramBotAPI.git
+	url = https://github.com/smirnovhub/pyTelegramBotAPI.git
 	branch = master
