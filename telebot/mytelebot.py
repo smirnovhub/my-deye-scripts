@@ -20,6 +20,7 @@ from telebot_menu_all_today_stat import TelebotMenuAllTodayStat
 from telebot_menu_all_total_stat import TelebotMenuAllTotalStat
 from telebot_menu_slave_today_stat import TelebotMenuSlaveTodayStat
 from telebot_menu_slave_total_stat import TelebotMenuSlaveTotalStat
+from telebot_menu_all_settings import TelebotMenuAllSettings
 from telebot_menu_master_settings import TelebotMenuMasterSettings
 from telebot_menu_battery_forecast import TelebotMenuBatteryForecast
 from telebot_menu_writable_registers import TelebotMenuWritableRegisters
@@ -137,6 +138,7 @@ class MyTelebot:
       TelebotMenuMasterTotalStat(bot),
       TelebotMenuSlaveTodayStat(bot),
       TelebotMenuSlaveTotalStat(bot),
+      TelebotMenuAllSettings(bot),
       TelebotMenuMasterSettings(bot),
       TelebotMenuBatteryForecast(bot),
       TelebotMenuSyncTime(bot),

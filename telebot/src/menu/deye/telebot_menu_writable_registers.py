@@ -2,7 +2,7 @@ import telebot
 import textwrap
 import traceback
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
@@ -73,7 +73,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     register = self.registers.get_register_by_name(register_name)
     return register is not None
 
-  def get_writable_register_handler(self, register: DeyeRegister):
+  def get_writable_register_handler(self, register: DeyeRegister) -> str:
     return textwrap.dedent('''\
     @self.bot.message_handler(commands = ['{register_name}'])
     def set_{register_name}(message):
@@ -83,7 +83,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.process_read_write_register_step2(message, message_id, '{register_name}')
   ''').format(register_name = register.name)
 
-  def create_keyboard_for_register(self, register: DeyeRegister):
+  def create_keyboard_for_register(self, register: DeyeRegister) -> Optional[telebot.types.InlineKeyboardMarkup]:
     if isinstance(register.value, datetime) and register.name == self.registers.inverter_system_time_register.name:
       time_diff = register.value - datetime.now()
       diff_seconds = int(abs(time_diff.total_seconds()))
@@ -179,7 +179,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
       print(traceback.format_exc())
 
-  def get_register_value(self, register: DeyeRegister):
+  def get_register_value(self, register: DeyeRegister) -> str:
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
@@ -192,12 +192,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     finally:
       holder.disconnect()
 
-    value = register.value
-
-    if isinstance(value, DeyeBaseEnum):
-      value = value.pretty
-
-    result = f'Current <b>{register.description}</b> value: {value} {register.suffix}\n'
+    result = f'Current <b>{register.description}</b> value: {register.pretty_value} {register.suffix}\n'
 
     if register.min_value != register.max_value:
       result += f'Enter new value (from {register.min_value} to {register.max_value}):'
@@ -233,14 +228,14 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         try:
           value = int(message.text)
         except Exception:
-          raise DeyeValueException(f'Value type should be int')
+          raise DeyeValueException(f'Value should be int from {register.min_value} to {register.max_value}')
         if register.value == value:
           raise self.get_nothing_changed_exception(register.value, suffix)
       elif isinstance(register.value, float):
         try:
           value = float(message.text)
         except Exception:
-          raise DeyeValueException(f'Value type should be float')
+          raise DeyeValueException(f'Value should be float from {register.min_value} to {register.max_value}')
         if register.value == value:
           raise self.get_nothing_changed_exception(register.value, suffix)
       elif isinstance(register.value, DeyeBaseEnum):
@@ -326,6 +321,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     else:
       self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
 
-  def get_nothing_changed_exception(self, value: Any, suffix: str):
+  def get_nothing_changed_exception(self, value: Any, suffix: str) -> Exception:
     return DeyeValueException(f'New value ({str(value)}{suffix}) is '
                               'the same as old value. Nothing changed')
