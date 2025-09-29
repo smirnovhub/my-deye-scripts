@@ -2,7 +2,7 @@ import telebot
 import textwrap
 import traceback
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
@@ -168,11 +168,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.clear_step_handler_by_chat_id(message.chat.id)
       return
 
-    # Pass dict to change value inside the method
-    old_register_value: Dict[str, int] = {}
-
     try:
-      self.write_register(register, message, old_register_value)
+      self.write_register(register, message)
     except DeyeKnownException as e:
       self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
     except Exception as e:
@@ -205,7 +202,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     self,
     register: DeyeRegister,
     message: telebot.types.Message,
-    old_register_value: Dict[str, int],
   ):
     if message.text is None:
       raise DeyeValueException('Message text is empty')
@@ -219,7 +215,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     try:
       holder.read_registers()
-      old_register_value[register.name] = register.value
 
       value: Any = 0
       suffix = f' {register.suffix}'.rstrip()
@@ -249,13 +244,15 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       if str(register.value) == message.text:
         raise self.get_nothing_changed_exception(register.value, suffix)
 
+      old_value = register.value
+
       def on_user_confirmation(chat_id: int, result: bool):
         if not result:
           self.bot.send_message(message.chat.id, 'Nothing changed', parse_mode = 'HTML')
         else:
           try:
             holder.write_register(register, value)
-            self.print_result_after_write_register(register, message, old_register_value)
+            self.print_result_after_write_register(register, message, old_value)
           except DeyeKnownException as e:
             self.bot.send_message(message.chat.id, str(e))
           except Exception as e:
@@ -277,7 +274,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         return
 
       holder.write_register(register, value)
-      self.print_result_after_write_register(register, message, old_register_value)
+      self.print_result_after_write_register(register, message, old_value)
 
     finally:
       holder.disconnect()
@@ -286,10 +283,9 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     self,
     register: DeyeRegister,
     message: telebot.types.Message,
-    old_register_value: Dict[str, int],
+    old_value: Any,
   ):
     value = register.value
-    old_value = old_register_value[register.name]
 
     if isinstance(value, DeyeBaseEnum):
       value = value.pretty
@@ -300,7 +296,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     suffix = f' {register.suffix}'.rstrip()
     text = f'<b>{register.description}</b> changed from {old_value} to {value}{suffix}'
 
-    old_value = old_register_value[register.name]
     is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 
     if old_value != register.value and not is_undo_button_pressed:
