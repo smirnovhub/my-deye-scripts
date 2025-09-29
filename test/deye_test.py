@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 import subprocess
 
 from pathlib import Path
@@ -14,6 +15,12 @@ from common_modules import import_dirs
 
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
+logging.basicConfig(
+  level = logging.INFO,
+  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  datefmt = "%Y-%m-%d %H:%M:%S",
+)
+
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
@@ -23,7 +30,7 @@ registers = DeyeRegistersFactory.create_registers()
 
 test_registers = {
   registers.pv1_power_register: 12345,
-  registers.battery_soc_register: 12377,
+  registers.battery_soc_register: 777,
   registers.battery_capacity_register: 54321,
 }
 

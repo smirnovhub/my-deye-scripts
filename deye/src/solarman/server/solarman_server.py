@@ -35,6 +35,7 @@ class AioSolarmanServer(metaclass = Singleton):
     self.port = port
     self.log = logging.getLogger()
     self.register_value = 0
+    self.log.info(f"Starting AioSolarmanServer at {address} {port}")
 
     try:
       self.loop = asyncio.get_running_loop()
@@ -55,6 +56,7 @@ class AioSolarmanServer(metaclass = Singleton):
     )
 
   def set_register_value(self, register_value: int):
+    self.log.info(f"Setting expected register value to {register_value}")
     self.register_value = register_value
 
   def sync_runner(self):
