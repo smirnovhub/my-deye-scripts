@@ -4,11 +4,7 @@ from datetime import datetime, timedelta
 from deye_register import DeyeRegister
 from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
-
-from deye_utils import (
-  format_end_date,
-  format_timedelta,
-)
+from deye_utils import format_end_date
 
 class DischargeForecastRegister(BaseDeyeRegister):
   def __init__(
@@ -71,7 +67,6 @@ class DischargeForecastRegister(BaseDeyeRegister):
       soc_delta = battery_soc - soc
       capacity = battery_capacity * (soc_delta / 100)
       hours_to_soc = abs(capacity / battery_current)
-      hours_to_soc_str = format_timedelta(timedelta(hours = hours_to_soc))
       soc_date = datetime.now() + timedelta(hours = hours_to_soc)
       soc_date_str = format_end_date(soc_date)
 

@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional
 
 from deye_logger import DeyeLogger
 from deye_system_type import DeyeSystemType
@@ -21,7 +21,7 @@ class DeyeBaseLoggers:
   def count(self) -> int:
     return len(self.loggers)
 
-  def get_logger_by_name(self, name: str) -> Union[DeyeLogger, None]:
+  def get_logger_by_name(self, name: str) -> Optional[DeyeLogger]:
     for logger in self.loggers:
       if logger.name == name:
         return logger

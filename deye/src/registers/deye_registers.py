@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional
 
 from deye_register import DeyeRegister
 from deye_exceptions import DeyeNotImplementedException
@@ -11,7 +11,7 @@ class DeyeRegisters:
   def prefix(self) -> str:
     return self._prefix
 
-  def get_register_by_name(self, name: str) -> Union[DeyeRegister, None]:
+  def get_register_by_name(self, name: str) -> Optional[DeyeRegister]:
     for register in self.all_registers:
       if register.name == name:
         return register
@@ -341,5 +341,5 @@ class DeyeRegisters:
   def zero_export_power_register(self) -> DeyeRegister:
     raise self.not_implemented('zero_export_power_register')
 
-  def not_implemented(self, message: str):
+  def not_implemented(self, message: str) -> Exception:
     return DeyeNotImplementedException(f'{type(self).__name__}.{message} is not implemented')
