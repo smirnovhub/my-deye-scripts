@@ -1,0 +1,42 @@
+{
+  "python.pythonPath": ".venv/bin/python",
+  "python.analysis.extraPaths": [
+    "../modules",
+    "../modules/uModbus",
+    "../modules/pysolarmanv5",
+    "../modules/pyTelegramBotAPI",
+    "../common",
+    "../common/utils",
+    "../deye/src",
+    "../deye/src/commandline",
+    "../deye/src/exceptions",
+    "../deye/src/locker",
+    "../deye/src/logger",
+    "../deye/src/registers",
+    "../deye/src/registers/enum",
+    "../deye/src/registers/inverters",
+    "../deye/src/registers/read_only",
+    "../deye/src/registers/read_write",
+    "../deye/src/solarman",
+    "../deye/src/solarman/server",
+    "../deye/src/utils"
+  ],
+  "python.analysis.useImportHeuristic": true,
+  "python.languageServer": "Pylance",
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "python.linting.flake8Enabled": false,
+  "python.formatting.provider": "yapf",
+  "python.envFile": "${workspaceFolder}/.env",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportArgumentType": "error",
+    "reportReturnType": "error",
+    "reportGeneralTypeIssues": "warning",
+    "reportOptionalMemberAccess": "none",
+    "reportOptionalSubscript": "none",
+    "reportOptionalCall": "none",
+    "reportMissingTypeStubs": "none",
+    "reportPrivateUsage": "none", 
+    "reportUnusedImport": "warning"
+  }
+}
