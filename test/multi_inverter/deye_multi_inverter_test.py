@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import random
 import logging
 import subprocess
@@ -68,14 +69,21 @@ for register, value in test_registers.items():
 
   print(f'Command to execute: {commands}')
 
-  result = subprocess.run(
-    commands,
-    capture_output = True,
-    text = True,
-  )
+  for i in range(10):
+    result = subprocess.run(
+      commands,
+      capture_output = True,
+      text = True,
+    )
 
-  output = result.stdout.strip()
-  print(f'Command output: {output}')
+    output = result.stdout.strip() + result.stderr.strip()
+    print(f'Command output: {output}')
+
+    if 'exception' not in output and 'error' not in output:
+      break
+
+    print('An exception occurred. Retrying...')
+    time.sleep(3)
 
   for i, logger in enumerate(loggers.loggers):
     name = f'{logger.name}_{register.name} = {value * (i + 1)} {register.suffix}'.strip()
