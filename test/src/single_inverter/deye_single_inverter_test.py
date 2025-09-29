@@ -15,11 +15,14 @@ sys.path.append(str(modules_path))
 
 from common_modules import import_dirs
 
-import_dirs(current_path, [
-  'src',
-  '../../../deye/src',
-  '../../../common',
-])
+import_dirs(
+  current_path,
+  [
+    'src',
+    '../../../deye/src',
+    '../../../common',
+  ],
+)
 
 logging.basicConfig(
   level = logging.INFO,
