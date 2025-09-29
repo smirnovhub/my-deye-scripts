@@ -1,12 +1,12 @@
-from datetime import datetime
-from typing import List, Union
+from typing import Any, List, Union
 
+from datetime import datetime
 from deye_base_enum import DeyeBaseEnum
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
-from deye_utils import have_second_sign
+from deye_utils import custom_round
 
 class BaseDeyeRegister(DeyeRegister):
   def __init__(self,
@@ -38,18 +38,11 @@ class BaseDeyeRegister(DeyeRegister):
 
     if self._avg == DeyeRegisterAverageType.accumulate or self._avg == DeyeRegisterAverageType.average:
       value = 0.0
-      second_sign = False
       for interactor in interactors:
         value += self.read_internal(interactor)
 
-      second_sign = second_sign or have_second_sign(value)
-
       if self._avg == DeyeRegisterAverageType.average:
         value /= len(interactors)
-
-      frac = value % 1
-      digits = 2 if second_sign == True else 1
-      value = int(value) if frac < 0.005 else round(value, digits)
 
       self._value = value
       return self._value
@@ -104,8 +97,19 @@ class BaseDeyeRegister(DeyeRegister):
     return self._description
 
   @property
-  def value(self) -> Union[int, float, str, datetime, DeyeBaseEnum]:
+  def value(self) -> Any:
     return self._value
+
+  @property
+  def pretty_value(self) -> str:
+    if isinstance(self.value, float):
+      return custom_round(self.value)
+    elif isinstance(self.value, DeyeBaseEnum):
+      return self.value.pretty
+    elif isinstance(self.value, datetime):
+      return self.value.strftime('%Y-%m-%d %H:%M:%S')
+
+    return str(self.value)
 
   @property
   def suffix(self) -> str:

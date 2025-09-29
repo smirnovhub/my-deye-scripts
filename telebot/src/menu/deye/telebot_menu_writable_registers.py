@@ -2,7 +2,7 @@ import telebot
 import textwrap
 import traceback
 
-from typing import Any, Dict, List
+from typing import Any, List, Optional
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
@@ -73,7 +73,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     register = self.registers.get_register_by_name(register_name)
     return register is not None
 
-  def get_writable_register_handler(self, register: DeyeRegister):
+  def get_writable_register_handler(self, register: DeyeRegister) -> str:
     return textwrap.dedent('''\
     @self.bot.message_handler(commands = ['{register_name}'])
     def set_{register_name}(message):
@@ -83,7 +83,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.process_read_write_register_step2(message, message_id, '{register_name}')
   ''').format(register_name = register.name)
 
-  def create_keyboard_for_register(self, register: DeyeRegister):
+  def create_keyboard_for_register(self, register: DeyeRegister) -> Optional[telebot.types.InlineKeyboardMarkup]:
     if isinstance(register.value, datetime) and register.name == self.registers.inverter_system_time_register.name:
       time_diff = register.value - datetime.now()
       diff_seconds = int(abs(time_diff.total_seconds()))
@@ -168,18 +168,15 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.clear_step_handler_by_chat_id(message.chat.id)
       return
 
-    # Pass dict to change value inside the method
-    old_register_value: Dict[str, int] = {}
-
     try:
-      self.write_register(register, message, old_register_value)
+      self.write_register(register, message)
     except DeyeKnownException as e:
       self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
       print(traceback.format_exc())
 
-  def get_register_value(self, register: DeyeRegister):
+  def get_register_value(self, register: DeyeRegister) -> str:
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
@@ -192,12 +189,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     finally:
       holder.disconnect()
 
-    value = register.value
-
-    if isinstance(value, DeyeBaseEnum):
-      value = value.pretty
-
-    result = f'Current <b>{register.description}</b> value: {value} {register.suffix}\n'
+    result = f'Current <b>{register.description}</b> value: {register.pretty_value} {register.suffix}\n'
 
     if register.min_value != register.max_value:
       result += f'Enter new value (from {register.min_value} to {register.max_value}):'
@@ -210,7 +202,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     self,
     register: DeyeRegister,
     message: telebot.types.Message,
-    old_register_value: Dict[str, int],
   ):
     if message.text is None:
       raise DeyeValueException('Message text is empty')
@@ -224,7 +215,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     try:
       holder.read_registers()
-      old_register_value[register.name] = register.value
 
       value: Any = 0
       suffix = f' {register.suffix}'.rstrip()
@@ -233,14 +223,14 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         try:
           value = int(message.text)
         except Exception:
-          raise DeyeValueException(f'Value type should be int')
+          raise DeyeValueException(f'Value should be int from {register.min_value} to {register.max_value}')
         if register.value == value:
           raise self.get_nothing_changed_exception(register.value, suffix)
       elif isinstance(register.value, float):
         try:
           value = float(message.text)
         except Exception:
-          raise DeyeValueException(f'Value type should be float')
+          raise DeyeValueException(f'Value should be float from {register.min_value} to {register.max_value}')
         if register.value == value:
           raise self.get_nothing_changed_exception(register.value, suffix)
       elif isinstance(register.value, DeyeBaseEnum):
@@ -254,13 +244,15 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       if str(register.value) == message.text:
         raise self.get_nothing_changed_exception(register.value, suffix)
 
+      old_value = register.value
+
       def on_user_confirmation(chat_id: int, result: bool):
         if not result:
           self.bot.send_message(message.chat.id, 'Nothing changed', parse_mode = 'HTML')
         else:
           try:
             holder.write_register(register, value)
-            self.print_result_after_write_register(register, message, old_register_value)
+            self.print_result_after_write_register(register, message, old_value)
           except DeyeKnownException as e:
             self.bot.send_message(message.chat.id, str(e))
           except Exception as e:
@@ -282,7 +274,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         return
 
       holder.write_register(register, value)
-      self.print_result_after_write_register(register, message, old_register_value)
+      self.print_result_after_write_register(register, message, old_value)
 
     finally:
       holder.disconnect()
@@ -291,10 +283,9 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     self,
     register: DeyeRegister,
     message: telebot.types.Message,
-    old_register_value: Dict[str, int],
+    old_value: Any,
   ):
     value = register.value
-    old_value = old_register_value[register.name]
 
     if isinstance(value, DeyeBaseEnum):
       value = value.pretty
@@ -305,7 +296,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     suffix = f' {register.suffix}'.rstrip()
     text = f'<b>{register.description}</b> changed from {old_value} to {value}{suffix}'
 
-    old_value = old_register_value[register.name]
     is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 
     if old_value != register.value and not is_undo_button_pressed:
@@ -326,6 +316,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     else:
       self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
 
-  def get_nothing_changed_exception(self, value: Any, suffix: str):
+  def get_nothing_changed_exception(self, value: Any, suffix: str) -> Exception:
     return DeyeValueException(f'New value ({str(value)}{suffix}) is '
                               'the same as old value. Nothing changed')

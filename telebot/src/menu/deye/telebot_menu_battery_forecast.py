@@ -23,9 +23,6 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
     if self.has_updates(message):
       return
 
-    self.bot.send_message(message.chat.id, self.get_forecast(), parse_mode = 'HTML')
-
-  def get_forecast(self):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = self.loggers.loggers,
@@ -36,29 +33,30 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
     try:
       holder.read_registers()
     except Exception as e:
-      return str(e)
+      self.bot.send_message(message.chat.id, str(e))
+      return
     finally:
       holder.disconnect()
 
     try:
-      soc = holder.master_registers.battery_soc_register
-      current = holder.accumulated_registers.battery_current_register
-      power = holder.accumulated_registers.battery_power_register
+      soc_register = holder.master_registers.battery_soc_register
+      current_register = holder.accumulated_registers.battery_current_register
+      power_register = holder.accumulated_registers.battery_power_register
 
       result = ''
 
-      result += f'{soc.description}: {soc.value} {soc.suffix}\n'
-      result += f'{current.description}: {current.value} {current.suffix}\n'
-      result += f'{power.description}: {power.value} {power.suffix}\n'
+      result += f'{soc_register.description}: {soc_register.pretty_value} {soc_register.suffix}\n'
+      result += f'{current_register.description}: {current_register.pretty_value} {current_register.suffix}\n'
+      result += f'{power_register.description}: {power_register.pretty_value} {power_register.suffix}\n'
 
-      if abs(current.value) < 0.1:
-        result += '<b>Battery is in idle mode</b>'
-        return result
+      if abs(current_register.value) < 0.1:
+        self.bot.send_message(message.chat.id, '<b>Battery is in idle mode</b>', parse_mode = 'HTML')
+        return
 
-      register = holder.accumulated_registers.charge_forecast_register if current.value < 0 else holder.accumulated_registers.discharge_forecast_register
-      val = register.value.strip('"')
+      register = holder.accumulated_registers.charge_forecast_register if current_register.value < 0 else holder.accumulated_registers.discharge_forecast_register
+      val = register.pretty_value.strip('"')
 
       result += f'<b>{val}</b>'
-      return result
+      self.bot.send_message(message.chat.id, result, parse_mode = 'HTML')
     except Exception as e:
-      return str(e)
+      self.bot.send_message(message.chat.id, str(e))

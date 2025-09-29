@@ -31,15 +31,11 @@ def get_register_values(registers: List[DeyeRegister]) -> str:
   Returns:
       str: A multi-line string with each register's description and value.
   """
-  result = ""
-  for register in registers:
-    if isinstance(register.value, DeyeBaseEnum):
-      val = register.value.pretty
-    else:
-      val = str(register.value).title()
+  result = ''
 
+  for register in registers:
     desc = register.description.replace('Inverter ', '')
-    result += f'{desc}: {val} {register.suffix}\n'
+    result += f'{desc}: {register.pretty_value} {register.suffix}\n'
 
   return result
 
@@ -240,11 +236,11 @@ def build_keyboard_for_register(
   # Return the fully constructed keyboard object
   return keyboard
 
-def get_choices_of_invertors(
+def get_choices_of_inverters(
   user_id: int,
   all_command: TelebotMenuItem,
   master_command: TelebotMenuItem,
-  slave_command: TelebotMenuItem,
+  slave_command: Optional[TelebotMenuItem],
 ) -> Dict[str, str]:
   """
   Generate a dictionary of inline button choices for inverters.
@@ -277,6 +273,9 @@ def get_choices_of_invertors(
     command = master_command.command.format(master_name)
     description = master_command.description.format(master_name.title())
     choices[description] = f'/{command}'
+
+  if slave_command is None:
+    return choices
 
   if auth_helper.is_menu_item_allowed(user_id, slave_command):
     for logger in loggers.loggers:

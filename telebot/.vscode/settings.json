@@ -27,6 +27,7 @@
     "src/menu/deye",
     "src/menu/deye/all",
     "src/menu/deye/master",
+    "src/menu/deye/master/settings",
     "src/menu/deye/registers",
     "src/menu/deye/slave",
     "src/menu/other",

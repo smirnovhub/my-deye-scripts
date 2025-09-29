@@ -55,6 +55,10 @@ class DeyeRegister:
     raise self.not_implemented('value')
 
   @property
+  def pretty_value(self) -> str:
+    raise self.not_implemented('pretty_value')
+
+  @property
   def suffix(self) -> str:
     raise self.not_implemented('suffix')
 
@@ -69,5 +73,5 @@ class DeyeRegister:
   def error(self, message: str):
     raise DeyeValueException(f'{type(self).__name__}.{message}')
 
-  def not_implemented(self, message: str):
+  def not_implemented(self, message: str) -> Exception:
     return DeyeNotImplementedException(f'{type(self).__name__}.{message} is not implemented')

@@ -24,6 +24,7 @@ class TelebotMenuItem(Enum):
   deye_all_total_stat = ('all_total_stat', 'All total stat', DeyeSystemType.multi_inverter)
   deye_master_total_stat = ('{0}_total_stat', '{0} total stat', DeyeSystemType.single_inverter)
   deye_slave_total_stat = ('{0}_total_stat', '{0} total stat', DeyeSystemType.none)
+  deye_all_settings = ('all_settings', 'All settings', DeyeSystemType.none)
   deye_master_settings = ('{0}_settings', '{0} settings')
   deye_battery_forecast = ('forecast', 'Battery forecast')
   deye_sync_time = ('sync_time', 'Sync inverter time')

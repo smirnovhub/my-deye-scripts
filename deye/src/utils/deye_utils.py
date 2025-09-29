@@ -5,6 +5,7 @@ import struct
 import requests
 
 from typing import Union, List
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 from pysolarmanv5 import NoSocketAvailableError
 
@@ -63,17 +64,35 @@ def format_end_date(date: datetime) -> str:
     ('tomorrow, ' + date.strftime('%H:%M') if date_str1 == date_str3 else\
     date.strftime('%Y-%m-%d, %H:%M'))
 
-def have_second_sign(num: float) -> bool:
-  if type(num) is not float:
-    return False
+def custom_round(num: float) -> str:
+  """
+  Round a floating-point number to two decimal places using "round half up" rules.
 
-  num = round(num, 3)
-  num = num % 1
-  num = round(num * 1000)
-  num -= num % 10
-  num /= 10
+  This function:
+    - Converts the input float into a Decimal to avoid floating-point precision errors.
+    - Rounds the number to exactly two decimal places.
+    - Uses ROUND_HALF_UP, meaning values ending with 5 in the third decimal place 
+      are rounded upward (e.g., 1.305 → 1.31).
+    - Removes trailing zeros in the fractional part (e.g., 1.50 → "1.5").
+    - Returns the result as a string.
 
-  return num % 10 > 0
+  Args:
+      num (float): The number to round.
+
+  Returns:
+      str: The rounded number as a string.
+  """
+  # Convert the float to a string, then to Decimal, to avoid binary float issues
+  d = Decimal(str(num))
+
+  # Round to two decimal places with ROUND_HALF_UP strategy
+  rounded = d.quantize(Decimal("0.01"), rounding = ROUND_HALF_UP)
+
+  # Format as fixed-point (avoids scientific notation like 2.5E+2)
+  s = format(rounded, "f")
+
+  # Strip trailing zeros and possible trailing dot
+  return s.rstrip("0").rstrip(".")
 
 def format_timedelta(td: timedelta, add_seconds: bool = False) -> str:
   seconds = int(td.total_seconds())

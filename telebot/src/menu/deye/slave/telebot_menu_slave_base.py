@@ -12,7 +12,7 @@ from telebot_user_choices_helper import row_break_str
 from telebot_deye_helper import (
   holder_kwargs,
   get_register_values,
-  get_choices_of_invertors,
+  get_choices_of_inverters,
 )
 
 from telebot_constants import (
@@ -80,7 +80,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     finally:
       holder.disconnect()
 
-    choices = get_choices_of_invertors(
+    choices = get_choices_of_inverters(
       user_id = message.from_user.id,
       all_command = self.all_command,
       master_command = self.master_command,
