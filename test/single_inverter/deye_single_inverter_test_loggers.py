@@ -10,7 +10,6 @@ class DeyeLoggers(DeyeBaseLoggers):
       name = 'master_inverter',
       address = '127.0.0.1',
       serial = 1,
-      port = 7000,
     )
 
   @property

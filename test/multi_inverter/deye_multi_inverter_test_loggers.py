@@ -10,7 +10,7 @@ class DeyeLoggers(DeyeBaseLoggers):
       name = 'master_inverter',
       address = '127.0.0.1',
       serial = 1,
-      port = 8001,
+      port = 8801,
     )
 
   @property
@@ -20,18 +20,18 @@ class DeyeLoggers(DeyeBaseLoggers):
         name = 'slave1_inverter',
         address = '127.0.0.1',
         serial = 2,
-        port = 8002,
+        port = 8802,
       ),
       DeyeLogger(
         name = 'slave2_inverter',
         address = '127.0.0.1',
         serial = 3,
-        port = 8003,
+        port = 8803,
       ),
       DeyeLogger(
         name = 'slave3_inverter',
         address = '127.0.0.1',
         serial = 4,
-        port = 8004,
+        port = 8804,
       ),
     ]
