@@ -9,14 +9,18 @@ from pathlib import Path
 from typing import List
 
 current_path = Path(__file__).parent.resolve()
-modules_path = (current_path / '../../modules').resolve()
+modules_path = (current_path / '../../../modules').resolve()
 
 os.chdir(current_path)
 sys.path.append(str(modules_path))
 
 from common_modules import import_dirs
 
-import_dirs(current_path, ['src', '../../deye/src', '../../common'])
+import_dirs(current_path, [
+  'src',
+  '../../../deye/src',
+  '../../../common',
+])
 
 logging.basicConfig(
   level = logging.INFO,
@@ -62,7 +66,7 @@ for register, value in test_registers.items():
 
   commands = [
     sys.executable,
-    "../../deye/deye",
+    "../../../deye/deye",
     f'-i {inverters}',
     f"--get-{register.name.replace('_', '-')}",
   ]
