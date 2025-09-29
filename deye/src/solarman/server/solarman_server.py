@@ -18,7 +18,6 @@ from umodbus.functions import (
 
 from pysolarmanv5.pysolarmanv5 import CONTROL_CODE, PySolarmanV5, V5FrameError
 
-from solarman_server_singleton import Singleton
 from mock_data_logger import MockDatalogger
 
 _WIN_PLATFORM = True if platform.system() == "Windows" else False
@@ -26,15 +25,17 @@ _WIN_PLATFORM = True if platform.system() == "Windows" else False
 socketserver.TCPServer.allow_reuse_address = True
 socketserver.TCPServer.allow_reuse_port = True # type: ignore
 
-class AioSolarmanServer(metaclass = Singleton):
+class AioSolarmanServer():
   """
   Async version of the test server
   """
-  def __init__(self, address, port):
+  def __init__(self, address: str, serial: int, port = 8899):
     self.address = address
+    self.serial = serial
     self.port = port
     self.log = logging.getLogger()
-    self.register_value = 0
+    self.expected_register_address = 0
+    self.expected_register_value = 0
     self.log.info(f"Starting AioSolarmanServer at {address} {port}")
 
     try:
@@ -55,9 +56,13 @@ class AioSolarmanServer(metaclass = Singleton):
       reuse_port = False if _WIN_PLATFORM else True,
     )
 
-  def set_register_value(self, register_value: int):
-    self.log.info(f"Setting expected register value to {register_value}")
-    self.register_value = register_value
+  def set_expected_register_address(self, address: int):
+    self.log.info(f"Setting expected register address to {address}")
+    self.expected_register_address = address
+
+  def set_expected_register_value(self, value: int):
+    self.log.info(f"Setting expected register value to {value}")
+    self.expected_register_value = value
 
   def sync_runner(self):
     self.loop.create_task(self.start_server())
@@ -71,7 +76,7 @@ class AioSolarmanServer(metaclass = Singleton):
     :param writer:
     :return:
     """
-    sol = MockDatalogger("0.0.0.0", 2612749371, auto_reconnect = False)
+    sol = MockDatalogger("0.0.0.0", serial = self.serial, auto_reconnect = False)
     count_packet = bytes.fromhex("a5010010478d69b5b50aa2006415")
     non_v5_packet = bytes.fromhex("41542b595a434d505645523d4d57335f3136555f353430365f322e32370d0a0d0a")
     gibberish = bytes.fromhex("aa030a00000000000000000000be9c")
@@ -160,7 +165,10 @@ class AioSolarmanServer(metaclass = Singleton):
     elif isinstance(func, ReadHoldingRegisters):
       if func.quantity is None:
         raise ValueError("ReadHoldingRegisters request missing quantity")
-      res = func.create_response_pdu([self.register_value for x in range(func.quantity)])
+      if self.expected_register_address == func.starting_address:
+        res = func.create_response_pdu([self.expected_register_value for x in range(func.quantity)])
+      else:
+        res = func.create_response_pdu([random.randint(0, 2**16 - 1) for x in range(func.quantity)])
     elif isinstance(func, ReadInputRegisters):
       if func.quantity is None:
         raise ValueError("ReadInputRegisters request missing quantity")

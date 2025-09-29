@@ -6,14 +6,14 @@ import subprocess
 from pathlib import Path
 
 current_path = Path(__file__).parent.resolve()
-modules_path = (current_path / '../modules').resolve()
+modules_path = (current_path / '../../modules').resolve()
 
 os.chdir(current_path)
 sys.path.append(str(modules_path))
 
 from common_modules import import_dirs
 
-import_dirs(current_path, ['src', '../deye/src', '../common'])
+import_dirs(current_path, ['src', '../../deye/src', '../../common'])
 
 logging.basicConfig(
   level = logging.INFO,
@@ -32,20 +32,26 @@ test_registers = {
   registers.pv1_power_register: 12345,
   registers.battery_soc_register: 777,
   registers.battery_capacity_register: 54321,
+  registers.ct_ratio_register: 15,
 }
 
-server = AioSolarmanServer('127.0.0.1', 8899)
+server = AioSolarmanServer(
+  address = loggers.master.address,
+  serial = loggers.master.serial,
+  port = loggers.master.port,
+)
 
 all_found = True
 
 for register, value in test_registers.items():
-  server.set_register_value(value)
+  server.set_expected_register_address(register.address)
+  server.set_expected_register_value(value)
 
   print(f"Getting '{register.name}' with expected value {value}...")
 
   commands = [
     sys.executable,
-    "../deye/deye",
+    "../../deye/deye",
     f"--get-{register.name.replace('_', '-')}",
   ]
 
@@ -60,8 +66,9 @@ for register, value in test_registers.items():
   output = result.stdout.strip()
   print(f'Command output: {output}')
 
-  name = f'{loggers.master.name}_{register.name}'
-  if name not in output or str(value) not in output:
+  name = f'{loggers.master.name}_{register.name} = {value} {register.suffix}'.strip()
+  print(f"Finding '{name}'...")
+  if name not in output:
     print('Register or value not found')
     all_found = False
   else:
@@ -71,5 +78,5 @@ if all_found:
   print('All registers and values found. Test is ok')
   sys.exit(0)
 else:
-  print('Some registers and/or values not found. Test failes')
+  print('Some registers and/or values not found. Test failed')
   sys.exit(1)

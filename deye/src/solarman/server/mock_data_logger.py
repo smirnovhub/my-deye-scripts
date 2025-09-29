@@ -3,8 +3,8 @@ import struct
 from pysolarmanv5.pysolarmanv5 import CONTROL_CODE, PySolarmanV5
 
 class MockDatalogger(PySolarmanV5):
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
+  def __init__(self, address, serial, **kwargs):
+    super().__init__(address, serial, **kwargs)
 
   def _socket_setup(self, *args, **kwargs):
     pass
