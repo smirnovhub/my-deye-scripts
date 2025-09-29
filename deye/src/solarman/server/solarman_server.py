@@ -7,6 +7,8 @@ import random
 import logging
 import platform
 
+from typing import Type, Any, Dict
+
 from umodbus.client.serial.redundancy_check import add_crc
 from umodbus.functions import (
   ReadHoldingRegisters,
@@ -19,11 +21,11 @@ from pysolarmanv5.pysolarmanv5 import CONTROL_CODE, PySolarmanV5, V5FrameError
 
 _WIN_PLATFORM = True if platform.system() == "Windows" else False
 socketserver.TCPServer.allow_reuse_address = True
-socketserver.TCPServer.allow_reuse_port = True
+socketserver.TCPServer.allow_reuse_port = True # type: ignore
 log = logging.getLogger()
 
 class _Singleton(type):
-  _instances = {}
+  _instances: Dict[Type[Any], Any] = {}
 
   def __call__(cls, *args, **kwargs):
     if cls not in cls._instances:
@@ -103,7 +105,7 @@ class ServerHandler(socketserver.BaseRequestHandler):
       else:
         seq_no = data[5]
         self.sol.sequence_number = data[5]
-        log.debug(f"[SrvHandler] RECD: {data}")
+        log.debug(f"[SrvHandler] RECD: {data.hex(' ')}")
         data = bytearray(data)
         data[3] = 0x10
         data[4] = PySolarmanV5._get_response_code(CONTROL_CODE.REQUEST)
@@ -114,7 +116,7 @@ class ServerHandler(socketserver.BaseRequestHandler):
           break
         data[-2:-1] = checksum.to_bytes(1, byteorder = "big")
         data = bytes(data)
-        log.debug(f"[SrvHandler] DEC: {data}")
+        log.debug(f"[SrvHandler] DEC: {data.hex(' ')}")
         try:
           decoded = self.sol._v5_frame_decoder(data)
           enc = function_response_from_request(decoded)
@@ -158,7 +160,7 @@ async def stream_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWri
     else:
       seq_no = data[5]
       sol.sequence_number = data[5]
-      log.debug(f"[AioHandler] RECD: {data}")
+      log.debug(f"[AioHandler] RECD: {data.hex(' ')}")
       data = bytearray(data)
       data[3] = 0x10
       data[4] = PySolarmanV5._get_response_code(CONTROL_CODE.REQUEST)
@@ -170,7 +172,7 @@ async def stream_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWri
         break
       data[-2:-1] = checksum.to_bytes(1, byteorder = "big")
       data = bytes(data)
-      log.debug(f"[AioHandler] DEC: {data}")
+      log.debug(f"[AioHandler] DEC: {data.hex(' ')}")
       if cl_packets == 4:
         log.debug("C == 4. Writing empty bytes... Expecting reconnect")
         writer.write(b"")
