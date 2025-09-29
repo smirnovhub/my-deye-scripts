@@ -19,7 +19,10 @@
     "../deye/src/registers/read_write",
     "../deye/src/solarman",
     "../deye/src/solarman/server",
-    "../deye/src/utils"
+    "../deye/src/utils",
+    "src",
+    "src/multi_inverter",
+    "src/single_inverter"
   ],
   "python.analysis.useImportHeuristic": true,
   "python.languageServer": "Pylance",

@@ -31,8 +31,8 @@ jobs:
 
       - name: Copy multi inverter loggers
         run: |
-          cp test/multi_inverter/deye_multi_inverter_test_loggers.py common/deye_loggers.py
+          cp test/src/multi_inverter/deye_multi_inverter_test_loggers.py common/deye_loggers.py
 
       - name: Run deye multi inverter tests
         run: |
-          python -u test/multi_inverter/deye_multi_inverter_test.py
+          python -u test/src/multi_inverter/deye_multi_inverter_test.py
