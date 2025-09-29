@@ -1,5 +1,6 @@
 import os
 import sys
+import random
 import logging
 import subprocess
 
@@ -30,8 +31,8 @@ loggers = DeyeLoggers()
 registers = DeyeRegistersFactory.create_registers()
 
 test_registers = {
-  registers.pv1_power_register: 3,
-  registers.load_power_register: 5,
+  registers.pv1_power_register: random.randint(10, 9999),
+  registers.load_power_register: random.randint(10, 9999),
 }
 
 servers: List[AioSolarmanServer] = []
