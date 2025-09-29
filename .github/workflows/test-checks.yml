@@ -26,6 +26,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests
 
+      - name: Copy test loggers
+        run: |
+          cp test/deye_test_loggers.py common/deye_loggers.py
+
       - name: Run deye tests
         working-directory: test
         run: |
