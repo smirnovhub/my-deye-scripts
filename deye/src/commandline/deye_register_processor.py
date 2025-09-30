@@ -1,6 +1,8 @@
 import argparse
 
 from typing import Any, List, Optional, Type
+
+from datetime import datetime
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
 from raising_thread import RaisingThread
@@ -31,6 +33,8 @@ class DeyeRegisterProcessor:
 
   def get_register_type(self, register: DeyeRegister) -> Type[Any]:
     if isinstance(register.value, DeyeBaseEnum):
+      return str
+    elif isinstance(register.value, datetime):
       return str
     else:
       return type(register.value)
@@ -130,6 +134,10 @@ class DeyeRegisterProcessor:
           if value != None:
             if self.master_interactor == None:
               raise DeyeKnownException('You can write only to master inverter')
+
+            if isinstance(register.value, DeyeBaseEnum):
+              value = register.value.parse(value)
+
             register.write(self.master_interactor, value)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             suffix = f' {register.suffix}'.rstrip()
