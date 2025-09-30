@@ -13,7 +13,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
-      fail-fast: false
 
     steps:
       - uses: actions/checkout@v4
@@ -31,17 +30,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests
 
-      - name: Initialize lock
-        uses: rakles/matrix-lock@v1.0.0
-        with:
-          step: init
-          order: ${{ matrix.python-version }}
-
-      - name: Wait for lock
-        uses: rakles/matrix-lock@v1.0.0
-        with:
-          step: wait
-          id: ${{ matrix.python-version }}
+      - name: Delay to avoid Telegram api errors
+        run: |
+          if [ "${{ matrix.python-version }}" = "3.8" ]; then echo "Sleeping for 0s..."; sleep 0; fi
+          if [ "${{ matrix.python-version }}" = "3.9" ]; then echo "Sleeping for 10s..."; sleep 10; fi
+          if [ "${{ matrix.python-version }}" = "3.10" ]; then echo "Sleeping for 20s..."; sleep 20; fi
+          if [ "${{ matrix.python-version }}" = "3.11" ]; then echo "Sleeping for 30s..."; sleep 30; fi
 
       - name: Run tests
         env:
@@ -49,9 +43,3 @@ jobs:
           BOT_API_TOKEN: ${{ secrets.BOT_API_TOKEN }}
         run: |
           python -u test/src/telebot_test.py
-
-      - name: Release lock
-        uses: rakles/matrix-lock@v1.0.0
-        with:
-          step: continue
-          id: ${{ matrix.python-version }}
