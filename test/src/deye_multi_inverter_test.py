@@ -38,6 +38,7 @@ from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
 from deye_register_average_type import DeyeRegisterAverageType
 
+log = logging.getLogger()
 loggers = DeyeLoggers()
 registers = DeyeRegistersFactory.create_registers()
 
@@ -88,7 +89,7 @@ for register, value in test_registers.items():
     f"--get-{register.name.replace('_', '-')}",
   ]
 
-  print(f'Command to execute: {commands}')
+  log.info(f'Command to execute: {commands}')
 
   for i in range(10):
     result = subprocess.run(
@@ -98,37 +99,37 @@ for register, value in test_registers.items():
     )
 
     output = result.stdout.strip() + result.stderr.strip()
-    print(f'Command output:\n{output}')
+    log.info(f'Command output:\n{output}')
 
     if 'exception' not in output and 'error' not in output:
       break
 
-    print('An exception occurred. Retrying...')
+    log.info('An exception occurred. Retrying...')
     time.sleep(3)
 
   for i, logger in enumerate(loggers.loggers):
     val = custom_round(value * (i + 1) / register.scale)
-    print(f"Getting '{register.name}' with expected value {val}...")
+    log.info(f"Getting '{register.name}' with expected value {val}...")
 
     name = f'{logger.name}_{register.name} = {val} {register.suffix}'.strip()
-    print(f"Finding '{name}'...")
+    log.info(f"Finding '{name}'...")
     if name not in output:
-      print('Register or value not found')
+      log.info('Register or value not found')
       all_found = False
     else:
-      print('Register and value found')
+      log.info('Register and value found')
 
   all_name = f'{loggers.accumulated_registers_prefix}_{register.name} = {total_val} {register.suffix}'.strip()
-  print(f"Finding '{all_name}'...")
+  log.info(f"Finding '{all_name}'...")
   if all_name not in output:
-    print('Register or value not found')
+    log.info('Register or value not found')
     all_found = False
   else:
-    print('Register and value found')
+    log.info('Register and value found')
 
 if all_found:
-  print('All registers and values found. Test is ok')
+  log.info('All registers and values found. Test is ok')
   sys.exit(0)
 else:
-  print('Some registers and/or values not found. Test failed')
+  log.info('Some registers and/or values not found. Test failed')
   sys.exit(1)
