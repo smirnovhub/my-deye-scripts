@@ -7,8 +7,9 @@ import subprocess
 
 from pathlib import Path
 
+base_path = '../..'
 current_path = Path(__file__).parent.resolve()
-modules_path = (current_path / '../../../modules').resolve()
+modules_path = (current_path / base_path / 'modules').resolve()
 
 os.chdir(current_path)
 sys.path.append(str(modules_path))
@@ -19,8 +20,8 @@ import_dirs(
   current_path,
   [
     'src',
-    '../../../deye/src',
-    '../../../common',
+    os.path.join(base_path, 'deye/src'),
+    os.path.join(base_path, 'common'),
   ],
 )
 
@@ -30,6 +31,7 @@ logging.basicConfig(
   datefmt = "%Y-%m-%d %H:%M:%S",
 )
 
+from deye_utils import custom_round
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
@@ -37,17 +39,21 @@ from solarman_server import AioSolarmanServer
 loggers = DeyeLoggers()
 registers = DeyeRegistersFactory.create_registers()
 
+max_value = 60000
+
 test_registers = {
-  registers.pv1_power_register: random.randint(10, 9999),
-  registers.battery_soc_register: random.randint(10, 9999),
-  registers.battery_capacity_register: random.randint(10, 9999),
-  registers.ct_ratio_register: random.randint(10, 9999),
+  registers.pv1_power_register: random.randint(1000, max_value),
+  registers.battery_max_charge_current_register: random.randint(1000, max_value),
+  registers.battery_voltage_register: random.randint(1000, max_value),
+  registers.grid_frequency_register: random.randint(1000, max_value),
 }
 
+logger = random.choice(loggers.loggers)
+
 server = AioSolarmanServer(
-  address = loggers.master.address,
-  serial = loggers.master.serial,
-  port = loggers.master.port,
+  address = logger.address,
+  serial = logger.serial,
+  port = logger.port,
 )
 
 all_found = True
@@ -56,11 +62,16 @@ for register, value in test_registers.items():
   server.set_expected_register_address(register.address)
   server.set_expected_register_value(value)
 
+  time.sleep(1)
+
+  value = custom_round(value / register.scale)
+
   print(f"Getting '{register.name}' with expected value {value}...")
 
   commands = [
     sys.executable,
-    "../../../deye/deye",
+    os.path.join(base_path, 'deye/deye'),
+    f'-i {logger.name}',
     f"--get-{register.name.replace('_', '-')}",
   ]
 
@@ -82,7 +93,7 @@ for register, value in test_registers.items():
     print('An exception occurred. Retrying...')
     time.sleep(3)
 
-  name = f'{loggers.master.name}_{register.name} = {value} {register.suffix}'.strip()
+  name = f'{logger.name}_{register.name} = {value} {register.suffix}'.strip()
   print(f"Finding '{name}'...")
   if name not in output:
     print('Register or value not found')

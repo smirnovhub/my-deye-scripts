@@ -8,8 +8,9 @@ import subprocess
 from pathlib import Path
 from typing import List
 
+base_path = '../..'
 current_path = Path(__file__).parent.resolve()
-modules_path = (current_path / '../../../modules').resolve()
+modules_path = (current_path / base_path / 'modules').resolve()
 
 os.chdir(current_path)
 sys.path.append(str(modules_path))
@@ -20,8 +21,8 @@ import_dirs(
   current_path,
   [
     'src',
-    '../../../deye/src',
-    '../../../common',
+    os.path.join(base_path, 'deye/src'),
+    os.path.join(base_path, 'common'),
   ],
 )
 
@@ -31,16 +32,23 @@ logging.basicConfig(
   datefmt = "%Y-%m-%d %H:%M:%S",
 )
 
+from deye_utils import custom_round
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
+from deye_register_average_type import DeyeRegisterAverageType
 
 loggers = DeyeLoggers()
 registers = DeyeRegistersFactory.create_registers()
 
+max_value = int(60000 / loggers.count)
+
 test_registers = {
-  registers.pv1_power_register: random.randint(10, 9999),
-  registers.load_power_register: random.randint(10, 9999),
+  registers.pv1_power_register: random.randint(1000, max_value),
+  registers.load_power_register: random.randint(1000, max_value),
+  registers.battery_max_charge_current_register: random.randint(1000, max_value),
+  registers.battery_voltage_register: random.randint(1000, max_value),
+  registers.grid_frequency_register: random.randint(1000, max_value),
 }
 
 servers: List[AioSolarmanServer] = []
@@ -59,17 +67,23 @@ for logger in loggers.loggers:
 all_found = True
 
 for register, value in test_registers.items():
+  total_value = 0
   for i, server in enumerate(servers):
     server.set_expected_register_address(register.address)
     server.set_expected_register_value(value * (i + 1))
+    total_value += value * (i + 1)
+    print(f'total_value = {total_value}')
 
-  print(f"Getting '{register.name}' with expected value {value}...")
+  if register.avg_type == DeyeRegisterAverageType.average:
+    total_value /= loggers.count
 
-  inverters = ",".join(logger.name for logger in loggers.loggers)
+  time.sleep(1)
+
+  inverters = ','.join(logger.name for logger in loggers.loggers)
 
   commands = [
     sys.executable,
-    "../../../deye/deye",
+    os.path.join(base_path, 'deye/deye'),
     f'-i {inverters}',
     f"--get-{register.name.replace('_', '-')}",
   ]
@@ -93,13 +107,25 @@ for register, value in test_registers.items():
     time.sleep(3)
 
   for i, logger in enumerate(loggers.loggers):
-    name = f'{logger.name}_{register.name} = {value * (i + 1)} {register.suffix}'.strip()
+    val = custom_round(value * (i + 1) / register.scale)
+    print(f"Getting '{register.name}' with expected value {val}...")
+
+    name = f'{logger.name}_{register.name} = {val} {register.suffix}'.strip()
     print(f"Finding '{name}'...")
     if name not in output:
       print('Register or value not found')
       all_found = False
     else:
       print('Register and value found')
+
+  total_val = custom_round(total_value / register.scale)
+  all_name = f'{loggers.accumulated_registers_prefix}_{register.name} = {total_val} {register.suffix}'.strip()
+  print(f"Finding '{all_name}'...")
+  if all_name not in output:
+    print('Register or value not found')
+    all_found = False
+  else:
+    print('Register and value found')
 
 if all_found:
   print('All registers and values found. Test is ok')
