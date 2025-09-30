@@ -71,11 +71,12 @@ for register, value in test_registers.items():
   for i, server in enumerate(servers):
     server.set_expected_register_address(register.address)
     server.set_expected_register_value(value * (i + 1))
-    total_value += value * (i + 1)
-    print(f'total_value = {total_value}')
+    total_value += value * (i + 1) / register.scale
 
   if register.avg_type == DeyeRegisterAverageType.average:
     total_value /= loggers.count
+
+  total_val = custom_round(total_value)
 
   time.sleep(1)
 
@@ -118,7 +119,6 @@ for register, value in test_registers.items():
     else:
       print('Register and value found')
 
-  total_val = custom_round(total_value / register.scale)
   all_name = f'{loggers.accumulated_registers_prefix}_{register.name} = {total_val} {register.suffix}'.strip()
   print(f"Finding '{all_name}'...")
   if all_name not in output:
