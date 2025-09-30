@@ -58,11 +58,8 @@ server = AioSolarmanServer(
   port = logger.port,
 )
 
-all_found = True
-
 for register, value in test_registers.items():
-  server.set_expected_register_address(register.address)
-  server.set_expected_register_value(value)
+  server.set_register_value(register.address, value)
 
   time.sleep(1)
 
@@ -99,14 +96,9 @@ for register, value in test_registers.items():
   name = f'{logger.name}_{register.name} = {value} {register.suffix}'.strip()
   log.info(f"Finding '{name}'...")
   if name not in output:
-    log.info('Register or value not found')
-    all_found = False
+    log.info('Register or value not found. Test failed')
+    sys.exit(1)
   else:
     log.info('Register and value found')
 
-if all_found:
-  log.info('All registers and values found. Test is ok')
-  sys.exit(0)
-else:
-  log.info('Some registers and/or values not found. Test failed')
-  sys.exit(1)
+log.info('All registers and values found. Test is ok')
