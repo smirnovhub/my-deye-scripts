@@ -54,18 +54,9 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
       self.error('write(): value doesn\'t match date/time format')
 
     as_ints = [int(x) for x in re.split(r'[\-\:\s]', value)]
-    now = datetime.now()
-
-    if as_ints[0] != now.year:
-      self.error('write(): year is wrong, check your timezone')
-
-    if as_ints[1] != now.month:
-      self.error('write(): month is wrong, check your timezone')
-
-    if as_ints[2] != now.day:
-      self.error('write(): day is wrong, check your timezone')
 
     as_ints[0] -= 2000
+
     values = to_inv_time(as_ints)
 
     if interactor.write_register(self.address, values) != len(values):
