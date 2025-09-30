@@ -91,9 +91,16 @@ class DeyeRegisterProcessor:
         for register in self.get_registers_to_process(args):
           try:
             if interactor.is_master or register.avg_type != DeyeRegisterAverageType.only_master:
-              value = register.read([interactor])
+              register.read([interactor])
               addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
-              print(f'{interactor.name}_{register.name}{addr_list} = {value} {register.suffix}')
+              suffix = f' {register.suffix}'.rstrip()
+
+              if isinstance(register.value, DeyeBaseEnum):
+                value = str(register.value)
+              else:
+                value = register.pretty_value
+
+              print(f'{interactor.name}_{register.name}{addr_list} = {value}{suffix}')
           except Exception as e:
             raise get_reraised_exception(e,
                                          f'Error while reading register {register.name} from {interactor.name}') from e
@@ -102,9 +109,16 @@ class DeyeRegisterProcessor:
       for register in self.get_registers_to_process(args):
         try:
           if register.can_accumulate:
-            value = register.read(self.interactors)
+            register.read(self.interactors)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
-            print(f'all_{register.name}{addr_list} = {value} {register.suffix}')
+            suffix = f' {register.suffix}'.rstrip()
+
+            if isinstance(register.value, DeyeBaseEnum):
+              value = str(register.value)
+            else:
+              value = register.pretty_value
+
+            print(f'all_{register.name}{addr_list} = {value}{suffix}')
         except Exception as e:
           raise get_reraised_exception(e, f'Error while reading register {register.name}') from e
 
@@ -116,9 +130,16 @@ class DeyeRegisterProcessor:
           if value != None:
             if self.master_interactor == None:
               raise DeyeKnownException('You can write only to master inverter')
-            value = register.write(self.master_interactor, value)
+            register.write(self.master_interactor, value)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
-            print(f'{self.master_interactor.name}_{register.name}{addr_list} = {value} {register.suffix}')
+            suffix = f' {register.suffix}'.rstrip()
+
+            if isinstance(register.value, DeyeBaseEnum):
+              value = str(register.value)
+            else:
+              value = register.pretty_value
+
+            print(f'{self.master_interactor.name}_{register.name}{addr_list} = {value}{suffix}')
       except Exception as e:
         raise get_reraised_exception(e, f'Error while writing register {register.name}') from e
 

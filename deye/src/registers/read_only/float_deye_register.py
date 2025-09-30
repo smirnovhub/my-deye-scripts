@@ -13,12 +13,12 @@ class FloatDeyeRegister(BaseDeyeRegister):
   ):
     super().__init__(address, 1, name, description, suffix, avg)
     self._value = 0.0
-    self.scale = 10
+    self._scale = 10
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     value = interactor.read_register(self.address, self.quantity)[0] / self.scale
     return value
 
   def with_scale(self, scale: int):
-    self.scale = scale
+    self._scale = scale
     return self

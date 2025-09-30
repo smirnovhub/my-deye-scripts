@@ -18,6 +18,7 @@ class BaseDeyeRegister(DeyeRegister):
                avg = DeyeRegisterAverageType.none):
     self._address = address
     self._quantity = quantity
+    self._scale: int = 1
     self._name = name
     self._description = description
     self._suffix = suffix
@@ -87,6 +88,10 @@ class BaseDeyeRegister(DeyeRegister):
   @property
   def quantity(self) -> int:
     return self._quantity
+
+  @property
+  def scale(self) -> int:
+    return self._scale
 
   @property
   def name(self) -> str:

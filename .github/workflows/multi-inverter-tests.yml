@@ -1,4 +1,4 @@
-name: mypy checks
+name: multi inverter tests
 
 on:
   push:
@@ -7,7 +7,8 @@ on:
     branches: ["master"]
 
 jobs:
-  mypy-check:
+  multi-inverter-test:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -15,6 +16,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Initialize and update submodules recursively
+        run: git submodule update --init --recursive
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
@@ -24,15 +28,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install mypy
-          python -m pip install types-requests
+          python -m pip install requests
 
-      - name: Run mypy for deye
-        working-directory: deye
+      - name: Copy loggers
         run: |
-          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+          cp test/src/deye_test_loggers.py common/deye_loggers.py
 
-      - name: Run mypy for telebot
-        working-directory: telebot
+      - name: Run tests
         run: |
-          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+          python -u test/src/deye_multi_inverter_test.py

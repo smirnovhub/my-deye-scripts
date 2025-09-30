@@ -1,3 +1,5 @@
+import os
+import time
 import telebot
 
 from typing import List
@@ -115,6 +117,11 @@ class MyTelebot:
         bot.set_my_commands([], scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:
         print(f'An exception occurred while setting command for blocking user {user.id}: {str(e)}')
+
+    if os.getenv('TEST_RUN', '').strip().lower() == 'true':
+      print('Telebot is running')
+      time.sleep(1.5)
+      os._exit(0)
 
   def get_common_handlers(self, bot) -> List[TelebotBaseHandler]:
     return [

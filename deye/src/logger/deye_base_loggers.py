@@ -30,3 +30,7 @@ class DeyeBaseLoggers:
   @property
   def system_type(self) -> DeyeSystemType:
     return DeyeSystemType.multi_inverter if self.count > 1 else DeyeSystemType.single_inverter
+
+  @property
+  def accumulated_registers_prefix(self) -> str:
+    return 'all'
