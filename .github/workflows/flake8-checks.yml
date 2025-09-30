@@ -10,8 +10,7 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build:
-
+  flake8-check:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

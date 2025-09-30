@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 jobs:
-  mypy:
+  mypy-check:
     runs-on: ubuntu-latest
     strategy:
       matrix:

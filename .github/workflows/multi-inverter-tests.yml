@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 jobs:
-  run-script:
+  multi-inverter-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:

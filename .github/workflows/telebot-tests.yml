@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 jobs:
-  run-script:
+  telebot-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
