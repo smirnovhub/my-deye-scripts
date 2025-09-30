@@ -29,10 +29,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests
 
-      - name: Copy multi inverter loggers
+      - name: Copy loggers
         run: |
           cp test/src/deye_test_loggers.py common/deye_loggers.py
 
-      - name: Run deye multi inverter tests
+      - name: Run tests
         run: |
           python -u test/src/deye_multi_inverter_test.py
