@@ -136,7 +136,8 @@ class DeyeRegisterProcessor:
               raise DeyeKnownException('You can write only to master inverter')
 
             if isinstance(register.value, DeyeBaseEnum):
-              register.write(self.master_interactor, register.value.parse(value))
+              val = register.value.parse(value)
+              register.write(self.master_interactor, val)
             else:
               register.write(self.master_interactor, value)
 
