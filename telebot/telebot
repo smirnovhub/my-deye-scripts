@@ -38,8 +38,12 @@ from common_utils import (
 
 send_private_telegram_message(f'{clock_face_two_oclock_emoji} Starting telebot...')
 
+token = os.getenv('BOT_API_TOKEN', '')
+if not token:
+  token = BOT_API_TOKEN
+
 try:
-  bot = telebot.TeleBot(BOT_API_TOKEN)
+  bot = telebot.TeleBot(token)
   telebot = MyTelebot(bot)
   bot.infinity_polling()
 except Exception:
