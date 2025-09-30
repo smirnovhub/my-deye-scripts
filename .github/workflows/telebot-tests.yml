@@ -8,6 +8,7 @@ on:
 
 jobs:
   telebot-test:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -29,12 +30,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests
 
-      - name: Delay to avoid Telegram api errors
-        run: |
-          if [ "${{ matrix.python-version }}" = "3.8" ]; then echo "Sleeping for 0s..."; sleep 0; fi
-          if [ "${{ matrix.python-version }}" = "3.9" ]; then echo "Sleeping for 10s..."; sleep 10; fi
-          if [ "${{ matrix.python-version }}" = "3.10" ]; then echo "Sleeping for 20s..."; sleep 20; fi
-          if [ "${{ matrix.python-version }}" = "3.11" ]; then echo "Sleeping for 30s..."; sleep 30; fi
+      - name: Turnstyle for sequential execution
+      - uses: softprops/turnstyle@v3
 
       - name: Run tests
         env:
