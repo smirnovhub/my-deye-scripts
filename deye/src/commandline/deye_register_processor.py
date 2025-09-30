@@ -136,9 +136,10 @@ class DeyeRegisterProcessor:
               raise DeyeKnownException('You can write only to master inverter')
 
             if isinstance(register.value, DeyeBaseEnum):
-              value = register.value.parse(value)
+              register.write(self.master_interactor, register.value.parse(value))
+            else:
+              register.write(self.master_interactor, value)
 
-            register.write(self.master_interactor, value)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             suffix = f' {register.suffix}'.rstrip()
 

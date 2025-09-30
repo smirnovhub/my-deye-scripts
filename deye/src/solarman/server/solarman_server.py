@@ -159,9 +159,9 @@ class AioSolarmanServer():
     elif isinstance(func, ReadHoldingRegisters):
       if func.quantity is None or func.starting_address is None:
         raise ValueError("ReadHoldingRegisters request missing starting_address or quantity")
-      values = self.get_existing_registers_values(func.starting_address, func.quantity)
-      res = func.create_response_pdu(values)
-      new_values = self.get_new_registers_values(func.starting_address, values)
+      read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
+      res = func.create_response_pdu(read_values)
+      new_values = self.get_new_registers_values(func.starting_address, read_values)
       self.log.info(f'{self.name}: read registers {new_values}')
     elif isinstance(func, ReadInputRegisters):
       if func.quantity is None:
@@ -170,10 +170,10 @@ class AioSolarmanServer():
     elif isinstance(func, WriteMultipleRegisters):
       if func.starting_address is None or func.values is None:
         raise ValueError("ReadHoldingRegisters request missing starting_address or values")
-      values = self.get_new_registers_values(func.starting_address, func.values)
-      self.registers.update(values)
+      write_values = self.get_new_registers_values(func.starting_address, func.values)
+      self.registers.update(write_values)
       res = func.create_response_pdu()
-      self.log.info(f'{self.name}: write registers {values}')
+      self.log.info(f'{self.name}: write registers {write_values}')
     # Randomly inject Double CRC errors (see GH Issue #62)
     if random.choice([True, False]):
       return add_crc(add_crc(slave_addr + res))
