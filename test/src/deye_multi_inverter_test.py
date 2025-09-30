@@ -60,8 +60,6 @@ for logger in loggers.loggers:
     port = logger.port,
   )
 
-  print(f'logger.address = {logger.address}, logger.port = {logger.port}')
-
   servers.append(server)
 
 all_found = True
@@ -100,7 +98,7 @@ for register, value in test_registers.items():
     )
 
     output = result.stdout.strip() + result.stderr.strip()
-    print(f'Command output: {output}')
+    print(f'Command output:\n{output}')
 
     if 'exception' not in output and 'error' not in output:
       break
