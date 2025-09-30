@@ -31,8 +31,8 @@ jobs:
 
       - name: Copy single inverter loggers
         run: |
-          cp test/src/single_inverter/deye_single_inverter_test_loggers.py common/deye_loggers.py
+          cp test/src/deye_test_loggers.py common/deye_loggers.py
 
       - name: Run deye single inverter tests
         run: |
-          python -u test/src/single_inverter/deye_single_inverter_test.py
+          python -u test/src/deye_single_inverter_test.py
