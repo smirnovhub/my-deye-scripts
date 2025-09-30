@@ -38,7 +38,7 @@ jobs:
           order: ${{ matrix.python-version }}
 
       - name: Wait for lock
-        uses: rakles/matrix-lock@v1
+        uses: rakles/matrix-lock@v1.0.0
         with:
           step: wait
           id: ${{ matrix.python-version }}
