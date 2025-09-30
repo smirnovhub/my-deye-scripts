@@ -56,6 +56,7 @@ servers: List[AioSolarmanServer] = []
 
 for logger in loggers.loggers:
   server = AioSolarmanServer(
+    name = logger.name,
     address = logger.address,
     serial = logger.serial,
     port = logger.port,

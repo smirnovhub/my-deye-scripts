@@ -52,6 +52,7 @@ test_registers = {
 logger = random.choice(loggers.loggers)
 
 server = AioSolarmanServer(
+  name = logger.name,
   address = logger.address,
   serial = logger.serial,
   port = logger.port,

@@ -29,14 +29,15 @@ class AioSolarmanServer():
   """
   Async version of the test server
   """
-  def __init__(self, address: str, serial: int, port = 8899):
+  def __init__(self, name: str, address: str, serial: int, port = 8899):
+    self.name = name
     self.address = address
     self.serial = serial
     self.port = port
     self.log = logging.getLogger()
     self.expected_register_address = 0
     self.expected_register_value = 0
-    self.log.info(f"Starting AioSolarmanServer at {address} {port}")
+    self.log.info(f"{self.name}: starting AioSolarmanServer at {address} {port}")
 
     try:
       self.loop = asyncio.get_running_loop()
@@ -57,11 +58,11 @@ class AioSolarmanServer():
     )
 
   def set_expected_register_address(self, address: int):
-    self.log.info(f"Setting expected register address to {address}")
+    self.log.info(f"{self.name}: setting expected register address to {address}")
     self.expected_register_address = address
 
   def set_expected_register_value(self, value: int):
-    self.log.info(f"Setting expected register value to {value}")
+    self.log.info(f"{self.name}: setting expected register value to {value}")
     self.expected_register_value = value
 
   def sync_runner(self):
@@ -91,7 +92,7 @@ class AioSolarmanServer():
       else:
         seq_no = data[5]
         sol.sequence_number = data[5]
-        self.log.debug(f"[AioHandler] RECD: {data.hex(' ')}")
+        self.log.debug(f"{self.name}: RECD: {data.hex(' ')}")
         data = bytearray(data)
         data[3] = 0x10
         data[4] = PySolarmanV5._get_response_code(CONTROL_CODE.REQUEST)
@@ -103,9 +104,9 @@ class AioSolarmanServer():
           break
         data[-2:-1] = checksum.to_bytes(1, byteorder = "big")
         data = bytes(data)
-        self.log.debug(f"[AioHandler] DEC: {data.hex(' ')}")
+        self.log.debug(f"{self.name}: DEC: {data.hex(' ')}")
         if cl_packets == 4:
-          self.log.debug("C == 4. Writing empty bytes... Expecting reconnect")
+          self.log.debug(f"{self.name}: C == 4. Writing empty bytes... Expecting reconnect")
           writer.write(b"")
           try:
             await writer.drain()
@@ -116,14 +117,14 @@ class AioSolarmanServer():
         try:
           decoded = sol._v5_frame_decoder(data)
           enc = self.function_response_from_request(decoded)
-          self.log.debug(f'[AioHandler] Generated Raw modbus: {enc.hex(" ")}')
+          self.log.debug(f'{self.name}: Generated Raw modbus: {enc.hex(" ")}')
           enc = sol.v5_frame_response_encoder(enc)
-          self.log.debug(f'[AioHandler] Sending frame: {bytes(enc).hex(" ")}')
+          self.log.debug(f'{self.name}: Sending frame: {bytes(enc).hex(" ")}')
           writer.write(bytes(enc))
           await writer.drain()
         except V5FrameError as e:
           """Close immediately - allows testing with wrong serial numbers, sequence numbers etc."""
-          self.log.debug(f"[AioHandler] V5FrameError({' '.join(e.args)}). Closing immediately... ")
+          self.log.debug(f"{self.name}: V5FrameError({' '.join(e.args)}). Closing immediately... ")
           break
         except Exception as e:
           self.log.exception(e)
