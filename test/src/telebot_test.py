@@ -2,7 +2,12 @@ import os
 import sys
 import subprocess
 
+from pathlib import Path
+
 base_path = '../..'
+current_path = Path(__file__).parent.resolve()
+
+os.chdir(current_path)
 
 commands = [
   sys.executable,
