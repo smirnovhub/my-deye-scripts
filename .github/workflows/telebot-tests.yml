@@ -32,7 +32,7 @@ jobs:
           python -m pip install requests
 
       - name: Initialize lock
-        uses: rakles/matrix-lock@v1
+        uses: rakles/matrix-lock@v1.0.0
         with:
           step: init
           order: ${{ matrix.python-version }}
@@ -51,7 +51,7 @@ jobs:
           python -u test/src/telebot_test.py
 
       - name: Release lock
-        uses: rakles/matrix-lock@v1
+        uses: rakles/matrix-lock@v1.0.0
         with:
           step: continue
           id: ${{ matrix.python-version }}
