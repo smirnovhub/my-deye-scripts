@@ -120,7 +120,7 @@ class MyTelebot:
 
     if os.getenv('TEST_RUN', '').strip().lower() == 'true':
       print('Telebot is running')
-      time.sleep(5)
+      time.sleep(1.5)
       os._exit(0)
 
   def get_common_handlers(self, bot) -> List[TelebotBaseHandler]:
