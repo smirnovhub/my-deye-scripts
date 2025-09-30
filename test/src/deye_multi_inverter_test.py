@@ -84,6 +84,7 @@ for register, value in test_registers.items():
 
   commands = [
     sys.executable,
+    '-u',
     os.path.join(base_path, 'deye/deye'),
     f'-i {inverters}',
     f"--get-{register.name.replace('_', '-')}",
