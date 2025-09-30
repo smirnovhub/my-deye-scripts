@@ -23,12 +23,12 @@ result = subprocess.run(
   text = True,
 )
 
-output = result.stdout.lower().strip() + result.stderr.lower().strip()
+output = result.stdout.strip() + result.stderr.strip()
 print(f'Command output: {output}')
 
 str_to_find = 'telebot is running'
 
-if str_to_find in output:
+if str_to_find in output.lower():
   print(f"String '{str_to_find}' found. Test is ok")
   sys.exit(0)
 else:
