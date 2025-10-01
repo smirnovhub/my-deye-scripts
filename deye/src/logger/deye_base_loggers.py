@@ -21,6 +21,13 @@ class DeyeBaseLoggers:
   def count(self) -> int:
     return len(self.loggers)
 
+  @property
+  def is_test_loggers(self) -> bool:
+    for logger in self.loggers:
+      if logger.address != '127.0.0.1':
+        return False
+    return True
+
   def get_logger_by_name(self, name: str) -> Optional[DeyeLogger]:
     for logger in self.loggers:
       if logger.name == name:

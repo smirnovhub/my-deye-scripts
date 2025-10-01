@@ -16,5 +16,13 @@ class TemperatureDeyeRegister(BaseDeyeRegister):
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     value = interactor.read_register(self.address, self.quantity)[0]
-    value = (value - 1000) / 10
+    value = (value + self.shift) / self.scale
     return value
+
+  @property
+  def shift(self) -> int:
+    return -1000
+
+  @property
+  def scale(self) -> int:
+    return 10
