@@ -2,7 +2,7 @@ import os
 import time
 import telebot
 
-from typing import List
+from typing import List, Optional
 
 from deye_loggers import DeyeLoggers
 from telebot_users import TelebotUsers
@@ -18,6 +18,7 @@ from telebot_menu_restart import TelebotMenuRestart
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_menu_master_info import TelebotMenuMasterInfo
 from telebot_menu_slave_info import TelebotMenuSlaveInfo
+from telebot_base_test_module import TelebotBaseTestModule
 from telebot_menu_all_today_stat import TelebotMenuAllTodayStat
 from telebot_menu_all_total_stat import TelebotMenuAllTotalStat
 from telebot_menu_slave_today_stat import TelebotMenuSlaveTodayStat
@@ -32,12 +33,14 @@ from telebot_menu_revert import TelebotMenuRevert
 from telebot_menu_update import TelebotMenuUpdate
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
-from telebot_send_message import send_private_telegram_message
 from telebot_test_module import TelebotTestModule
+from testable_telebot import TestableTelebot
+from telebot_send_message import send_private_telegram_message
 
 class MyTelebot:
-  def __init__(self, bot: telebot.TeleBot):
+  def __init__(self, bot: telebot.TeleBot, test_bot: Optional[TestableTelebot]):
     self.bot = bot
+    self.test_bot = test_bot
     self.users = TelebotUsers()
     self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
@@ -119,24 +122,24 @@ class MyTelebot:
       except Exception as e:
         print(f'An exception occurred while setting command for blocking user {user.id}: {str(e)}')
 
-    if os.getenv('TEST_RUN', '').strip().lower() == 'true':
-      test_module = TelebotTestModule()
-      test_module.run_tests(bot)
+    if self.test_bot is not None:
+      for module in self.get_test_modules(self.test_bot):
+        module.run_tests()
       time.sleep(1.5)
       os._exit(0)
 
-  def get_common_handlers(self, bot) -> List[TelebotBaseHandler]:
+  def get_common_handlers(self, bot: telebot.TeleBot) -> List[TelebotBaseHandler]:
     return [
       TelebotLoggingHandler(bot),
       TelebotRunCommandFromButtonHandler(bot),
     ]
 
-  def get_default_menu_items(self, bot) -> List[TelebotMenuItemHandler]:
+  def get_default_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
     return [
       TelebotMenuRequestAccess(bot),
     ]
 
-  def get_authorized_menu_items(self, bot) -> List[TelebotMenuItemHandler]:
+  def get_authorized_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
     return [
       TelebotMenuAllInfo(bot),
       TelebotMenuMasterInfo(bot),
@@ -156,7 +159,12 @@ class MyTelebot:
       TelebotMenuUpdate(bot),
     ]
 
-  def get_writable_registers_menu_items(self, bot) -> List[TelebotMenuItemHandler]:
+  def get_writable_registers_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
     return [
       TelebotMenuWritableRegisters(bot),
+    ]
+
+  def get_test_modules(self, bot: TestableTelebot) -> List[TelebotBaseTestModule]:
+    return [
+      TelebotTestModule(bot),
     ]

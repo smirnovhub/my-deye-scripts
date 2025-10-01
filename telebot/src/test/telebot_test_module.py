@@ -3,7 +3,6 @@ import time
 import random
 import logging
 import logging
-import telebot
 
 from datetime import datetime, timedelta
 from deye_loggers import DeyeLoggers
@@ -13,9 +12,10 @@ from deye_exceptions import DeyeKnownException
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
 from telebot_fake_test_message import TelebotFakeTestMessage
+from telebot_base_test_module import TelebotBaseTestModule
 
-class TelebotTestModule:
-  def run_tests(self, bot: telebot.TeleBot):
+class TelebotTestModule(TelebotBaseTestModule):
+  def run_tests(self):
     users = TelebotUsers()
     loggers = DeyeLoggers()
     registers = DeyeRegistersFactory.create_registers()
@@ -55,7 +55,7 @@ class TelebotTestModule:
         user_id = users.allowed_users[0].id,
       )
 
-      bot.process_new_messages([fake_message])
+      self.bot.process_new_messages([fake_message])
 
       yes_message = TelebotFakeTestMessage.make(
         text = 'yes',
@@ -64,7 +64,7 @@ class TelebotTestModule:
 
       time.sleep(3)
       print('send yes')
-      bot.process_new_messages([yes_message])
+      self.bot.process_new_messages([yes_message])
 
     for register in registers.all_registers:
       if not register.can_write:
@@ -96,7 +96,7 @@ class TelebotTestModule:
         user_id = users.allowed_users[0].id,
       )
 
-      bot.process_new_messages([fake_message])
+      self.bot.process_new_messages([fake_message])
 
     time.sleep(15)
 
