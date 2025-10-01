@@ -1,4 +1,3 @@
-import struct
 import socket
 import threading
 import socketserver
@@ -7,11 +6,14 @@ import random
 import logging
 import platform
 
+from typing import Dict, List
+
 from umodbus.client.serial.redundancy_check import add_crc
 
 from umodbus.functions import (
   ReadHoldingRegisters,
   ReadInputRegisters,
+  WriteMultipleRegisters,
   ReadCoils,
   create_function_from_request_pdu,
 )
@@ -35,9 +37,8 @@ class AioSolarmanServer():
     self.serial = serial
     self.port = port
     self.log = logging.getLogger()
-    self.expected_register_address = 0
-    self.expected_register_value = 0
     self.log.info(f"{self.name}: starting AioSolarmanServer at {address} {port}")
+    self.registers: Dict[int, int] = {}
 
     try:
       self.loop = asyncio.get_running_loop()
@@ -46,6 +47,10 @@ class AioSolarmanServer():
       self.loop = asyncio.new_event_loop()
       thr = threading.Thread(target = self.sync_runner, daemon = True)
       thr.start()
+
+  def set_register_value(self, address: int, value: int):
+    self.log.info(f"{self.name}: setting register value {{{address}: {value}}}")
+    self.registers[address] = value
 
   async def start_server(self):
     await asyncio.start_server(
@@ -56,14 +61,6 @@ class AioSolarmanServer():
       reuse_address = True,
       reuse_port = False if _WIN_PLATFORM else True,
     )
-
-  def set_expected_register_address(self, address: int):
-    self.log.info(f"{self.name}: setting expected register address to {address}")
-    self.expected_register_address = address
-
-  def set_expected_register_value(self, value: int):
-    self.log.info(f"{self.name}: setting expected register value to {value}")
-    self.expected_register_value = value
 
   def sync_runner(self):
     self.loop.create_task(self.start_server())
@@ -153,10 +150,6 @@ class AioSolarmanServer():
 
   def function_response_from_request(self, req: bytes):
     func = create_function_from_request_pdu(req[2:-2])
-    if func.starting_address > 4000:
-      ex_code = random.choice([1, 2, 3, 4, 5, 6])
-      return struct.pack("<H", ex_code)
-
     slave_addr = req[1:2]
     res = b""
     if isinstance(func, ReadCoils):
@@ -164,21 +157,41 @@ class AioSolarmanServer():
         raise ValueError("ReadCoils request missing quantity")
       res = func.create_response_pdu([random.randint(0, 255) for x in range(func.quantity)])
     elif isinstance(func, ReadHoldingRegisters):
-      if func.quantity is None:
-        raise ValueError("ReadHoldingRegisters request missing quantity")
-      if self.expected_register_address == func.starting_address:
-        res = func.create_response_pdu([self.expected_register_value for x in range(func.quantity)])
-      else:
-        res = func.create_response_pdu([random.randint(0, 2**16 - 1) for x in range(func.quantity)])
+      if func.quantity is None or func.starting_address is None:
+        raise ValueError("ReadHoldingRegisters request missing starting_address or quantity")
+      read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
+      res = func.create_response_pdu(read_values)
+      new_values = self.get_new_registers_values(func.starting_address, read_values)
+      self.log.info(f'{self.name}: read registers {new_values}')
     elif isinstance(func, ReadInputRegisters):
       if func.quantity is None:
         raise ValueError("ReadInputRegisters request missing quantity")
       res = func.create_response_pdu([random.randint(0, 2**16 - 1) for x in range(func.quantity)])
+    elif isinstance(func, WriteMultipleRegisters):
+      if func.starting_address is None or func.values is None:
+        raise ValueError("ReadHoldingRegisters request missing starting_address or values")
+      write_values = self.get_new_registers_values(func.starting_address, func.values)
+      self.registers.update(write_values)
+      res = func.create_response_pdu()
+      self.log.info(f'{self.name}: write registers {write_values}')
     # Randomly inject Double CRC errors (see GH Issue #62)
     if random.choice([True, False]):
       return add_crc(add_crc(slave_addr + res))
     else:
       return add_crc(slave_addr + res)
+
+  def get_new_registers_values(self, starting_address: int, values: List[int]) -> Dict[int, int]:
+    registers: Dict[int, int] = {}
+    start = starting_address
+    for offset, value in enumerate(values):
+      registers[start + offset] = value
+    return registers
+
+  def get_existing_registers_values(self, starting_address: int, quantity: int) -> List[int]:
+    return [self.registers.get(i, 0) for i in range(
+      starting_address,
+      starting_address + quantity,
+    )]
 
   async def random_delay(self):
     await asyncio.sleep(random.randint(10, 50) / 100)

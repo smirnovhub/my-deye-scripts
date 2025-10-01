@@ -1,0 +1,39 @@
+name: write registers tests
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  write-registers-tests:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize and update submodules recursively
+        run: git submodule update --init --recursive
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests
+
+      - name: Copy loggers
+        run: |
+          cp test/src/deye_test_loggers.py common/deye_loggers.py
+
+      - name: Run tests
+        run: |
+          python -u test/src/deye_write_registers_test.py

@@ -64,13 +64,10 @@ for logger in loggers.loggers:
 
   servers.append(server)
 
-all_found = True
-
 for register, value in test_registers.items():
   total_value = 0
   for i, server in enumerate(servers):
-    server.set_expected_register_address(register.address)
-    server.set_expected_register_value(value * (i + 1))
+    server.set_register_value(register.address, value * (i + 1))
     total_value += value * (i + 1) / register.scale
 
   if register.avg_type == DeyeRegisterAverageType.average:
@@ -115,22 +112,17 @@ for register, value in test_registers.items():
     name = f'{logger.name}_{register.name} = {val} {register.suffix}'.strip()
     log.info(f"Finding '{name}'...")
     if name not in output:
-      log.info('Register or value not found')
-      all_found = False
+      log.info('Register or value not found. Test failed')
+      sys.exit(1)
     else:
       log.info('Register and value found')
 
   all_name = f'{loggers.accumulated_registers_prefix}_{register.name} = {total_val} {register.suffix}'.strip()
   log.info(f"Finding '{all_name}'...")
   if all_name not in output:
-    log.info('Register or value not found')
-    all_found = False
+    log.info('Register or value not found. Test failed')
+    sys.exit(1)
   else:
     log.info('Register and value found')
 
-if all_found:
-  log.info('All registers and values found. Test is ok')
-  sys.exit(0)
-else:
-  log.info('Some registers and/or values not found. Test failed')
-  sys.exit(1)
+log.info('All registers and values found. Test is ok')
