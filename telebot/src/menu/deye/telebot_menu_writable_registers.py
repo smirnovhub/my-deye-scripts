@@ -237,6 +237,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         value = register.value.parse(message.text)
         if register.value == value:
           raise self.get_nothing_changed_exception(register.value.pretty, suffix)
+      else:
+        value = str(message.text)
 
       if isinstance(value, DeyeBaseEnum) and value.is_unknown:
         raise DeyeValueException(f'Enum value for <b>{register.description}</b> is unknown')
