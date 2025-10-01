@@ -55,7 +55,7 @@ result = subprocess.run(
 output = result.stdout.strip() + result.stderr.strip()
 log.info(f'Command output: {output}')
 
-str_to_find = 'telebot is running'
+str_to_find = 'all tests passed'
 
 if str_to_find in output.lower():
   log.info(f"String '{str_to_find}' found. Test is ok")

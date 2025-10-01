@@ -33,6 +33,7 @@ from telebot_menu_update import TelebotMenuUpdate
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
 from telebot_send_message import send_private_telegram_message
+from telebot_test_module import TelebotTestModule
 
 class MyTelebot:
   def __init__(self, bot: telebot.TeleBot):
@@ -119,7 +120,8 @@ class MyTelebot:
         print(f'An exception occurred while setting command for blocking user {user.id}: {str(e)}')
 
     if os.getenv('TEST_RUN', '').strip().lower() == 'true':
-      print('Telebot is running')
+      test_module = TelebotTestModule()
+      test_module.run_tests(bot)
       time.sleep(1.5)
       os._exit(0)
 

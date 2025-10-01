@@ -36,14 +36,17 @@ from common_utils import (
   large_red_circle_emoji,
 )
 
-send_private_telegram_message(f'{clock_face_two_oclock_emoji} Starting telebot...')
+  send_private_telegram_message(f'{clock_face_two_oclock_emoji} Starting telebot...')
 
 token = os.getenv('BOT_API_TOKEN', '')
 if not token:
   token = BOT_API_TOKEN
 
 try:
-  bot = telebot.TeleBot(token)
+  if os.getenv('TEST_RUN', '').strip().lower() == 'true':
+    bot = TestableTelebot(token)
+  else:
+    bot = telebot.TeleBot(token)
   telebot = MyTelebot(bot)
   bot.infinity_polling()
 except Exception:
