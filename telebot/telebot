@@ -27,6 +27,7 @@ import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 import telebot
 from mytelebot import MyTelebot
+from testable_telebot import TestableTelebot
 
 from telebot_credentials import BOT_API_TOKEN
 from telebot_send_message import send_private_telegram_message
