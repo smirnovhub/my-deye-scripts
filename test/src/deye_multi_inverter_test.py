@@ -32,15 +32,20 @@ logging.basicConfig(
   datefmt = "%Y-%m-%d %H:%M:%S",
 )
 
-from deye_utils import custom_round
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
+from float_deye_register import FloatDeyeRegister
 from deye_register_average_type import DeyeRegisterAverageType
+from deye_utils import custom_round
 
 log = logging.getLogger()
 loggers = DeyeLoggers()
 registers = DeyeRegistersFactory.create_registers()
+
+if not loggers.is_test_loggers:
+  log.info('Your loggers are not test loggers')
+  sys.exit(1)
 
 max_value = int(60000 / loggers.count)
 
@@ -67,8 +72,12 @@ for logger in loggers.loggers:
 for register, value in test_registers.items():
   total_value = 0
   for i, server in enumerate(servers):
+    server.clear_registers()
     server.set_register_value(register.address, value * (i + 1))
-    total_value += value * (i + 1) / register.scale
+    if isinstance(register, FloatDeyeRegister):
+      total_value += value * (i + 1) / register.scale
+    else:
+      total_value += value * (i + 1)
 
   if register.avg_type == DeyeRegisterAverageType.average:
     total_value /= loggers.count
@@ -105,8 +114,17 @@ for register, value in test_registers.items():
     log.info('An exception occurred. Retrying...')
     time.sleep(3)
 
+  for server in servers:
+    if not server.is_registers_readed(register.address, register.quantity):
+      log.info(f"no request for read on the server side after reading '{register.name}'")
+      sys.exit(1)
+
   for i, logger in enumerate(loggers.loggers):
-    val = custom_round(value * (i + 1) / register.scale)
+    if isinstance(register, FloatDeyeRegister):
+      val = custom_round(value * (i + 1) / register.scale)
+    else:
+      val = custom_round(value * (i + 1))
+
     log.info(f"Getting '{register.name}' with expected value {val}...")
 
     name = f'{logger.name}_{register.name} = {val} {register.suffix}'.strip()
