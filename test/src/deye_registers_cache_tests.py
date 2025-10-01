@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import random
 import logging
 import subprocess
 
@@ -43,7 +44,7 @@ if not loggers.is_test_loggers:
   log.info('Your loggers are not test loggers')
   sys.exit(1)
 
-logger = loggers.master
+logger = random.choice(loggers.loggers)
 
 server = AioSolarmanServer(
   name = logger.name,
