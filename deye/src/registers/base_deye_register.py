@@ -90,10 +90,6 @@ class BaseDeyeRegister(DeyeRegister):
     return self._quantity
 
   @property
-  def scale(self) -> int:
-    return self._scale
-
-  @property
   def name(self) -> str:
     return self._name
 

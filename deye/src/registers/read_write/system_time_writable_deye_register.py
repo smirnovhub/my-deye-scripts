@@ -55,6 +55,9 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
     as_ints = [int(x) for x in re.split(r'[\-\:\s]', value)]
 
+    if as_ints[0] < 2000:
+      self.error(f'write(): year should be >= 2000')
+
     as_ints[0] -= 2000
 
     values = to_inv_time(as_ints)

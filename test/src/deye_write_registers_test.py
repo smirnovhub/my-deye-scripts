@@ -40,32 +40,9 @@ log = logging.getLogger()
 loggers = DeyeLoggers()
 registers = DeyeRegistersFactory.create_registers()
 
-test_registers = [
-  registers.ac_couple_frz_high_register,
-  registers.backup_delay_register,
-  registers.battery_gen_charge_current_register,
-  registers.battery_grid_charge_current_register,
-  registers.battery_low_batt_soc_register,
-  registers.battery_max_charge_current_register,
-  registers.battery_max_discharge_current_register,
-  registers.battery_restart_soc_register,
-  registers.battery_shutdown_soc_register,
-  registers.ct_ratio_register,
-  registers.grid_charging_start_soc_register,
-  registers.grid_connect_voltage_low_register,
-  registers.grid_connect_voltage_high_register,
-  registers.grid_reconnect_voltage_low_register,
-  registers.grid_reconnect_voltage_high_register,
-  registers.grid_reconnection_time_register,
-  registers.grid_peak_shaving_power_register,
-  registers.gen_peak_shaving_power_register,
-  registers.time_of_use_power_register,
-  registers.time_of_use_soc_register,
-  registers.zero_export_power_register,
-  registers.inverter_system_time_register,
-  registers.gen_port_mode_register,
-  registers.system_work_mode_register,
-]
+if not loggers.is_test_loggers:
+  log.info('your loggers are not test loggers')
+  sys.exit(1)
 
 logger = loggers.master
 
@@ -78,12 +55,15 @@ server = AioSolarmanServer(
 
 all_found = True
 
-for register in test_registers:
+for register in registers.all_registers:
+  if not register.can_write:
+    continue
+
   value = ''
   if isinstance(register.value, int):
     value = round(random.uniform(register.min_value, register.max_value))
   elif isinstance(register.value, float):
-    value = random.uniform(register.min_value, register.max_value)
+    value = round(random.uniform(register.min_value, register.max_value), 2)
   elif isinstance(register.value, datetime):
     start = datetime(2000, 1, 1)
     end = datetime.now()
@@ -92,6 +72,10 @@ for register in test_registers:
   elif isinstance(register.value, DeyeBaseEnum):
     valid_values = [v for v in type(register.value) if v.value >= 0]
     value = random.choice(valid_values)
+
+  server.clear_registers()
+
+  log.info(f'trying to write: {register.name} = {value}...')
 
   write_command = [
     sys.executable,
@@ -110,6 +94,10 @@ for register in test_registers:
   write_output = write_result.stdout.strip() + write_result.stderr.strip()
   log.info(f'write_output = {write_output}')
 
+  if not server.is_registers_written(register.address, register.quantity):
+    log.info(f"no changes on the server side after writing '{register.name}'")
+    sys.exit(1)
+
   read_command = [
     sys.executable,
     '-u',
@@ -126,6 +114,10 @@ for register in test_registers:
 
   read_output = read_result.stdout.strip() + read_result.stderr.strip()
   log.info(f'read_output = {read_output}')
+
+  if not server.is_registers_readed(register.address, register.quantity):
+    log.info(f"no request for read on the server side after reading '{register.name}'")
+    sys.exit(1)
 
   if write_output == read_output:
     log.info(f'write/read passed')

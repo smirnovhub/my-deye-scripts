@@ -21,14 +21,33 @@ from deye_exceptions import (
 # some code is based on githubDante / deye-controller
 # https://github.com/githubDante/deye-controller
 
-def get_long_register_value(values: List[int], divider: int) -> float:
+def from_long_register_values(values: List[int], scale: int) -> float:
   value = to_unsigned_bytes(values[::-1])
-  return int.from_bytes(value, byteorder = 'big') / divider
+  return int.from_bytes(value, byteorder = 'big') / scale
+
+def to_long_register_values(val: float, scale: int, register_count: int) -> List[int]:
+  # Convert the float value into a scaled integer (e.g. 123.45 * 100 = 12345)
+  scaled = int(round(val * scale))
+
+  # Each register is 2 bytes → total length in bytes = register_count * 2
+  byte_length = register_count * 2
+
+  # Convert the scaled integer into bytes in big-endian order
+  b = scaled.to_bytes(byte_length, byteorder = 'big')
+
+  # Split the byte sequence into 16-bit (2-byte) registers
+  regs = [int.from_bytes(b[i:i + 2], byteorder = 'big') for i in range(0, byte_length, 2)]
+
+  # Reverse the order, because from_long_register_values() expects reversed registers
+  return regs[::-1]
 
 # Convert PDU integer or list with integers to bytes (signed)
 # It's needed for a bunch of Deye registers (SN, Time, etc.)
 def to_signed(val: int) -> int:
   return struct.unpack('>h', struct.pack('>H', val))[0]
+
+def to_unsigned(val: int) -> int:
+  return struct.unpack('>H', struct.pack('>h', val))[0]
 
 # Convert PDU integer or list with integers to bytes (signed)
 # It's needed for a bunch of Deye registers (SN, Time, etc.)

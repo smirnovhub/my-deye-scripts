@@ -7,8 +7,21 @@ from pathlib import Path
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
+modules_path = (current_path / base_path / 'modules').resolve()
 
 os.chdir(current_path)
+sys.path.append(str(modules_path))
+
+from common_modules import import_dirs
+
+import_dirs(
+  current_path,
+  [
+    'src',
+    os.path.join(base_path, 'deye/src'),
+    os.path.join(base_path, 'common'),
+  ],
+)
 
 logging.basicConfig(
   level = logging.INFO,
@@ -16,7 +29,14 @@ logging.basicConfig(
   datefmt = "%Y-%m-%d %H:%M:%S",
 )
 
+from deye_test_loggers import DeyeLoggers
+
+loggers = DeyeLoggers()
 log = logging.getLogger()
+
+if not loggers.is_test_loggers:
+  log.info('Your loggers are not test loggers')
+  sys.exit(1)
 
 commands = [
   sys.executable,
@@ -35,7 +55,7 @@ result = subprocess.run(
 output = result.stdout.strip() + result.stderr.strip()
 log.info(f'Command output: {output}')
 
-str_to_find = 'telebot is running'
+str_to_find = 'all tests passed'
 
 if str_to_find in output.lower():
   log.info(f"String '{str_to_find}' found. Test is ok")

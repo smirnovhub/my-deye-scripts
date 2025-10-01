@@ -1,4 +1,4 @@
-name: telebot tests
+name: registers cache tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 jobs:
-  telebot-test:
+  registers-cache-tests:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
@@ -30,20 +30,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests
 
-      - name: Delay to avoid Telegram api errors
-        run: |
-          if [ "${{ matrix.python-version }}" = "3.8" ]; then echo "Sleeping for 0s..."; sleep 0; fi
-          if [ "${{ matrix.python-version }}" = "3.9" ]; then echo "Sleeping for 10s..."; sleep 10; fi
-          if [ "${{ matrix.python-version }}" = "3.10" ]; then echo "Sleeping for 20s..."; sleep 20; fi
-          if [ "${{ matrix.python-version }}" = "3.11" ]; then echo "Sleeping for 30s..."; sleep 30; fi
-
       - name: Copy loggers
         run: |
           cp test/src/deye_test_loggers.py common/deye_loggers.py
 
       - name: Run tests
-        env:
-          TEST_RUN: "true"
-          BOT_API_TOKEN: ${{ secrets.BOT_API_TOKEN }}
         run: |
-          python -u test/src/telebot_test.py
+          python -u test/src/deye_registers_cache_tests.py

@@ -43,10 +43,6 @@ class DeyeRegister:
     raise self.not_implemented('quantity')
 
   @property
-  def scale(self) -> int:
-    raise self.not_implemented('scale')
-
-  @property
   def name(self) -> str:
     raise self.not_implemented('name')
 

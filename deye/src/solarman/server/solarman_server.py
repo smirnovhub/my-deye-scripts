@@ -6,7 +6,7 @@ import random
 import logging
 import platform
 
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from umodbus.client.serial.redundancy_check import add_crc
 
@@ -39,6 +39,8 @@ class AioSolarmanServer():
     self.log = logging.getLogger()
     self.log.info(f"{self.name}: starting AioSolarmanServer at {address} {port}")
     self.registers: Dict[int, int] = {}
+    self.readed_registers: Set[int] = set()
+    self.written_registers: Set[int] = set()
 
     try:
       self.loop = asyncio.get_running_loop()
@@ -51,6 +53,28 @@ class AioSolarmanServer():
   def set_register_value(self, address: int, value: int):
     self.log.info(f"{self.name}: setting register value {{{address}: {value}}}")
     self.registers[address] = value
+
+  def set_register_values(self, starting_address: int, values: List[int]):
+    regs_dict = {starting_address + i: val for i, val in enumerate(values)}
+    self.log.info(f"{self.name}: setting register values {regs_dict}")
+    self.registers.update(regs_dict)
+
+  def clear_registers(self):
+    self.registers.clear()
+    self.readed_registers.clear()
+    self.written_registers.clear()
+
+  def is_registers_readed(self, starting_address: int, quantity: int):
+    for address in range(starting_address, starting_address + quantity):
+      if address not in self.readed_registers:
+        return False
+    return True
+
+  def is_registers_written(self, starting_address: int, quantity: int):
+    for address in range(starting_address, starting_address + quantity):
+      if address not in self.written_registers:
+        return False
+    return True
 
   async def start_server(self):
     await asyncio.start_server(
@@ -162,6 +186,10 @@ class AioSolarmanServer():
       read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
       res = func.create_response_pdu(read_values)
       new_values = self.get_new_registers_values(func.starting_address, read_values)
+
+      for address in new_values.keys():
+        self.readed_registers.add(address)
+
       self.log.info(f'{self.name}: read registers {new_values}')
     elif isinstance(func, ReadInputRegisters):
       if func.quantity is None:
@@ -172,6 +200,10 @@ class AioSolarmanServer():
         raise ValueError("ReadHoldingRegisters request missing starting_address or values")
       write_values = self.get_new_registers_values(func.starting_address, func.values)
       self.registers.update(write_values)
+
+      for address in write_values.keys():
+        self.written_registers.add(address)
+
       res = func.create_response_pdu()
       self.log.info(f'{self.name}: write registers {write_values}')
     # Randomly inject Double CRC errors (see GH Issue #62)

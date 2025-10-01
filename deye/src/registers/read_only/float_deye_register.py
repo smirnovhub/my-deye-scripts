@@ -22,3 +22,7 @@ class FloatDeyeRegister(BaseDeyeRegister):
   def with_scale(self, scale: int):
     self._scale = scale
     return self
+
+  @property
+  def scale(self) -> int:
+    return self._scale

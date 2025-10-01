@@ -32,6 +32,7 @@
     "src/menu/deye/registers",
     "src/menu/deye/slave",
     "src/menu/other",
+    "src/test",
     "src/users"
   ],
   "python.analysis.useImportHeuristic": true,
