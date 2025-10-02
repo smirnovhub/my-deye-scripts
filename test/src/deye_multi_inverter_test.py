@@ -37,7 +37,7 @@ from solarman_server import AioSolarmanServer
 from int_deye_register import IntDeyeRegister
 from float_deye_register import FloatDeyeRegister
 from deye_register_average_type import DeyeRegisterAverageType
-from telebot_test_helper import get_random_by_register_type
+from deye_test_helper import get_random_by_register_type
 from deye_utils import custom_round
 
 log = logging.getLogger()

@@ -34,8 +34,8 @@ logging.basicConfig(
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
-from telebot_test_helper import DeyeRegisterRandomValue
-from telebot_test_helper import get_random_by_register_type
+from deye_test_helper import DeyeRegisterRandomValue
+from deye_test_helper import get_random_by_register_type
 
 log = logging.getLogger()
 loggers = DeyeLoggers()

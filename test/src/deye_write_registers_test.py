@@ -32,7 +32,7 @@ logging.basicConfig(
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
-from telebot_test_helper import get_random_by_register_value_type
+from deye_test_helper import get_random_by_register_value_type
 
 log = logging.getLogger()
 loggers = DeyeLoggers()
@@ -64,7 +64,8 @@ for register in registers.all_registers:
 
   server.clear_registers()
 
-  log.info(f'trying to write: {register.name} = {value}...')
+  log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
+  log.info(f'Trying to write: {register.name} = {value}')
 
   write_command = [
     sys.executable,
