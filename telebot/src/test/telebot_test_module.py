@@ -73,5 +73,5 @@ class TelebotTestModule(TelebotBaseTestModule):
         print(f"No changes on the server side after writing '{register.name}'")
         os._exit(1)
 
-    print('All tests passed')
+    print('All tests passed\n')
     os._exit(0)
