@@ -57,14 +57,14 @@ server = AioSolarmanServer(
 randoms: List[DeyeRegisterRandomValue] = []
 
 for register in registers.all_registers:
+  log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
+
   random_value = get_random_by_register_type(register, randoms)
   if random_value is None:
-    log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
+    log.info(f"Register '{register.name}' is skipped")
     continue
 
   randoms.append(random_value)
-
-  log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
 
   suffix = f' {register.suffix}'.rstrip()
 

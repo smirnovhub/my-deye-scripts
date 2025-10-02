@@ -1,4 +1,5 @@
 import random
+import logging
 
 from typing import Any, List, Optional
 from datetime import datetime, timedelta
@@ -42,6 +43,8 @@ unsigned_max_value = 2**16 - 1
 signed_max_value = 2**15 - 1
 signed_min_value = -signed_max_value
 unsigned_long_max_value = 2**32 - 1
+
+log = logging.getLogger()
 
 def get_random_by_register_type(
   register: DeyeRegister,
@@ -188,7 +191,10 @@ def _handle_time_of_use_int_register(register: TimeOfUseIntWritableDeyeRegister)
   for i in range(register.quantity):
     value = random.randint(0, unsigned_max_value)
     values.append(value)
-  value = sum(values) / len(values)
+  # Without rounding, small floating-point errors (e.g. 3.334999...)
+  # cause inconsistent results, making random-based tests fail unpredictably.
+  # Rounding to 2 decimals ensures stable, repeatable test outcomes.
+  value = round(sum(values) / len(values), 2)
   return DeyeRegisterRandomValue(register, custom_round(value), values)
 
 def _handle_system_time_writable_register(register: SystemTimeWritableDeyeRegister) -> DeyeRegisterRandomValue:
@@ -257,10 +263,20 @@ def _handle_sum_register(
   randoms: List[DeyeRegisterRandomValue],
 ) -> DeyeRegisterRandomValue:
   values: List[float] = []
-  for rnd in randoms:
-    for reg in register.registers:
+
+  for reg in register.registers:
+    found = False
+    for rnd in randoms:
       if rnd.register.name == reg.name:
         values.append(float(rnd.value))
+        log.info(f"Adding value for nested register '{reg.name}' "
+                 f"with type {type(reg).__name__}: {rnd.value} {reg.suffix}")
+        found = True
+        break
+
+    if not found:
+      log.info(f"WARNING! Nested register '{reg.name}' not found")
+
   return DeyeRegisterRandomValue(register, custom_round(sum(values)), [])
 
 def get_random_by_register_value_type(register: DeyeRegister, skip_zero: bool = False) -> Optional[str]:

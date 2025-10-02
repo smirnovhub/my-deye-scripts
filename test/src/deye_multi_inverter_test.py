@@ -34,8 +34,6 @@ logging.basicConfig(
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
-from int_deye_register import IntDeyeRegister
-from float_deye_register import FloatDeyeRegister
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_test_helper import get_random_by_register_type
 from deye_utils import custom_round
@@ -61,22 +59,30 @@ for logger in loggers.loggers:
   servers.append(server)
 
 for register in registers.all_registers:
+  log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
+
   if register.avg_type not in (
       DeyeRegisterAverageType.average,
       DeyeRegisterAverageType.accumulate,
+      DeyeRegisterAverageType.only_master,
   ):
-    continue
-
-  if not isinstance(register, FloatDeyeRegister) and not isinstance(register, IntDeyeRegister):
+    log.info(f"Register '{register.name}' is skipped")
     continue
 
   total_value = 0.0
   values: List[str] = []
 
+  random_value = get_random_by_register_type(register)
+  if random_value is None:
+    continue
+
   for server in servers:
     random_value = get_random_by_register_type(register)
     server.set_register_values(random_value.register.address, random_value.values)
-    total_value += float(random_value.value)
+    try:
+      total_value += float(random_value.value)
+    except:
+      pass
     values.append(random_value.value)
 
   if register.avg_type == DeyeRegisterAverageType.average:
@@ -116,28 +122,31 @@ for register in registers.all_registers:
     time.sleep(3)
 
   for server in servers:
-    if not server.is_registers_readed(register.address, register.quantity):
-      log.info(f"No request for read on the server side after reading '{register.name}'")
-      sys.exit(1)
+    if register.avg_type != DeyeRegisterAverageType.only_master or server.name == loggers.master.name:
+      if not server.is_registers_readed(register.address, register.quantity):
+        log.info(f"No request for read on the server '{server.name}' side after reading '{register.name}'")
+        sys.exit(1)
 
   for i, logger in enumerate(loggers.loggers):
-    val = values[i]
-    log.info(f"Getting '{register.name}' with expected value {val}...")
+    if register.avg_type != DeyeRegisterAverageType.only_master or logger.name == loggers.master.name:
+      val = values[i]
+      log.info(f"Getting '{register.name}' with expected value {val}...")
 
-    name = f'{logger.name}_{register.name} = {val} {register.suffix}'.strip()
-    log.info(f"Finding '{name}'...")
-    if name not in output:
+      name = f'{logger.name}_{register.name} = {val} {register.suffix}'.strip()
+      log.info(f"Finding '{name}'...")
+      if name not in output:
+        log.info('Register or value not found. Test failed')
+        sys.exit(1)
+      else:
+        log.info('Register and value found')
+
+  if register.avg_type != DeyeRegisterAverageType.only_master:
+    all_name = f'{loggers.accumulated_registers_prefix}_{register.name} = {total_val} {register.suffix}'.strip()
+    log.info(f"Finding '{all_name}'...")
+    if all_name not in output:
       log.info('Register or value not found. Test failed')
       sys.exit(1)
     else:
       log.info('Register and value found')
-
-  all_name = f'{loggers.accumulated_registers_prefix}_{register.name} = {total_val} {register.suffix}'.strip()
-  log.info(f"Finding '{all_name}'...")
-  if all_name not in output:
-    log.info('Register or value not found. Test failed')
-    sys.exit(1)
-  else:
-    log.info('Register and value found')
 
 log.info('All registers and values found. Test is ok')
