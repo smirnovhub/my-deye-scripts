@@ -1,6 +1,5 @@
 import os
 import sys
-import random
 import logging
 import subprocess
 
@@ -30,11 +29,10 @@ logging.basicConfig(
   datefmt = "%Y-%m-%d %H:%M:%S",
 )
 
-from datetime import datetime, timedelta
 from deye_loggers import DeyeLoggers
-from deye_base_enum import DeyeBaseEnum
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
+from telebot_test_helper import get_random_by_register_value_type
 
 log = logging.getLogger()
 loggers = DeyeLoggers()
@@ -59,19 +57,10 @@ for register in registers.all_registers:
   if not register.can_write:
     continue
 
-  value = ''
-  if isinstance(register.value, int):
-    value = round(random.uniform(register.min_value, register.max_value))
-  elif isinstance(register.value, float):
-    value = round(random.uniform(register.min_value, register.max_value), 2)
-  elif isinstance(register.value, datetime):
-    start = datetime(2000, 1, 1)
-    end = datetime.now()
-    random_date = start + timedelta(seconds = random.randint(0, int((end - start).total_seconds())))
-    value = random_date.strftime("%Y-%m-%d %H:%M:%S")
-  elif isinstance(register.value, DeyeBaseEnum):
-    valid_values = [v for v in type(register.value) if v.value >= 0]
-    value = random.choice(valid_values)
+  value = get_random_by_register_value_type(register)
+  if value is None:
+    log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
+    continue
 
   server.clear_registers()
 

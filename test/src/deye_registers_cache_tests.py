@@ -89,6 +89,7 @@ register = registers.load_power_register
 value1 = 12345
 
 server.clear_registers()
+server.clear_registers_status()
 server.set_register_value(register.address, 12345)
 
 log.info(f"Getting '{register.name}'...")
@@ -106,6 +107,7 @@ if str(value1) not in output1:
 
 # second read from cache
 server.clear_registers()
+server.clear_registers_status()
 server.set_register_value(register.address, 777)
 
 output2 = execute_command(register, cache_time = 10)
@@ -125,6 +127,7 @@ time.sleep(15)
 # third read from server
 value3 = 45678
 server.clear_registers()
+server.clear_registers_status()
 server.set_register_value(register.address, value3)
 output3 = execute_command(register, cache_time = 10)
 

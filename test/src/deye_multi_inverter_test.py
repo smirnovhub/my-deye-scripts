@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-import random
 import logging
 import subprocess
 
@@ -35,8 +34,10 @@ logging.basicConfig(
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
+from int_deye_register import IntDeyeRegister
 from float_deye_register import FloatDeyeRegister
 from deye_register_average_type import DeyeRegisterAverageType
+from telebot_test_helper import get_random_by_register_type
 from deye_utils import custom_round
 
 log = logging.getLogger()
@@ -46,16 +47,6 @@ registers = DeyeRegistersFactory.create_registers()
 if not loggers.is_test_loggers:
   log.info('Your loggers are not test loggers')
   sys.exit(1)
-
-max_value = int(60000 / loggers.count)
-
-test_registers = {
-  registers.pv1_power_register: random.randint(1000, max_value),
-  registers.load_power_register: random.randint(1000, max_value),
-  registers.battery_max_charge_current_register: random.randint(1000, max_value),
-  registers.battery_voltage_register: random.randint(1000, max_value),
-  registers.grid_frequency_register: random.randint(1000, max_value),
-}
 
 servers: List[AioSolarmanServer] = []
 
@@ -69,22 +60,29 @@ for logger in loggers.loggers:
 
   servers.append(server)
 
-for register, value in test_registers.items():
-  total_value = 0
-  for i, server in enumerate(servers):
-    server.clear_registers()
-    server.set_register_value(register.address, value * (i + 1))
-    if isinstance(register, FloatDeyeRegister):
-      total_value += value * (i + 1) / register.scale
-    else:
-      total_value += value * (i + 1)
+for register in registers.all_registers:
+  if register.avg_type not in (
+      DeyeRegisterAverageType.average,
+      DeyeRegisterAverageType.accumulate,
+  ):
+    continue
+
+  if not isinstance(register, FloatDeyeRegister) and not isinstance(register, IntDeyeRegister):
+    continue
+
+  total_value = 0.0
+  values: List[str] = []
+
+  for server in servers:
+    random_value = get_random_by_register_type(register)
+    server.set_register_values(random_value.register.address, random_value.values)
+    total_value += float(random_value.value)
+    values.append(random_value.value)
 
   if register.avg_type == DeyeRegisterAverageType.average:
     total_value /= loggers.count
 
   total_val = custom_round(total_value)
-
-  time.sleep(1)
 
   inverters = ','.join(logger.name for logger in loggers.loggers)
 
@@ -96,7 +94,10 @@ for register, value in test_registers.items():
     f"--get-{register.name.replace('_', '-')}",
   ]
 
-  log.info(f'Command to execute: {commands}')
+  command_str = ' '.join(commands)
+  command_str = command_str[command_str.find('deye'):].replace('deye/deye', 'deye')
+
+  log.info(f'Command to execute: {command_str}')
 
   for i in range(10):
     result = subprocess.run(
@@ -116,15 +117,11 @@ for register, value in test_registers.items():
 
   for server in servers:
     if not server.is_registers_readed(register.address, register.quantity):
-      log.info(f"no request for read on the server side after reading '{register.name}'")
+      log.info(f"No request for read on the server side after reading '{register.name}'")
       sys.exit(1)
 
   for i, logger in enumerate(loggers.loggers):
-    if isinstance(register, FloatDeyeRegister):
-      val = custom_round(value * (i + 1) / register.scale)
-    else:
-      val = custom_round(value * (i + 1))
-
+    val = values[i]
     log.info(f"Getting '{register.name}' with expected value {val}...")
 
     name = f'{logger.name}_{register.name} = {val} {register.suffix}'.strip()
