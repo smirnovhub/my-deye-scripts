@@ -61,6 +61,8 @@ class AioSolarmanServer():
 
   def clear_registers(self):
     self.registers.clear()
+
+  def clear_registers_status(self):
     self.readed_registers.clear()
     self.written_registers.clear()
 

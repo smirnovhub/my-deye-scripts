@@ -52,7 +52,7 @@ result = subprocess.run(
   text = True,
 )
 
-output = result.stdout.strip() + result.stderr.strip()
+output = result.stdout.strip() + '\n' + result.stderr.strip()
 log.info(f'Command output: {output}')
 
 str_to_find = 'all tests passed'

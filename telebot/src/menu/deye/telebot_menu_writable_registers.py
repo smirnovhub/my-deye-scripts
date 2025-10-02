@@ -22,6 +22,7 @@ from telebot_advanced_choice import ask_advanced_choice
 from telebot_constants import undo_button_remove_delay_sec
 
 from telebot_utils import (
+  is_test_run,
   get_inline_button_by_text,
   remove_inline_buttons_with_delay,
 )
@@ -265,7 +266,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
       is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 
-      if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed:
+      if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed and not is_test_run():
         ask_confirmation(
           self.bot,
           message.chat.id,

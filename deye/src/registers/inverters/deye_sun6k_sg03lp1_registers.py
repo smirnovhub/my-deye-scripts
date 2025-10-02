@@ -227,8 +227,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       self._today_gen_energy_register,
       self._today_inverter_self_consumption_energy_register,
       self._today_load_consumption_register,
-      self._today_production_cost_register,
-      self._today_gen_energy_cost_register,
       self._today_production_register,
       self._total_battery_charged_energy_register,
       self._total_battery_discharged_energy_register,
@@ -237,10 +235,12 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       self._total_gen_energy_register,
       self._total_inverter_self_consumption_energy_register,
       self._total_load_consumption_register,
-      self._total_production_cost_register,
-      self._total_gen_energy_cost_register,
       self._total_production_register,
       self._zero_export_power_register,
+      self._today_production_cost_register,
+      self._today_gen_energy_cost_register,
+      self._total_production_cost_register,
+      self._total_gen_energy_cost_register,
     ]
 
     self._forecast_registers: List[DeyeRegister] = [

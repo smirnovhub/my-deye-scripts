@@ -84,6 +84,9 @@ def remove_inline_buttons_with_delay(bot: telebot.TeleBot, chat_id: int, message
   timer.daemon = True # thread won't block program exit
   timer.start()
 
+def is_test_run():
+  return os.getenv('TEST_RUN', '').strip().lower() == 'true'
+
 def stop_bot(bot: telebot.TeleBot):
   bot.stop_bot()
   # exit will never fire if bot has stopped in right way

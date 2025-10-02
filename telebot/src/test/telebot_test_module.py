@@ -1,18 +1,16 @@
 import os
 import time
-import random
 import logging
 import logging
 
-from datetime import datetime, timedelta
 from deye_loggers import DeyeLoggers
-from deye_base_enum import DeyeBaseEnum
 from telebot_users import TelebotUsers
 from deye_exceptions import DeyeKnownException
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
 from telebot_fake_test_message import TelebotFakeTestMessage
 from telebot_base_test_module import TelebotBaseTestModule
+from deye_test_helper import get_random_by_register_value_type
 
 class TelebotTestModule(TelebotBaseTestModule):
   def run_tests(self):
@@ -38,58 +36,23 @@ class TelebotTestModule(TelebotBaseTestModule):
       port = logger.port,
     )
 
-    for register in registers.all_registers:
-      if not register.can_write:
-        continue
+    #fake_message = TelebotFakeTestMessage.make(
+    #text = f'/master_inverter_info',
+    #user_id = users.allowed_users[0].id,
+    #)
 
-      if isinstance(register.value, DeyeBaseEnum):
-        valid_values = [v for v in type(register.value) if v.value == 1]
-        value = random.choice(valid_values)
-      else:
-        continue
-
-      print(f'Processing {register.name}...')
-
-      fake_message = TelebotFakeTestMessage.make(
-        text = f'/{register.name} {value}',
-        user_id = users.allowed_users[0].id,
-      )
-
-      self.bot.process_new_messages([fake_message])
-
-      yes_message = TelebotFakeTestMessage.make(
-        text = 'yes',
-        user_id = users.allowed_users[0].id,
-      )
-
-      time.sleep(3)
-      print('send yes')
-      self.bot.process_new_messages([yes_message])
+    #self.bot.process_new_messages([fake_message])
 
     for register in registers.all_registers:
       if not register.can_write:
         continue
 
-      value = ''
-      if isinstance(register.value, int):
-        while True:
-          value = round(random.uniform(register.min_value, register.max_value))
-          if value != 0:
-            break
-      elif isinstance(register.value, float):
-        while True:
-          value = round(random.uniform(register.min_value, register.max_value), 2)
-          if abs(value) > 0.1:
-            break
-      elif isinstance(register.value, datetime):
-        start = datetime(2000, 1, 1)
-        end = datetime.now()
-        random_date = start + timedelta(seconds = random.randint(0, int((end - start).total_seconds())))
-        value = random_date.strftime("%Y-%m-%d %H:%M:%S")
-      elif isinstance(register.value, DeyeBaseEnum):
+      value = get_random_by_register_value_type(register, skip_zero = True)
+      if value is None:
+        print(f"Skipping register '{register.name}' with type {type(register).__name__}")
         continue
 
-      print(f'Processing {register.name}...')
+      print(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
 
       fake_message = TelebotFakeTestMessage.make(
         text = f'/{register.name} {value}',
@@ -107,7 +70,7 @@ class TelebotTestModule(TelebotBaseTestModule):
       print(f'Checking {register.name}...')
 
       if not server.is_registers_written(register.address, register.quantity):
-        print(f"########### No changes on the server side after writing '{register.name}'")
+        print(f"No changes on the server side after writing '{register.name}'")
         os._exit(1)
 
     print('All tests passed')

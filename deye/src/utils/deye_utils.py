@@ -102,7 +102,7 @@ def custom_round(num: float) -> str:
       str: The rounded number as a string.
   """
   # Convert the float to a string, then to Decimal, to avoid binary float issues
-  d = Decimal(str(num))
+  d = Decimal(num)
 
   # Round to two decimal places with ROUND_HALF_UP strategy
   rounded = d.quantize(Decimal("0.01"), rounding = ROUND_HALF_UP)
@@ -179,6 +179,8 @@ def get_reraised_exception(exception: Exception, message: str) -> Exception:
     return DeyeQueueIsEmptyException(f'{message}: Queue is empty (get() timed out)')
   except NoSocketAvailableError as e:
     return DeyeNoSocketAvailableException(f'{message}: {e.__class__.__name__} ({str(e).strip(".")})')
+  except requests.exceptions.Timeout:
+    return DeyeConnectionErrorException(f'{message}: Connection timed out')
   except requests.exceptions.ConnectionError as e:
     match = re.search(r"\[Errno -?\d+\][^')]+", str(e))
     text = match.group(0) if match else str(e)

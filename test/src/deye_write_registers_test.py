@@ -1,6 +1,5 @@
 import os
 import sys
-import random
 import logging
 import subprocess
 
@@ -30,18 +29,17 @@ logging.basicConfig(
   datefmt = "%Y-%m-%d %H:%M:%S",
 )
 
-from datetime import datetime, timedelta
 from deye_loggers import DeyeLoggers
-from deye_base_enum import DeyeBaseEnum
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
+from deye_test_helper import get_random_by_register_value_type
 
 log = logging.getLogger()
 loggers = DeyeLoggers()
 registers = DeyeRegistersFactory.create_registers()
 
 if not loggers.is_test_loggers:
-  log.info('your loggers are not test loggers')
+  log.info('Your loggers are not test loggers')
   sys.exit(1)
 
 logger = loggers.master
@@ -59,23 +57,15 @@ for register in registers.all_registers:
   if not register.can_write:
     continue
 
-  value = ''
-  if isinstance(register.value, int):
-    value = round(random.uniform(register.min_value, register.max_value))
-  elif isinstance(register.value, float):
-    value = round(random.uniform(register.min_value, register.max_value), 2)
-  elif isinstance(register.value, datetime):
-    start = datetime(2000, 1, 1)
-    end = datetime.now()
-    random_date = start + timedelta(seconds = random.randint(0, int((end - start).total_seconds())))
-    value = random_date.strftime("%Y-%m-%d %H:%M:%S")
-  elif isinstance(register.value, DeyeBaseEnum):
-    valid_values = [v for v in type(register.value) if v.value >= 0]
-    value = random.choice(valid_values)
+  value = get_random_by_register_value_type(register)
+  if value is None:
+    log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
+    continue
 
   server.clear_registers()
 
-  log.info(f'trying to write: {register.name} = {value}...')
+  log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
+  log.info(f'Trying to write: {register.name} = {value}')
 
   write_command = [
     sys.executable,
@@ -85,6 +75,11 @@ for register in registers.all_registers:
     f'{value}',
   ]
 
+  command_str = ' '.join(write_command)
+  command_str = command_str[command_str.find('deye'):].replace('deye/deye', 'deye')
+
+  log.info(f'Command to execute: {command_str}')
+
   write_result = subprocess.run(
     write_command,
     capture_output = True,
@@ -92,11 +87,13 @@ for register in registers.all_registers:
   )
 
   write_output = write_result.stdout.strip() + write_result.stderr.strip()
-  log.info(f'write_output = {write_output}')
+  log.info(f'Write command output: {write_output}')
 
   if not server.is_registers_written(register.address, register.quantity):
-    log.info(f"no changes on the server side after writing '{register.name}'")
+    log.info(f"No changes on the server side after writing '{register.name}'")
     sys.exit(1)
+
+  log.info(f'Trying to read: {register.name} = {value}')
 
   read_command = [
     sys.executable,
@@ -106,6 +103,11 @@ for register in registers.all_registers:
     f"--get-{register.name.replace('_', '-')}",
   ]
 
+  command_str = ' '.join(read_command)
+  command_str = command_str[command_str.find('deye'):].replace('deye/deye', 'deye')
+
+  log.info(f'Command to execute: {command_str}')
+
   read_result = subprocess.run(
     read_command,
     capture_output = True,
@@ -113,16 +115,16 @@ for register in registers.all_registers:
   )
 
   read_output = read_result.stdout.strip() + read_result.stderr.strip()
-  log.info(f'read_output = {read_output}')
+  log.info(f'Read command output: {read_output}')
 
   if not server.is_registers_readed(register.address, register.quantity):
-    log.info(f"no request for read on the server side after reading '{register.name}'")
+    log.info(f"No request for read on the server side after reading '{register.name}'")
     sys.exit(1)
 
   if write_output == read_output:
-    log.info(f'write/read passed')
+    log.info(f'Write/read passed')
   else:
-    log.info(f"write/read failed for register '{register.name}'")
+    log.info(f"Write/read failed for register '{register.name}'")
     sys.exit(1)
 
 log.info('All registers have been written and read correctly. Test is ok')
