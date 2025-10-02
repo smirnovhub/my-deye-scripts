@@ -1,33 +1,13 @@
-from typing import List
-
 from deye_register import DeyeRegister
-from base_deye_register import BaseDeyeRegister
-from deye_modbus_interactor import DeyeModbusInteractor
-from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
+from today_energy_cost_base_register import TodayEnergyCostBaseRegister
 
-class TodayPvProductionEnergyCostRegister(BaseDeyeRegister):
-  def __init__(self,
-               pv_production_register: DeyeRegister,
-               name: str,
-               description: str,
-               avg = DeyeRegisterAverageType.none):
-    self.energy_cost = DeyeEnergyCost()
-    self._pv_production_register = pv_production_register
-    super().__init__(0, 0, name, description, self.energy_cost.currency_code, avg)
-    self._value = 0.0
-
-  @property
-  def addresses(self) -> List[int]:
-    return self._pv_production_register.addresses
-
-  def enqueue(self, interactor: DeyeModbusInteractor):
-    self._pv_production_register.enqueue(interactor)
-
-  def read(self, interactors: List[DeyeModbusInteractor]):
-    self._pv_production_register.read(interactors)
-    return super().read(interactors)
-
-  def read_internal(self, interactor: DeyeModbusInteractor):
-    production = self._pv_production_register.value
-    return round(production * self.energy_cost.current_pv_energy_cost, 2)
+class TodayPvProductionEnergyCostRegister(TodayEnergyCostBaseRegister):
+  def __init__(
+    self,
+    pv_production_register: DeyeRegister,
+    name: str,
+    description: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
+    super().__init__(pv_production_register, name, description, avg)

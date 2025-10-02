@@ -179,6 +179,8 @@ def get_reraised_exception(exception: Exception, message: str) -> Exception:
     return DeyeQueueIsEmptyException(f'{message}: Queue is empty (get() timed out)')
   except NoSocketAvailableError as e:
     return DeyeNoSocketAvailableException(f'{message}: {e.__class__.__name__} ({str(e).strip(".")})')
+  except requests.exceptions.Timeout:
+    return DeyeConnectionErrorException(f'{message}: Connection timed out')
   except requests.exceptions.ConnectionError as e:
     match = re.search(r"\[Errno -?\d+\][^')]+", str(e))
     text = match.group(0) if match else str(e)

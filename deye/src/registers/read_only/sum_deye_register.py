@@ -6,12 +6,14 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
 class SumDeyeRegister(BaseDeyeRegister):
-  def __init__(self,
-               registers: List[DeyeRegister],
-               name: str,
-               description: str,
-               suffix: str,
-               avg = DeyeRegisterAverageType.none):
+  def __init__(
+    self,
+    registers: List[DeyeRegister],
+    name: str,
+    description: str,
+    suffix: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
     super().__init__(0, 0, name, description, suffix, avg)
     self._value = 0.0
     self._registers = registers
@@ -33,8 +35,8 @@ class SumDeyeRegister(BaseDeyeRegister):
     return super().read(interactors)
 
   def read_internal(self, interactor: DeyeModbusInteractor):
-    val = 0
-    for register in self._registers:
-      val += register.value
-    value = round(val, 1) if type(val) is float else val
-    return value
+    return sum(register.value for register in self._registers)
+
+  @property
+  def registers(self) -> List[DeyeRegister]:
+    return self._registers
