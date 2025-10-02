@@ -38,33 +38,12 @@ class TelebotTestModule(TelebotBaseTestModule):
       port = logger.port,
     )
 
-    for register in registers.all_registers:
-      if not register.can_write:
-        continue
+    #fake_message = TelebotFakeTestMessage.make(
+    #text = f'/master_inverter_info',
+    #user_id = users.allowed_users[0].id,
+    #)
 
-      if isinstance(register.value, DeyeBaseEnum):
-        valid_values = [v for v in type(register.value) if v.value == 1]
-        value = random.choice(valid_values)
-      else:
-        continue
-
-      print(f'Processing {register.name}...')
-
-      fake_message = TelebotFakeTestMessage.make(
-        text = f'/{register.name} {value}',
-        user_id = users.allowed_users[0].id,
-      )
-
-      self.bot.process_new_messages([fake_message])
-
-      yes_message = TelebotFakeTestMessage.make(
-        text = 'yes',
-        user_id = users.allowed_users[0].id,
-      )
-
-      time.sleep(3)
-      print('send yes')
-      self.bot.process_new_messages([yes_message])
+    #self.bot.process_new_messages([fake_message])
 
     for register in registers.all_registers:
       if not register.can_write:
@@ -87,7 +66,8 @@ class TelebotTestModule(TelebotBaseTestModule):
         random_date = start + timedelta(seconds = random.randint(0, int((end - start).total_seconds())))
         value = random_date.strftime("%Y-%m-%d %H:%M:%S")
       elif isinstance(register.value, DeyeBaseEnum):
-        continue
+        valid_values = [v for v in type(register.value) if v.value == 1]
+        value = random.choice(valid_values)
 
       print(f'Processing {register.name}...')
 

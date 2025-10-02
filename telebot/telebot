@@ -31,6 +31,7 @@ from testable_telebot import TestableTelebot
 
 from telebot_credentials import BOT_API_TOKEN
 from telebot_send_message import send_private_telegram_message
+from telebot_utils import is_test_run
 
 from common_utils import (
   clock_face_two_oclock_emoji,
@@ -38,7 +39,7 @@ from common_utils import (
 )
 
 try:
-  if os.getenv('TEST_RUN', '').strip().lower() == 'true':
+  if is_test_run():
     token = os.getenv('BOT_API_TOKEN', '')
     bot = TestableTelebot(token)
     telebot = MyTelebot(bot, bot)
