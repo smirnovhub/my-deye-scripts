@@ -102,7 +102,7 @@ def custom_round(num: float) -> str:
       str: The rounded number as a string.
   """
   # Convert the float to a string, then to Decimal, to avoid binary float issues
-  d = Decimal(str(num))
+  d = Decimal(num)
 
   # Round to two decimal places with ROUND_HALF_UP strategy
   rounded = d.quantize(Decimal("0.01"), rounding = ROUND_HALF_UP)

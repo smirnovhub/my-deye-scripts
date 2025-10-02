@@ -24,7 +24,10 @@ class TimeOfUseIntWritableDeyeRegister(BaseDeyeRegister):
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     data = interactor.read_register(self.address, self.quantity)
-    return sum(data) / len(data)
+    # Without rounding, small floating-point errors (e.g. 3.334999...)
+    # cause inconsistent results, making random-based tests fail unpredictably.
+    # Rounding to 2 decimals ensures stable, repeatable test outcomes.
+    return round(sum(data) / len(data), 2)
 
   def write(self, interactor: DeyeModbusInteractor, value):
     try:
