@@ -39,7 +39,7 @@ loggers = DeyeLoggers()
 registers = DeyeRegistersFactory.create_registers()
 
 if not loggers.is_test_loggers:
-  log.info('your loggers are not test loggers')
+  log.info('Your loggers are not test loggers')
   sys.exit(1)
 
 logger = loggers.master
@@ -75,6 +75,11 @@ for register in registers.all_registers:
     f'{value}',
   ]
 
+  command_str = ' '.join(write_command)
+  command_str = command_str[command_str.find('deye'):].replace('deye/deye', 'deye')
+
+  log.info(f'Command to execute: {command_str}')
+
   write_result = subprocess.run(
     write_command,
     capture_output = True,
@@ -82,11 +87,13 @@ for register in registers.all_registers:
   )
 
   write_output = write_result.stdout.strip() + write_result.stderr.strip()
-  log.info(f'write_output = {write_output}')
+  log.info(f'Write command output: {write_output}')
 
   if not server.is_registers_written(register.address, register.quantity):
-    log.info(f"no changes on the server side after writing '{register.name}'")
+    log.info(f"No changes on the server side after writing '{register.name}'")
     sys.exit(1)
+
+  log.info(f'Trying to read: {register.name} = {value}')
 
   read_command = [
     sys.executable,
@@ -96,6 +103,11 @@ for register in registers.all_registers:
     f"--get-{register.name.replace('_', '-')}",
   ]
 
+  command_str = ' '.join(read_command)
+  command_str = command_str[command_str.find('deye'):].replace('deye/deye', 'deye')
+
+  log.info(f'Command to execute: {command_str}')
+
   read_result = subprocess.run(
     read_command,
     capture_output = True,
@@ -103,16 +115,16 @@ for register in registers.all_registers:
   )
 
   read_output = read_result.stdout.strip() + read_result.stderr.strip()
-  log.info(f'read_output = {read_output}')
+  log.info(f'Read command output: {read_output}')
 
   if not server.is_registers_readed(register.address, register.quantity):
-    log.info(f"no request for read on the server side after reading '{register.name}'")
+    log.info(f"No request for read on the server side after reading '{register.name}'")
     sys.exit(1)
 
   if write_output == read_output:
-    log.info(f'write/read passed')
+    log.info(f'Write/read passed')
   else:
-    log.info(f"write/read failed for register '{register.name}'")
+    log.info(f"Write/read failed for register '{register.name}'")
     sys.exit(1)
 
 log.info('All registers have been written and read correctly. Test is ok')
