@@ -26,7 +26,7 @@ class DeyeRegistersHolder:
   def __init__(
     self,
     loggers: List[DeyeLogger],
-    register_creator: Callable[[str], DeyeRegisters],
+    register_creator: Optional[Callable[[str], DeyeRegisters]] = None,
     **kwargs,
   ):
     self._registers: Dict[str, DeyeRegisters] = {}
@@ -46,7 +46,7 @@ class DeyeRegistersHolder:
       interactor = DeyeModbusInteractor(logger = logger, **self.kwargs)
       self._interactors.append(interactor)
 
-      if register_creator != None:
+      if register_creator is not None:
         self._registers[logger.name] = register_creator(logger.name)
       else:
         self._registers[logger.name] = DeyeRegistersFactory.create_registers(prefix = logger.name)
@@ -54,7 +54,7 @@ class DeyeRegistersHolder:
       if interactor.is_master:
         self._master_interactor = interactor
 
-    if register_creator != None:
+    if register_creator is not None:
       accumulated_registers = register_creator(self._all_loggers.accumulated_registers_prefix)
     else:
       accumulated_registers = DeyeRegistersFactory.create_registers(
