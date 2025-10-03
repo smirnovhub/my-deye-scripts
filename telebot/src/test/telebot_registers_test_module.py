@@ -7,17 +7,11 @@ from typing import Callable, List
 from deye_loggers import DeyeLoggers
 from telebot_menu_item import TelebotMenuItem
 from telebot_users import TelebotUsers
-from deye_exceptions import DeyeKnownException
 from solarman_server import AioSolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_registers import DeyeRegisters
-from deye_loggers import DeyeLoggers
-from solarman_server import AioSolarmanServer
 from telebot_fake_test_message import TelebotFakeTestMessage
-from deye_loggers import DeyeLoggers
-from deye_exceptions import DeyeKnownException
-from telebot_menu_item import TelebotMenuItem
 from deye_registers_holder import DeyeRegistersHolder
 from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
 from deye_test_helper import get_random_by_register_type
@@ -41,7 +35,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     users = TelebotUsers()
 
     if not self.loggers.is_test_loggers:
-      raise DeyeKnownException('Your loggers are not test loggers')
+      self.error('Your loggers are not test loggers')
 
     holder = self._init_registers(servers)
 
@@ -123,9 +117,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
         continue
 
       if not self.bot.is_messages_contains(self.name):
-        msg = f"Messages don't contain expected inverter name '{self.name}'"
-        self.log.info(msg)
-        raise DeyeKnownException(msg)
+        self.error(f"Messages don't contain expected inverter name '{self.name}'")
 
       desc = register.description.replace('Inverter ', '')
       desc = desc.replace('Grid Charging Start SOC', 'Max Charge SOC')
@@ -140,4 +132,4 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
         found = False
 
     if not found:
-      raise DeyeKnownException('Some registers info not found')
+      self.error('Some registers info not found')

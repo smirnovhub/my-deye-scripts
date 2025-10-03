@@ -5,7 +5,6 @@ from typing import List, Optional
 
 from deye_loggers import DeyeLoggers
 from telebot_users import TelebotUsers
-from deye_exceptions import DeyeKnownException
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
 from telebot_fake_test_message import TelebotFakeTestMessage
@@ -24,7 +23,7 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
     log = logging.getLogger()
 
     if not loggers.is_test_loggers:
-      raise DeyeKnownException('Your loggers are not test loggers')
+      self.error('Your loggers are not test loggers')
 
     server: Optional[AioSolarmanServer] = None
 
@@ -34,7 +33,8 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
         break
 
     if server is None:
-      raise DeyeKnownException(f'Unable to find server with name {loggers.master.name}')
+      self.error(f'Unable to find server with name {loggers.master.name}')
+      return
 
     server.clear_registers()
     server.clear_registers_status()
@@ -67,4 +67,4 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
       log.info(f'Checking {register.name}...')
 
       if not server.is_registers_written(register.address, register.quantity):
-        raise DeyeKnownException(f"No changes on the server side after writing '{register.name}'")
+        self.error(f"No changes on the server side after writing '{register.name}'")

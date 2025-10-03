@@ -8,16 +8,10 @@ from typing import List, Optional
 from deye_loggers import DeyeLoggers
 from telebot_menu_item import TelebotMenuItem
 from telebot_users import TelebotUsers
-from deye_exceptions import DeyeKnownException
 from solarman_server import AioSolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
-from deye_loggers import DeyeLoggers
-from solarman_server import AioSolarmanServer
 from telebot_fake_test_message import TelebotFakeTestMessage
-from deye_loggers import DeyeLoggers
-from deye_exceptions import DeyeKnownException
-from telebot_menu_item import TelebotMenuItem
 from deye_registers_factory import DeyeRegistersFactory
 
 class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
@@ -31,7 +25,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     users = TelebotUsers()
 
     if not self.loggers.is_test_loggers:
-      raise DeyeKnownException('Your loggers are not test loggers')
+      self.error('Your loggers are not test loggers')
 
     for server in servers:
       server.clear_registers()
@@ -99,6 +93,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
 
     if master_server is None:
       self.error('Master server not found')
+      return
 
     if not master_server.is_registers_written(register.address, register.quantity):
       self.error(f"No changes on the server side after writing '{register.name}'")
