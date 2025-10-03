@@ -3,6 +3,8 @@ import logging
 from typing import List
 
 from deye_loggers import DeyeLoggers
+from all_settings_registers import AllSettingsRegisters
+from master_settings_registers import MasterSettingsRegisters
 from telebot_menu_item import TelebotMenuItem
 from accumulated_info_registers import AccumulatedInfoRegisters
 from slave_info_registers import SlaveInfoRegisters
@@ -102,6 +104,18 @@ class TeleTest:
         name = self.loggers.accumulated_registers_prefix,
         command = TelebotMenuItem.deye_master_total_stat,
         register_creator = lambda prefix: TotalStatRegisters(prefix),
+      ),
+      TelebotRegistersTestModule(
+        bot,
+        name = self.loggers.accumulated_registers_prefix,
+        command = TelebotMenuItem.deye_all_settings,
+        register_creator = lambda prefix: AllSettingsRegisters(prefix),
+      ),
+      TelebotRegistersTestModule(
+        bot,
+        name = self.loggers.master.name,
+        command = TelebotMenuItem.deye_master_settings,
+        register_creator = lambda prefix: MasterSettingsRegisters(prefix),
       ),
       TelebotRegistersTestModule(
         bot,
