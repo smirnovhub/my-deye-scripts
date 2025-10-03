@@ -101,19 +101,11 @@ class AioSolarmanServer():
     :return:
     """
     sol = MockDatalogger("0.0.0.0", serial = self.serial, auto_reconnect = False)
-    count_packet = bytes.fromhex("a5010010478d69b5b50aa2006415")
-    non_v5_packet = bytes.fromhex("41542b595a434d505645523d4d57335f3136555f353430365f322e32370d0a0d0a")
-    gibberish = bytes.fromhex("aa030a00000000000000000000be9c")
-    more_gibberish = bytes.fromhex("0103080100020232333038c75c")
-    cl_packets = 0
-
     while True:
       data = await reader.read(1024)
-      cl_packets += 1
       if data == b"":
         break
       else:
-        seq_no = data[5]
         sol.sequence_number = data[5]
         self.log.debug(f"{self.name}: RECD: {data.hex(' ')}")
         data = bytearray(data)
@@ -128,15 +120,7 @@ class AioSolarmanServer():
         data[-2:-1] = checksum.to_bytes(1, byteorder = "big")
         data = bytes(data)
         self.log.debug(f"{self.name}: DEC: {data.hex(' ')}")
-        if cl_packets == 4:
-          self.log.debug(f"{self.name}: C == 4. Writing empty bytes... Expecting reconnect")
-          writer.write(b"")
-          try:
-            await writer.drain()
-            break
-          except:
-            self.log.error("Connection closed......")
-            break
+
         try:
           decoded = sol._v5_frame_decoder(data)
           enc = self.function_response_from_request(decoded)
@@ -152,21 +136,7 @@ class AioSolarmanServer():
         except Exception as e:
           self.log.exception(e)
           writer.write(data)
-        if cl_packets == 3:
-          # Write counter packet and wait some time to be consumed
-          await self.random_delay()
-          writer.write(count_packet)
-          await writer.drain()
-          await self.random_delay()
-          writer.write(gibberish)
-          await writer.drain()
-          await self.random_delay()
-          writer.write(non_v5_packet)
-          await writer.drain()
-          await self.random_delay()
-          writer.write(more_gibberish)
-          await writer.drain()
-          await self.random_delay()
+
     try:
       writer.write(b"")
       await writer.drain()
@@ -226,6 +196,3 @@ class AioSolarmanServer():
       starting_address,
       starting_address + quantity,
     )]
-
-  async def random_delay(self):
-    await asyncio.sleep(random.randint(10, 50) / 100)
