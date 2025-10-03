@@ -37,6 +37,10 @@ jobs:
           if [ "${{ matrix.python-version }}" = "3.10" ]; then echo "Sleeping for 20s..."; sleep 20; fi
           if [ "${{ matrix.python-version }}" = "3.11" ]; then echo "Sleeping for 30s..."; sleep 30; fi
 
+      - name: Git pull
+        run: |
+          git pull
+
       - name: Copy loggers
         run: |
           cp test/src/deye_test_loggers.py common/deye_loggers.py
