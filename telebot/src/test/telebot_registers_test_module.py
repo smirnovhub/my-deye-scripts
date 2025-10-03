@@ -94,7 +94,6 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
         continue
 
       desc = register.description.replace('Inverter ', '')
-      desc = desc.replace('Grid Charging Start SOC', 'Max Charge SOC')
 
       suffix = f' {register.suffix}'.rstrip()
       info = f'{desc}: {register.pretty_value}{suffix}'
