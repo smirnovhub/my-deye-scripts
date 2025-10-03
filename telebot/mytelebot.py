@@ -1,6 +1,6 @@
 import telebot
 
-from typing import List, Optional
+from typing import List
 
 from deye_loggers import DeyeLoggers
 from telebot_users import TelebotUsers
@@ -35,9 +35,8 @@ from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonH
 from telebot_send_message import send_private_telegram_message
 
 class MyTelebot:
-  def __init__(self, bot: telebot.TeleBot, test_bot: Optional[TestableTelebot]):
+  def __init__(self, bot: telebot.TeleBot):
     self.bot = bot
-    self.test_bot = test_bot
     self.users = TelebotUsers()
     self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
@@ -119,8 +118,8 @@ class MyTelebot:
       except Exception as e:
         print(f'An exception occurred while setting command for blocking user {user.id}: {str(e)}')
 
-    if self.test_bot is not None:
-      teleTest = TeleTest(self.test_bot)
+    if isinstance(self.bot, TestableTelebot):
+      teleTest = TeleTest(self.bot)
       teleTest.run_tests()
 
   def get_common_handlers(self, bot: telebot.TeleBot) -> List[TelebotBaseHandler]:
