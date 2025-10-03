@@ -49,6 +49,7 @@ jobs:
           python -u test/src/telebot_test.py
 
       - name: Print log
+        if: always()
         run: |
           ls -laR
           cat telebot.log
