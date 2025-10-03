@@ -74,7 +74,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       ask_advanced_choice(
         self.bot,
         message.chat.id,
-        f"You are currently on branch '{branch_name}'\n"
+        f"You are currently on branch '{branch_name}'.\n"
         'Enter commit hash to revert to:',
         {
           item: f"/revert {hash}"
