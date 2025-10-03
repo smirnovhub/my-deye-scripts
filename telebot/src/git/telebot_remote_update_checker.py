@@ -24,6 +24,11 @@ class TelebotRemoteUpdateChecker:
     ensure_file_exists(self.ask_file_name)
 
   def is_on_branch(self):
+    last_ask_time = self._load_last_remote_update_ask_time()
+    if time.time() - last_ask_time < git_repository_remote_check_period_sec:
+      # Too soon since the last check; skip
+      return True
+
     try:
       return get_current_branch_name() != 'HEAD'
     except Exception:
