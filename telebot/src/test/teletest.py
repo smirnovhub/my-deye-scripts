@@ -11,10 +11,11 @@ from testable_telebot import TestableTelebot
 from solarman_server import AioSolarmanServer
 from forecast_registers import ForecastRegisters
 from master_info_registers import MasterInfoRegisters
-from telebot_writable_registers_test_module import TelebotWritableRegistersTestModule
 from telebot_registers_test_module import TelebotRegistersTestModule
 from today_stat_registers import TodayStatRegisters
 from total_stat_registers import TotalStatRegisters
+from telebot_inverter_time_sync_test_module import TelebotInverterTimeSyncTestModule
+from telebot_writable_registers_test_module import TelebotWritableRegistersTestModule
 
 class TeleTest:
   def __init__(self, bot: TestableTelebot):
@@ -65,6 +66,7 @@ class TeleTest:
   def _get_test_modules(self, bot: TestableTelebot) -> List[TelebotBaseTestModule]:
     modules: List[TelebotBaseTestModule] = [
       TelebotWritableRegistersTestModule(bot),
+      TelebotInverterTimeSyncTestModule(bot),
       TelebotRegistersTestModule(
         bot,
         name = self.loggers.accumulated_registers_prefix,

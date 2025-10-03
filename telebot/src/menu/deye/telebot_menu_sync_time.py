@@ -56,11 +56,15 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         parse_mode = 'HTML')
       return
 
+    kwargs = holder_kwargs.copy()
+    if is_test_run():
+      kwargs['caching_time'] = 0
+
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomRegisters([self.register], prefix),
-      **holder_kwargs,
+      **kwargs,
     )
 
     def log_retry(attempt, exception):
@@ -127,7 +131,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         finally:
           holder.disconnect()
 
-        text = f'<b>{self.register.description}</b> changed to {result} {self.register.suffix}'
+        text = f'<b>{self.register.description}</b> changed from {old_value} to {result} {self.register.suffix}'
 
         sent = ask_advanced_choice(
           self.bot,

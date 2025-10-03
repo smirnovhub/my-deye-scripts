@@ -1,4 +1,5 @@
 import logging
+import re
 import telebot
 
 from typing import List, Optional, Union
@@ -22,6 +23,12 @@ class TestableTelebot(telebot.TeleBot):
   def is_messages_contains(self, text: str) -> bool:
     for message in self.messages:
       if text.lower() in message.lower():
+        return True
+    return False
+
+  def is_messages_contains_regex(self, pattern: str) -> bool:
+    for message in self.messages:
+      if re.search(pattern, message, flags = re.IGNORECASE):
         return True
     return False
 
