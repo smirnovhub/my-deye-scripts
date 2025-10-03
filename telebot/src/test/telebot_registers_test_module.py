@@ -54,6 +54,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     )
 
     self.log.info(f'Run regular command: {command}')
+    self.bot.clear_messages()
     self.bot.process_new_messages([fake_message])
 
     time.sleep(1)
@@ -71,6 +72,9 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     )
 
     holder = self._init_registers(servers)
+    time.sleep(1)
+
+    self.bot.clear_messages()
     self.bot.process_new_callback_query([fake_query])
 
     time.sleep(1)
@@ -117,6 +121,11 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     for register in holder.all_registers[self.name].all_registers:
       if isinstance(register, SystemTimeDiffDeyeRegister):
         continue
+
+      if not self.bot.is_messages_contains(self.name):
+        msg = f"Messages don't contain expected inverter name '{self.name}'"
+        self.log.info(msg)
+        raise DeyeKnownException(msg)
 
       desc = register.description.replace('Inverter ', '')
       desc = desc.replace('Grid Charging Start SOC', 'Max Charge SOC')

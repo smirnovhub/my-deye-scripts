@@ -54,7 +54,11 @@ class TeleTest:
       print('All tests passed')
       log.info('All tests passed')
     except Exception as e:
-      msg = f'An exception occurred while running {type(module).__name__}: {str(e)}'
+      info = ''
+      if isinstance(module, TelebotRegistersTestModule):
+        info = (f'(name = {module.name}, command = {module.command}, '
+                f'register_creator = {type(module.register_creator(module.name)).__name__})')
+      msg = f'An exception occurred while running {type(module).__name__}{info}: {str(e)}'
       print(msg)
       log.info(msg)
 

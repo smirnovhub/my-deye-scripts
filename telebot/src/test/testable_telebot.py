@@ -21,7 +21,7 @@ class TestableTelebot(telebot.TeleBot):
 
   def is_messages_contains(self, text: str) -> bool:
     for message in self.messages:
-      if text in message:
+      if text.lower() in message.lower():
         return True
     return False
 

@@ -51,7 +51,8 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
     try:
       current_register = holder.accumulated_registers.battery_current_register
 
-      result = get_register_values(holder.accumulated_registers.all_registers)
+      result = f'<b>Inverter: {self.loggers.accumulated_registers_prefix}</b>'
+      result += get_register_values(holder.accumulated_registers.all_registers)
 
       if abs(current_register.value) < 0.1:
         self.bot.send_message(message.chat.id, '<b>Battery is in idle mode</b>', parse_mode = 'HTML')
