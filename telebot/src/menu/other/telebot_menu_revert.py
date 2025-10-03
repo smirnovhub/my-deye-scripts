@@ -35,6 +35,10 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
+    if not self.remote_update_checker.is_on_branch():
+      self.bot.send_message(message.chat.id, 'Unable to revert: the repository is not currently on a branch')
+      return
+
     try:
       if not is_repository_up_to_date():
         last_commit = get_last_commit_hash_and_comment()

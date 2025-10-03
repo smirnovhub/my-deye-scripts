@@ -120,6 +120,12 @@ def revert_to_revision(commit_hash: str) -> str:
   except Exception as e:
     raise TelebotGitException(f'git reset --hard failed: {str(e)}')
 
+def get_current_branch_name() -> str:
+  return _run_git_command_and_get_result(
+    ["git", "-C", _current_dir, "rev-parse", "--abbrev-ref", "HEAD"],
+    'rev-parse --abbrev-ref HEAD',
+  )
+
 def get_last_commit_hash() -> str:
   return _run_git_command_and_get_result(
     ["git", "-C", _current_dir, "rev-parse", "HEAD"],

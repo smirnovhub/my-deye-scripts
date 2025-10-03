@@ -6,6 +6,7 @@ from deye_file_with_lock import DeyeFileWithLock
 from deye_utils import ensure_file_exists
 from telebot_advanced_choice import ask_advanced_choice
 from telebot_git_helper import is_repository_up_to_date
+from telebot_git_helper import get_current_branch_name
 from telebot_constants import git_repository_remote_check_period_sec
 
 class TelebotRemoteUpdateChecker:
@@ -21,6 +22,12 @@ class TelebotRemoteUpdateChecker:
     self.locker = DeyeFileWithLock()
     self.ask_file_name = 'data/last_remote_update_ask_time.txt'
     ensure_file_exists(self.ask_file_name)
+
+  def is_on_branch(self):
+    try:
+      return get_current_branch_name() != 'HEAD'
+    except Exception:
+      return False
 
   def check_for_remote_updates(self, bot: telebot.TeleBot, message: telebot.types.Message) -> bool:
     """

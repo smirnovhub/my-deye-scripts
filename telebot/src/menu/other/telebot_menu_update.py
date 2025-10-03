@@ -31,6 +31,10 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
+    if not self.remote_update_checker.is_on_branch():
+      self.bot.send_message(message.chat.id, 'Unable to update: the repository is not currently on a branch')
+      return
+
     current_dir = os.path.dirname(__file__)
 
     try:
