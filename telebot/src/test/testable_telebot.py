@@ -6,16 +6,35 @@ from typing import List, Optional, Union
 from telebot_fake_test_message import TelebotFakeTestMessage
 
 class TestableTelebot(telebot.TeleBot):
+  """
+  A test-friendly subclass of `telebot.TeleBot` for unit testing and
+  simulating Telegram bot behavior without sending real messages.
+
+  This class overrides message sending, editing, and deletion methods to:
+    - Log actions instead of performing network calls.
+    - Store sent message texts internally for test assertions.
+    - Provide simple fake responses mimicking Telegram API objects.
+
+  Features
+  --------
+  - `messages`: a list of all message texts sent during testing.
+  - `clear_messages()`: clears the stored messages.
+  - `is_messages_contains(text)`: checks if any sent message contains the given text.
+  - `is_messages_contains_regex(pattern)`: checks if any sent message matches a regex pattern.
+  - Overrides `send_message`, `send_photo`, `send_document`, `send_audio`, `send_video`
+    to avoid real network calls while logging actions.
+  - Overrides `edit_message_text`, `edit_message_reply_markup`, `delete_message`,
+    `answer_callback_query` for test-friendly logging and return values.
+
+  Notes
+  -----
+  - Intended solely for testing and development; does not communicate with Telegram.
+  - `TelebotFakeTestMessage` is used to simulate `Message` objects returned by `send_message`.
+  """
   def __init__(self, token: str):
     super().__init__(token)
     self.messages: List[str] = []
     self.log = logging.getLogger()
-
-  """
-  TeleBot subclass for offline testing.
-  All outgoing API calls are blocked.
-  process_new_messages still works normally.
-  """
 
   def clear_messages(self):
     self.messages.clear()
@@ -40,24 +59,24 @@ class TestableTelebot(telebot.TeleBot):
     *args,
     **kwargs,
   ) -> telebot.types.Message:
-    self.log.info(f"[BLOCKED SEND_MESSAGE] chat_id = {chat_id}, text =\n{text}")
+    self.log.info(f"[send_message] chat_id = {chat_id}, text =\n{text}")
     self.messages.append(text)
     return TelebotFakeTestMessage.make(text = text)
 
   def send_photo(self, *args, **kwargs):
-    self.log.info("[BLOCKED SEND_PHOTO]")
+    self.log.info("[send_photo]")
     return None
 
   def send_document(self, *args, **kwargs):
-    self.log.info("[BLOCKED SEND_DOCUMENT]")
+    self.log.info("[send_document]")
     return None
 
   def send_audio(self, *args, **kwargs):
-    self.log.info("[BLOCKED SEND_AUDIO]")
+    self.log.info("[send_audio]")
     return None
 
   def send_video(self, *args, **kwargs):
-    self.log.info("[BLOCKED SEND_VIDEO]")
+    self.log.info("[send_video]")
     return None
 
   # --- Edit message ---
@@ -69,7 +88,7 @@ class TestableTelebot(telebot.TeleBot):
     *args,
     **kwargs,
   ):
-    self.log.info(f"[BLOCKED EDIT_MESSAGE_TEXT] chat={chat_id}, message_id={message_id}, text={text}")
+    self.log.info(f"[edit_message_text] chat={chat_id}, message_id={message_id}, text={text}")
     return None
 
   def edit_message_reply_markup(
@@ -81,7 +100,7 @@ class TestableTelebot(telebot.TeleBot):
     **kwargs,
   ) -> Union[telebot.types.Message, bool]:
     self.log.info(
-      f"[BLOCKED EDIT_MESSAGE_REPLY_MARKUP] chat = {chat_id}, message_id = {message_id}, inline_message_id = {inline_message_id}"
+      f"[edit_message_reply_markup] chat = {chat_id}, message_id = {message_id}, inline_message_id = {inline_message_id}"
     )
     return True
 
@@ -93,7 +112,7 @@ class TestableTelebot(telebot.TeleBot):
     *args,
     **kwargs,
   ) -> bool:
-    self.log.info(f"[BLOCKED DELETE_MESSAGE] chat = {chat_id}, message_id = {message_id}")
+    self.log.info(f"[delete_message] chat = {chat_id}, message_id = {message_id}")
     return True
 
   def answer_callback_query(
@@ -103,6 +122,5 @@ class TestableTelebot(telebot.TeleBot):
     *args,
     **kwargs,
   ):
-    """Block answer_callback_query to prevent network requests."""
-    self.log.info(f"[BLOCKED ANSWER_CALLBACK_QUERY] id = {callback_query_id}, text = {text}")
+    self.log.info(f"[answer_callback_query] id = {callback_query_id}, text = {text}")
     return True
