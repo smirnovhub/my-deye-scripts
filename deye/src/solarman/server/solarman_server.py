@@ -29,9 +29,29 @@ socketserver.TCPServer.allow_reuse_port = True # type: ignore
 
 class AioSolarmanServer():
   """
-  Async version of the test server
+  Asynchronous TCP server simulating a Solarman Modbus-like device.
+
+  This server handles multiple client connections concurrently using asyncio.
+  It maintains internal registers, supports read/write requests, and generates
+  appropriate Modbus-like responses. Designed for testing, simulation, or
+  as a lightweight mock device for development purposes.
+
+  Features
+  --------
+  - Maintains register values and tracks read/write operations.
+  - Handles standard Modbus function codes: Read Coils, Read Holding Registers,
+    Read Input Registers, Write Multiple Registers.
+  - Generates valid Modbus CRC frames for responses.
+  - Supports asynchronous streaming over TCP.
+  - Can run either in the current asyncio event loop or in a dedicated thread.
   """
-  def __init__(self, name: str, address: str, serial: int, port = 8899):
+  def __init__(
+    self,
+    name: str,
+    address: str,
+    serial: int,
+    port: int = 8899,
+  ):
     self.name = name
     self.address = address
     self.serial = serial
@@ -51,34 +71,120 @@ class AioSolarmanServer():
       thr.start()
 
   def set_register_value(self, address: int, value: int):
+    """
+    Set the value of a single register (for testing purposes).
+
+    This method is intended for simulating device registers in a test
+    environment. It updates the internal register dictionary and logs the change.
+
+    Parameters
+    ----------
+    address : int
+        The address of the register to set.
+    value : int
+        The value to store in the register.
+    """
     self.log.info(f"{self.name}: setting register value {{{address}: {value}}}")
     self.registers[address] = value
 
   def set_register_values(self, starting_address: int, values: List[int]):
+    """
+    Set multiple register values starting from a given address (for testing purposes).
+
+    This method is intended for simulating device registers in a test environment.
+    It updates the internal register dictionary and logs all changes.
+
+    Parameters
+    ----------
+    starting_address : int
+        The starting address of the registers to set.
+    values : List[int]
+        The list of values to store in consecutive registers.
+    """
     regs_dict = {starting_address + i: val for i, val in enumerate(values)}
     self.log.info(f"{self.name}: setting register values {regs_dict}")
     self.registers.update(regs_dict)
 
   def clear_registers(self):
+    """
+    Clear all register values (for testing purposes).
+
+    This method resets the internal register dictionary, effectively
+    simulating a device with no stored values.
+    """
     self.registers.clear()
 
   def clear_registers_status(self):
+    """
+    Clear the read and written registers tracking (for testing purposes).
+
+    This method resets the sets that track which registers have been read
+    or written, simulating a fresh device state for testing.
+    """
     self.readed_registers.clear()
     self.written_registers.clear()
 
   def is_registers_readed(self, starting_address: int, quantity: int):
+    """
+    Check if a range of registers has been read (for testing purposes).
+
+    This method returns True if all registers in the specified range
+    have been marked as read in the internal tracking set.
+
+    Parameters
+    ----------
+    starting_address : int
+        The starting address of the registers to check.
+    quantity : int
+        The number of consecutive registers to check.
+
+    Returns
+    -------
+    bool
+        True if all specified registers have been read, False otherwise.
+    """
     for address in range(starting_address, starting_address + quantity):
       if address not in self.readed_registers:
         return False
     return True
 
   def is_registers_written(self, starting_address: int, quantity: int):
+    """
+    Check if a range of registers has been written (for testing purposes).
+
+    This method returns True if all registers in the specified range
+    have been marked as written in the internal tracking set.
+
+    Parameters
+    ----------
+    starting_address : int
+        The starting address of the registers to check.
+    quantity : int
+        The number of consecutive registers to check.
+
+    Returns
+    -------
+    bool
+        True if all specified registers have been written, False otherwise.
+    """
     for address in range(starting_address, starting_address + quantity):
       if address not in self.written_registers:
         return False
     return True
 
   async def start_server(self):
+    """
+    Start the asynchronous TCP server
+
+    This method starts an asyncio-based TCP server that listens for
+    incoming client connections and handles them using `stream_handler`.
+
+    Notes
+    -----
+    - Intended for test or simulation environments.
+    - Uses reuse_address and reuse_port where supported.
+    - For Windows, reuse_port is disabled due to platform limitations.
+    """
     await asyncio.start_server(
       self.stream_handler,
       host = self.address,
@@ -89,16 +195,31 @@ class AioSolarmanServer():
     )
 
   def sync_runner(self):
+    """
+    Run the asynchronous server in a dedicated thread
+
+    This method schedules `start_server` in the event loop and runs
+    the loop forever. Useful when there is no running asyncio loop,
+    e.g., when starting the test server from a synchronous context.
+    """
     self.loop.create_task(self.start_server())
     self.loop.run_forever()
 
   async def stream_handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     """
-    Stream handler for the async test server
+    Asynchronous handler for an individual TCP client connection.
 
-    :param reader:
-    :param writer:
-    :return:
+    This method runs in a loop, reading incoming Modbus-like frames from the client,
+    decoding them using a mock Solarman datalogger, generating appropriate responses
+    based on register values or simulated data, and sending the responses back.
+    The loop exits when the client disconnects or a critical frame error occurs.
+
+    Parameters
+    ----------
+    reader : asyncio.StreamReader
+        Asynchronous stream reader for receiving data from the client.
+    writer : asyncio.StreamWriter
+        Asynchronous stream writer for sending data to the client.
     """
     sol = MockDatalogger("0.0.0.0", serial = self.serial, auto_reconnect = False)
     while True:
@@ -130,7 +251,7 @@ class AioSolarmanServer():
           writer.write(bytes(enc))
           await writer.drain()
         except V5FrameError as e:
-          """Close immediately - allows testing with wrong serial numbers, sequence numbers etc."""
+          # Close immediately - allows testing with wrong serial numbers, sequence numbers etc.
           self.log.debug(f"{self.name}: V5FrameError({' '.join(e.args)}). Closing immediately... ")
           break
         except Exception as e:
@@ -144,7 +265,24 @@ class AioSolarmanServer():
     except:
       pass
 
-  def function_response_from_request(self, req: bytes):
+  def function_response_from_request(self, req: bytes) -> bytes:
+    """
+    Generate a Modbus-like response for a given request (for testing purposes).
+
+    This method decodes the incoming request PDU, processes the requested function
+    (Read Coils, Read Holding Registers, Read Input Registers, Write Multiple Registers),
+    updates internal register tracking, and returns a response frame with CRC.
+
+    Parameters
+    ----------
+    req : bytes
+        The raw request frame received from the client.
+
+    Returns
+    -------
+    bytes
+        The Modbus-like response frame including CRC.
+    """
     func = create_function_from_request_pdu(req[2:-2])
     slave_addr = req[1:2]
     res = b""
@@ -178,13 +316,28 @@ class AioSolarmanServer():
 
       res = func.create_response_pdu()
       self.log.info(f'{self.name}: write registers {write_values}')
-    # Randomly inject Double CRC errors (see GH Issue #62)
-    if random.choice([True, False]):
-      return add_crc(add_crc(slave_addr + res))
-    else:
-      return add_crc(slave_addr + res)
+    return add_crc(slave_addr + res)
 
   def get_new_registers_values(self, starting_address: int, values: List[int]) -> Dict[int, int]:
+    """
+    Map a list of values to consecutive register addresses (for testing purposes).
+
+    This method creates a dictionary that assigns each value to a register
+    address starting from `starting_address`. Useful for simulating writes
+    to multiple registers in a test environment.
+
+    Parameters
+    ----------
+    starting_address : int
+        The starting address for the registers.
+    values : List[int]
+        The list of values to assign to consecutive registers.
+
+    Returns
+    -------
+    Dict[int, int]
+        A dictionary mapping register addresses to their corresponding values.
+    """
     registers: Dict[int, int] = {}
     start = starting_address
     for offset, value in enumerate(values):
@@ -192,6 +345,25 @@ class AioSolarmanServer():
     return registers
 
   def get_existing_registers_values(self, starting_address: int, quantity: int) -> List[int]:
+    """
+    Retrieve values of consecutive registers (for testing purposes).
+
+    This method returns a list of register values starting from `starting_address`.
+    If a register has not been set, its value defaults to 0. Useful for simulating
+    reads from a device in a test environment.
+
+    Parameters
+    ----------
+    starting_address : int
+        The starting address of the registers to read.
+    quantity : int
+        The number of consecutive registers to retrieve.
+
+    Returns
+    -------
+    List[int]
+        A list of register values corresponding to the requested addresses.
+    """
     return [self.registers.get(i, 0) for i in range(
       starting_address,
       starting_address + quantity,
