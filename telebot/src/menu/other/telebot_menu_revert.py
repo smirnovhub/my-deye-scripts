@@ -41,13 +41,15 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       return
 
     try:
+      branch_name = get_current_branch_name()
       if not is_repository_up_to_date():
         last_commit = get_last_commit_hash_and_comment()
         last_commit = last_commit.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         self.bot.send_message(
           message.chat.id,
           "Can't revert because repository is not up to date. "
-          f'Pls run <b>/update</b> and then try again. You are currently on:\n<b>{last_commit}</b>',
+          'Pls run <b>/update</b> and then try again. '
+          f"You are currently on branch '{branch_name}':\n<b>{last_commit}</b>",
           parse_mode = "HTML",
         )
         self.update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
@@ -65,7 +67,6 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
 
     try:
       last_commits = get_last_commits()
-      branch_name = get_current_branch_name()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
