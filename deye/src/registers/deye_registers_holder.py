@@ -1,6 +1,8 @@
 import os
+import time
 
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
+
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
@@ -11,6 +13,8 @@ from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_registers_factory import DeyeRegistersFactory
 from lock_exceptions import DeyeLockAlreadyAcquiredException
+from deye_exceptions import DeyeNoSocketAvailableException
+from deye_exceptions import DeyeQueueIsEmptyException
 from deye_utils import get_reraised_exception
 
 from deye_file_lock import (
@@ -19,7 +23,12 @@ from deye_file_lock import (
 )
 
 class DeyeRegistersHolder:
-  def __init__(self, loggers: List[DeyeLogger], **kwargs):
+  def __init__(
+    self,
+    loggers: List[DeyeLogger],
+    register_creator: Callable[[str], DeyeRegisters],
+    **kwargs,
+  ):
     self._registers: Dict[str, DeyeRegisters] = {}
     self._interactors: List[DeyeModbusInteractor] = []
     self._master_interactor: Optional[DeyeModbusInteractor] = None
@@ -37,7 +46,6 @@ class DeyeRegistersHolder:
       interactor = DeyeModbusInteractor(logger = logger, **self.kwargs)
       self._interactors.append(interactor)
 
-      register_creator = self.kwargs.get('register_creator', None)
       if register_creator != None:
         self._registers[logger.name] = register_creator(logger.name)
       else:
@@ -47,15 +55,12 @@ class DeyeRegistersHolder:
         self._master_interactor = interactor
 
     if register_creator != None:
-      accumulated_registers = register_creator(self.accumulated_prefix)
+      accumulated_registers = register_creator(self._all_loggers.accumulated_registers_prefix)
     else:
-      accumulated_registers = DeyeRegistersFactory.create_registers(prefix = self.accumulated_prefix)
+      accumulated_registers = DeyeRegistersFactory.create_registers(
+        prefix = self._all_loggers.accumulated_registers_prefix)
 
-    self._registers[self.accumulated_prefix] = accumulated_registers
-
-  @property
-  def accumulated_prefix(self) -> str:
-    return 'all'
+    self._registers[self._all_loggers.accumulated_registers_prefix] = accumulated_registers
 
   @property
   def all_registers(self) -> Dict[str, DeyeRegisters]:
@@ -67,7 +72,7 @@ class DeyeRegistersHolder:
 
   @property
   def accumulated_registers(self) -> DeyeRegisters:
-    return self._registers[self.accumulated_prefix]
+    return self._registers[self._all_loggers.accumulated_registers_prefix]
 
   def read_registers(self):
     try:
@@ -116,6 +121,27 @@ class DeyeRegistersHolder:
       except Exception as e:
         raise get_reraised_exception(e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
+  def read_registers_with_retry(
+    self,
+    retry_cout = 3,
+    retry_delay = 3,
+    on_retry: Optional[Callable[[int, Exception], None]] = None,
+  ):
+    last_exception: Optional[Exception] = None
+    for i in range(retry_cout):
+      try:
+        self.read_registers()
+      except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
+        last_exception = e
+        if on_retry:
+          on_retry(i + 1, e)
+        time.sleep(retry_delay)
+        continue
+      break
+    else:
+      if last_exception is not None:
+        raise last_exception
+
   def write_register(self, register: DeyeRegister, value):
     try:
       self.locker.acquire()
@@ -129,6 +155,29 @@ class DeyeRegistersHolder:
       return register.write(self._master_interactor, value)
     except Exception as e:
       raise get_reraised_exception(e, f'{type(self).__name__}: error while writing register') from e
+
+  def write_register_with_retry(
+    self,
+    register: DeyeRegister,
+    value,
+    retry_cout = 3,
+    retry_delay = 3,
+    on_retry: Optional[Callable[[int, Exception], None]] = None,
+  ):
+    last_exception: Optional[Exception] = None
+    for i in range(retry_cout):
+      try:
+        self.write_register(register, value)
+      except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
+        last_exception = e
+        if on_retry:
+          on_retry(i + 1, e)
+        time.sleep(retry_delay)
+        continue
+      break
+    else:
+      if last_exception is not None:
+        raise last_exception
 
   def disconnect(self):
     last_exception = None
