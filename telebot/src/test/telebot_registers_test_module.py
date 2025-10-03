@@ -1,5 +1,6 @@
 import time
 import logging
+import telebot
 
 from typing import Callable, List
 
@@ -34,14 +35,48 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.command = command
     self.register_creator = register_creator
     self.loggers = DeyeLoggers()
+    self.log = logging.getLogger()
 
   def run_tests(self, servers: List[AioSolarmanServer]):
     users = TelebotUsers()
-    log = logging.getLogger()
 
     if not self.loggers.is_test_loggers:
       raise DeyeKnownException('Your loggers are not test loggers')
 
+    holder = self._init_registers(servers)
+
+    time.sleep(1)
+    command = f'/{self.command.command.format(self.name)}'
+
+    fake_message = TelebotFakeTestMessage.make(
+      text = command,
+      user_id = users.allowed_users[0].id,
+    )
+
+    self.log.info(f'Run regular command: {command}')
+    self.bot.process_new_messages([fake_message])
+
+    time.sleep(1)
+    self._check_results(holder)
+
+    self.log.info(f'Run command from button: {command}')
+
+    fake_query = telebot.types.CallbackQuery(
+      id = "fake",
+      chat_instance = 'fake',
+      json_string = '',
+      from_user = fake_message.from_user,
+      data = command,
+      message = fake_message,
+    )
+
+    holder = self._init_registers(servers)
+    self.bot.process_new_callback_query([fake_query])
+
+    time.sleep(1)
+    self._check_results(holder)
+
+  def _init_registers(self, servers: List[AioSolarmanServer]) -> DeyeRegistersHolder:
     for server in servers:
       server.clear_registers()
       server.clear_registers_status()
@@ -67,41 +102,32 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     )
 
     def log_retry(attempt, exception):
-      log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-               f'{str(exception)}, retrying...')
+      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+                    f'{str(exception)}, retrying...')
 
     try:
       holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
     finally:
       holder.disconnect()
 
-    time.sleep(1)
+    return holder
 
-    fake_message = TelebotFakeTestMessage.make(
-      text = f'/{self.command.command.format(self.name)}',
-      user_id = users.allowed_users[0].id,
-    )
-
-    log.info(f'Run command: {fake_message.text}')
-
-    self.bot.process_new_messages([fake_message])
-
-    time.sleep(1)
-
+  def _check_results(self, holder: DeyeRegistersHolder):
     found = True
     for register in holder.all_registers[self.name].all_registers:
       if isinstance(register, SystemTimeDiffDeyeRegister):
         continue
 
       desc = register.description.replace('Inverter ', '')
+      desc = desc.replace('Grid Charging Start SOC', 'Max Charge SOC')
 
       suffix = f' {register.suffix}'.rstrip()
       info = f'{desc}: {register.pretty_value}{suffix}'
 
       if self.bot.is_messages_contains(info):
-        log.info(f'{info} - OK')
+        self.log.info(f'{info} - OK')
       else:
-        log.info(f'{info} - FAILED')
+        self.log.info(f'{info} - FAILED')
         found = False
 
     if not found:

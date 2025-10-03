@@ -115,13 +115,13 @@ class TeleTest:
         ),
         TelebotRegistersTestModule(
           bot,
-          name = self.loggers.accumulated_registers_prefix,
+          name = logger.name,
           command = TelebotMenuItem.deye_slave_today_stat,
           register_creator = lambda prefix: TodayStatRegisters(prefix),
         ),
         TelebotRegistersTestModule(
           bot,
-          name = self.loggers.accumulated_registers_prefix,
+          name = logger.name,
           command = TelebotMenuItem.deye_slave_total_stat,
           register_creator = lambda prefix: TotalStatRegisters(prefix),
         ),

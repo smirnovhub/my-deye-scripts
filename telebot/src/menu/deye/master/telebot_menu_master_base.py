@@ -10,6 +10,7 @@ from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_advanced_choice import ask_advanced_choice
 from telebot_user_choices_helper import row_break_str
+from telebot_utils import is_test_run
 
 from telebot_deye_helper import (
   holder_kwargs,
@@ -21,7 +22,6 @@ from telebot_constants import (
   sync_inverter_time_button_name,
   inverter_system_time_need_sync_difference_sec,
 )
-from telebot_utils import is_test_run
 
 class TelebotMenuMasterBase(TelebotMenuItemHandler):
   def __init__(
