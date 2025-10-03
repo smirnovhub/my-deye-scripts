@@ -48,15 +48,7 @@ jobs:
         run: |
           python -u test/src/telebot_test.py
 
-      - name: Upload logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: telebot-python-${{ matrix.python-version }}-log
-          path: telebot/telebot.log
-          overwrite: true
-
-      - name: Print log
+      - name: Full test log
         if: always()
         run: |
           cat telebot/telebot.log
