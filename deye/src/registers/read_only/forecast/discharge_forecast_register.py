@@ -47,13 +47,15 @@ class DischargeForecastRegister(BaseDeyeRegister):
     battery_capacity = self._battery_capacity_register.value
     battery_current = self._battery_current_register.value
 
+    # For tests
+    if battery_soc > 100:
+      return '"Battery is overcharged"'
+
     if abs(battery_current) < 0.1:
-      value = '"Battery is in idle mode"'
-      return value
+      return '"Battery is in idle mode"'
 
     if battery_current < 0:
-      value = '"Battery is charging"'
-      return value
+      return '"Battery is charging"'
 
     percent_step = 5
     soc = battery_soc - battery_soc % percent_step

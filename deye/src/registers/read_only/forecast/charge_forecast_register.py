@@ -48,12 +48,10 @@ class ChargeForecastRegister(BaseDeyeRegister):
     battery_current = self._battery_current_register.value
 
     if abs(battery_current) < 0.1:
-      value = '"Battery is in idle mode"'
-      return value
+      return '"Battery is in idle mode"'
 
     if battery_current > 0:
-      value = '"Battery is discharging"'
-      return value
+      return '"Battery is discharging"'
 
     percent_step = 5
     charge_lost_coef = 1.16
@@ -61,8 +59,7 @@ class ChargeForecastRegister(BaseDeyeRegister):
     soc = battery_soc - battery_soc % percent_step
 
     if soc >= 100:
-      value = '"Battery is fully charged"'
-      return value
+      return '"Battery is fully charged"'
 
     value = '"Charge forecast:\n'
 
