@@ -27,6 +27,8 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
+    self.log.info(f'Running module {type(self).__name__}...')
+
     for server in servers:
       server.clear_registers()
       server.clear_registers_status()
@@ -48,6 +50,8 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.bot.clear_messages()
     self.bot.process_new_messages([fake_message])
     time.sleep(1)
+
+    self.log.info(f"Replying 'yes' for time sync confirmation...")
     self.bot.process_new_messages([yes_message])
 
     time.sleep(3)
@@ -73,6 +77,8 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.bot.clear_messages()
     self.bot.process_new_callback_query([fake_query])
     time.sleep(1)
+
+    self.log.info(f"Replying 'yes' for time sync confirmation...")
     self.bot.process_new_messages([yes_message])
 
     time.sleep(3)
@@ -97,3 +103,5 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
 
     if not master_server.is_registers_written(register.address, register.quantity):
       self.error(f"No changes on the server side after writing '{register.name}'")
+
+    self.log.info('Time change found. Everything looks good')

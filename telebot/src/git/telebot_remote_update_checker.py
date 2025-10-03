@@ -30,8 +30,14 @@ class TelebotRemoteUpdateChecker:
       return True
 
     try:
-      return get_current_branch_name() != 'HEAD'
+      result = get_current_branch_name() != 'HEAD'
+      if not result:
+        # Save the current check time
+        self._save_last_remote_update_ask_time(time.time())
+      return result
     except Exception:
+      # Save the current check time
+      self._save_last_remote_update_ask_time(time.time())
       return False
 
   def check_for_remote_updates(self, bot: telebot.TeleBot, message: telebot.types.Message) -> bool:

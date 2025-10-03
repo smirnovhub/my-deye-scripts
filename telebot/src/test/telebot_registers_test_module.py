@@ -37,6 +37,11 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
+      self.log.info(f'Running module {type(self).__name__}: '
+                    f"name = '{self.name}' "
+                    f"command = '{self.command}' "
+                    f"register_creator = {type(self.register_creator(self.name)).__name__}'")
+
     holder = self._init_registers(servers)
 
     time.sleep(1)
@@ -120,6 +125,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
         self.error(f"Messages don't contain expected inverter name '{self.name}'")
 
       desc = register.description.replace('Inverter ', '')
+      desc = desc.replace('Grid Charging Start SOC', 'Max Charge SOC')
 
       suffix = f' {register.suffix}'.rstrip()
       info = f'{desc}: {register.pretty_value}{suffix}'

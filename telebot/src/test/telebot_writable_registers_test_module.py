@@ -25,6 +25,8 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
     if not loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
+    self.log.info(f'Running module {type(self).__name__}...')
+
     server: Optional[AioSolarmanServer] = None
 
     for srv in servers:
@@ -64,7 +66,8 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
       if not register.can_write:
         continue
 
-      log.info(f'Checking {register.name}...')
-
       if not server.is_registers_written(register.address, register.quantity):
+        log.info(f'Checking {register.name}... FAILED')
         self.error(f"No changes on the server side after writing '{register.name}'")
+      else:
+        log.info(f'Checking {register.name}... OK')
