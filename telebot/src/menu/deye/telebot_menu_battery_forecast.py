@@ -51,7 +51,7 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
     try:
       current_register = holder.accumulated_registers.battery_current_register
 
-      result = f'<b>Inverter: {self.loggers.accumulated_registers_prefix}</b>'
+      result = f'<b>Inverter: {self.loggers.accumulated_registers_prefix}</b>\n'
       result += get_register_values(holder.accumulated_registers.all_registers)
 
       if abs(current_register.value) < 0.1:
