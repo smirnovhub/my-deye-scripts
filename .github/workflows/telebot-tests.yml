@@ -39,7 +39,7 @@ jobs:
 
       - name: Git pull
         run: |
-          git pull
+          git remote show origin
 
       - name: Copy loggers
         run: |
