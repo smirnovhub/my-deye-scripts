@@ -50,4 +50,4 @@ jobs:
 
       - name: Print log
         run: |
-          cat telebot/telebot.log
+          cat telebot.log
