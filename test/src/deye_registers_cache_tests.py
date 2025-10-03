@@ -6,6 +6,7 @@ import logging
 import subprocess
 
 from pathlib import Path
+from typing import List
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -32,9 +33,10 @@ logging.basicConfig(
 )
 
 from deye_loggers import DeyeLoggers
-from deye_register import DeyeRegister
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
+from deye_test_helper import DeyeRegisterRandomValue
+from deye_test_helper import get_random_by_register_type
 
 log = logging.getLogger()
 loggers = DeyeLoggers()
@@ -53,17 +55,20 @@ server = AioSolarmanServer(
   port = logger.port,
 )
 
-def execute_command(register: DeyeRegister, cache_time: int) -> str:
+def execute_command(cache_time: int) -> str:
   commands = [
     sys.executable,
     '-u',
     os.path.join(base_path, 'deye/deye'),
     f'-c {cache_time}',
     f'-i {logger.name}',
-    f"--get-{register.name.replace('_', '-')}",
+    '-a',
   ]
 
-  log.info(f'Command to execute: {commands}')
+  command_str = ' '.join(commands)
+  command_str = command_str[command_str.find('deye'):].replace('deye/deye', 'deye')
+
+  log.info(f'Command to execute: {command_str}')
 
   for i in range(10):
     result = subprocess.run(
@@ -84,18 +89,35 @@ def execute_command(register: DeyeRegister, cache_time: int) -> str:
   log.info('Max retry count exceeded')
   sys.exit(1)
 
+randoms: List[DeyeRegisterRandomValue] = []
+
+for register in registers.all_registers:
+  log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
+
+  random_value = get_random_by_register_type(register, randoms)
+  if random_value is None:
+    log.info(f"Register '{register.name}' is skipped")
+    continue
+
+  randoms.append(random_value)
+
+  suffix = f' {register.suffix}'.rstrip()
+
+  log.info(f"Generated random value for register '{register.name}' is {random_value.value}{suffix}...")
+
+  server.clear_registers_status()
+  if random_value.register.address > 0:
+    server.set_register_values(random_value.register.address, random_value.values)
+
 register = registers.load_power_register
 
 value1 = 12345
-
-server.clear_registers()
-server.clear_registers_status()
 server.set_register_value(register.address, 12345)
 
 log.info(f"Getting '{register.name}'...")
 
 # first read with -c 0 doesn't use cached values, but will cache new values
-output1 = execute_command(register, cache_time = 0)
+output1 = execute_command(cache_time = 0)
 
 if not server.is_registers_readed(register.address, register.quantity):
   log.info(f"No request for read on the server side after reading '{register.name}'")
@@ -105,12 +127,15 @@ if str(value1) not in output1:
   log.info(f"Register value {value1} not found for '{register.name}'")
   sys.exit(1)
 
+log.info('Waiting for second read from cache...')
+time.sleep(3)
+
 # second read from cache
-server.clear_registers()
+
 server.clear_registers_status()
 server.set_register_value(register.address, 777)
 
-output2 = execute_command(register, cache_time = 10)
+output2 = execute_command(cache_time = 10)
 
 if server.is_registers_readed(register.address, register.quantity):
   log.info(f"Value should be read from the cache '{register.name}'")
@@ -126,10 +151,10 @@ time.sleep(15)
 
 # third read from server
 value3 = 45678
-server.clear_registers()
+
 server.clear_registers_status()
 server.set_register_value(register.address, value3)
-output3 = execute_command(register, cache_time = 10)
+output3 = execute_command(cache_time = 10)
 
 if not server.is_registers_readed(register.address, register.quantity):
   log.info(f"No request for read on the server side after reading '{register.name}'")
