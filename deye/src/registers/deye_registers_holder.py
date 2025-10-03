@@ -167,7 +167,7 @@ class DeyeRegistersHolder:
     last_exception: Optional[Exception] = None
     for i in range(retry_cout):
       try:
-        self.write_register(register, value)
+        return self.write_register(register, value)
       except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
         last_exception = e
         if on_retry:
