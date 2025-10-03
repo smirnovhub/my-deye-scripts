@@ -1,3 +1,4 @@
+import logging
 import telebot
 
 from typing import List
@@ -13,6 +14,7 @@ from telebot_deye_helper import (
   get_choices_of_inverters,
   get_register_values,
 )
+from telebot_utils import is_test_run
 
 class TelebotMenuBaseSettings(TelebotMenuItemHandler):
   def __init__(
@@ -24,6 +26,7 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
     master_command: TelebotMenuItem,
   ):
     super().__init__(bot)
+    self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
     self.registers = registers
     self.main_command = main_command
@@ -35,10 +38,10 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
     return self.main_command
 
   def get_commands(self) -> List[telebot.types.BotCommand]:
-    master_name = self.loggers.master.name
+    name = self.loggers.master.name if self.main_command == self.master_command else self.loggers.accumulated_registers_prefix
     return [
-      telebot.types.BotCommand(command = self.command.command.format(master_name),
-                               description = self.command.description.format(master_name.title())),
+      telebot.types.BotCommand(command = self.command.command.format(name),
+                               description = self.command.description.format(name.title())),
     ]
 
   def process_message(self, message: telebot.types.Message):
@@ -55,8 +58,15 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
+    def log_retry(attempt, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+                    f'{str(exception)}, retrying...')
+
     try:
-      holder.read_registers()
+      if is_test_run():
+        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+      else:
+        holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
@@ -75,7 +85,7 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
       inverter_name = self.loggers.master.name.title()
     else:
       info = get_register_values(holder.accumulated_registers.all_registers)
-      inverter_name = holder.accumulated_prefix.title()
+      inverter_name = self.loggers.accumulated_registers_prefix.title()
 
     ask_advanced_choice(
       self.bot,

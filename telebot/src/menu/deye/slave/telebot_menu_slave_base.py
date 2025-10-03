@@ -1,3 +1,5 @@
+import re
+import logging
 import telebot
 
 from typing import List
@@ -19,6 +21,7 @@ from telebot_constants import (
   sync_inverter_time_button_name,
   inverter_system_time_need_sync_difference_sec,
 )
+from telebot_utils import is_test_run
 
 class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
   def __init__(
@@ -30,6 +33,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     slave_command: TelebotMenuItem,
   ):
     super().__init__(bot)
+    self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
     self.registers = registers
     self.all_command = all_command
@@ -45,8 +49,10 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     for logger in self.loggers.loggers:
       if logger.name != self.loggers.master.name:
         commands.append(
-          telebot.types.BotCommand(command = self.command.command.format(logger.name),
-                                   description = self.command.description.format(logger.name.title())))
+          telebot.types.BotCommand(
+            command = self.command.command.format(logger.name),
+            description = self.command.description.format(logger.name.title()),
+          ))
     return commands
 
   def process_message(self, message: telebot.types.Message):
@@ -57,8 +63,10 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
       return
 
     command_name = message.text.lstrip('/')
-    idx = command_name.find('_')
-    slave_name = command_name[:idx] if idx != -1 else command_name
+
+    pattern = re.compile(TelebotMenuItem.deye_slave_info.command.replace("{0}", r"(.+)"))
+    match = pattern.fullmatch(command_name)
+    slave_name = match.group(1) if match else command_name
 
     logger = self.loggers.get_logger_by_name(slave_name)
     if logger is None:
@@ -72,8 +80,15 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
+    def log_retry(attempt, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+                    f'{str(exception)}, retrying...')
+
     try:
-      holder.read_registers()
+      if is_test_run():
+        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+      else:
+        holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return

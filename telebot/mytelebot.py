@@ -1,5 +1,3 @@
-import os
-import time
 import telebot
 
 from typing import List, Optional
@@ -18,7 +16,6 @@ from telebot_menu_restart import TelebotMenuRestart
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_menu_master_info import TelebotMenuMasterInfo
 from telebot_menu_slave_info import TelebotMenuSlaveInfo
-from telebot_base_test_module import TelebotBaseTestModule
 from telebot_menu_all_today_stat import TelebotMenuAllTodayStat
 from telebot_menu_all_total_stat import TelebotMenuAllTotalStat
 from telebot_menu_slave_today_stat import TelebotMenuSlaveTodayStat
@@ -29,12 +26,12 @@ from telebot_menu_battery_forecast import TelebotMenuBatteryForecast
 from telebot_menu_writable_registers import TelebotMenuWritableRegisters
 from telebot_menu_master_today_stat import TelebotMenuMasterTodayStat
 from telebot_menu_master_total_stat import TelebotMenuMasterTotalStat
+from teletest import TeleTest
+from testable_telebot import TestableTelebot
 from telebot_menu_revert import TelebotMenuRevert
 from telebot_menu_update import TelebotMenuUpdate
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
-from telebot_test_module import TelebotTestModule
-from testable_telebot import TestableTelebot
 from telebot_send_message import send_private_telegram_message
 
 class MyTelebot:
@@ -123,10 +120,8 @@ class MyTelebot:
         print(f'An exception occurred while setting command for blocking user {user.id}: {str(e)}')
 
     if self.test_bot is not None:
-      for module in self.get_test_modules(self.test_bot):
-        module.run_tests()
-      time.sleep(1.5)
-      os._exit(0)
+      teleTest = TeleTest(self.test_bot)
+      teleTest.run_tests()
 
   def get_common_handlers(self, bot: telebot.TeleBot) -> List[TelebotBaseHandler]:
     return [
@@ -162,9 +157,4 @@ class MyTelebot:
   def get_writable_registers_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
     return [
       TelebotMenuWritableRegisters(bot),
-    ]
-
-  def get_test_modules(self, bot: TestableTelebot) -> List[TelebotBaseTestModule]:
-    return [
-      TelebotTestModule(bot),
     ]

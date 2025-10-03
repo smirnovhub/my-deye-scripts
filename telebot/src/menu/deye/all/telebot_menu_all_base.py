@@ -1,4 +1,7 @@
+import logging
 import telebot
+
+from typing import List
 
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
@@ -18,6 +21,7 @@ from telebot_deye_helper import (
   get_register_values,
   get_choices_of_inverters,
 )
+from telebot_utils import is_test_run
 
 class TelebotMenuAllBase(TelebotMenuItemHandler):
   def __init__(
@@ -29,6 +33,7 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     slave_command: TelebotMenuItem,
   ):
     super().__init__(bot)
+    self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
     self.registers = registers
     self.all_command = all_command
@@ -38,6 +43,14 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
   @property
   def command(self) -> TelebotMenuItem:
     return self.all_command
+
+  def get_commands(self) -> List[telebot.types.BotCommand]:
+    return [
+      telebot.types.BotCommand(
+        command = self.command.command.format(self.loggers.accumulated_registers_prefix),
+        description = self.command.description.format(self.loggers.accumulated_registers_prefix.title()),
+      )
+    ]
 
   def process_message(self, message: telebot.types.Message):
     if not self.is_authorized(message):
@@ -53,8 +66,15 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
+    def log_retry(attempt, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+                    f'{str(exception)}, retrying...')
+
     try:
-      holder.read_registers()
+      if is_test_run():
+        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+      else:
+        holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
@@ -81,7 +101,7 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     ask_advanced_choice(
       self.bot,
       message.chat.id,
-      f'<b>Inverter: {holder.accumulated_prefix}</b>\n{info}',
+      f'<b>Inverter: {self.loggers.accumulated_registers_prefix}</b>\n{info}',
       choices,
       max_per_row = 2,
     )

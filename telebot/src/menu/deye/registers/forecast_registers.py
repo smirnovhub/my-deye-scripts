@@ -9,8 +9,8 @@ class ForecastRegisters(DeyeRegistersFactory.get_registers_class()): # type: ign
   @property
   def all_registers(self) -> List[DeyeRegister]:
     return [
-      self.battery_capacity_register,
       self.battery_soc_register,
+      self.battery_capacity_register,
       self.battery_current_register,
       self.battery_power_register,
     ]

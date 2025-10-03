@@ -1,12 +1,13 @@
 import logging
 import telebot
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 from telebot_fake_test_message import TelebotFakeTestMessage
 
 class TestableTelebot(telebot.TeleBot):
   def __init__(self, token: str):
     super().__init__(token)
+    self.messages: List[str] = []
     self.log = logging.getLogger()
 
   """
@@ -14,6 +15,15 @@ class TestableTelebot(telebot.TeleBot):
   All outgoing API calls are blocked.
   process_new_messages still works normally.
   """
+
+  def clear_messages(self):
+    self.messages.clear()
+
+  def is_messages_contains(self, text: str) -> bool:
+    for message in self.messages:
+      if text in message:
+        return True
+    return False
 
   # --- Send methods ---
   def send_message(
@@ -23,7 +33,8 @@ class TestableTelebot(telebot.TeleBot):
     *args,
     **kwargs,
   ) -> telebot.types.Message:
-    self.log.info(f"[BLOCKED SEND_MESSAGE] chat_id = {chat_id}, text = {text}")
+    self.log.info(f"[BLOCKED SEND_MESSAGE] chat_id = {chat_id}, text =\n{text}")
+    self.messages.append(text)
     return TelebotFakeTestMessage.make(text = text)
 
   def send_photo(self, *args, **kwargs):
