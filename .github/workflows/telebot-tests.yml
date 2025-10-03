@@ -39,7 +39,7 @@ jobs:
 
       - name: Git pull
         run: |
-          git remote show origin
+          git rev-parse --abbrev-ref HEAD
 
       - name: Copy loggers
         run: |
