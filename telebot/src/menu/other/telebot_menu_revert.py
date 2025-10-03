@@ -8,6 +8,7 @@ from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
 from telebot_advanced_choice import ask_advanced_choice
+from telebot_git_helper import get_current_branch_name
 from common_utils import clock_face_one_oclock
 from telebot_utils import stop_bot
 
@@ -64,6 +65,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
 
     try:
       last_commits = get_last_commits()
+      branch_name = get_current_branch_name()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
@@ -72,6 +74,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       ask_advanced_choice(
         self.bot,
         message.chat.id,
+        f"You are currently on branch '{branch_name}'\n"
         'Enter commit hash to revert to:',
         {
           item: f"/revert {hash}"
