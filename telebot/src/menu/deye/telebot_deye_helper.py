@@ -264,7 +264,9 @@ def get_choices_of_inverters(
     return choices
 
   if auth_helper.is_menu_item_allowed(user_id, all_command):
-    choices[all_command.description] = f'/{all_command.command}'
+    command = all_command.command.format(loggers.accumulated_registers_prefix)
+    description = all_command.description.format(loggers.accumulated_registers_prefix.title())
+    choices[description] = f'/{command}'
     # add line break
     choices[row_break_str] = row_break_str
 

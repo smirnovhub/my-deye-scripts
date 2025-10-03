@@ -5,7 +5,6 @@ import struct
 import requests
 
 from typing import Union, List
-from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 from pysolarmanv5 import NoSocketAvailableError
 
@@ -83,34 +82,36 @@ def format_end_date(date: datetime) -> str:
     ('tomorrow, ' + date.strftime('%H:%M') if date_str1 == date_str3 else\
     date.strftime('%Y-%m-%d, %H:%M'))
 
-def custom_round(num: float) -> str:
+def custom_round(value: float) -> str:
   """
-  Round a floating-point number to two decimal places using "round half up" rules.
+  Rounds a floating-point number to two decimal places and returns it as a string,
+  removing any unnecessary trailing zeros and the decimal point if it becomes redundant.
 
-  This function:
-    - Converts the input float into a Decimal to avoid floating-point precision errors.
-    - Rounds the number to exactly two decimal places.
-    - Uses ROUND_HALF_UP, meaning values ending with 5 in the third decimal place 
-      are rounded upward (e.g., 1.305 → 1.31).
-    - Removes trailing zeros in the fractional part (e.g., 1.50 → "1.5").
-    - Returns the result as a string.
+  Steps:
+  1. Round the input `value` to 2 decimal places.
+  2. Convert the rounded number to a string with exactly 2 decimal places.
+  3. Remove trailing zeros and a trailing decimal point (if any) to make the output clean.
+
+  Examples:
+      custom_round(3.1400) -> "3.14"
+
+      custom_round(2.0)    -> "2"
+      
+      custom_round(2.500)  -> "2.5"
 
   Args:
-      num (float): The number to round.
+      value (float): The number to round and format.
 
   Returns:
-      str: The rounded number as a string.
+      str: The rounded number as a string without unnecessary trailing zeros or dot.
   """
-  # Convert the float to a string, then to Decimal, to avoid binary float issues
-  d = Decimal(num)
+  # Round the number to the specified number of decimal places
+  rounded = round(value, 2)
 
-  # Round to two decimal places with ROUND_HALF_UP strategy
-  rounded = d.quantize(Decimal("0.01"), rounding = ROUND_HALF_UP)
+  # Convert to string with fixed decimal places
+  s = f"{rounded:.{2}f}"
 
-  # Format as fixed-point (avoids scientific notation like 2.5E+2)
-  s = format(rounded, "f")
-
-  # Strip trailing zeros and possible trailing dot
+  # Strip trailing zeros and a trailing dot if present
   return s.rstrip("0").rstrip(".")
 
 def format_timedelta(td: timedelta, add_seconds: bool = False) -> str:

@@ -15,16 +15,16 @@ class TelebotMenuItem(Enum):
 
   # if you want to see all commands in Telegram menu,
   # remove system_type parameter or replace it to DeyeSystemType.any
-  deye_all_info = ('all_info', 'All info', DeyeSystemType.multi_inverter)
+  deye_all_info = ('{0}_info', '{0} info', DeyeSystemType.multi_inverter)
   deye_master_info = ('{0}_info', '{0} info', DeyeSystemType.single_inverter)
   deye_slave_info = ('{0}_info', '{0} info', DeyeSystemType.none)
-  deye_all_today_stat = ('all_today_stat', 'All today stat', DeyeSystemType.multi_inverter)
+  deye_all_today_stat = ('{0}_today_stat', '{0} today stat', DeyeSystemType.multi_inverter)
   deye_master_today_stat = ('{0}_today_stat', '{0} today stat', DeyeSystemType.single_inverter)
   deye_slave_today_stat = ('{0}_today_stat', '{0} today stat', DeyeSystemType.none)
-  deye_all_total_stat = ('all_total_stat', 'All total stat', DeyeSystemType.multi_inverter)
+  deye_all_total_stat = ('{0}_total_stat', '{0} total stat', DeyeSystemType.multi_inverter)
   deye_master_total_stat = ('{0}_total_stat', '{0} total stat', DeyeSystemType.single_inverter)
   deye_slave_total_stat = ('{0}_total_stat', '{0} total stat', DeyeSystemType.none)
-  deye_all_settings = ('all_settings', 'All settings', DeyeSystemType.none)
+  deye_all_settings = ('{0}_settings', '{0} settings', DeyeSystemType.none)
   deye_master_settings = ('{0}_settings', '{0} settings')
   deye_battery_forecast = ('forecast', 'Battery forecast')
   deye_sync_time = ('sync_time', 'Sync inverter time')
@@ -51,7 +51,7 @@ class TelebotMenuItem(Enum):
 
   def __new__(cls, command: str, description: str, system_type: DeyeSystemType = DeyeSystemType.any):
     obj = object.__new__(cls)
-    obj._value_ = command
+    obj._value_ = cls._next_value()
     obj._command = command
     obj._description = description
     obj._system_type = system_type
@@ -60,3 +60,11 @@ class TelebotMenuItem(Enum):
   @classmethod
   def all(cls) -> List['TelebotMenuItem']:
     return list(cls)
+
+  @classmethod
+  def _next_value(cls):
+    # Collect all existing _value_ attributes of current enum members
+    existing = [m._value_ for m in cls.__members__.values()]
+    # Return the next integer value: one higher than the current maximum,
+    # or 1 if there are no existing members yet
+    return max(existing, default = 0) + 1

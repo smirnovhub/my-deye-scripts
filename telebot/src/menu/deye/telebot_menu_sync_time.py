@@ -1,3 +1,4 @@
+import logging
 import telebot
 import traceback
 
@@ -13,7 +14,7 @@ from deye_registers_factory import DeyeRegistersFactory
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_user_choices import ask_confirmation
 from telebot_advanced_choice import ask_advanced_choice
-from telebot_utils import remove_inline_buttons_with_delay
+from telebot_utils import is_test_run, remove_inline_buttons_with_delay
 
 from telebot_constants import (
   undo_button_name,
@@ -30,6 +31,7 @@ from telebot_deye_helper import (
 class TelebotMenuSyncTime(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
     self.registers = DeyeRegistersFactory.create_registers()
@@ -54,15 +56,26 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         parse_mode = 'HTML')
       return
 
+    kwargs = holder_kwargs.copy()
+    if is_test_run():
+      kwargs['caching_time'] = 0
+
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomRegisters([self.register], prefix),
-      **holder_kwargs,
+      **kwargs,
     )
 
+    def log_retry(attempt, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+                    f'{str(exception)}, retrying...')
+
     try:
-      holder.read_registers()
+      if is_test_run():
+        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+      else:
+        holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
@@ -101,12 +114,24 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
           **holder_kwargs,
         )
 
+        def log_retry(attempt, exception):
+          self.log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
+                        f'{str(exception)}, retrying...')
+
         try:
-          result = holder.write_register(self.register, value)
+          if is_test_run():
+            result = holder.write_register_with_retry(
+              self.register,
+              value,
+              retry_cout = 10,
+              on_retry = log_retry,
+            )
+          else:
+            result = holder.write_register(self.register, value)
         finally:
           holder.disconnect()
 
-        text = f'<b>{self.register.description}</b> changed to {result} {self.register.suffix}'
+        text = f'<b>{self.register.description}</b> changed from {old_value} to {result} {self.register.suffix}'
 
         sent = ask_advanced_choice(
           self.bot,

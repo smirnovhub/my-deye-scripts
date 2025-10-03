@@ -1,3 +1,4 @@
+import logging
 import telebot
 import textwrap
 import traceback
@@ -44,6 +45,7 @@ from telebot_deye_helper import (
 class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
     self.registers = DeyeRegistersFactory.create_registers()
     self.auth_helper = TelebotAuthHelper()
@@ -185,8 +187,15 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
+    def log_retry(attempt, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+                    f'{str(exception)}, retrying...')
+
     try:
-      holder.read_registers()
+      if is_test_run():
+        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+      else:
+        holder.read_registers()
     finally:
       holder.disconnect()
 
@@ -214,8 +223,19 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
+    def log_read_retry(attempt, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+                    f'{str(exception)}, retrying...')
+
+    def log_write_retry(attempt, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
+                    f'{str(exception)}, retrying...')
+
     try:
-      holder.read_registers()
+      if is_test_run():
+        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_read_retry)
+      else:
+        holder.read_registers()
 
       value: Any = 0
       suffix = f' {register.suffix}'.rstrip()
@@ -254,7 +274,16 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
           self.bot.send_message(message.chat.id, 'Nothing changed', parse_mode = 'HTML')
         else:
           try:
-            holder.write_register(register, value)
+            if is_test_run():
+              holder.write_register_with_retry(
+                register,
+                value,
+                retry_cout = 10,
+                on_retry = log_write_retry,
+              )
+            else:
+              holder.write_register(register, value)
+
             self.print_result_after_write_register(register, message, old_value)
           except DeyeKnownException as e:
             self.bot.send_message(message.chat.id, str(e))
@@ -276,7 +305,16 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         )
         return
 
-      holder.write_register(register, value)
+      if is_test_run():
+        holder.write_register_with_retry(
+          register,
+          value,
+          retry_cout = 10,
+          on_retry = log_write_retry,
+        )
+      else:
+        holder.write_register(register, value)
+
       self.print_result_after_write_register(register, message, old_value)
 
     finally:

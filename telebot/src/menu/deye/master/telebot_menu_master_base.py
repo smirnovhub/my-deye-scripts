@@ -1,3 +1,4 @@
+import logging
 import telebot
 
 from typing import List
@@ -9,6 +10,7 @@ from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_advanced_choice import ask_advanced_choice
 from telebot_user_choices_helper import row_break_str
+from telebot_utils import is_test_run
 
 from telebot_deye_helper import (
   holder_kwargs,
@@ -31,6 +33,7 @@ class TelebotMenuMasterBase(TelebotMenuItemHandler):
     slave_command: TelebotMenuItem,
   ):
     super().__init__(bot)
+    self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
     self.registers = registers
     self.all_command = all_command
@@ -62,8 +65,15 @@ class TelebotMenuMasterBase(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
+    def log_retry(attempt, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+                    f'{str(exception)}, retrying...')
+
     try:
-      holder.read_registers()
+      if is_test_run():
+        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+      else:
+        holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return

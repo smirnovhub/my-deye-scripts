@@ -8,6 +8,7 @@ from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
 from telebot_advanced_choice import ask_advanced_choice
+from telebot_git_helper import get_current_branch_name
 from common_utils import clock_face_one_oclock
 from telebot_utils import stop_bot
 
@@ -35,14 +36,20 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
+    if not self.remote_update_checker.is_on_branch():
+      self.bot.send_message(message.chat.id, 'Unable to revert: the repository is not currently on a branch')
+      return
+
     try:
+      branch_name = get_current_branch_name()
       if not is_repository_up_to_date():
         last_commit = get_last_commit_hash_and_comment()
         last_commit = last_commit.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         self.bot.send_message(
           message.chat.id,
           "Can't revert because repository is not up to date. "
-          f'Pls run <b>/update</b> and then try again. You are currently on:\n<b>{last_commit}</b>',
+          'Pls run <b>/update</b> and then try again. '
+          f"You are currently on branch '{branch_name}':\n<b>{last_commit}</b>",
           parse_mode = "HTML",
         )
         self.update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
@@ -68,6 +75,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       ask_advanced_choice(
         self.bot,
         message.chat.id,
+        f"You are currently on branch '{branch_name}'.\n"
         'Enter commit hash to revert to:',
         {
           item: f"/revert {hash}"

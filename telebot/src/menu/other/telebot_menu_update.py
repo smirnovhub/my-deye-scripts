@@ -10,6 +10,7 @@ from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
+from telebot_git_helper import get_current_branch_name
 from common_utils import clock_face_one_oclock
 from telebot_utils import stop_bot
 
@@ -31,6 +32,10 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
+    if not self.remote_update_checker.is_on_branch():
+      self.bot.send_message(message.chat.id, 'Unable to update: the repository is not currently on a branch')
+      return
+
     current_dir = os.path.dirname(__file__)
 
     try:
@@ -46,6 +51,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
 
     if 'up to date' in result.stdout.lower():
       try:
+        branch_name = get_current_branch_name()
         last_commit = get_last_commit_hash_and_comment()
       except Exception as e:
         self.bot.send_message(message.chat.id, str(e))
@@ -56,7 +62,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
       self.bot.send_message(
         message.chat.id,
         'Already up to date. '
-        f'You are currently on:\n<b>{last_commit}</b>',
+        f"You are currently on '{branch_name}':\n<b>{last_commit}</b>",
         parse_mode = "HTML",
       )
 

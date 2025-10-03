@@ -115,8 +115,13 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
 
   def has_updates(self, message: telebot.types.Message) -> bool:
     try:
+      if not self.remote_update_checker.is_on_branch():
+        self.bot.send_message(message.chat.id, 'Update check skipped: the repository is not currently on a branch')
+        return False
+
       if self.remote_update_checker.check_for_remote_updates(self.bot, message):
         return True
+
       if self.local_update_checker.check_for_local_updates(
           self.bot,
           message.chat.id,
