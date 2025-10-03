@@ -50,4 +50,5 @@ jobs:
 
       - name: Print log
         run: |
+          ls -laR
           cat telebot.log
