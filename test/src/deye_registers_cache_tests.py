@@ -84,7 +84,7 @@ def execute_command(cache_time: int) -> str:
       return output
 
     log.info('An exception occurred. Retrying...')
-    time.sleep(3)
+    time.sleep(1)
 
   log.info('Max retry count exceeded')
   sys.exit(1)

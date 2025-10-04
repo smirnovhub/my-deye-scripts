@@ -15,23 +15,12 @@ class DeyeLoggers(DeyeBaseLoggers):
 
   @property
   def slaves(self) -> List[DeyeLogger]:
+    count = 3
     return [
       DeyeLogger(
-        name = 'slave1_inverter',
+        name = f'slave{i}_inverter',
         address = '127.0.0.1',
-        serial = 2,
-        port = 7002,
-      ),
-      DeyeLogger(
-        name = 'slave2_inverter',
-        address = '127.0.0.1',
-        serial = 3,
-        port = 7003,
-      ),
-      DeyeLogger(
-        name = 'slave3_inverter',
-        address = '127.0.0.1',
-        serial = 4,
-        port = 7004,
-      ),
+        serial = self.master.serial + i,
+        port = self.master.port + i,
+      ) for i in range(1, count + 1)
     ]

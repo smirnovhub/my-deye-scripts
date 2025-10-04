@@ -78,6 +78,8 @@ for register in registers.all_registers:
     sys.executable,
     '-u',
     os.path.join(base_path, 'deye/deye'),
+    '--connection-timeout',
+    '1',
     '-c 0',
     f'-i {logger.name}',
     f"--get-{register.name.replace('_', '-')}",
@@ -102,7 +104,7 @@ for register in registers.all_registers:
       break
 
     log.info('An exception occurred. Retrying...')
-    time.sleep(3)
+    time.sleep(1)
 
   if not server.is_registers_readed(register.address, register.quantity):
     log.info(f"No request for read on the server side after reading '{register.name}'")

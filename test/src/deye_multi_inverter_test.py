@@ -76,17 +76,16 @@ for register in registers.all_registers:
   if random_value is None:
     continue
 
+  divider = loggers.count if register.avg_type == DeyeRegisterAverageType.average else 1
+
   for server in servers:
     random_value = get_random_by_register_type(register)
     server.set_register_values(random_value.register.address, random_value.values)
     try:
-      total_value += float(random_value.value)
+      total_value += round(float(random_value.value) / divider, 2)
     except:
       pass
     values.append(random_value.value)
-
-  if register.avg_type == DeyeRegisterAverageType.average:
-    total_value /= loggers.count
 
   total_val = custom_round(total_value)
 
@@ -96,6 +95,9 @@ for register in registers.all_registers:
     sys.executable,
     '-u',
     os.path.join(base_path, 'deye/deye'),
+    '--connection-timeout',
+    '1',
+    '-c 0',
     f'-i {inverters}',
     f"--get-{register.name.replace('_', '-')}",
   ]
@@ -119,7 +121,7 @@ for register in registers.all_registers:
       break
 
     log.info('An exception occurred. Retrying...')
-    time.sleep(3)
+    time.sleep(1)
 
   for server in servers:
     if register.avg_type != DeyeRegisterAverageType.only_master or server.name == loggers.master.name:
