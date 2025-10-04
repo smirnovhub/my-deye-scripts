@@ -47,9 +47,19 @@ for logger in loggers.loggers:
 
 inverters_str = ','.join(inverters_list)
 
+def int_range(min_value, max_value):
+  def checker(x):
+    x = int(x)
+    if x < min_value or x > max_value:
+      raise argparse.ArgumentTypeError(f"value must be between {min_value} and {max_value}")
+    return x
+
+  return checker
+
 parser.add_argument('-v', '--verbose-output', action = 'store_true', help = 'verbose output')
 parser.add_argument('-c', '--caching-time', type = int, default = 3, help = 'caching time for requests')
 parser.add_argument('-p', '--print-addresses', action = 'store_true', help = 'print register addresses')
+parser.add_argument('--connection-timeout', type = int_range(1, 60), default = 10, help = argparse.SUPPRESS)
 
 if loggers.count > 1:
   parser.add_argument('-i', '--inverter', help = f'specify inverter ({inverters_str})', default = loggers.master.name)

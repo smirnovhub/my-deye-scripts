@@ -157,7 +157,7 @@ class DeyeRegisterProcessor:
     for logger in loggers:
       try:
         interactor = DeyeModbusInteractor(logger = logger,
-                                          socket_timeout = 10,
+                                          socket_timeout = args.connection_timeout,
                                           caching_time = args.caching_time,
                                           verbose = args.verbose_output == True)
         self.interactors.append(interactor)
