@@ -40,14 +40,13 @@ class TeleTest:
     servers: List[AioSolarmanServer] = []
 
     for logger in self.loggers.loggers:
-      server = AioSolarmanServer(
-        name = logger.name,
-        address = logger.address,
-        serial = logger.serial,
-        port = logger.port,
-      )
-
-      servers.append(server)
+      servers.append(
+        AioSolarmanServer(
+          name = logger.name,
+          address = logger.address,
+          serial = logger.serial,
+          port = logger.port,
+        ))
 
     log = logging.getLogger()
 

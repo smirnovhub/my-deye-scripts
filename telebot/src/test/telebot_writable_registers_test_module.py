@@ -1,9 +1,6 @@
-import time
-import logging
-
 from typing import List, Optional
 
-from deye_loggers import DeyeLoggers
+from deye_register import DeyeRegister
 from telebot_users import TelebotUsers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
@@ -18,11 +15,10 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
 
   def run_tests(self, servers: List[AioSolarmanServer]):
     users = TelebotUsers()
-    loggers = DeyeLoggers()
-    registers = DeyeRegistersFactory.create_registers()
-    log = logging.getLogger()
 
-    if not loggers.is_test_loggers:
+    registers = DeyeRegistersFactory.create_registers()
+
+    if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
     self.log.info(f'Running module {type(self).__name__}...')
@@ -30,12 +26,12 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
     server: Optional[AioSolarmanServer] = None
 
     for srv in servers:
-      if srv.name == loggers.master.name:
+      if srv.name == self.loggers.master.name:
         server = srv
         break
 
     if server is None:
-      self.error(f'Unable to find server with name {loggers.master.name}')
+      self.error(f'Unable to find server with name {self.loggers.master.name}')
       return
 
     server.clear_registers()
@@ -47,11 +43,11 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
 
       value = get_random_by_register_value_type(register, skip_zero = True)
       if value is None:
-        log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
+        self.log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
         continue
 
-      log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
-      log.info(f"Sending command '/{register.name} {value}'")
+      self.log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
+      self.log.info(f"Sending command '/{register.name} {value}'")
 
       fake_message = TelebotFakeTestMessage.make(
         text = f'/{register.name} {value}',
@@ -60,14 +56,25 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
 
       self.bot.process_new_messages([fake_message])
 
-    time.sleep(15)
+    writable_registers = [r for r in registers.all_registers if r.can_write]
+    self.call_with_retry(self._check_results, server, writable_registers)
 
-    for register in registers.all_registers:
-      if not register.can_write:
-        continue
-
+  def _check_results(self, server: AioSolarmanServer, registers: List[DeyeRegister]):
+    to_remove = []
+    for register in registers:
       if not server.is_registers_written(register.address, register.quantity):
-        log.info(f'Checking {register.name}... FAILED')
+        self.log.info(f'Checking {register.name}... FAILED')
+
+        for r in to_remove:
+          registers.remove(r)
+
         self.error(f"No changes on the server side after writing '{register.name}'")
       else:
-        log.info(f'Checking {register.name}... OK')
+        self.log.info(f'Checking {register.name}... OK')
+        to_remove.append(register)
+
+    for register in to_remove:
+      registers.remove(register)
+
+    if registers:
+      self.error(f"No changes on the server side after writing some registers")

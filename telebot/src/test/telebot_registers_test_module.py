@@ -1,10 +1,7 @@
-import time
-import logging
 import telebot
 
 from typing import Callable, List
 
-from deye_loggers import DeyeLoggers
 from telebot_menu_item import TelebotMenuItem
 from telebot_users import TelebotUsers
 from solarman_server import AioSolarmanServer
@@ -14,7 +11,9 @@ from deye_registers import DeyeRegisters
 from telebot_fake_test_message import TelebotFakeTestMessage
 from deye_registers_holder import DeyeRegistersHolder
 from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
+from telebot_deye_helper import holder_kwargs
 from deye_test_helper import get_random_by_register_type
+from telebot_utils import get_test_retry_count
 
 class TelebotRegistersTestModule(TelebotBaseTestModule):
   def __init__(
@@ -28,8 +27,6 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.name = name
     self.command = command
     self.register_creator = register_creator
-    self.loggers = DeyeLoggers()
-    self.log = logging.getLogger()
 
   def run_tests(self, servers: List[AioSolarmanServer]):
     users = TelebotUsers()
@@ -44,7 +41,6 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
 
     holder = self._init_registers(servers)
 
-    time.sleep(1)
     command = f'/{self.command.command.format(self.name)}'
 
     fake_message = TelebotFakeTestMessage.make(
@@ -56,8 +52,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.bot.clear_messages()
     self.bot.process_new_messages([fake_message])
 
-    time.sleep(1)
-    self._check_results(holder)
+    self.call_with_retry(self._check_results, holder)
 
     self.log.info(f'Run command from button: {command}')
 
@@ -71,13 +66,11 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     )
 
     holder = self._init_registers(servers)
-    time.sleep(1)
 
     self.bot.clear_messages()
     self.bot.process_new_callback_query([fake_query])
 
-    time.sleep(1)
-    self._check_results(holder)
+    self.call_with_retry(self._check_results, holder)
 
   def _init_registers(self, servers: List[AioSolarmanServer]) -> DeyeRegistersHolder:
     for server in servers:
@@ -99,9 +92,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     holder = DeyeRegistersHolder(
       loggers = self.loggers.loggers,
       register_creator = self.register_creator,
-      caching_time = 0,
-      socket_timeout = 10,
-      name = 'teletest',
+      **holder_kwargs,
     )
 
     def log_retry(attempt, exception):
@@ -109,7 +100,8 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
                     f'{str(exception)}, retrying...')
 
     try:
-      holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+      retry_cout = get_test_retry_count()
+      holder.read_registers_with_retry(retry_cout = retry_cout, on_retry = log_retry)
     finally:
       holder.disconnect()
 

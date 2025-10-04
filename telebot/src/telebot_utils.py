@@ -4,6 +4,7 @@ import time
 import telebot
 
 from typing import Optional
+from deye_loggers import DeyeLoggers
 
 def get_inline_button_by_data(
   message: telebot.types.Message,
@@ -86,6 +87,10 @@ def remove_inline_buttons_with_delay(bot: telebot.TeleBot, chat_id: int, message
 
 def is_test_run():
   return os.getenv('TEST_RUN', '').strip().lower() == 'true'
+
+def get_test_retry_count():
+  loggers = DeyeLoggers()
+  return 15 + loggers.count * 4
 
 def stop_bot(bot: telebot.TeleBot):
   bot.stop_bot()

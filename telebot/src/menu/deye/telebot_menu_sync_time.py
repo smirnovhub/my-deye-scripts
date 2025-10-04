@@ -14,7 +14,12 @@ from deye_registers_factory import DeyeRegistersFactory
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_user_choices import ask_confirmation
 from telebot_advanced_choice import ask_advanced_choice
-from telebot_utils import is_test_run, remove_inline_buttons_with_delay
+
+from telebot_utils import (
+  is_test_run,
+  remove_inline_buttons_with_delay,
+  get_test_retry_count,
+)
 
 from telebot_constants import (
   undo_button_name,
@@ -56,15 +61,11 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         parse_mode = 'HTML')
       return
 
-    kwargs = holder_kwargs.copy()
-    if is_test_run():
-      kwargs['caching_time'] = 0
-
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomRegisters([self.register], prefix),
-      **kwargs,
+      **holder_kwargs,
     )
 
     def log_retry(attempt, exception):
@@ -73,7 +74,8 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
 
     try:
       if is_test_run():
-        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+        retry_cout = get_test_retry_count()
+        holder.read_registers_with_retry(retry_cout = retry_cout, on_retry = log_retry)
       else:
         holder.read_registers()
     except Exception as e:

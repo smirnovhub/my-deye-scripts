@@ -10,11 +10,12 @@ from telebot_auth_helper import TelebotAuthHelper
 from deye_base_enum import DeyeBaseEnum
 from telebot_menu_item import TelebotMenuItem
 from telebot_user_choices_helper import row_break_str
+from telebot_utils import is_test_run
 
 holder_kwargs = {
   'name': 'telebot',
-  'socket_timeout': 10,
-  'caching_time': 5,
+  'socket_timeout': 1 if is_test_run() else 10,
+  'caching_time': 0 if is_test_run() else 5,
   #  'verbose': True,
 }
 
