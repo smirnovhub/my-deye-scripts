@@ -271,6 +271,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         raise self.get_nothing_changed_exception(register.value, suffix)
 
       old_value = register.value
+      old_pretty_value = register.pretty_value
 
       def on_user_confirmation(chat_id: int, result: bool):
         if not result:
@@ -288,7 +289,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
             else:
               holder.write_register(register, value)
 
-            self.print_result_after_write_register(register, message, old_value)
+            self.print_result_after_write_register(
+              register,
+              message,
+              old_value = old_value,
+              old_pretty_value = old_pretty_value,
+            )
           except DeyeKnownException as e:
             self.bot.send_message(message.chat.id, str(e))
           except Exception as e:
@@ -319,7 +325,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       else:
         holder.write_register(register, value)
 
-      self.print_result_after_write_register(register, message, old_value)
+      self.print_result_after_write_register(
+        register,
+        message,
+        old_value = old_value,
+        old_pretty_value = old_pretty_value,
+      )
 
     finally:
       holder.disconnect()
@@ -329,17 +340,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     register: DeyeRegister,
     message: telebot.types.Message,
     old_value: Any,
+    old_pretty_value: str,
   ):
-    value = register.value
-
-    if isinstance(value, DeyeBaseEnum):
-      value = value.pretty
-
-    if isinstance(old_value, DeyeBaseEnum):
-      old_value = old_value.pretty
-
     suffix = f' {register.suffix}'.rstrip()
-    text = f'<b>{register.description}</b> changed from {old_value} to {value}{suffix}'
+    text = (f'<b>{register.description}</b> changed from {old_pretty_value} '
+            f'to {register.pretty_value}{suffix}')
 
     is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 
