@@ -74,8 +74,8 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
 
     try:
       if is_test_run():
-        retry_cout = get_test_retry_count()
-        holder.read_registers_with_retry(retry_cout = retry_cout, on_retry = log_retry)
+        retry_count = get_test_retry_count()
+        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
       else:
         holder.read_registers()
     except Exception as e:
@@ -125,7 +125,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
             result = holder.write_register_with_retry(
               self.register,
               value,
-              retry_cout = 10,
+              retry_count = 10,
               on_retry = log_retry,
             )
           else:

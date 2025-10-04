@@ -100,8 +100,8 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
                     f'{str(exception)}, retrying...')
 
     try:
-      retry_cout = get_test_retry_count()
-      holder.read_registers_with_retry(retry_cout = retry_cout, on_retry = log_retry)
+      retry_count = get_test_retry_count()
+      holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
     finally:
       holder.disconnect()
 

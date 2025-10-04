@@ -87,8 +87,8 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
 
     try:
       if is_test_run():
-        retry_cout = get_test_retry_count()
-        holder.read_registers_with_retry(retry_cout = retry_cout, on_retry = log_retry)
+        retry_count = get_test_retry_count()
+        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
       else:
         holder.read_registers()
     except Exception as e:
