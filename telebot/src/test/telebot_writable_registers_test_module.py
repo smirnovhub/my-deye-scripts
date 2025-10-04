@@ -60,7 +60,7 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
     self.call_with_retry(self._check_results, server, writable_registers)
 
   def _check_results(self, server: AioSolarmanServer, registers: List[DeyeRegister]):
-    to_remove = []
+    to_remove: List[DeyeRegister] = []
     for register in registers:
       if not server.is_registers_written(register.address, register.quantity):
         self.log.info(f'Checking {register.name}... FAILED')

@@ -31,7 +31,8 @@ class TelebotBaseTestModule:
     retry_count = get_test_retry_count()
     last_exception: Optional[Exception] = None
 
-    class_name = func.__self__.__class__.__name__
+    owner = getattr(func, "__self__", None)
+    class_name = f'{owner.__class__.__name__}.' if owner else ''
     func_name = func.__name__
 
     for i in range(retry_count):
@@ -39,11 +40,11 @@ class TelebotBaseTestModule:
         return func(*args, **kwargs)
       except Exception as e:
         last_exception = e
-        self.log.info(f"Call to {class_name}.{func_name} failed: {e}. "
+        self.log.info(f"Call to {class_name}{func_name} failed: {e}. "
                       f"Retrying in {retry_delay}s (attempt {i + 1}/{retry_count})...")
         time.sleep(retry_delay)
     else:
-      self.log.info(f"Retry count {retry_count} exceeded for {class_name}.{func_name}")
+      self.log.info(f"Retry count {retry_count} exceeded for {class_name}{func_name}")
       if last_exception is not None:
         raise last_exception
 
