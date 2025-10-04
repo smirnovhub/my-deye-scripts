@@ -57,7 +57,7 @@ class AioSolarmanServer():
     self.serial = serial
     self.port = port
     self.log = logging.getLogger()
-    self.log.info(f"{self.name}: starting AioSolarmanServer at {address} {port}")
+    self.log.info(f"{self.name}: starting AioSolarmanServer at {address}:{port}")
     self.registers: Dict[int, int] = {}
     self.readed_registers: Set[int] = set()
     self.written_registers: Set[int] = set()
@@ -221,7 +221,7 @@ class AioSolarmanServer():
     writer : asyncio.StreamWriter
         Asynchronous stream writer for sending data to the client.
     """
-    sol = MockDatalogger("0.0.0.0", serial = self.serial, auto_reconnect = False)
+    sol = MockDatalogger(self.address, serial = self.serial, auto_reconnect = False)
     while True:
       data = await reader.read(1024)
       if data == b"":
@@ -252,7 +252,7 @@ class AioSolarmanServer():
           await writer.drain()
         except V5FrameError as e:
           # Close immediately - allows testing with wrong serial numbers, sequence numbers etc.
-          self.log.debug(f"{self.name}: V5FrameError({' '.join(e.args)}). Closing immediately... ")
+          self.log.info(f"{self.name}: V5FrameError({' '.join(e.args)}). Closing immediately... ")
           break
         except Exception as e:
           self.log.exception(e)
