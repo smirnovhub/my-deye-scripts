@@ -9,8 +9,9 @@ from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_advanced_choice import ask_advanced_choice
-from telebot_user_choices_helper import row_break_str
 from telebot_utils import is_test_run
+from telebot_utils import get_test_retry_count
+from telebot_user_choices_helper import row_break_str
 
 from telebot_deye_helper import (
   holder_kwargs,
@@ -86,7 +87,8 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
 
     try:
       if is_test_run():
-        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+        retry_count = get_test_retry_count()
+        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
       else:
         holder.read_registers()
     except Exception as e:

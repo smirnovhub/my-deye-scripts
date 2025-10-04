@@ -123,12 +123,12 @@ class DeyeRegistersHolder:
 
   def read_registers_with_retry(
     self,
-    retry_cout = 3,
+    retry_count = 3,
     retry_delay = 3,
     on_retry: Optional[Callable[[int, Exception], None]] = None,
   ):
     last_exception: Optional[Exception] = None
-    for i in range(retry_cout):
+    for i in range(retry_count):
       try:
         self.read_registers()
       except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
@@ -160,12 +160,12 @@ class DeyeRegistersHolder:
     self,
     register: DeyeRegister,
     value,
-    retry_cout = 3,
+    retry_count = 3,
     retry_delay = 3,
     on_retry: Optional[Callable[[int, Exception], None]] = None,
   ):
     last_exception: Optional[Exception] = None
-    for i in range(retry_cout):
+    for i in range(retry_count):
       try:
         return self.write_register(register, value)
       except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:

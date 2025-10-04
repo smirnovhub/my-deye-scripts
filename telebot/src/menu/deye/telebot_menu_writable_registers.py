@@ -21,6 +21,7 @@ from deye_registers_factory import DeyeRegistersFactory
 from telebot_user_choices import ask_confirmation
 from telebot_advanced_choice import ask_advanced_choice
 from telebot_constants import undo_button_remove_delay_sec
+from telebot_utils import get_test_retry_count
 
 from telebot_utils import (
   is_test_run,
@@ -193,7 +194,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     try:
       if is_test_run():
-        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_retry)
+        retry_count = get_test_retry_count()
+        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
       else:
         holder.read_registers()
     finally:
@@ -233,7 +235,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     try:
       if is_test_run():
-        holder.read_registers_with_retry(retry_cout = 10, on_retry = log_read_retry)
+        retry_count = get_test_retry_count()
+        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_read_retry)
       else:
         holder.read_registers()
 
@@ -268,6 +271,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         raise self.get_nothing_changed_exception(register.value, suffix)
 
       old_value = register.value
+      old_pretty_value = register.pretty_value
 
       def on_user_confirmation(chat_id: int, result: bool):
         if not result:
@@ -275,16 +279,22 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         else:
           try:
             if is_test_run():
+              retry_count = get_test_retry_count()
               holder.write_register_with_retry(
                 register,
                 value,
-                retry_cout = 10,
+                retry_count = retry_count,
                 on_retry = log_write_retry,
               )
             else:
               holder.write_register(register, value)
 
-            self.print_result_after_write_register(register, message, old_value)
+            self.print_result_after_write_register(
+              register,
+              message,
+              old_value = old_value,
+              old_pretty_value = old_pretty_value,
+            )
           except DeyeKnownException as e:
             self.bot.send_message(message.chat.id, str(e))
           except Exception as e:
@@ -309,13 +319,18 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         holder.write_register_with_retry(
           register,
           value,
-          retry_cout = 10,
+          retry_count = 10,
           on_retry = log_write_retry,
         )
       else:
         holder.write_register(register, value)
 
-      self.print_result_after_write_register(register, message, old_value)
+      self.print_result_after_write_register(
+        register,
+        message,
+        old_value = old_value,
+        old_pretty_value = old_pretty_value,
+      )
 
     finally:
       holder.disconnect()
@@ -325,17 +340,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     register: DeyeRegister,
     message: telebot.types.Message,
     old_value: Any,
+    old_pretty_value: str,
   ):
-    value = register.value
-
-    if isinstance(value, DeyeBaseEnum):
-      value = value.pretty
-
-    if isinstance(old_value, DeyeBaseEnum):
-      old_value = old_value.pretty
-
     suffix = f' {register.suffix}'.rstrip()
-    text = f'<b>{register.description}</b> changed from {old_value} to {value}{suffix}'
+    text = (f'<b>{register.description}</b> changed from {old_pretty_value} '
+            f'to {register.pretty_value}{suffix}')
 
     is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 

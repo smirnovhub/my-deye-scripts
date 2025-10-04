@@ -9,8 +9,9 @@ from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
 from telebot_advanced_choice import ask_advanced_choice
 from telebot_git_helper import get_current_branch_name
+from telebot_utils import remove_inline_buttons_with_delay, stop_bot
 from common_utils import clock_face_one_oclock
-from telebot_utils import stop_bot
+from telebot_constants import buttons_remove_delay_sec
 
 from telebot_git_helper import (
   stash_push,
@@ -72,7 +73,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       return
 
     if last_commits:
-      ask_advanced_choice(
+      sent = ask_advanced_choice(
         self.bot,
         message.chat.id,
         f"You are currently on branch '{branch_name}'.\n"
@@ -84,12 +85,19 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
         max_per_row = 1,
       )
     else:
-      self.bot.send_message(message.chat.id, 'Enter commit hash to revert to:')
+      sent = self.bot.send_message(message.chat.id, 'Enter commit hash to revert to:')
 
     self.bot.clear_step_handler_by_chat_id(message.chat.id)
-    self.bot.register_next_step_handler(message, self.handle_step2)
+    self.bot.register_next_step_handler(message, self.handle_step2, sent.message_id)
 
-  def handle_step2(self, message: telebot.types.Message):
+  def handle_step2(self, message: telebot.types.Message, message_id: int):
+    remove_inline_buttons_with_delay(
+      bot = self.bot,
+      chat_id = message.chat.id,
+      message_id = message_id,
+      delay = buttons_remove_delay_sec,
+    )
+
     # If we received new command, skip it
     if message.text.startswith('/'):
       self.bot.process_new_messages([message])

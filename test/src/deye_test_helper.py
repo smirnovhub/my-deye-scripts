@@ -297,14 +297,14 @@ def get_random_by_register_value_type(register: DeyeRegister, skip_zero: bool = 
 def _handle_int_value(register: DeyeRegister, skip_zero: bool) -> str:
   while True:
     value = round(random.uniform(register.min_value, register.max_value))
-    if value != 0:
+    if not skip_zero or value != 0:
       break
   return custom_round(value)
 
 def _handle_float_value(register: DeyeRegister, skip_zero: bool) -> str:
   while True:
     value = random.uniform(register.min_value, register.max_value)
-    if abs(value) > 0.01:
+    if not skip_zero or abs(value) > 0.01:
       break
   return custom_round(value)
 

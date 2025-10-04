@@ -10,11 +10,12 @@ from telebot_auth_helper import TelebotAuthHelper
 from deye_base_enum import DeyeBaseEnum
 from telebot_menu_item import TelebotMenuItem
 from telebot_user_choices_helper import row_break_str
+from telebot_utils import is_test_run
 
 holder_kwargs = {
   'name': 'telebot',
-  'socket_timeout': 10,
-  'caching_time': 5,
+  'socket_timeout': 1 if is_test_run() else 10,
+  'caching_time': 0 if is_test_run() else 5,
   #  'verbose': True,
 }
 
@@ -83,8 +84,9 @@ def get_keyboard_for_register(
     ])
   elif register.name == registers.battery_low_batt_soc_register.name:
     return build_keyboard_for_register(register, [
-      ['5', '10', '15', '20', '25'],
-      ['30', '35', '40', '45', '50'],
+      ['5', '7', '10', '12', '15'],
+      ['17', '20', '25', '30', '35'],
+      ['40', '45', '50', '55', '60'],
     ])
   elif register.name == registers.battery_max_charge_current_register.name:
     return build_keyboard_for_register(register, [
@@ -95,13 +97,15 @@ def get_keyboard_for_register(
     ])
   elif register.name == registers.battery_restart_soc_register.name:
     return build_keyboard_for_register(register, [
-      ['5', '10', '15', '20', '25'],
-      ['30', '35', '40', '45', '50'],
+      ['5', '7', '10', '12', '15'],
+      ['17', '20', '25', '30', '35'],
+      ['40', '45', '50', '55', '60'],
     ])
   elif register.name == registers.battery_shutdown_soc_register.name:
     return build_keyboard_for_register(register, [
-      ['5', '10', '15', '20', '25'],
-      ['30', '35', '40', '45', '50'],
+      ['5', '7', '10', '12', '15'],
+      ['17', '20', '25', '30', '35'],
+      ['40', '45', '50', '55', '60'],
     ])
   elif register.name == registers.grid_charging_start_soc_register.name:
     return build_keyboard_for_register(register, [

@@ -37,13 +37,12 @@ class BaseDeyeRegister(DeyeRegister):
       self._value = self.read_from_master_interactor(interactors)
       return self._value
 
+    divider = len(interactors) if self._avg == DeyeRegisterAverageType.average else 1
+
     if self._avg == DeyeRegisterAverageType.accumulate or self._avg == DeyeRegisterAverageType.average:
       value = 0.0
       for interactor in interactors:
-        value += self.read_internal(interactor)
-
-      if self._avg == DeyeRegisterAverageType.average:
-        value /= len(interactors)
+        value += round(self.read_internal(interactor) / divider, 2)
 
       self._value = value
       return self._value

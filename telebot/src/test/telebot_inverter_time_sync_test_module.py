@@ -1,11 +1,9 @@
 import re
 import time
-import logging
 import telebot
 
 from typing import List, Optional
 
-from deye_loggers import DeyeLoggers
 from telebot_menu_item import TelebotMenuItem
 from telebot_users import TelebotUsers
 from solarman_server import AioSolarmanServer
@@ -17,8 +15,6 @@ from deye_registers_factory import DeyeRegistersFactory
 class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
-    self.loggers = DeyeLoggers()
-    self.log = logging.getLogger()
     self.registers = DeyeRegistersFactory.create_registers()
 
   def run_tests(self, servers: List[AioSolarmanServer]):
@@ -33,7 +29,6 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
       server.clear_registers()
       server.clear_registers_status()
 
-    time.sleep(1)
     command = f'/{TelebotMenuItem.deye_sync_time.command}'
 
     fake_message = TelebotFakeTestMessage.make(
@@ -54,8 +49,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.log.info(f"Replying 'yes' for time sync confirmation...")
     self.bot.process_new_messages([yes_message])
 
-    time.sleep(3)
-    self._check_results(servers)
+    self.call_with_retry(self._check_results, servers)
 
     self.log.info(f'Run command from button: {command}')
 
@@ -72,8 +66,6 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
       message = fake_message,
     )
 
-    time.sleep(1)
-
     self.bot.clear_messages()
     self.bot.process_new_callback_query([fake_query])
     time.sleep(1)
@@ -81,8 +73,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.log.info(f"Replying 'yes' for time sync confirmation...")
     self.bot.process_new_messages([yes_message])
 
-    time.sleep(3)
-    self._check_results(servers)
+    self.call_with_retry(self._check_results, servers)
 
   def _check_results(self, servers: List[AioSolarmanServer]):
     register = self.registers.inverter_system_time_register
