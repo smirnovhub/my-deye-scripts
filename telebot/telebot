@@ -39,8 +39,8 @@ from common_utils import (
 )
 
 try:
-  if is_test_run():
-    token = os.getenv('BOT_API_TOKEN', '')
+  if is_tests_on():
+    token = os.getenv('BOT_API_TEST_TOKEN', '')
     bot = TestableTelebot(token)
     telebot = MyTelebot(bot)
   else:

@@ -13,7 +13,7 @@ from deye_registers_holder import DeyeRegistersHolder
 from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
 from telebot_deye_helper import holder_kwargs
 from deye_test_helper import get_random_by_register_type
-from telebot_utils import get_test_retry_count
+from deye_utils import get_test_retry_count
 
 class TelebotRegistersTestModule(TelebotBaseTestModule):
   def __init__(

@@ -7,8 +7,8 @@ from forecast_registers import ForecastRegisters
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_deye_helper import get_register_values, holder_kwargs
-from telebot_utils import is_test_run
-from telebot_utils import get_test_retry_count
+from deye_utils import is_tests_on
+from deye_utils import get_test_retry_count
 
 class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
@@ -39,7 +39,7 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
                     f'{str(exception)}, retrying...')
 
     try:
-      if is_test_run():
+      if is_tests_on():
         retry_count = get_test_retry_count()
         holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
       else:

@@ -7,7 +7,7 @@ from deye_loggers import DeyeLoggers
 from testable_telebot import TestableTelebot
 from solarman_server import AioSolarmanServer
 from deye_exceptions import DeyeKnownException
-from telebot_utils import get_test_retry_count
+from deye_utils import get_test_retry_count
 
 class TelebotBaseTestModule:
   def __init__(self, bot: TestableTelebot):

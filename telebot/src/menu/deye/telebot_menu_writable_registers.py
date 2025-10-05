@@ -21,10 +21,10 @@ from deye_registers_factory import DeyeRegistersFactory
 from telebot_user_choices import ask_confirmation
 from telebot_advanced_choice import ask_advanced_choice
 from telebot_constants import undo_button_remove_delay_sec
-from telebot_utils import get_test_retry_count
+from deye_utils import get_test_retry_count
+from deye_utils import is_tests_on
 
 from telebot_utils import (
-  is_test_run,
   get_inline_button_by_text,
   remove_inline_buttons_with_delay,
 )
@@ -193,7 +193,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
                     f'{str(exception)}, retrying...')
 
     try:
-      if is_test_run():
+      if is_tests_on():
         retry_count = get_test_retry_count()
         holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
       else:
@@ -234,7 +234,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
                     f'{str(exception)}, retrying...')
 
     try:
-      if is_test_run():
+      if is_tests_on():
         retry_count = get_test_retry_count()
         holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_read_retry)
       else:
@@ -278,7 +278,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
           self.bot.send_message(message.chat.id, 'Nothing changed', parse_mode = 'HTML')
         else:
           try:
-            if is_test_run():
+            if is_tests_on():
               retry_count = get_test_retry_count()
               holder.write_register_with_retry(
                 register,
@@ -305,7 +305,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
       is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 
-      if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed and not is_test_run():
+      if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed and not is_tests_on():
         ask_confirmation(
           self.bot,
           message.chat.id,
@@ -315,7 +315,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         )
         return
 
-      if is_test_run():
+      if is_tests_on():
         holder.write_register_with_retry(
           register,
           value,
