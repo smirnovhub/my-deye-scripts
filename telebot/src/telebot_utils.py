@@ -4,7 +4,6 @@ import time
 import telebot
 
 from typing import Optional
-from deye_loggers import DeyeLoggers
 
 def get_inline_button_by_data(
   message: telebot.types.Message,

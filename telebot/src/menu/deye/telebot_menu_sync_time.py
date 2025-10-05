@@ -13,7 +13,7 @@ from deye_registers_holder import DeyeRegistersHolder
 from deye_registers_factory import DeyeRegistersFactory
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_user_choices import ask_confirmation
-from telebot_advanced_choice import ask_advanced_choice
+from telebot_command_choice import ask_command_choice
 from telebot_utils import remove_inline_buttons_with_delay
 
 from telebot_constants import (
@@ -110,7 +110,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
 
         text = f'<b>{self.register.description}</b> changed from {old_value} to {result} {self.register.suffix}'
 
-        sent = ask_advanced_choice(
+        sent = ask_command_choice(
           self.bot,
           chat_id,
           text,

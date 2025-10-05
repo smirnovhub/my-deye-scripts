@@ -12,6 +12,7 @@ class TelebotMenuItem(Enum):
   restart = ('restart', 'Restart bot', DeyeSystemType.none)
   revert = ('revert', 'Revert bot', DeyeSystemType.none)
   update = ('update', 'Update bot', DeyeSystemType.none)
+  test = ('test', 'Run tests', DeyeSystemType.none)
 
   # if you want to see all commands in Telegram menu,
   # remove system_type parameter or replace it to DeyeSystemType.any

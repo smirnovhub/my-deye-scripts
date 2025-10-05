@@ -3,7 +3,7 @@ from typing import List, Optional
 from deye_register import DeyeRegister
 from telebot_users import TelebotUsers
 from deye_registers_factory import DeyeRegistersFactory
-from solarman_server import AioSolarmanServer
+from solarman_server import SolarmanServer
 from telebot_fake_test_message import TelebotFakeTestMessage
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
@@ -13,7 +13,7 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
 
-  def run_tests(self, servers: List[AioSolarmanServer]):
+  def run_tests(self, servers: List[SolarmanServer]):
     users = TelebotUsers()
 
     registers = DeyeRegistersFactory.create_registers()
@@ -23,7 +23,7 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
 
     self.log.info(f'Running module {type(self).__name__}...')
 
-    server: Optional[AioSolarmanServer] = None
+    server: Optional[SolarmanServer] = None
 
     for srv in servers:
       if srv.name == self.loggers.master.name:
@@ -59,7 +59,7 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
     writable_registers = [r for r in registers.all_registers if r.can_write]
     self.call_with_retry(self._check_results, server, writable_registers)
 
-  def _check_results(self, server: AioSolarmanServer, registers: List[DeyeRegister]):
+  def _check_results(self, server: SolarmanServer, registers: List[DeyeRegister]):
     to_remove: List[DeyeRegister] = []
     for register in registers:
       if not server.is_registers_written(register.address, register.quantity):

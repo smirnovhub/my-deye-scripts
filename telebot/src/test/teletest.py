@@ -10,7 +10,7 @@ from accumulated_info_registers import AccumulatedInfoRegisters
 from slave_info_registers import SlaveInfoRegisters
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
-from solarman_server import AioSolarmanServer
+from solarman_server import SolarmanServer
 from forecast_registers import ForecastRegisters
 from master_info_registers import MasterInfoRegisters
 from telebot_registers_test_module import TelebotRegistersTestModule
@@ -29,19 +29,11 @@ class TeleTest:
       print('Your loggers are not test loggers')
       return
 
-    logging.basicConfig(
-      filename = 'data/telebot.log',
-      filemode = 'w',
-      level = logging.INFO,
-      format = "[%(asctime)s] [%(levelname)s] %(message)s",
-      datefmt = "%Y-%m-%d %H:%M:%S",
-    )
-
-    servers: List[AioSolarmanServer] = []
+    servers: List[SolarmanServer] = []
 
     for logger in self.loggers.loggers:
       servers.append(
-        AioSolarmanServer(
+        SolarmanServer(
           name = logger.name,
           address = logger.address,
           serial = logger.serial,

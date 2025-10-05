@@ -7,7 +7,7 @@ from deye_registers import DeyeRegisters
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
-from telebot_advanced_choice import ask_advanced_choice
+from telebot_command_choice import ask_command_choice
 
 from telebot_deye_helper import (
   holder_kwargs,
@@ -79,7 +79,7 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
       info = get_register_values(holder.accumulated_registers.all_registers)
       inverter_name = self.loggers.accumulated_registers_prefix.title()
 
-    ask_advanced_choice(
+    ask_command_choice(
       self.bot,
       message.chat.id,
       f'<b>{inverter_name} settings:</b>\n{info}',

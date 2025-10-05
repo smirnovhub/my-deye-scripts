@@ -7,7 +7,7 @@ from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_user_choices import ask_confirmation
 from countdown_with_cancel import countdown_with_cancel
-from telebot_advanced_choice import ask_advanced_choice
+from telebot_command_choice import ask_command_choice
 from telebot_git_helper import get_current_branch_name
 from telebot_utils import remove_inline_buttons_with_delay, stop_bot
 from common_utils import clock_face_one_oclock
@@ -73,7 +73,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       return
 
     if last_commits:
-      sent = ask_advanced_choice(
+      sent = ask_command_choice(
         self.bot,
         message.chat.id,
         f"You are currently on branch '{branch_name}'.\n"

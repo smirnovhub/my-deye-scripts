@@ -30,6 +30,7 @@ from teletest import TeleTest
 from testable_telebot import TestableTelebot
 from telebot_menu_revert import TelebotMenuRevert
 from telebot_menu_update import TelebotMenuUpdate
+from telebot_menu_test import TelebotMenuTest
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
 from telebot_send_message import send_private_telegram_message
@@ -151,6 +152,7 @@ class MyTelebot:
       TelebotMenuRestart(bot),
       TelebotMenuRevert(bot),
       TelebotMenuUpdate(bot),
+      TelebotMenuTest(bot),
     ]
 
   def get_writable_registers_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
