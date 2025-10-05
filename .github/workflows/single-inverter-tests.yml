@@ -30,10 +30,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests
 
-      - name: Copy loggers
-        run: |
-          cp test/src/deye_test_loggers.py common/deye_loggers.py
-
       - name: Run tests
         run: |
           python -u test/src/deye_single_inverter_test.py
