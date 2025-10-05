@@ -3,7 +3,7 @@ from typing import List
 from deye_logger import DeyeLogger
 from deye_base_loggers import DeyeBaseLoggers
 
-class DeyeLoggers(DeyeBaseLoggers):
+class DeyeTestLoggers(DeyeBaseLoggers):
   @property
   def master(self) -> DeyeLogger:
     return DeyeLogger(

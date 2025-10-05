@@ -8,14 +8,12 @@ from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_advanced_choice import ask_advanced_choice
-from telebot_utils import get_test_retry_count
 
 from telebot_deye_helper import (
   holder_kwargs,
   get_choices_of_inverters,
   get_register_values,
 )
-from telebot_utils import is_test_run
 
 class TelebotMenuBaseSettings(TelebotMenuItemHandler):
   def __init__(
@@ -59,16 +57,8 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
-    def log_retry(attempt, exception):
-      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-                    f'{str(exception)}, retrying...')
-
     try:
-      if is_test_run():
-        retry_count = get_test_retry_count()
-        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
-      else:
-        holder.read_registers()
+      holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return

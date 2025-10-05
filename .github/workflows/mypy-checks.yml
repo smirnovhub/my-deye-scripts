@@ -37,3 +37,8 @@ jobs:
         working-directory: telebot
         run: |
           mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+
+      - name: Run mypy for test
+        working-directory: test
+        run: |
+          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src

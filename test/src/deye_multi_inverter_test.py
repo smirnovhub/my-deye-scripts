@@ -25,18 +25,20 @@ import_dirs(
   ],
 )
 
-logging.basicConfig(
-  level = logging.INFO,
-  format = "[%(asctime)s] [%(levelname)s] %(message)s",
-  datefmt = "%Y-%m-%d %H:%M:%S",
-)
-
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import AioSolarmanServer
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_test_helper import get_random_by_register_type
-from deye_utils import custom_round
+from deye_utils import custom_round, turn_tests_on
+
+turn_tests_on()
+
+logging.basicConfig(
+  level = logging.INFO,
+  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  datefmt = "%Y-%m-%d %H:%M:%S",
+)
 
 log = logging.getLogger()
 loggers = DeyeLoggers()
@@ -80,6 +82,8 @@ for register in registers.all_registers:
 
   for server in servers:
     random_value = get_random_by_register_type(register)
+    if random_value is None:
+      continue
     server.set_register_values(random_value.register.address, random_value.values)
     try:
       total_value += round(float(random_value.value) / divider, 2)

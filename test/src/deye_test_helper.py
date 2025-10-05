@@ -189,8 +189,8 @@ def _handle_int_register(register: IntDeyeRegister) -> DeyeRegisterRandomValue:
 def _handle_time_of_use_int_register(register: TimeOfUseIntWritableDeyeRegister) -> DeyeRegisterRandomValue:
   values: List[int] = []
   for i in range(register.quantity):
-    value = random.randint(0, unsigned_max_value)
-    values.append(value)
+    val = random.randint(0, unsigned_max_value)
+    values.append(val)
   # Without rounding, small floating-point errors (e.g. 3.334999...)
   # cause inconsistent results, making random-based tests fail unpredictably.
   # Rounding to 2 decimals ensures stable, repeatable test outcomes.
@@ -246,6 +246,7 @@ def _handle_total_energy_cost_register(
         production -= delta
 
       return DeyeRegisterRandomValue(register, custom_round(total_cost), rnd.values)
+  return None
 
 def _handle_today_energy_cost_register(
   register: TodayEnergyCostBaseRegister,
@@ -257,6 +258,7 @@ def _handle_today_energy_cost_register(
       production = float(rnd.value)
       value = production * energy_cost.current_pv_energy_cost
       return DeyeRegisterRandomValue(register, custom_round(value), rnd.values)
+  return None
 
 def _handle_sum_register(
   register: SumDeyeRegister,

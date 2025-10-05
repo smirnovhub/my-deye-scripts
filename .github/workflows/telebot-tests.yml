@@ -37,14 +37,10 @@ jobs:
           if [ "${{ matrix.python-version }}" = "3.10" ]; then echo "Sleeping for 20s..."; sleep 20; fi
           if [ "${{ matrix.python-version }}" = "3.11" ]; then echo "Sleeping for 30s..."; sleep 30; fi
 
-      - name: Copy loggers
-        run: |
-          cp test/src/deye_test_loggers.py common/deye_loggers.py
-
       - name: Run tests
         env:
           TEST_RUN: "true"
-          BOT_API_TOKEN: ${{ secrets.BOT_API_TOKEN }}
+          BOT_API_TEST_TOKEN: ${{ secrets.BOT_API_TEST_TOKEN }}
         run: |
           python -u test/src/telebot_test.py
 
@@ -53,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: telebot-python-${{ matrix.python-version }}-log
-          path: telebot/telebot.log
+          path: telebot/data/telebot.log
           overwrite: true
           compression-level: 9
           if-no-files-found: error
@@ -61,4 +57,4 @@ jobs:
       - name: Print log
         if: always()
         run: |
-          cat telebot/telebot.log
+          cat telebot/data/telebot.log

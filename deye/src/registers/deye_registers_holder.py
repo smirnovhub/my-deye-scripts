@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 
 from typing import Callable, Dict, List, Optional
 
@@ -15,7 +16,12 @@ from deye_registers_factory import DeyeRegistersFactory
 from lock_exceptions import DeyeLockAlreadyAcquiredException
 from deye_exceptions import DeyeNoSocketAvailableException
 from deye_exceptions import DeyeQueueIsEmptyException
-from deye_utils import get_reraised_exception
+
+from deye_utils import (
+  get_reraised_exception,
+  get_test_retry_count,
+  is_tests_on,
+)
 
 from deye_file_lock import (
   lock_path,
@@ -34,6 +40,7 @@ class DeyeRegistersHolder:
     self._master_interactor: Optional[DeyeModbusInteractor] = None
     self._loggers = loggers
     self.kwargs = kwargs
+    self.log = logging.getLogger()
     self._all_loggers = DeyeLoggers()
 
     # Initialize locker
@@ -75,6 +82,17 @@ class DeyeRegistersHolder:
     return self._registers[self._all_loggers.accumulated_registers_prefix]
 
   def read_registers(self):
+    def log_retry(attempt, retry_count, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+                    f'{str(exception)}, retrying... (attempt {attempt}/{retry_count})')
+
+    if is_tests_on():
+      retry_count = get_test_retry_count()
+      self._read_registers_with_retry_internal(retry_count = retry_count, on_retry = log_retry)
+    else:
+      self._read_registers_internal()
+
+  def _read_registers_internal(self):
     try:
       self.locker.acquire()
     except DeyeLockAlreadyAcquiredException:
@@ -121,20 +139,20 @@ class DeyeRegistersHolder:
       except Exception as e:
         raise get_reraised_exception(e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
-  def read_registers_with_retry(
+  def _read_registers_with_retry_internal(
     self,
     retry_count = 3,
     retry_delay = 3,
-    on_retry: Optional[Callable[[int, Exception], None]] = None,
+    on_retry: Optional[Callable[[int, int, Exception], None]] = None,
   ):
     last_exception: Optional[Exception] = None
     for i in range(retry_count):
       try:
-        self.read_registers()
+        self._read_registers_internal()
       except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
         last_exception = e
         if on_retry:
-          on_retry(i + 1, e)
+          on_retry(i + 1, retry_count, e)
         time.sleep(retry_delay)
         continue
       break
@@ -143,6 +161,22 @@ class DeyeRegistersHolder:
         raise last_exception
 
   def write_register(self, register: DeyeRegister, value):
+    def log_retry(attempt, retry_count, exception):
+      self.log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
+                    f'{str(exception)}, retrying... (attempt {attempt}/{retry_count})')
+
+    if is_tests_on():
+      retry_count = get_test_retry_count()
+      self._write_register_with_retry_internal(
+        register,
+        value,
+        retry_count = retry_count,
+        on_retry = log_retry,
+      )
+    else:
+      self._write_register_internal(register, value)
+
+  def _write_register_internal(self, register: DeyeRegister, value):
     try:
       self.locker.acquire()
     except DeyeLockAlreadyAcquiredException:
@@ -156,22 +190,22 @@ class DeyeRegistersHolder:
     except Exception as e:
       raise get_reraised_exception(e, f'{type(self).__name__}: error while writing register') from e
 
-  def write_register_with_retry(
+  def _write_register_with_retry_internal(
     self,
     register: DeyeRegister,
     value,
     retry_count = 3,
     retry_delay = 3,
-    on_retry: Optional[Callable[[int, Exception], None]] = None,
+    on_retry: Optional[Callable[[int, int, Exception], None]] = None,
   ):
     last_exception: Optional[Exception] = None
     for i in range(retry_count):
       try:
-        return self.write_register(register, value)
+        return self._write_register_internal(register, value)
       except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
         last_exception = e
         if on_retry:
-          on_retry(i + 1, e)
+          on_retry(i + 1, retry_count, e)
         time.sleep(retry_delay)
         continue
       break

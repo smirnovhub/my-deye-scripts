@@ -21,10 +21,9 @@ from deye_registers_factory import DeyeRegistersFactory
 from telebot_user_choices import ask_confirmation
 from telebot_advanced_choice import ask_advanced_choice
 from telebot_constants import undo_button_remove_delay_sec
-from telebot_utils import get_test_retry_count
+from deye_utils import is_tests_on
 
 from telebot_utils import (
-  is_test_run,
   get_inline_button_by_text,
   remove_inline_buttons_with_delay,
 )
@@ -188,16 +187,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
-    def log_retry(attempt, exception):
-      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-                    f'{str(exception)}, retrying...')
-
     try:
-      if is_test_run():
-        retry_count = get_test_retry_count()
-        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
-      else:
-        holder.read_registers()
+      holder.read_registers()
     finally:
       holder.disconnect()
 
@@ -225,20 +216,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
-    def log_read_retry(attempt, exception):
-      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-                    f'{str(exception)}, retrying...')
-
-    def log_write_retry(attempt, exception):
-      self.log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
-                    f'{str(exception)}, retrying...')
-
     try:
-      if is_test_run():
-        retry_count = get_test_retry_count()
-        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_read_retry)
-      else:
-        holder.read_registers()
+      holder.read_registers()
 
       value: Any = 0
       suffix = f' {register.suffix}'.rstrip()
@@ -278,17 +257,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
           self.bot.send_message(message.chat.id, 'Nothing changed', parse_mode = 'HTML')
         else:
           try:
-            if is_test_run():
-              retry_count = get_test_retry_count()
-              holder.write_register_with_retry(
-                register,
-                value,
-                retry_count = retry_count,
-                on_retry = log_write_retry,
-              )
-            else:
-              holder.write_register(register, value)
-
+            holder.write_register(register, value)
             self.print_result_after_write_register(
               register,
               message,
@@ -305,7 +274,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
       is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 
-      if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed and not is_test_run():
+      if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed and not is_tests_on():
         ask_confirmation(
           self.bot,
           message.chat.id,
@@ -315,16 +284,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         )
         return
 
-      if is_test_run():
-        holder.write_register_with_retry(
-          register,
-          value,
-          retry_count = 10,
-          on_retry = log_write_retry,
-        )
-      else:
-        holder.write_register(register, value)
-
+      holder.write_register(register, value)
       self.print_result_after_write_register(
         register,
         message,
