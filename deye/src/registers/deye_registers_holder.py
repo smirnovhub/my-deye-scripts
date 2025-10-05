@@ -16,8 +16,12 @@ from deye_registers_factory import DeyeRegistersFactory
 from lock_exceptions import DeyeLockAlreadyAcquiredException
 from deye_exceptions import DeyeNoSocketAvailableException
 from deye_exceptions import DeyeQueueIsEmptyException
-from deye_utils import get_reraised_exception, get_test_retry_count
-from deye_utils import is_tests_on
+
+from deye_utils import (
+  get_reraised_exception,
+  get_test_retry_count,
+  is_tests_on,
+)
 
 from deye_file_lock import (
   lock_path,
