@@ -1,4 +1,4 @@
-name: telebot tests
+name: telebot test
 
 on:
   push:

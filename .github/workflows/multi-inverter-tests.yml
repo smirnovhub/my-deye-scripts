@@ -1,4 +1,4 @@
-name: multi inverter tests
+name: multi inverter test
 
 on:
   push:
