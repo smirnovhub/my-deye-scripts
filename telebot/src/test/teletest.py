@@ -30,7 +30,7 @@ class TeleTest:
       return
 
     logging.basicConfig(
-      filename = 'telebot.log',
+      filename = 'data/telebot.log',
       filemode = 'w',
       level = logging.INFO,
       format = "[%(asctime)s] [%(levelname)s] %(message)s",
