@@ -13,7 +13,6 @@ from deye_registers_holder import DeyeRegistersHolder
 from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
 from telebot_deye_helper import holder_kwargs
 from deye_test_helper import get_random_by_register_type
-from deye_utils import get_test_retry_count
 
 class TelebotRegistersTestModule(TelebotBaseTestModule):
   def __init__(
@@ -95,13 +94,8 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
       **holder_kwargs,
     )
 
-    def log_retry(attempt, exception):
-      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-                    f'{str(exception)}, retrying...')
-
     try:
-      retry_count = get_test_retry_count()
-      holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
+      holder.read_registers()
     finally:
       holder.disconnect()
 

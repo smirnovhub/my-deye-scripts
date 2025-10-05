@@ -15,8 +15,6 @@ from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_user_choices import ask_confirmation
 from telebot_advanced_choice import ask_advanced_choice
 from telebot_utils import remove_inline_buttons_with_delay
-from deye_utils import is_tests_on
-from deye_utils import get_test_retry_count
 
 from telebot_constants import (
   undo_button_name,
@@ -65,16 +63,8 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
-    def log_retry(attempt, exception):
-      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-                    f'{str(exception)}, retrying...')
-
     try:
-      if is_tests_on():
-        retry_count = get_test_retry_count()
-        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
-      else:
-        holder.read_registers()
+      holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
@@ -113,20 +103,8 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
           **holder_kwargs,
         )
 
-        def log_retry(attempt, exception):
-          self.log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
-                        f'{str(exception)}, retrying...')
-
         try:
-          if is_tests_on():
-            result = holder.write_register_with_retry(
-              self.register,
-              value,
-              retry_count = 10,
-              on_retry = log_retry,
-            )
-          else:
-            result = holder.write_register(self.register, value)
+          result = holder.write_register(self.register, value)
         finally:
           holder.disconnect()
 

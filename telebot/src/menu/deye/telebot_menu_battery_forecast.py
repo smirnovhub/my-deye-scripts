@@ -7,8 +7,6 @@ from forecast_registers import ForecastRegisters
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_deye_helper import get_register_values, holder_kwargs
-from deye_utils import is_tests_on
-from deye_utils import get_test_retry_count
 
 class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
@@ -34,16 +32,8 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
       **holder_kwargs,
     )
 
-    def log_retry(attempt, exception):
-      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-                    f'{str(exception)}, retrying...')
-
     try:
-      if is_tests_on():
-        retry_count = get_test_retry_count()
-        holder.read_registers_with_retry(retry_count = retry_count, on_retry = log_retry)
-      else:
-        holder.read_registers()
+      holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return

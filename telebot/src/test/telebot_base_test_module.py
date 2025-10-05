@@ -50,5 +50,4 @@ class TelebotBaseTestModule:
 
   def error(self, message: str):
     self.log.info(message)
-    print(message)
     raise DeyeKnownException(message)
