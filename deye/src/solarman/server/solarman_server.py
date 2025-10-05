@@ -27,7 +27,7 @@ _WIN_PLATFORM = True if platform.system() == "Windows" else False
 socketserver.TCPServer.allow_reuse_address = True
 socketserver.TCPServer.allow_reuse_port = True # type: ignore
 
-class AioSolarmanServer():
+class SolarmanServer():
   """
   Asynchronous TCP server simulating a Solarman Modbus-like device.
 
@@ -57,7 +57,7 @@ class AioSolarmanServer():
     self.serial = serial
     self.port = port
     self.log = logging.getLogger()
-    self.log.info(f"{self.name}: starting AioSolarmanServer at {address}:{port}")
+    self.log.info(f"{self.name}: starting SolarmanServer at {address}:{port}")
     self.registers: Dict[int, int] = {}
     self.readed_registers: Set[int] = set()
     self.written_registers: Set[int] = set()
