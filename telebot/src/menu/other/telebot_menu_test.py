@@ -1,3 +1,4 @@
+from io import BufferedReader
 import os
 import sys
 import time
@@ -6,7 +7,7 @@ import zipfile
 import telebot
 import datetime
 
-from typing import BinaryIO, Dict, List, TextIO
+from typing import Dict, List, TextIO
 
 from deye_file_locker import DeyeFileLocker
 from telebot_menu_item import TelebotMenuItem
@@ -214,7 +215,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     """
     media_group: List[telebot.types.InputMediaDocument] = []
     zip_files: List[str] = []
-    open_files: list[BinaryIO] = []
+    open_files: List[BufferedReader] = []
 
     for file_path in files:
       if not os.path.exists(file_path):

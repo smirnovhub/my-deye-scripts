@@ -108,7 +108,7 @@ def _register_global_handler(bot: telebot.TeleBot) -> None:
         choice_text = call.data[len(_choice_prefix):-1] # strip prefix & trailing "_"
         # Build dictionary with button text and associated data
         button = get_inline_button_by_data(cast(telebot.types.Message, call.message), str(call.data))
-        choice = ButtonChoice(text = button.text, data = choice_text)
+        choice = ButtonChoice(text = button.text if button else 'unknown', data = choice_text)
 
         try:
           bot.edit_message_text(

@@ -56,7 +56,7 @@ class TelebotProgressMessage:
     Internal method: runs in a background thread and updates the message text every second.
     Cycles the number of dots from 1 to 3 and back to 1.
     """
-    if self._text is None:
+    if self._text is None or self._message is None:
       return
 
     dots: int = 1
