@@ -23,13 +23,16 @@ import_dirs(
   ],
 )
 
+from deye_loggers import DeyeLoggers
+from deye_utils import turn_tests_on
+
+turn_tests_on()
+
 logging.basicConfig(
   level = logging.INFO,
   format = "[%(asctime)s] [%(levelname)s] %(message)s",
   datefmt = "%Y-%m-%d %H:%M:%S",
 )
-
-from deye_test_loggers import DeyeLoggers
 
 loggers = DeyeLoggers()
 log = logging.getLogger()

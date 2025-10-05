@@ -5,6 +5,18 @@ from deye_system_type import DeyeSystemType
 from deye_exceptions import DeyeNotImplementedException
 
 class DeyeBaseLoggers:
+  _instance = None
+
+  def __new__(cls, *args, **kwargs):
+    if cls._instance is None:
+      from deye_utils import is_tests_on
+      from deye_test_loggers import DeyeTestLoggers
+      if is_tests_on():
+        cls._instance = super().__new__(DeyeTestLoggers)
+      else:
+        cls._instance = super().__new__(cls)
+    return cls._instance
+
   @property
   def master(self) -> DeyeLogger:
     raise DeyeNotImplementedException('master')

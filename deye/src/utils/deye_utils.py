@@ -5,6 +5,7 @@ import struct
 import requests
 
 from typing import Union, List
+from deye_loggers import DeyeLoggers
 from datetime import datetime, timedelta
 from pysolarmanv5 import NoSocketAvailableError
 
@@ -188,3 +189,13 @@ def get_reraised_exception(exception: Exception, message: str) -> Exception:
     return DeyeConnectionErrorException(f'{message}: Connection error ({text})')
   except Exception as e:
     return DeyeUnknownException(f'{message}: {str(e)}')
+
+def is_tests_on():
+  return os.getenv('TEST_RUN', '').strip().lower() == 'true'
+
+def turn_tests_on():
+  os.environ['TEST_RUN'] = 'true'
+
+def get_test_retry_count():
+  loggers = DeyeLoggers()
+  return 15 + loggers.count * 4
