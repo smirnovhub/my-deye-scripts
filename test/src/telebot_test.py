@@ -25,6 +25,7 @@ import_dirs(
 
 from deye_loggers import DeyeLoggers
 from deye_utils import turn_tests_on
+from deye_test_helper import test_success_str
 
 turn_tests_on()
 
@@ -58,7 +59,7 @@ result = subprocess.run(
 output = result.stdout.strip() + '\n' + result.stderr.strip()
 log.info(f'Command output: {output}')
 
-str_to_find = 'all tests passed'
+str_to_find = test_success_str.lower()
 
 if str_to_find in output.lower():
   log.info(f"String '{str_to_find}' found. Test is ok")

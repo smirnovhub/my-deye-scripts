@@ -63,6 +63,7 @@ def execute_command(cache_time: int) -> str:
     sys.executable,
     '-u',
     os.path.join(base_path, 'deye/deye'),
+    '-v',
     f'-c {cache_time}',
     f'-i {logger.name}',
     '-a',

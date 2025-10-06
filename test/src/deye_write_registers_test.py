@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import logging
 import subprocess
@@ -67,13 +68,16 @@ for register in registers.all_registers:
 
   server.clear_registers()
 
+  register_value = f'{register.name} = {value}'
+
   log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
-  log.info(f'Trying to write: {register.name} = {value}')
+  log.info(f'Trying to write: {register_value}')
 
   write_command = [
     sys.executable,
     '-u',
     os.path.join(base_path, 'deye/deye'),
+    '-v',
     f"--set-{register.name.replace('_', '-')}",
     f'{value}',
   ]
@@ -96,12 +100,13 @@ for register in registers.all_registers:
     log.info(f"No changes on the server side after writing '{register.name}'")
     sys.exit(1)
 
-  log.info(f'Trying to read: {register.name} = {value}')
+  log.info(f'Trying to read: {register_value}')
 
   read_command = [
     sys.executable,
     '-u',
     os.path.join(base_path, 'deye/deye'),
+    '-v',
     '-c 0',
     f"--get-{register.name.replace('_', '-')}",
   ]
@@ -124,10 +129,21 @@ for register in registers.all_registers:
     log.info(f"No request for read on the server side after reading '{register.name}'")
     sys.exit(1)
 
-  if write_output == read_output:
-    log.info(f'Write/read passed')
+  reg_name = f'{logger.name}_{register.name}'
+  pattern = rf"^{reg_name}\s+=\s+(.+)$"
+
+  write_match = re.search(pattern, write_output, re.MULTILINE)
+  if write_match:
+    value = write_match.group(1).strip()
+    log.info(f"Write passed for register '{register.name}' and value '{value}'")
+
+    if f'{reg_name} = {value}' in read_output:
+      log.info(f"Read passed for register '{register.name}' and value '{value}'")
+    else:
+      log.info(f"Read failed for register '{register.name}' and value '{value}'")
+      sys.exit(1)
   else:
-    log.info(f"Write/read failed for register '{register.name}'")
+    log.info(f"Write failed for '{register.name}'")
     sys.exit(1)
 
 log.info('All registers have been written and read correctly. Test is ok')
