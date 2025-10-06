@@ -4,7 +4,7 @@ from typing import Callable, List
 
 from telebot_menu_item import TelebotMenuItem
 from telebot_users import TelebotUsers
-from solarman_server import AioSolarmanServer
+from solarman_server import SolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_registers import DeyeRegisters
@@ -27,7 +27,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.command = command
     self.register_creator = register_creator
 
-  def run_tests(self, servers: List[AioSolarmanServer]):
+  def run_tests(self, servers: List[SolarmanServer]):
     users = TelebotUsers()
 
     if not self.loggers.is_test_loggers:
@@ -71,7 +71,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
 
     self.call_with_retry(self._check_results, holder)
 
-  def _init_registers(self, servers: List[AioSolarmanServer]) -> DeyeRegistersHolder:
+  def _init_registers(self, servers: List[SolarmanServer]) -> DeyeRegistersHolder:
     for server in servers:
       server.clear_registers()
       server.clear_registers_status()

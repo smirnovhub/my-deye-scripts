@@ -27,7 +27,7 @@ import_dirs(
 
 from deye_loggers import DeyeLoggers
 from deye_registers_factory import DeyeRegistersFactory
-from solarman_server import AioSolarmanServer
+from solarman_server import SolarmanServer
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_test_helper import get_random_by_register_type
 from deye_utils import custom_round, turn_tests_on
@@ -48,10 +48,10 @@ if not loggers.is_test_loggers:
   log.info('Your loggers are not test loggers')
   sys.exit(1)
 
-servers: List[AioSolarmanServer] = []
+servers: List[SolarmanServer] = []
 
 for logger in loggers.loggers:
-  server = AioSolarmanServer(
+  server = SolarmanServer(
     name = logger.name,
     address = logger.address,
     serial = logger.serial,

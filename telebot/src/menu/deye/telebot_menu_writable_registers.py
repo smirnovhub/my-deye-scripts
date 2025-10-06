@@ -19,7 +19,7 @@ from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from deye_registers_factory import DeyeRegistersFactory
 from telebot_user_choices import ask_confirmation
-from telebot_advanced_choice import ask_advanced_choice
+from telebot_command_choice import ask_command_choice
 from telebot_constants import undo_button_remove_delay_sec
 from deye_utils import is_tests_on
 
@@ -309,7 +309,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 
     if old_value != register.value and not is_undo_button_pressed:
-      sent = ask_advanced_choice(
+      sent = ask_command_choice(
         self.bot,
         message.chat.id,
         text,

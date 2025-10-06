@@ -1,4 +1,4 @@
-name: write registers tests
+name: registers cache test
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 jobs:
-  write-registers-tests:
+  registers-cache-test:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
@@ -32,4 +32,4 @@ jobs:
 
       - name: Run tests
         run: |
-          python -u test/src/deye_write_registers_test.py
+          python -u test/src/deye_registers_cache_test.py

@@ -1,3 +1,4 @@
+import os
 import re
 import logging
 import telebot
@@ -31,10 +32,24 @@ class TestableTelebot(telebot.TeleBot):
   - Intended solely for testing and development; does not communicate with Telegram.
   - `TelebotFakeTestMessage` is used to simulate `Message` objects returned by `send_message`.
   """
+
+  telebot_test_log_file_name = 'data/telebot_test_log.txt'
+
   def __init__(self, token: str):
     super().__init__(token)
     self.messages: List[str] = []
     self.log = logging.getLogger()
+
+    if os.path.exists(TestableTelebot.telebot_test_log_file_name):
+      os.remove(TestableTelebot.telebot_test_log_file_name)
+
+    logging.basicConfig(
+      filename = TestableTelebot.telebot_test_log_file_name,
+      filemode = 'w',
+      level = logging.INFO,
+      format = "[%(asctime)s] [%(levelname)s] %(message)s",
+      datefmt = "%Y-%m-%d %H:%M:%S",
+    )
 
   def clear_messages(self):
     self.messages.clear()
@@ -50,6 +65,22 @@ class TestableTelebot(telebot.TeleBot):
       if re.search(pattern, message, flags = re.IGNORECASE):
         return True
     return False
+
+  def set_my_commands(
+    self,
+    *args,
+    **kwargs,
+  ) -> bool:
+    self.log.info("[set_my_commands]")
+    return True
+
+  def set_chat_menu_button(
+    self,
+    *args,
+    **kwargs,
+  ) -> bool:
+    self.log.info("[set_chat_menu_button]")
+    return True
 
   # --- Send methods ---
   def send_message(

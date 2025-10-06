@@ -8,7 +8,7 @@ from deye_registers import DeyeRegisters
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
-from telebot_advanced_choice import ask_advanced_choice
+from telebot_command_choice import ask_command_choice
 from telebot_user_choices_helper import row_break_str
 
 from telebot_deye_helper import (
@@ -102,7 +102,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
 
     info = get_register_values(holder.all_registers[slave_name].all_registers)
 
-    ask_advanced_choice(
+    ask_command_choice(
       self.bot,
       message.chat.id,
       f'<b>Inverter: {slave_name}</b>\n{info}',

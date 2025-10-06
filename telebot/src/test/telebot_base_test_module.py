@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 
 from deye_loggers import DeyeLoggers
 from testable_telebot import TestableTelebot
-from solarman_server import AioSolarmanServer
+from solarman_server import SolarmanServer
 from deye_exceptions import DeyeKnownException
 from deye_utils import get_test_retry_count
 
@@ -15,7 +15,7 @@ class TelebotBaseTestModule:
     self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
 
-  def run_tests(self, servers: List[AioSolarmanServer]):
+  def run_tests(self, servers: List[SolarmanServer]):
     raise NotImplementedError(f'{self.__class__.__name__}: run_tests() is not implemented')
 
   def call_with_retry(self, func: Callable, *args, **kwargs):

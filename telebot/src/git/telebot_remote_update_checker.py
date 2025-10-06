@@ -4,7 +4,7 @@ import telebot
 from telebot_menu_item import TelebotMenuItem
 from deye_file_with_lock import DeyeFileWithLock
 from deye_utils import ensure_file_exists
-from telebot_advanced_choice import ask_advanced_choice
+from telebot_command_choice import ask_command_choice
 from telebot_git_helper import is_repository_up_to_date
 from telebot_git_helper import get_current_branch_name
 from telebot_constants import git_repository_remote_check_period_sec
@@ -65,7 +65,7 @@ class TelebotRemoteUpdateChecker:
     # Check if the remote repository is up to date
     if not is_repository_up_to_date():
       # Prompt the user to update the bot
-      ask_advanced_choice(
+      ask_command_choice(
         bot,
         message.chat.id,
         '<b>Telebot has updates. Do you want to update it now?</b>',

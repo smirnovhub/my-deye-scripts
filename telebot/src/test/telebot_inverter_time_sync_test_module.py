@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from telebot_menu_item import TelebotMenuItem
 from telebot_users import TelebotUsers
-from solarman_server import AioSolarmanServer
+from solarman_server import SolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from telebot_fake_test_message import TelebotFakeTestMessage
@@ -17,7 +17,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     super().__init__(bot)
     self.registers = DeyeRegistersFactory.create_registers()
 
-  def run_tests(self, servers: List[AioSolarmanServer]):
+  def run_tests(self, servers: List[SolarmanServer]):
     users = TelebotUsers()
 
     if not self.loggers.is_test_loggers:
@@ -75,14 +75,14 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
 
     self.call_with_retry(self._check_results, servers)
 
-  def _check_results(self, servers: List[AioSolarmanServer]):
+  def _check_results(self, servers: List[SolarmanServer]):
     register = self.registers.inverter_system_time_register
     pattern = rf"{re.escape(register.description)}.+changed from\s+.+?\s+to\s+.+"
 
     if not self.bot.is_messages_contains_regex(pattern):
       self.error(f"No string to match pattern '{pattern}'")
 
-    master_server: Optional[AioSolarmanServer] = None
+    master_server: Optional[SolarmanServer] = None
     for server in servers:
       if server.name == self.loggers.master.name:
         master_server = server
