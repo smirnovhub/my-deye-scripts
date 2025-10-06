@@ -4,7 +4,11 @@ import random
 
 from datetime import datetime
 from typing import IO, Any, Optional
-from deye_utils import ensure_dir_and_file_exists
+
+from deye_utils import (
+  ensure_dir_and_file_exists,
+  time_format_str,
+)
 
 from lock_exceptions import (
   DeyeLockTimeoutException,
@@ -63,7 +67,7 @@ class DeyeFileLocker:
         message (str): The message to log.
     """
     now = datetime.now()
-    date = now.strftime('[%Y-%m-%d %H:%M:%S]')
+    date = now.strftime(f'[{time_format_str}]')
 
     with open(self.log_filename, "a") as f:
       f.write(f'{date} [{self.rnd}] {message}\n')
