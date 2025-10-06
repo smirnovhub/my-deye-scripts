@@ -249,19 +249,12 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     else:
       self.bot.send_message(chat_id, message, parse_mode = "HTML")
 
-    for f in open_files:
-      f.close()
+    for of in open_files:
+      of.close()
 
-    # Clean up zip files
-    for f in zip_files:
+    # Clean up files
+    for log_file in zip_files + files:
       try:
-        os.remove(f)
-      except Exception:
-        pass
-
-    # Remove logs
-    for f in files:
-      try:
-        os.remove(f)
+        os.remove(log_file)
       except Exception:
         pass
