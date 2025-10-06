@@ -17,7 +17,6 @@ from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_progress_message import TelebotProgressMessage
 from telebot_advanced_choice import ButtonChoice, ask_advanced_choice
 from deye_utils import format_timedelta
-
 from deye_file_lock import lock_path
 
 class TelebotMenuTest(TelebotMenuItemHandler):
@@ -47,7 +46,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
     all_tests = 'all_tests'
 
-    log_file = 'data/test_log.txt'
+    log_file = 'data/deye_test_log.txt'
 
     os.environ['BOT_API_TEST_TOKEN'] = self.bot.token
 
@@ -222,11 +221,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
         continue # skip non-existing files
 
       file_base = os.path.splitext(file_path.replace("_", "-"))[0]
-      zip_file = f"{file_base}-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.zip"
+      file_ext = os.path.splitext(file_path)[1]
+      name_with_date = f"{file_base}-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+      zip_file = f"{name_with_date}.zip"
 
       # Create zip
       with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.write(file_path, os.path.basename(file_path))
+        zf.write(file_path, arcname = os.path.basename(f'{name_with_date}{file_ext}'))
 
       zip_files.append(zip_file)
 
@@ -252,8 +253,15 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       f.close()
 
     # Clean up zip files
-    for zip_file in zip_files:
+    for f in zip_files:
       try:
-        os.remove(zip_file)
+        os.remove(f)
+      except Exception:
+        pass
+
+    # Remove logs
+    for f in files:
+      try:
+        os.remove(f)
       except Exception:
         pass
