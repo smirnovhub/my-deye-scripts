@@ -18,6 +18,7 @@ from today_stat_registers import TodayStatRegisters
 from total_stat_registers import TotalStatRegisters
 from telebot_inverter_time_sync_test_module import TelebotInverterTimeSyncTestModule
 from telebot_writable_registers_test_module import TelebotWritableRegistersTestModule
+from deye_test_helper import test_success_str
 
 class TeleTest:
   def __init__(self, bot: TestableTelebot):
@@ -45,8 +46,8 @@ class TeleTest:
     try:
       for module in self._get_test_modules(self.bot):
         module.run_tests(servers)
-      print('All tests passed')
-      log.info('All tests passed')
+      print(test_success_str)
+      log.info(test_success_str)
     except Exception as e:
       info = ''
       if isinstance(module, TelebotRegistersTestModule):

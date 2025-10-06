@@ -165,13 +165,14 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             failed_count += 1
             continue
 
+          t = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+
           # Ensure at least X seconds since the previous iteration
           elapsed = time.time() - last_iteration_time
           if elapsed < 10:
             time.sleep(10 - elapsed)
 
           last_iteration_time = time.time()
-          t = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
           self.bot.send_message(chat_id,
                                 f'[{i + 1}/{len(scripts)}] <b>Success</b> after {t}: {test_name}',
                                 parse_mode = 'HTML')

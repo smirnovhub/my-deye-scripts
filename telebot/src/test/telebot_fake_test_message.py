@@ -1,4 +1,5 @@
 import time
+from typing import Union
 import telebot
 
 class TelebotFakeTestMessage:
@@ -19,7 +20,7 @@ class TelebotFakeTestMessage:
   def make(
     text: str,
     user_id: int = 1234,
-    chat_id: int = 1234,
+    chat_id: Union[int, str] = 1234,
   ) -> telebot.types.Message:
     """
     Generate a fake Telegram Message object.
