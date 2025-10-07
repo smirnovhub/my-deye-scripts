@@ -24,8 +24,8 @@ class IntWritableDeyeRegister(IntDeyeRegister):
   def write(self, interactor: DeyeModbusInteractor, value):
     try:
       value = int(value)
-    except Exception as e:
-      self.error('write(): can\'t convert value to int')
+    except Exception:
+      self.error("write(): can't convert value to int")
 
     if value < self.min_value or value > self.max_value:
       self.error(f'write(): value should be from {self.min_value} to {self.max_value}')
