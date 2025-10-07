@@ -1,8 +1,17 @@
 from typing import List, Optional
 from telebot_user import TelebotUser
+from deye_registers import DeyeRegisters
 from deye_exceptions import DeyeNotImplementedException
+from deye_registers_factory import DeyeRegistersFactory
 
 class TelebotBaseUsers:
+  registers: Optional[DeyeRegisters] = None
+
+  def __init__(self):
+    if TelebotBaseUsers.registers is None:
+      TelebotBaseUsers.registers = DeyeRegistersFactory.create_registers()
+    self.registers = TelebotBaseUsers.registers
+
   @property
   def allowed_users(self) -> List[TelebotUser]:
     raise DeyeNotImplementedException('allowed_users')
