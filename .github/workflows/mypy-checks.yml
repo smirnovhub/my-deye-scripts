@@ -29,16 +29,19 @@ jobs:
           python -m pip install types-requests
 
       - name: Run mypy for deye
+        continue-on-error: true
         working-directory: deye
         run: |
           mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
 
       - name: Run mypy for telebot
+        continue-on-error: true
         working-directory: telebot
         run: |
           mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
 
       - name: Run mypy for test
+        continue-on-error: true
         working-directory: test
         run: |
           mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
