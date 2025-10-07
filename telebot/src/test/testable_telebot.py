@@ -6,6 +6,7 @@ import telebot
 from typing import List, Union
 from telebot_fake_test_message import TelebotFakeTestMessage
 from telebot_deye_helper import get_object_as_str
+from deye_utils import ensure_dir_exists
 
 class TestableTelebot(telebot.TeleBot):
   """
@@ -34,12 +35,14 @@ class TestableTelebot(telebot.TeleBot):
   - `TelebotFakeTestMessage` is used to simulate `Message` objects returned by `send_message`.
   """
 
-  telebot_test_log_file_name = 'data/telebot_test_log.txt'
+  telebot_test_log_file_name = 'data/logs/telebot_telegram_test.log'
 
   def __init__(self, token: str):
     super().__init__(token)
     self.messages: List[str] = []
     self.log = logging.getLogger()
+
+    ensure_dir_exists(os.path.dirname(TestableTelebot.telebot_test_log_file_name))
 
     if os.path.exists(TestableTelebot.telebot_test_log_file_name):
       os.remove(TestableTelebot.telebot_test_log_file_name)
