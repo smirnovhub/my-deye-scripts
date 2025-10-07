@@ -198,7 +198,7 @@ def _handle_time_of_use_int_register(register: TimeOfUseIntWritableDeyeRegister)
   # Without rounding, small floating-point errors (e.g. 3.334999...)
   # cause inconsistent results, making random-based tests fail unpredictably.
   # Rounding to 2 decimals ensures stable, repeatable test outcomes.
-  value = round(sum(values) / len(values), 2)
+  value = round(sum(values) / len(values))
   return DeyeRegisterRandomValue(register, custom_round(value), values)
 
 def _handle_system_time_diff_writable_register(register: SystemTimeDiffDeyeRegister) -> DeyeRegisterRandomValue:
