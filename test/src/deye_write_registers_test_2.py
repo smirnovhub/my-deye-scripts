@@ -96,7 +96,8 @@ for register in holder.master_registers.all_registers:
     continue
 
   if register.value != write_values[register.name]:
-    log.info(f"Register value after read doesn't match value after write for '{register.name}'")
+    log.info(f"Register value after read {register.value} doesn't match "
+             f"value after write {write_values[register.name]} for '{register.name}'")
     sys.exit(1)
   else:
     log.info(f"Register values successfully matched for '{register.name}'")
