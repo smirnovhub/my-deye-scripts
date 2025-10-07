@@ -132,7 +132,7 @@ if str(value1) not in output1:
   sys.exit(1)
 
 log.info('Waiting for second read from cache...')
-time.sleep(3)
+time.sleep(5)
 
 # second read from cache
 
