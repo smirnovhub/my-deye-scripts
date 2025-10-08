@@ -11,8 +11,6 @@ from gen_port_mode_writable_deye_register import GenPortModeWritableDeyeRegister
 from grid_state_deye_register import GridStateDeyeRegister
 from int_deye_register import IntDeyeRegister
 from int_writable_deye_register import IntWritableDeyeRegister
-from inverter_self_consumption_energy_register import InverterSelfConsumptionEnergyRegister
-from inverter_self_consumption_power_register import InverterSelfConsumptionPowerRegister
 from long_float_deye_register import LongFloatDeyeRegister
 from long_float_splitted_deye_register import LongFloatSplittedDeyeRegister
 from signed_float_deye_register import SignedFloatDeyeRegister
@@ -106,43 +104,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
     self._today_gen_energy_cost_register = TodayGenEnergyCostRegister(self._today_gen_energy_register, 'today_gen_energy_cost', 'Today Gen Energy Cost', DeyeRegisterAverageType.special)
     self._total_gen_energy_cost_register = TotalGenEnergyCostRegister(self._total_gen_energy_register, 'total_gen_energy_cost', 'Total Gen Energy Cost', DeyeRegisterAverageType.special)
 
-    self._inverter_self_consumption_power_register = InverterSelfConsumptionPowerRegister(
-      pv_total_power_register = self.pv_total_power_register,
-      grid_power_register = self.grid_internal_ct_power_register,
-      battery_power_register = self.battery_power_register,
-      load_power_register = self.load_power_register,
-      name = 'inverter_self_consumption_power',
-      description = 'Inverter Self Consumption Power',
-      suffix = 'W',
-      avg = DeyeRegisterAverageType.special,
-    )
-
-    self._today_inverter_self_consumption_energy_register = InverterSelfConsumptionEnergyRegister(
-      pv_production_register = self.today_production_register,
-      grid_purchased_energy_register = self.today_grid_purchased_energy_register,
-      grid_feed_in_energy_register = self.today_grid_feed_in_energy_register,
-      battery_charged_energy_register = self.today_battery_charged_energy_register,
-      battery_discharged_energy_register = self.today_battery_discharged_energy_register,
-      load_consumption_register = self.today_load_consumption_register,
-      name = 'today_inverter_self_consumption_energy',
-      description = 'Today Inverter Self Consumption Energy',
-      suffix = 'kWh',
-      avg = DeyeRegisterAverageType.special,
-    )
-
-    self._total_inverter_self_consumption_energy_register = InverterSelfConsumptionEnergyRegister(
-      pv_production_register = self.total_production_register,
-      grid_purchased_energy_register = self.total_grid_purchased_energy_register,
-      grid_feed_in_energy_register = self.total_grid_feed_in_energy_register,
-      battery_charged_energy_register = self.total_battery_charged_energy_register,
-      battery_discharged_energy_register = self.total_battery_discharged_energy_register,
-      load_consumption_register = self.total_load_consumption_register,
-      name = 'total_inverter_self_consumption_energy',
-      description = 'Total Inverter Self Consumption Energy',
-      suffix = 'kWh',
-      avg = DeyeRegisterAverageType.special,
-    )
-
     self._charge_forecast_register = ChargeForecastRegister(
       battery_soc_register = self.battery_soc_register,
       battery_capacity_register = self._battery_capacity_register,
@@ -203,7 +164,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       self._gen_power_register,
       self._inverter_ac_temperature_register,
       self._inverter_dc_temperature_register,
-      self._inverter_self_consumption_power_register,
       self._inverter_system_time_diff_register,
       self._inverter_system_time_register,
       self._load_frequency_register,
@@ -225,7 +185,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       self._today_grid_feed_in_energy_register,
       self._today_grid_purchased_energy_register,
       self._today_gen_energy_register,
-      self._today_inverter_self_consumption_energy_register,
       self._today_load_consumption_register,
       self._today_production_register,
       self._total_battery_charged_energy_register,
@@ -233,7 +192,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
       self._total_grid_feed_in_energy_register,
       self._total_grid_purchased_energy_register,
       self._total_gen_energy_register,
-      self._total_inverter_self_consumption_energy_register,
       self._total_load_consumption_register,
       self._total_production_register,
       self._zero_export_power_register,
@@ -436,10 +394,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
   @property
   def inverter_dc_temperature_register(self) -> DeyeRegister:
     return self._inverter_dc_temperature_register
-
-  @property
-  def inverter_self_consumption_power_register(self) -> DeyeRegister:
-    return self._inverter_self_consumption_power_register
 
   @property
   def inverter_system_time_diff_register(self) -> DeyeRegister:

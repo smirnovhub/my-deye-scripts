@@ -198,10 +198,6 @@ class DeyeRegisters:
     raise self.not_implemented('inverter_dc_temperature_register')
 
   @property
-  def inverter_self_consumption_power_register(self) -> DeyeRegister:
-    raise self.not_implemented('inverter_self_consumption_power_register')
-
-  @property
   def inverter_system_time_diff_register(self) -> DeyeRegister:
     raise self.not_implemented('inverter_system_time_diff_register')
 
