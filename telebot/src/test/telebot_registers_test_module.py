@@ -32,10 +32,10 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
-      self.log.info(f'Running module {type(self).__name__}: '
-                    f"name = '{self.name}' "
-                    f"command = '{self.command}' "
-                    f"register_creator = {type(self.register_creator(self.name)).__name__}'")
+    self.log.info(f'Running module {type(self).__name__}: '
+                  f"name = '{self.name}' "
+                  f"command = '{self.command}' "
+                  f"register_creator = {type(self.register_creator(self.name)).__name__}'")
 
     holder = self._init_registers(servers)
 
@@ -84,7 +84,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
 
       for server in servers:
         random_value = get_random_by_register_type(register)
-        server.set_register_values(random_value.register.address, random_value.values)
+        server.set_register_values(random_value.register.addresses, random_value.values)
 
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(

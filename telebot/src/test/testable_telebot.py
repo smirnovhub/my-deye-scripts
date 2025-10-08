@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+import sys
 import telebot
 
 from typing import List, Union
@@ -58,6 +59,9 @@ class TestableTelebot(telebot.TeleBot):
   def clear_messages(self):
     self.messages.clear()
 
+  def is_messages_empty(self) -> bool:
+    return len(self.messages) == 0
+
   def is_messages_contains(self, text: str) -> bool:
     for message in self.messages:
       if text.lower() in message.lower():
@@ -66,7 +70,7 @@ class TestableTelebot(telebot.TeleBot):
 
   def is_messages_contains_regex(self, pattern: str) -> bool:
     for message in self.messages:
-      if re.search(pattern, message, flags = re.IGNORECASE):
+      if re.search(pattern, message, flags = re.IGNORECASE | re.DOTALL):
         return True
     return False
 
@@ -178,4 +182,6 @@ class TestableTelebot(telebot.TeleBot):
       parts.append(f"{k} = {fmt(v)}")
 
     # Join everything with newline
-    return ",\n".join(parts)
+    text = ",\n".join(parts)
+
+    return text.encode(sys.stdout.encoding, errors = 'ignore').decode(sys.stdout.encoding)

@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from deye_register import DeyeRegister
-from telebot_users import TelebotUsers
+from telebot_test_users import TelebotTestUsers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import SolarmanServer
 from telebot_fake_test_message import TelebotFakeTestMessage
@@ -9,12 +9,12 @@ from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_test_helper import get_random_by_register_value_type
 
-class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
+class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
 
   def run_tests(self, servers: List[SolarmanServer]):
-    users = TelebotUsers()
+    user = TelebotTestUsers().test_user1
 
     registers = DeyeRegistersFactory.create_registers()
 
@@ -22,6 +22,8 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
       self.error('Your loggers are not test loggers')
 
     self.log.info(f'Running module {type(self).__name__}...')
+
+    self.bot.clear_messages()
 
     master_server: Optional[SolarmanServer] = None
 
@@ -34,9 +36,6 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
       self.error('Master server not found')
       return
 
-    master_server.clear_registers()
-    master_server.clear_registers_status()
-
     for register in registers.all_registers:
       if not register.can_write:
         continue
@@ -46,12 +45,18 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
         self.log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
         continue
 
+      master_server.clear_registers()
+      master_server.clear_registers_status()
+
+      command = f'/{register.name} {value}'
+
       self.log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
-      self.log.info(f"Sending command '/{register.name} {value}'")
+      self.log.info(f"Sending command '{command}'")
 
       fake_message = TelebotFakeTestMessage.make(
-        text = f'/{register.name} {value}',
-        user_id = users.allowed_users[0].id,
+        text = command,
+        user_id = user.id,
+        first_name = user.name,
       )
 
       self.bot.process_new_messages([fake_message])

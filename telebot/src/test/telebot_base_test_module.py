@@ -18,6 +18,28 @@ class TelebotBaseTestModule:
   def run_tests(self, servers: List[SolarmanServer]):
     raise NotImplementedError(f'{self.__class__.__name__}: run_tests() is not implemented')
 
+  def get_all_registered_commands(self):
+    """
+    Retrieve all command names registered via @bot.message_handler decorators.
+
+    This method scans the bot's internal message handlers and collects all command
+    names declared in their 'filters'. It does not include commands registered
+    through the Telegram Bot API (via set_my_commands).
+
+    Returns:
+        list[str]: A sorted list of unique command names.
+    """
+    commands = set()
+
+    for handler in self.bot.message_handlers:
+      filters = handler.get("filters", {})
+      if isinstance(filters, dict):
+        cmds = filters.get("commands")
+        if cmds:
+          commands.update(cmds)
+
+    return sorted(commands)
+
   def call_with_retry(self, func: Callable, *args, **kwargs):
     """
     Calls a function repeatedly until it succeeds or retries are exhausted.

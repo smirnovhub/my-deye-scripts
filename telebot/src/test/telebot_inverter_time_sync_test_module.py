@@ -4,7 +4,7 @@ import telebot
 from typing import List, Optional
 
 from telebot_menu_item import TelebotMenuItem
-from telebot_users import TelebotUsers
+from telebot_test_users import TelebotTestUsers
 from solarman_server import SolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
@@ -24,7 +24,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.registers = DeyeRegistersFactory.create_registers()
 
   def run_tests(self, servers: List[SolarmanServer]):
-    users = TelebotUsers()
+    user = TelebotTestUsers().test_user1
 
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
@@ -50,18 +50,20 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
 
     rnd = get_random_by_register_type(register)
     self.log.info(f'Setting time to server: {rnd.value}')
-    master_server.set_register_values(register.address, rnd.values)
+    master_server.set_register_values(register.addresses, rnd.values)
 
     command = f'/{TelebotMenuItem.deye_sync_time.command}'
 
     fake_message = TelebotFakeTestMessage.make(
       text = command,
-      user_id = users.allowed_users[0].id,
+      user_id = user.id,
+      first_name = user.name,
     )
 
     yes_message = TelebotFakeTestMessage.make(
       text = 'yes',
-      user_id = users.allowed_users[0].id,
+      user_id = user.id,
+      first_name = user.name,
     )
 
     self.log.info(f'Run regular command: {command}')
@@ -82,7 +84,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
 
     rnd = get_random_by_register_type(register)
     self.log.info(f'Setting time to server: {rnd.value}')
-    master_server.set_register_values(register.address, rnd.values)
+    master_server.set_register_values(register.addresses, rnd.values)
 
     fake_query = telebot.types.CallbackQuery(
       id = 321,

@@ -8,6 +8,7 @@ import telebot
 import datetime
 
 from io import BufferedReader
+from urllib.parse import unquote
 from typing import Dict, List, TextIO
 
 from deye_file_locker import DeyeFileLocker
@@ -18,9 +19,15 @@ from telebot_local_update_checker import TelebotLocalUpdateChecker
 from lock_exceptions import DeyeLockAlreadyAcquiredException
 from telebot_progress_message import TelebotProgressMessage
 from telebot_advanced_choice import ButtonChoice, ask_advanced_choice
-from deye_utils import format_timedelta
-from deye_utils import ensure_dir_exists
+from deye_utils import format_timedelta, ensure_dir_exists
 from deye_file_lock import lock_path
+
+from common_utils import (
+  large_green_circle_emoji,
+  large_yellow_circle_emoji,
+  white_circle_emoji,
+  large_red_circle_emoji,
+)
 
 class TelebotMenuTest(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
@@ -43,7 +50,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       self.locker.acquire()
     except DeyeLockAlreadyAcquiredException:
       self.progress.hide()
-      self.progress.show(message.chat.id, 'Tests are already running')
+      self.progress.show(message.chat.id, f'{unquote(white_circle_emoji)} Tests are already running')
       return
     except Exception as e:
       self.progress.hide()
@@ -66,9 +73,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     def on_choice(chat_id: int, choice: ButtonChoice):
       try:
         self.locker.acquire()
-      except Exception:
+      except DeyeLockAlreadyAcquiredException:
         self.progress.hide()
-        self.progress.show(message.chat.id, 'Tests are already running')
+        self.progress.show(message.chat.id, f'{unquote(white_circle_emoji)} Tests are already running')
+        return
+      except Exception as e:
+        self.progress.hide()
+        self.bot.send_message(message.chat.id, str(e))
         return
 
       all_start_time = datetime.datetime.now()
@@ -82,23 +93,39 @@ class TelebotMenuTest(TelebotMenuItemHandler):
         t = format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
 
         if failed_count == len(tests):
-          self.send_results(scripts, message.chat.id, f'<b>All tests failed</b> after {t}. '
-                            'Check logs for details.')
+          self.send_results(
+            scripts,
+            message.chat.id,
+            f'{unquote(large_red_circle_emoji)} '
+            f'<b>All tests failed</b> after {t}. '
+            'Check logs for details.',
+          )
         elif failed_count > 0:
           self.send_results(
             scripts,
             message.chat.id,
+            f'{unquote(large_yellow_circle_emoji)} '
             f"<b>{failed_count} test(s) failed</b> and "
             f"{len(scripts) - failed_count} test(s) completed successfully in {t}. "
             "Check logs for details.",
           )
         else:
-          self.send_results(scripts, message.chat.id, f'All tests completed successfully in {t}.')
+          self.send_results(
+            scripts,
+            message.chat.id,
+            f'{unquote(large_green_circle_emoji)} '
+            f'All tests completed successfully in {t}.',
+          )
       except Exception as e:
         time.sleep(1)
         t = format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
-        self.send_results(scripts, message.chat.id, f'Tests failed after {t}. '
-                          'Check test log for details: {str(e)}')
+        self.send_results(
+          scripts,
+          message.chat.id,
+          f'{unquote(large_red_circle_emoji)} '
+          f'Tests failed after {t}. '
+          'Check test log for details: {str(e)}',
+        )
 
       finally:
         try:
@@ -173,7 +200,11 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           self.write_and_flush(f, f"--- RUNNING [{i + 1}/{len(scripts)}] {test_name} ---\n\n")
 
           time.sleep(1)
-          self.progress.show(chat_id, f'[{i + 1}/{len(scripts)}] Running: {test_name}')
+          self.progress.show(
+            chat_id,
+            f'{unquote(white_circle_emoji)} '
+            f'[{i + 1}/{len(scripts)}] Running: {test_name}',
+          )
           time.sleep(1)
 
           try:
@@ -190,7 +221,9 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             t = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
             self.bot.send_message(
               chat_id,
-              f'[{i + 1}/{len(scripts)}] <b>Failed</b> after {t}: {test_name}',
+              f'{unquote(large_red_circle_emoji)} '
+              f'[{i + 1}/{len(scripts)}] '
+              f'<b>Failed</b> after {t}: {test_name}',
               parse_mode = 'HTML',
             )
             failed_count += 1
@@ -202,9 +235,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             msg = f"Error: {test_name} exited with code {result.returncode}. Tests failed."
             self.write_and_flush(f, f"{msg}\n")
             t = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-            self.bot.send_message(chat_id,
-                                  f'[{i + 1}/{len(scripts)}] <b>Failed</b> after {t}: {test_name}',
-                                  parse_mode = 'HTML')
+            self.bot.send_message(
+              chat_id,
+              f'{unquote(large_red_circle_emoji)} '
+              f'[{i + 1}/{len(scripts)}] '
+              f'<b>Failed</b> after {t}: {test_name}',
+              parse_mode = 'HTML',
+            )
             failed_count += 1
             continue
 
@@ -219,9 +256,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           time.sleep(1)
 
           last_iteration_time = time.time()
-          self.bot.send_message(chat_id,
-                                f'[{i + 1}/{len(scripts)}] <b>Success</b> after {t}: {test_name}',
-                                parse_mode = 'HTML')
+          self.bot.send_message(
+            chat_id,
+            f'{unquote(large_green_circle_emoji)} '
+            f'[{i + 1}/{len(scripts)}] '
+            f'<b>Success</b> after {t}: {test_name}',
+            parse_mode = 'HTML',
+          )
         except Exception as e:
           self.write_and_flush(f, f'\nAn exception occurred while running tests: {str(e)}\n')
           raise
