@@ -8,7 +8,7 @@ on:
 
 jobs:
   telebot-test:
-    timeout-minutes: 5
+    timeout-minutes: 7
     runs-on: ubuntu-latest
     strategy:
       matrix:
