@@ -145,20 +145,11 @@ def _handle_long_float_splitted_register(register: LongFloatSplittedDeyeRegister
   val = int(random.uniform(0, max_val)) / register.scale
 
   # Get the two 16-bit registers representing the 32-bit value
-  values = to_long_register_values(val, register.scale, register.quantity) # values[0], values[1]
-
-  # Create a list of registers to write
-  # The first register is at register.address
-  # The second register is at register.address + split_offset
-  # Any registers in between are "garbage" and set to 0
-  total_registers = register.split_offset + 1 # index of the second register + 1
-  regs_to_write = [0] * total_registers
-  regs_to_write[0] = values[0] # first data register
-  regs_to_write[register.split_offset] = values[1] # second data register at split_offset
+  values = to_long_register_values(val, register.scale, len(register.addresses)) # values[0], values[1]
 
   # Round the value for further use
   value = custom_round(val)
-  return DeyeRegisterRandomValue(register, value, regs_to_write)
+  return DeyeRegisterRandomValue(register, value, values)
 
 def _handle_long_float_register(register: LongFloatDeyeRegister) -> DeyeRegisterRandomValue:
   max_val = unsigned_long_max_value // register.scale

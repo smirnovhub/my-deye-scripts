@@ -87,7 +87,7 @@ class SolarmanServer():
     self.log.info(f"{self.name}: setting register value {{{address}: {value}}}")
     self.registers[address] = value
 
-  def set_register_values(self, starting_address: int, values: List[int]):
+  def set_register_values(self, addresses: List[int], values: List[int]):
     """
     Set multiple register values starting from a given address (for testing purposes).
 
@@ -101,9 +101,14 @@ class SolarmanServer():
     values : List[int]
         The list of values to store in consecutive registers.
     """
-    regs_dict = {starting_address + i: val for i, val in enumerate(values)}
-    self.log.info(f"{self.name}: setting register values {regs_dict}")
-    self.registers.update(regs_dict)
+    if len(addresses) != len(values):
+      self.log.info(f"{self.name}: addresses count ({len(addresses)}) should be the same as values count (len(values))")
+      return
+
+    self.log.info(f"{self.name}: setting register addresses {addresses} to values {values}")
+
+    for i, address in enumerate(addresses):
+      self.registers[address] = values[i]
 
   def clear_registers(self):
     """
