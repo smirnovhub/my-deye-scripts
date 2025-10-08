@@ -14,7 +14,7 @@ class TimeOfUseIntWritableDeyeRegister(BaseDeyeRegister):
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(address, 6, name, description, suffix, avg)
-    self._value = 0.0
+    self._value = 0
     self._min_value = min_value
     self._max_value = max_value
 
@@ -27,7 +27,7 @@ class TimeOfUseIntWritableDeyeRegister(BaseDeyeRegister):
     # Without rounding, small floating-point errors (e.g. 3.334999...)
     # cause inconsistent results, making random-based tests fail unpredictably.
     # Rounding to 2 decimals ensures stable, repeatable test outcomes.
-    return round(sum(data) / len(data), 2)
+    return round(sum(data) / len(data))
 
   def write(self, interactor: DeyeModbusInteractor, value):
     try:

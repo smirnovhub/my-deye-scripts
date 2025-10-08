@@ -6,7 +6,11 @@ from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
-from deye_utils import custom_round
+
+from deye_utils import (
+  custom_round,
+  time_format_str,
+)
 
 class BaseDeyeRegister(DeyeRegister):
   def __init__(self,
@@ -107,7 +111,7 @@ class BaseDeyeRegister(DeyeRegister):
     elif isinstance(self.value, DeyeBaseEnum):
       return self.value.pretty
     elif isinstance(self.value, datetime):
-      return self.value.strftime('%Y-%m-%d %H:%M:%S')
+      return self.value.strftime(time_format_str)
 
     return str(self.value)
 

@@ -16,6 +16,11 @@ from telebot_user_choices import ask_confirmation
 from telebot_command_choice import ask_command_choice
 from telebot_utils import remove_inline_buttons_with_delay
 
+from deye_utils import (
+  get_current_time,
+  time_format_str,
+)
+
 from telebot_constants import (
   undo_button_name,
   undo_button_remove_delay_sec,
@@ -75,8 +80,8 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, 'Register type is not datetime', parse_mode = 'HTML')
       return
 
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    time_diff = self.register.value - datetime.now()
+    now = get_current_time().strftime(time_format_str)
+    time_diff = self.register.value - get_current_time()
     diff_seconds = int(abs(time_diff.total_seconds()))
     if diff_seconds > inverter_system_time_too_big_difference_sec:
       ask_confirmation(
@@ -95,7 +100,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     if result:
       try:
         old_value = self.register.value
-        value = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        value = get_current_time().strftime(time_format_str)
 
         # should be local to avoid issues with locks
         holder = DeyeRegistersHolder(

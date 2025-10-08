@@ -3,11 +3,8 @@ from typing import List
 from telebot_user import TelebotUser
 from telebot_menu_item import TelebotMenuItem
 from telebot_base_users import TelebotBaseUsers
-from deye_registers_factory import DeyeRegistersFactory
 
 class TelebotUsers(TelebotBaseUsers):
-  registers = DeyeRegistersFactory.create_registers()
-
   @property
   def allowed_users(self) -> List[TelebotUser]:
     return [
@@ -30,16 +27,16 @@ class TelebotUsers(TelebotBaseUsers):
         ],
         # Empty - means all allowed
         allowed_writable_registers = [
-          # TelebotUsers.registers.ac_couple_frz_high_register,
-          # TelebotUsers.registers.time_of_use_power_register,
-          # TelebotUsers.registers.grid_peak_shaving_power_register,
-          # TelebotUsers.registers.time_of_use_power_register,
-          # TelebotUsers.registers.zero_export_power_register,
+          # self.registers.ac_couple_frz_high_register,
+          # self.registers.time_of_use_power_register,
+          # self.registers.grid_peak_shaving_power_register,
+          # self.registers.time_of_use_power_register,
+          # self.registers.zero_export_power_register,
         ],
         # Empty - means none disabled (all allowed)
         disabled_writable_registers = [
-          # TelebotUsers.registers.ac_couple_frz_high_register,
-          # TelebotUsers.registers.time_of_use_power_register,
+          # self.registers.ac_couple_frz_high_register,
+          # self.registers.time_of_use_power_register,
         ],
       ),
     ]

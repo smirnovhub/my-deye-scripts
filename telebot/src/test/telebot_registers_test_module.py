@@ -10,7 +10,6 @@ from testable_telebot import TestableTelebot
 from deye_registers import DeyeRegisters
 from telebot_fake_test_message import TelebotFakeTestMessage
 from deye_registers_holder import DeyeRegistersHolder
-from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
 from telebot_deye_helper import holder_kwargs
 from deye_test_helper import get_random_by_register_type
 
@@ -56,7 +55,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.log.info(f'Run command from button: {command}')
 
     fake_query = telebot.types.CallbackQuery(
-      id = "fake",
+      id = 123,
       chat_instance = 'fake',
       json_string = '',
       from_user = fake_message.from_user,
@@ -104,14 +103,10 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
   def _check_results(self, holder: DeyeRegistersHolder):
     found = True
     for register in holder.all_registers[self.name].all_registers:
-      if isinstance(register, SystemTimeDiffDeyeRegister):
-        continue
-
       if not self.bot.is_messages_contains(self.name):
         self.error(f"Messages don't contain expected inverter name '{self.name}'")
 
       desc = register.description.replace('Inverter ', '')
-
       suffix = f' {register.suffix}'.rstrip()
       info = f'{desc}: {register.pretty_value}{suffix}'
 

@@ -23,19 +23,19 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
 
     self.log.info(f'Running module {type(self).__name__}...')
 
-    server: Optional[SolarmanServer] = None
+    master_server: Optional[SolarmanServer] = None
 
     for srv in servers:
       if srv.name == self.loggers.master.name:
-        server = srv
+        master_server = srv
         break
 
-    if server is None:
-      self.error(f'Unable to find server with name {self.loggers.master.name}')
+    if master_server is None:
+      self.error('Master server not found')
       return
 
-    server.clear_registers()
-    server.clear_registers_status()
+    master_server.clear_registers()
+    master_server.clear_registers_status()
 
     for register in registers.all_registers:
       if not register.can_write:
@@ -57,7 +57,7 @@ class TelebotWritableRegistersTestModule(TelebotBaseTestModule):
       self.bot.process_new_messages([fake_message])
 
     writable_registers = [r for r in registers.all_registers if r.can_write]
-    self.call_with_retry(self._check_results, server, writable_registers)
+    self.call_with_retry(self._check_results, master_server, writable_registers)
 
   def _check_results(self, server: SolarmanServer, registers: List[DeyeRegister]):
     to_remove: List[DeyeRegister] = []

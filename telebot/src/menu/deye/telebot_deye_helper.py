@@ -1,7 +1,7 @@
+import json
 import telebot
 
-from pprint import pprint
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Set, Union
 
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
@@ -14,10 +14,18 @@ from deye_utils import is_tests_on
 
 holder_kwargs = {
   'name': 'telebot',
-  'socket_timeout': 1 if is_tests_on() else 10,
-  'caching_time': 0 if is_tests_on() else 5,
-  #  'verbose': True,
+  'socket_timeout': 10,
+  'caching_time': 5,
+  'verbose': False,
 }
+
+if is_tests_on():
+  holder_kwargs = {
+    'name': 'teletest',
+    'socket_timeout': 1,
+    'caching_time': 0,
+    'verbose': True,
+  }
 
 def get_register_values(registers: List[DeyeRegister]) -> str:
   """
@@ -315,20 +323,29 @@ def get_available_registers(registers: DeyeRegisters, auth_helper: TelebotAuthHe
       num += 1
   return str
 
-def debug_print(obj):
-  """Pretty-print any Python object directly using pprint."""
-  def to_serializable(o):
+def get_object_as_str(obj, indent: int = 2) -> str:
+  """Return a pretty-printed string representation of any Python object."""
+  def to_serializable(o, _seen: Optional[Set[int]] = None):
+    if _seen is None:
+      _seen = set()
+
+    if id(o) in _seen:
+      return str(o)
+
+    _seen.add(id(o))
+
     if isinstance(o, list):
       # Recursively handle lists
-      return [to_serializable(item) for item in o]
+      return [to_serializable(item, _seen) for item in o]
     elif isinstance(o, dict):
       # Recursively handle dicts
-      return {k: to_serializable(v) for k, v in o.items()}
+      return {k: to_serializable(v, _seen) for k, v in o.items()}
     elif hasattr(o, "__dict__"):
       # Convert custom object attributes to dict
-      return {k: to_serializable(v) for k, v in o.__dict__.items()}
+      return {k: to_serializable(v, _seen) for k, v in o.__dict__.items()}
     else:
       # Base types (int, str, bool, etc.)
-      return o
+      return str(o)
 
-  pprint(to_serializable(obj))
+  # Return formatted string using provided formatting parameters
+  return json.dumps(to_serializable(obj), indent = indent, ensure_ascii = False)

@@ -28,42 +28,35 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     data = interactor.read_register(self.address, self.quantity)
-    as_bytes = to_bytes(data)
+    year, month, day, hour, minute, second = to_bytes(data)
 
     try:
-      value = datetime(
-        2000 + as_bytes[0],
-        as_bytes[1],
-        as_bytes[2],
-        as_bytes[3],
-        as_bytes[4],
-        as_bytes[5],
-      )
-    except:
+      value = datetime(year + 2000, month, day, hour, minute, second)
+    except ValueError:
       value = datetime(1970, 1, 1)
 
     return value
 
   def write(self, interactor: DeyeModbusInteractor, value):
-    try:
-      value = str(value)
-    except Exception as e:
-      self.error('write(): can\'t convert value to str')
+    val = str(value)
 
-    if not re.match(r'^\d{4}\-\d{2}\-\d{2}\s\d{2}\:\d{2}\:\d{2}$', value):
+    if not re.match(r'^\d{4}\-\d{2}\-\d{2}\s\d{2}\:\d{2}\:\d{2}$', val):
       self.error('write(): value doesn\'t match date/time format')
 
-    as_ints = [int(x) for x in re.split(r'[\-\:\s]', value)]
+    year, month, day, hour, minute, second = [int(x) for x in re.split(r'[\-\:\s]', val)]
 
-    if as_ints[0] < 2000:
+    if year < 2000:
       self.error(f'write(): year should be >= 2000')
 
-    as_ints[0] -= 2000
+    try:
+      date = datetime(year, month, day, hour, minute, second)
+    except ValueError as e:
+      self.error(f'write(): {str(e)}')
 
-    values = to_inv_time(as_ints)
+    values = to_inv_time([year - 2000, month, day, hour, minute, second])
 
     if interactor.write_register(self.address, values) != len(values):
       self.error(f'write(): something went wrong while writing {self.description}')
 
-    self._value = value
-    return value
+    self._value = date
+    return self._value

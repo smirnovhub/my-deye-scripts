@@ -99,6 +99,7 @@ for register in registers.all_registers:
     sys.executable,
     '-u',
     os.path.join(base_path, 'deye/deye'),
+    '-v',
     '--connection-timeout',
     '1',
     '-c 0',

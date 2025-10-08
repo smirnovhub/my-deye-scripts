@@ -39,7 +39,6 @@ class DeyeRegistersHolder:
     self._interactors: List[DeyeModbusInteractor] = []
     self._master_interactor: Optional[DeyeModbusInteractor] = None
     self._loggers = loggers
-    self.kwargs = kwargs
     self.log = logging.getLogger()
     self._all_loggers = DeyeLoggers()
 
@@ -50,7 +49,7 @@ class DeyeRegistersHolder:
     self.locker = DeyeFileLocker(name, lockfile, verbose = verbose)
 
     for logger in self._loggers:
-      interactor = DeyeModbusInteractor(logger = logger, **self.kwargs)
+      interactor = DeyeModbusInteractor(logger = logger, **kwargs)
       self._interactors.append(interactor)
 
       if register_creator is not None:
@@ -167,14 +166,14 @@ class DeyeRegistersHolder:
 
     if is_tests_on():
       retry_count = get_test_retry_count()
-      self._write_register_with_retry_internal(
+      return self._write_register_with_retry_internal(
         register,
         value,
         retry_count = retry_count,
         on_retry = log_retry,
       )
     else:
-      self._write_register_internal(register, value)
+      return self._write_register_internal(register, value)
 
   def _write_register_internal(self, register: DeyeRegister, value):
     try:
@@ -208,7 +207,6 @@ class DeyeRegistersHolder:
           on_retry(i + 1, retry_count, e)
         time.sleep(retry_delay)
         continue
-      break
     else:
       if last_exception is not None:
         raise last_exception

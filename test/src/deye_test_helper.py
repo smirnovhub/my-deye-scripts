@@ -25,8 +25,12 @@ from deye_utils import (
   to_unsigned,
   custom_round,
   to_inv_time,
+  get_current_time,
   to_long_register_values,
+  time_format_str,
 )
+
+test_success_str = 'All tests passed'
 
 class DeyeRegisterRandomValue:
   def __init__(
@@ -110,7 +114,7 @@ def get_random_by_register_type(
     return _handle_time_of_use_int_register(register)
 
   elif isinstance(register, SystemTimeDiffDeyeRegister):
-    return None
+    return _handle_system_time_diff_writable_register(register)
 
   elif isinstance(register, SystemTimeWritableDeyeRegister):
     return _handle_system_time_writable_register(register)
@@ -194,8 +198,14 @@ def _handle_time_of_use_int_register(register: TimeOfUseIntWritableDeyeRegister)
   # Without rounding, small floating-point errors (e.g. 3.334999...)
   # cause inconsistent results, making random-based tests fail unpredictably.
   # Rounding to 2 decimals ensures stable, repeatable test outcomes.
-  value = round(sum(values) / len(values), 2)
+  value = round(sum(values) / len(values))
   return DeyeRegisterRandomValue(register, custom_round(value), values)
+
+def _handle_system_time_diff_writable_register(register: SystemTimeDiffDeyeRegister) -> DeyeRegisterRandomValue:
+  rnd = _handle_system_time_writable_register(register)
+  date = datetime.strptime(rnd.value, time_format_str)
+  value = int(round((date - get_current_time()).total_seconds()))
+  return DeyeRegisterRandomValue(register, value, rnd.values)
 
 def _handle_system_time_writable_register(register: SystemTimeWritableDeyeRegister) -> DeyeRegisterRandomValue:
   # Get the current date and time

@@ -18,6 +18,8 @@ from deye_exceptions import (
   DeyeValueException,
 )
 
+time_format_str = '%Y-%m-%d %H:%M:%S'
+
 # some code is based on githubDante / deye-controller
 # https://github.com/githubDante/deye-controller
 
@@ -199,3 +201,6 @@ def turn_tests_on():
 def get_test_retry_count():
   loggers = DeyeLoggers()
   return 15 + loggers.count * 4
+
+def get_current_time() -> datetime:
+  return datetime(2017, 7, 25, 15, 33, 14) if is_tests_on() else datetime.now()

@@ -1,4 +1,3 @@
-import re
 import time
 import telebot
 
@@ -10,7 +9,14 @@ from solarman_server import SolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from telebot_fake_test_message import TelebotFakeTestMessage
+from deye_register import DeyeRegister
 from deye_registers_factory import DeyeRegistersFactory
+from deye_test_helper import get_random_by_register_type
+
+from deye_utils import (
+  get_current_time,
+  time_format_str,
+)
 
 class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
   def __init__(self, bot: TestableTelebot):
@@ -28,6 +34,23 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     for server in servers:
       server.clear_registers()
       server.clear_registers_status()
+
+    master_server: Optional[SolarmanServer] = None
+
+    for srv in servers:
+      if srv.name == self.loggers.master.name:
+        master_server = srv
+        break
+
+    if master_server is None:
+      self.error(f'Master server not found')
+      return
+
+    register = self.registers.inverter_system_time_register
+
+    rnd = get_random_by_register_type(register)
+    self.log.info(f'Setting time to server: {rnd.value}')
+    master_server.set_register_values(register.address, rnd.values)
 
     command = f'/{TelebotMenuItem.deye_sync_time.command}'
 
@@ -49,7 +72,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.log.info(f"Replying 'yes' for time sync confirmation...")
     self.bot.process_new_messages([yes_message])
 
-    self.call_with_retry(self._check_results, servers)
+    self.call_with_retry(self._check_results, register, master_server, rnd.value)
 
     self.log.info(f'Run command from button: {command}')
 
@@ -57,8 +80,12 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
       server.clear_registers()
       server.clear_registers_status()
 
+    rnd = get_random_by_register_type(register)
+    self.log.info(f'Setting time to server: {rnd.value}')
+    master_server.set_register_values(register.address, rnd.values)
+
     fake_query = telebot.types.CallbackQuery(
-      id = "fake",
+      id = 321,
       chat_instance = 'fake',
       json_string = '',
       from_user = fake_message.from_user,
@@ -73,24 +100,16 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.log.info(f"Replying 'yes' for time sync confirmation...")
     self.bot.process_new_messages([yes_message])
 
-    self.call_with_retry(self._check_results, servers)
+    self.call_with_retry(self._check_results, register, master_server, rnd.value)
 
-  def _check_results(self, servers: List[SolarmanServer]):
-    register = self.registers.inverter_system_time_register
-    pattern = rf"{re.escape(register.description)}.+changed from\s+.+?\s+to\s+.+"
+  def _check_results(self, register: DeyeRegister, master_server: SolarmanServer, changed_from: str):
+    changed_to = get_current_time().strftime(time_format_str)
+    pattern = (rf'{register.description}.+changed '
+               f'from {changed_from} '
+               f'to {changed_to}')
 
     if not self.bot.is_messages_contains_regex(pattern):
-      self.error(f"No string to match pattern '{pattern}'")
-
-    master_server: Optional[SolarmanServer] = None
-    for server in servers:
-      if server.name == self.loggers.master.name:
-        master_server = server
-        break
-
-    if master_server is None:
-      self.error('Master server not found')
-      return
+      self.error(f"No messages to match pattern '{pattern}'")
 
     if not master_server.is_registers_written(register.address, register.quantity):
       self.error(f"No changes on the server side after writing '{register.name}'")

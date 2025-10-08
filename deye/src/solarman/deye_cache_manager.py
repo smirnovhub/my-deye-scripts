@@ -4,7 +4,11 @@ import json
 import time
 
 from datetime import datetime
-from deye_utils import ensure_file_exists
+
+from deye_utils import (
+  ensure_file_exists,
+  time_format_str,
+)
 
 from deye_file_lock import (
   flock,
@@ -28,7 +32,7 @@ class DeyeCacheManager:
 
   def save_to_cache(self, register_addr, quantity, data):
     filename = self.get_cache_filename(register_addr, quantity)
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now = datetime.now().strftime(time_format_str)
 
     ensure_file_exists(filename, mode = 0o666)
 
