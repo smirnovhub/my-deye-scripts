@@ -32,6 +32,10 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
 
+  @property
+  def description(self) -> str:
+    return 'writable registers undo button test'
+
   def run_tests(self, servers: List[SolarmanServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')

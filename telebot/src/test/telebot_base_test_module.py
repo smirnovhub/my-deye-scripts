@@ -19,6 +19,10 @@ class TelebotBaseTestModule:
     self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
 
+  @property
+  def description(self) -> str:
+    raise NotImplementedError(f'{self.__class__.__name__}: description() is not implemented')
+
   def run_tests(self, servers: List[SolarmanServer]):
     raise NotImplementedError(f'{self.__class__.__name__}: run_tests() is not implemented')
 

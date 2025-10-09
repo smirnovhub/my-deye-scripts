@@ -69,7 +69,7 @@ class TeleTest:
         module.run_tests(servers)
         delta = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
         send_private_telegram_message(f'{large_green_circle_emoji} [{i + 1}/{len(modules)}] '
-                                      f'<b>Success</b> after {delta}')
+                                      f'<b>Success</b> after {delta}: {module.description}')
       print(test_success_str)
       log.info(test_success_str)
     except Exception as e:
@@ -83,7 +83,7 @@ class TeleTest:
 
       delta = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
       send_private_telegram_message(f'{large_red_circle_emoji} [{i + 1}/{len(modules)}] '
-                                    f'<b>Failed</b> after {delta}: {msg}')
+                                    f'<b>Failed</b> after {delta}: {module.description}: {msg}')
       sys.exit(1)
 
   def _clear_data(self, servers: List[SolarmanServer], log: logging.Logger):
@@ -129,7 +129,7 @@ class TeleTest:
       ),
       TelebotRegistersTestModule(
         bot,
-        name = self.loggers.accumulated_registers_prefix,
+        name = self.loggers.master.name,
         command = TelebotMenuItem.deye_master_today_stat,
         register_creator = lambda prefix: TodayStatRegisters(prefix),
       ),
@@ -141,7 +141,7 @@ class TeleTest:
       ),
       TelebotRegistersTestModule(
         bot,
-        name = self.loggers.accumulated_registers_prefix,
+        name = self.loggers.master.name,
         command = TelebotMenuItem.deye_master_total_stat,
         register_creator = lambda prefix: TotalStatRegisters(prefix),
       ),

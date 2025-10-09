@@ -26,6 +26,10 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.command = command
     self.register_creator = register_creator
 
+  @property
+  def description(self) -> str:
+    return f"{self.command.command.format(self.name).replace('_', ' ')} test"
+
   def run_tests(self, servers: List[SolarmanServer]):
     users = TelebotUsers()
 

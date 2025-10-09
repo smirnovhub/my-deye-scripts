@@ -11,6 +11,10 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
 
+  @property
+  def description(self) -> str:
+    return 'allowed commands test'
+
   def run_tests(self, servers: List[SolarmanServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')

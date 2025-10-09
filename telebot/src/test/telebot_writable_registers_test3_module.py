@@ -33,6 +33,10 @@ class TelebotWritableRegistersTest3Module(TelebotBaseTestModule):
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
 
+  @property
+  def description(self) -> str:
+    return 'writable registers test 3'
+
   def run_tests(self, servers: List[SolarmanServer]):
     user = TelebotTestUsers().test_user1
 

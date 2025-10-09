@@ -12,6 +12,10 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
 
+  @property
+  def description(self) -> str:
+    return 'unknown commands test'
+
   def run_tests(self, servers: List[SolarmanServer]):
     user = TelebotTestUsers().test_user1
 

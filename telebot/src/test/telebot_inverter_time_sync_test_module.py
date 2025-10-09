@@ -20,6 +20,10 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     super().__init__(bot)
     self.registers = DeyeRegistersFactory.create_registers()
 
+  @property
+  def description(self) -> str:
+    return 'inverter time sync test'
+
   def run_tests(self, servers: List[SolarmanServer]):
     user = TelebotTestUsers().test_user1
 

@@ -63,12 +63,12 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
     self.remove_logs(scripts)
 
-    all_tests = 'all_tests'
+    all_tests = 'all tests'
 
     os.environ['BOT_API_TEST_TOKEN'] = self.bot.token
 
     options: Dict[str, str] = {all_tests: all_tests}
-    options.update({os.path.basename(s).replace('.py', ''): s for s in scripts})
+    options.update({os.path.basename(s).replace('.py', '').replace('_', ' '): s for s in scripts})
 
     def on_choice(chat_id: int, choice: ButtonChoice):
       try:
@@ -195,7 +195,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       with open(log_file, 'w', encoding = 'utf-8') as f:
         try:
           start_time = datetime.datetime.now()
-          test_name = os.path.basename(script).replace('.py', '')
+          test_name = os.path.basename(script).replace('.py', '').replace('_', ' ')
 
           self.write_and_flush(f, f"--- RUNNING [{i + 1}/{len(scripts)}] {test_name} ---\n\n")
 
