@@ -29,19 +29,16 @@ jobs:
           python -m pip install types-requests
 
       - name: Run mypy for deye
-        if: always()
         working-directory: deye
         run: |
           mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
 
       - name: Run mypy for telebot
-        if: always()
         working-directory: telebot
         run: |
           mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
 
       - name: Run mypy for test
-        if: always()
         working-directory: test
         run: |
           mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src

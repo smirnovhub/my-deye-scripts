@@ -31,6 +31,5 @@ jobs:
           python -m pip install requests
 
       - name: Run tests
-        if: always()
         run: |
           python -u test/src/deye_single_inverter_test.py
