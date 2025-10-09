@@ -74,7 +74,7 @@ class MyTelebot:
     # unknown command handler should be always last
     authorized_menu_items.append(TelebotMenuUnknownCommandHandler(bot))
 
-    default_commands = []
+    default_commands: List[telebot.types.BotCommand] = []
 
     for menu_item in default_menu_items:
       if menu_item.command.is_acceptable(self.loggers.system_type):
@@ -94,7 +94,7 @@ class MyTelebot:
     for user in self.users.allowed_users:
       if self.users.is_user_blocked(user.id):
         continue
-      authorized_commands = []
+      authorized_commands: List[telebot.types.BotCommand] = []
       for menu_item in authorized_menu_items:
         if menu_item.is_item_allowed_for_user(user) and menu_item.command.is_acceptable(self.loggers.system_type):
           commands = menu_item.get_commands()

@@ -1,7 +1,6 @@
 from typing import List
 
 from solarman_server import SolarmanServer
-from telebot_fake_test_message import TelebotFakeTestMessage
 from telebot_base_test_module import TelebotBaseTestModule
 from deye_registers_factory import DeyeRegistersFactory
 from telebot_menu_item import TelebotMenuItem
@@ -43,46 +42,18 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
           disabled_registers.append(register.name)
 
     for command in self.get_all_registered_commands():
-      self.bot.clear_messages()
-
       self.log.info(f"Sending command '/{command}' from user {user.id} {user.name}")
 
-      change_message = TelebotFakeTestMessage.make(
-        text = f'/{command}',
-        user_id = user.id,
-        first_name = user.name,
-      )
+      self.send_text(user, f'/{command}')
 
-      self.bot.process_new_messages([change_message])
-
-      self.call_with_retry(
-        self._check_result,
-        command = command,
-        allowed_commands = allowed_commands,
-        allowed_registers = allowed_registers,
-        disabled_registers = disabled_registers,
-      )
+      if command in disabled_registers:
+        self.wait_for_text_regex(".*You can't change.*")
+      elif command in allowed_registers:
+        self.wait_for_text_regex(".*Current.*value:.*Enter new value.*")
+      elif command in allowed_commands:
+        self.wait_for_text_regex(".*Inverter:.*")
+      else:
+        self.wait_for_text_regex('.*Command is not allowed.*')
 
     self.log.info('Seems commands access rights processed currectly')
-
-  def _check_result(
-    self,
-    command: str,
-    allowed_commands: List[str],
-    allowed_registers: List[str],
-    disabled_registers: List[str],
-  ):
-    if command in disabled_registers:
-      self._check_pattern(".*You can't change.*")
-    elif command in allowed_registers:
-      self._check_pattern(".*Current.*value:.*Enter new value.*")
-    elif command in allowed_commands:
-      self._check_pattern(".*Inverter:.*")
-    else:
-      self._check_pattern('.*Command is not allowed.*')
-
-  def _check_pattern(self, pattern: str):
-    if not self.bot.is_messages_contains_regex(pattern):
-      self.error(f"Waiting for message '{pattern}'")
-    else:
-      self.log.info(f"Message '{pattern}' received")
+    self.log.info(f'Module {type(self).__name__} done successfully')

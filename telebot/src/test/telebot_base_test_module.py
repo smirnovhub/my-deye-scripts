@@ -1,12 +1,16 @@
 import time
 import logging
+import telebot
 
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Set
 
 from deye_loggers import DeyeLoggers
+from telebot_user import TelebotUser
+from deye_register import DeyeRegister
 from testable_telebot import TestableTelebot
 from solarman_server import SolarmanServer
 from deye_exceptions import DeyeKnownException
+from telebot_fake_test_message import TelebotFakeTestMessage
 from deye_utils import get_test_retry_count
 
 class TelebotBaseTestModule:
@@ -18,7 +22,7 @@ class TelebotBaseTestModule:
   def run_tests(self, servers: List[SolarmanServer]):
     raise NotImplementedError(f'{self.__class__.__name__}: run_tests() is not implemented')
 
-  def get_all_registered_commands(self):
+  def get_all_registered_commands(self) -> List[str]:
     """
     Retrieve all command names registered via @bot.message_handler decorators.
 
@@ -29,7 +33,7 @@ class TelebotBaseTestModule:
     Returns:
         list[str]: A sorted list of unique command names.
     """
-    commands = set()
+    commands: Set[str] = set()
 
     for handler in self.bot.message_handlers:
       filters = handler.get("filters", {})
@@ -39,6 +43,62 @@ class TelebotBaseTestModule:
           commands.update(cmds)
 
     return sorted(commands)
+
+  def send_text(self, user: TelebotUser, text: str):
+    message = TelebotFakeTestMessage.make(
+      text = text,
+      user_id = user.id,
+      first_name = user.name,
+    )
+    self.bot.process_new_messages([message])
+
+  def send_button_click(self, user: TelebotUser, data: str):
+    message = TelebotFakeTestMessage.make(
+      text = data,
+      user_id = user.id,
+      first_name = user.name,
+    )
+
+    query = telebot.types.CallbackQuery(
+      id = 321,
+      chat_instance = 'fake',
+      json_string = '',
+      from_user = message.from_user,
+      data = data,
+      message = message,
+    )
+
+    self.bot.process_new_callback_query([query])
+
+  def wait_for_text(self, text: str):
+    def check_message():
+      if not self.bot.is_messages_contains(text):
+        self.error(f"Waiting for message '{text}'...")
+      else:
+        self.log.info(f"Received message '{text}'")
+
+    self.call_with_retry(check_message)
+    self.bot.clear_messages()
+
+  def wait_for_text_regex(self, text: str):
+    def check_message():
+      if not self.bot.is_messages_contains_regex(text):
+        self.error(f"Waiting for message '{text}'...")
+      else:
+        self.log.info(f"Received message '{text}'")
+
+    self.call_with_retry(check_message)
+    self.bot.clear_messages()
+
+  def wait_for_server_changes(self, server: SolarmanServer, register: DeyeRegister):
+    def check_server():
+      if not server.is_registers_written(register.address, register.quantity):
+        self.log.info(f'Checking {register.name}... FAILED')
+        self.error(f"No changes on the server side after writing '{register.name}'")
+      else:
+        self.log.info(f'Checking {register.name}... OK')
+
+    self.call_with_retry(check_server)
 
   def call_with_retry(self, func: Callable, *args, **kwargs):
     """

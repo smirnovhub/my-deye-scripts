@@ -1,15 +1,33 @@
 from typing import List, Optional
 
-from deye_register import DeyeRegister
 from telebot_test_users import TelebotTestUsers
 from deye_registers_factory import DeyeRegistersFactory
 from solarman_server import SolarmanServer
-from telebot_fake_test_message import TelebotFakeTestMessage
+from deye_base_enum import DeyeBaseEnum
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_test_helper import get_random_by_register_value_type
 
 class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
+  """
+  Module `TelebotWritableRegistersTest1Module` is a test suite for validating
+  writable Deye registers via a testable Telegram bot.
+
+  For each writable register, the following steps are performed:
+
+  1. **Generate test value**:  
+    A random valid value is generated according to the register's type,
+    skipping zero if required.
+
+  2. **Simulate command via Telegram bot**:  
+    - Sends a command in the form `/register_name`.
+    - Checks if the bot asks for the current value (prompt verification).
+
+  3. **Send new value**:  
+    - Sends the generated value as a Telegram message.
+    - Verifies that the server registers are updated.
+    - Checks that the bot replies with a confirmation message reflecting the change.
+  """
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
 
@@ -17,11 +35,10 @@ class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
-    user = TelebotTestUsers().test_user1
-    registers = DeyeRegistersFactory.create_registers()
-
     self.log.info(f'Running module {type(self).__name__}...')
 
+    user = TelebotTestUsers().test_user1
+    registers = DeyeRegistersFactory.create_registers()
     master_server: Optional[SolarmanServer] = None
 
     for srv in servers:
@@ -33,9 +50,6 @@ class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
       self.error('Master server not found')
       return
 
-    master_server.clear_registers()
-    master_server.clear_registers_status()
-
     for register in registers.all_registers:
       if not register.can_write:
         continue
@@ -45,51 +59,22 @@ class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
         self.log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
         continue
 
-      self.bot.clear_messages()
-
       command = f'/{register.name}'
 
       self.log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
       self.log.info(f"Sending command '{command}'")
 
-      change_message = TelebotFakeTestMessage.make(
-        text = command,
-        user_id = user.id,
-        first_name = user.name,
-      )
+      self.send_text(user, command)
+      self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
 
-      self.bot.process_new_messages([change_message])
-      self.call_with_retry(self._check_for_ask, register)
+      self.send_text(user, value)
 
-      value_message = TelebotFakeTestMessage.make(
-        text = f'{value}',
-        user_id = user.id,
-        first_name = user.name,
-      )
+      if isinstance(register.value, DeyeBaseEnum):
+        self.wait_for_text('Do you really want to change')
+        self.send_text(user, 'yes')
 
-      self.bot.process_new_messages([value_message])
-      self.call_with_retry(self._check_for_server_changes, master_server, register)
-      self.call_with_retry(self._check_for_reply_message, register)
+      self.wait_for_server_changes(master_server, register)
+      self.wait_for_text_regex(rf'{register.description}.+changed from .+ to ')
 
     self.log.info('Seems all registers processed currectly')
-
-  def _check_for_ask(self, register: DeyeRegister):
-    pattern = rf'Current.+{register.description}.+value.*Enter new value'
-    if not self.bot.is_messages_contains_regex(pattern):
-      self.error(f"No messages to match pattern '{pattern}'")
-    else:
-      self.log.info(f'Checking {register.name}... OK')
-
-  def _check_for_server_changes(self, server: SolarmanServer, register: DeyeRegister):
-    if not server.is_registers_written(register.address, register.quantity):
-      self.log.info(f'Checking {register.name}... FAILED')
-      self.error(f"No changes on the server side after writing '{register.name}'")
-    else:
-      self.log.info(f'Checking {register.name}... OK')
-
-  def _check_for_reply_message(self, register: DeyeRegister):
-    pattern = (rf'{register.description}.+changed from .+ to ')
-    if not self.bot.is_messages_contains_regex(pattern):
-      self.error(f"No messages to match pattern '{pattern}'")
-    else:
-      self.log.info(f'Checking {register.name}... OK')
+    self.log.info(f'Module {type(self).__name__} done successfully')

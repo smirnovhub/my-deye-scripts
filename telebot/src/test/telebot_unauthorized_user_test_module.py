@@ -3,9 +3,9 @@ import random
 from typing import List
 
 from solarman_server import SolarmanServer
-from telebot_fake_test_message import TelebotFakeTestMessage
 from telebot_base_test_module import TelebotBaseTestModule
 from telebot_menu_item import TelebotMenuItem
+from telebot_user import TelebotUser
 from testable_telebot import TestableTelebot
 
 class TelebotUnauthorizedUserTestModule(TelebotBaseTestModule):
@@ -19,29 +19,19 @@ class TelebotUnauthorizedUserTestModule(TelebotBaseTestModule):
     self.log.info(f'Running module {type(self).__name__}...')
 
     for command in self.get_all_registered_commands():
-      self.bot.clear_messages()
-
-      user = random.randint(1000, 9999)
-
-      self.log.info(f"Sending command '/{command}' from user {user}")
-
-      change_message = TelebotFakeTestMessage.make(
-        text = f'/{command}',
-        user_id = user,
+      user = TelebotUser(
+        name = 'Fake user',
+        id = random.randint(1000, 9999),
       )
 
-      self.bot.process_new_messages([change_message])
-      self.call_with_retry(self._check_result, command, user)
+      self.log.info(f"Sending command '/{command}' from user {user.id}")
 
-    self.log.info('Seems unknown commands processed currectly')
+      self.send_text(user, f'/{command}')
 
-  def _check_result(self, command: str, user: str):
-    if command == TelebotMenuItem.request_access.command:
-      pattern = f'Access requested for user {user}'
-    else:
-      pattern = f'User {user} is not authorized'
+      if command == TelebotMenuItem.request_access.command:
+        self.wait_for_text(f'Access requested for user {user.id}')
+      else:
+        self.wait_for_text(f'User {user.id} is not authorized')
 
-    if not self.bot.is_messages_contains(pattern):
-      self.error(f"No messages to match pattern '{pattern}'")
-    else:
-      self.log.info(f'Checking command /{command} for user {user}... OK')
+    self.log.info('Seems unauthorized users processed currectly')
+    self.log.info(f'Module {type(self).__name__} done successfully')

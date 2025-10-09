@@ -5,7 +5,6 @@ from typing import List
 
 from telebot_test_users import TelebotTestUsers
 from solarman_server import SolarmanServer
-from telebot_fake_test_message import TelebotFakeTestMessage
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 
@@ -21,25 +20,22 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
 
     self.log.info(f'Running module {type(self).__name__}...')
 
-    for i in range(3):
+    for i in range(5):
       command = ''.join(random.choices(string.ascii_letters + string.digits, k = 16))
 
       self.log.info(f"Sending command '/{command}'")
 
-      change_message = TelebotFakeTestMessage.make(
-        text = f'/{command}',
-        user_id = user.id,
-        first_name = user.name,
-      )
+      self.send_text(user, f'/{command}')
+      self.wait_for_text_regex(rf'.*Unknown command: /.*{command}.*')
 
-      self.bot.process_new_messages([change_message])
-      self.call_with_retry(self._check_result, command)
+    for i in range(5):
+      command = ''.join(random.choices(string.ascii_letters + string.digits, k = 16))
+      param = ''.join(random.choices(string.ascii_letters + string.digits, k = 8))
+
+      self.log.info(f"Sending command '/{command} {param}'")
+
+      self.send_text(user, f'/{command} {param}')
+      self.wait_for_text_regex(rf'.*Unknown command: /.*{command}.*')
 
     self.log.info('Seems unknown commands processed currectly')
-
-  def _check_result(self, command: str):
-    pattern = rf'.*Unknown command: /.*{command}.*'
-    if not self.bot.is_messages_contains_regex(pattern):
-      self.error(f"No messages to match pattern '{pattern}'")
-    else:
-      self.log.info(f'Checking command /{command}... OK')
+    self.log.info(f'Module {type(self).__name__} done successfully')
