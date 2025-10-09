@@ -31,7 +31,7 @@ jobs:
           python -m pip install requests
 
       - name: Run tests
-        continue-on-error: true
+        if: always()
         run: |
           python -u test/src/deye_group_read_test.py
           python -u test/src/deye_multi_inverter_test.py
