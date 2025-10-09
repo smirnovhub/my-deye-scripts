@@ -191,7 +191,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     finally:
       holder.disconnect()
 
-    result = f'Current <b>{register.description}</b> value: {register.pretty_value} {register.suffix}\n'
+    suffix = f' {register.suffix}'.rstrip()
+    result = f'Current <b>{register.description}</b> value: {register.pretty_value}{suffix}\n'
 
     if register.min_value != register.max_value:
       result += f'Enter new value (from {register.min_value} to {register.max_value}):'
@@ -219,7 +220,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       holder.read_registers()
 
       value: Any = 0
-      suffix = f' {register.suffix}'.rstrip()
 
       if isinstance(register.value, int):
         try:
@@ -227,18 +227,18 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         except Exception:
           raise DeyeValueException(f'Value should be int from {register.min_value} to {register.max_value}')
         if register.value == value:
-          raise self.get_nothing_changed_exception(register.pretty_value, suffix)
+          raise self.get_nothing_changed_exception(register)
       elif isinstance(register.value, float):
         try:
           value = float(message.text)
         except Exception:
           raise DeyeValueException(f'Value should be float from {register.min_value} to {register.max_value}')
         if register.value == value:
-          raise self.get_nothing_changed_exception(register.pretty_value, suffix)
+          raise self.get_nothing_changed_exception(register)
       elif isinstance(register.value, DeyeBaseEnum):
         value = register.value.parse(message.text)
         if register.value == value:
-          raise self.get_nothing_changed_exception(register.pretty_value, suffix)
+          raise self.get_nothing_changed_exception(register)
       else:
         value = str(message.text)
 
@@ -246,7 +246,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         raise DeyeValueException(f'Enum value for <b>{register.description}</b> is unknown')
 
       if str(register.value) == message.text:
-        raise self.get_nothing_changed_exception(register.pretty_value, suffix)
+        raise self.get_nothing_changed_exception(register)
 
       old_value = register.value
       old_pretty_value = register.pretty_value
@@ -274,6 +274,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 
       if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed:
+        suffix = f' {register.suffix}'.rstrip()
         ask_confirmation(
           self.bot,
           message.chat.id,
@@ -325,6 +326,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     else:
       self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
 
-  def get_nothing_changed_exception(self, value: str, suffix: str) -> Exception:
-    return DeyeValueException(f'New value ({value}{suffix}) is '
+  def get_nothing_changed_exception(self, register: DeyeRegister) -> Exception:
+    suffix = f' {register.suffix}'.rstrip()
+    return DeyeValueException(f'New value ({register.pretty_value}{suffix}) is '
                               'the same as old value. Nothing changed')
