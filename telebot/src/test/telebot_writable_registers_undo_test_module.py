@@ -92,6 +92,8 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
       self.wait_for_server_changes(master_server, register)
       undo_data = self.wait_for_text_regex_and_get_undo_data(rf'{register.description}.+changed from .+ to ')
 
+      self.log.info(f"Checking expected undo data '{expected}' for register '{register.name}'...")
+
       expected = f'/{register.name} {old_random_value.value}'
       if undo_data != expected:
         self.error(f"Undo data is wrong for register '{register.name}': expected '{expected}', but found '{undo_data}'")
