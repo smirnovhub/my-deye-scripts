@@ -27,6 +27,7 @@ from telebot_allowed_commands_test_module import TelebotAllowedCommandsTestModul
 from telebot_writable_registers_test1_module import TelebotWritableRegistersTest1Module
 from telebot_writable_registers_test2_module import TelebotWritableRegistersTest2Module
 from telebot_writable_registers_test3_module import TelebotWritableRegistersTest3Module
+from telebot_writable_registers_undo_test_module import TelebotWritableRegistersUndoTestModule
 from telebot_send_message import send_private_telegram_message
 from deye_utils import format_timedelta
 from deye_test_helper import test_success_str
@@ -106,6 +107,7 @@ class TeleTest:
       TelebotWritableRegistersTest1Module(bot),
       TelebotWritableRegistersTest2Module(bot),
       TelebotWritableRegistersTest3Module(bot),
+      TelebotWritableRegistersUndoTestModule(bot),
       TelebotInverterTimeSyncTestModule(bot),
       TelebotRegistersTestModule(
         bot,

@@ -2,7 +2,7 @@ import time
 import logging
 import telebot
 
-from typing import Callable, List, Optional, Set
+from typing import Any, Callable, List, Optional, Set
 
 from deye_loggers import DeyeLoggers
 from telebot_user import TelebotUser
@@ -90,6 +90,21 @@ class TelebotBaseTestModule:
     self.call_with_retry(check_message)
     self.bot.clear_messages()
 
+  def wait_for_text_regex_and_get_undo_data(self, text: str) -> str:
+    def check_message() -> str:
+      undo_data = self.bot.get_undo_data_regex(text)
+      if undo_data is None:
+        self.error(f"Waiting for message with undo '{text}'...")
+      else:
+        self.log.info(f"Received message with undo '{text}'")
+
+      return str(undo_data)
+
+    undo_data = self.call_with_retry(check_message)
+    self.bot.clear_messages()
+
+    return str(undo_data)
+
   def wait_for_server_changes(self, server: SolarmanServer, register: DeyeRegister):
     def check_server():
       if not server.is_registers_written(register.address, register.quantity):
@@ -100,7 +115,7 @@ class TelebotBaseTestModule:
 
     self.call_with_retry(check_server)
 
-  def call_with_retry(self, func: Callable, *args, **kwargs):
+  def call_with_retry(self, func: Callable, *args, **kwargs) -> Any:
     """
     Calls a function repeatedly until it succeeds or retries are exhausted.
 

@@ -306,6 +306,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     text = (f'<b>{register.description}</b> changed from {old_pretty_value} '
             f'to {register.pretty_value}{suffix}')
 
+    pretty = str(old_value) if isinstance(old_value, DeyeBaseEnum) else old_pretty_value
     is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
 
     if old_value != register.value and not is_undo_button_pressed:
@@ -313,7 +314,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         self.bot,
         message.chat.id,
         text,
-        {undo_button_name: f'/{register.name} {old_value}'},
+        {undo_button_name: f'/{register.name} {pretty}'},
         max_per_row = 2,
       )
 

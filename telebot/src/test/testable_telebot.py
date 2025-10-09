@@ -1,13 +1,21 @@
 import os
 import re
-import logging
 import sys
+import logging
 import telebot
 
-from typing import List, Union
+from dataclasses import dataclass
+from typing import List, Optional, Union
+
 from telebot_fake_test_message import TelebotFakeTestMessage
 from telebot_deye_helper import get_object_as_str
 from deye_utils import ensure_dir_exists
+from telebot_constants import undo_button_name
+
+@dataclass
+class MessageTestData:
+  text: str
+  reply_markup: Optional[telebot.types.InlineKeyboardMarkup]
 
 class TestableTelebot(telebot.TeleBot):
   """
@@ -40,7 +48,7 @@ class TestableTelebot(telebot.TeleBot):
 
   def __init__(self, token: str):
     super().__init__(token)
-    self.messages: List[str] = []
+    self.messages: List[MessageTestData] = []
     self.log = logging.getLogger()
 
     ensure_dir_exists(os.path.dirname(TestableTelebot.telebot_test_log_file_name))
@@ -64,15 +72,30 @@ class TestableTelebot(telebot.TeleBot):
 
   def is_messages_contains(self, text: str) -> bool:
     for message in self.messages:
-      if text.lower() in message.lower():
+      if text.lower() in message.text.lower():
         return True
     return False
 
   def is_messages_contains_regex(self, pattern: str) -> bool:
     for message in self.messages:
-      if re.search(pattern, message, flags = re.IGNORECASE | re.DOTALL):
+      if re.search(pattern, message.text, flags = re.IGNORECASE | re.DOTALL):
         return True
     return False
+
+  def get_undo_data_regex(self, pattern: str) -> Optional[str]:
+    for message in self.messages:
+      if message.reply_markup is None:
+        return None
+
+      if not re.search(pattern, message.text, flags = re.IGNORECASE | re.DOTALL):
+        return None
+
+      for keyboards in message.reply_markup.keyboard:
+        for keyboard in keyboards:
+          if keyboard.text == undo_button_name:
+            return keyboard.callback_data
+
+    return None
 
   def set_my_commands(self, *args, **kwargs) -> bool:
     self.log.info(f'[set_my_commands] {self.get_args(*args, **kwargs)}')
@@ -102,7 +125,11 @@ class TestableTelebot(telebot.TeleBot):
     **kwargs,
   ) -> telebot.types.Message:
     self.log.info(f'[send_message] {self.get_args(chat_id = chat_id, text = text, *args, **kwargs)}')
-    self.messages.append(text)
+
+    reply_markup = kwargs.get("reply_markup")
+    reply_markup = reply_markup if isinstance(reply_markup, telebot.types.InlineKeyboardMarkup) else None
+    self.messages.append(MessageTestData(text, reply_markup))
+
     return TelebotFakeTestMessage.make(text = text, chat_id = chat_id)
 
   def send_photo(self, *args, **kwargs):
