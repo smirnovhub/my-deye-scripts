@@ -84,7 +84,7 @@ for register in registers.all_registers:
     random_value = get_random_by_register_type(register)
     if random_value is None:
       continue
-    server.set_register_values(random_value.register.address, random_value.values)
+    server.set_register_values(random_value.register.addresses, random_value.values)
     try:
       total_value += round(float(random_value.value) / divider, 2)
     except:

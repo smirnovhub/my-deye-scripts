@@ -18,7 +18,6 @@
     "../deye/src/registers/read_only",
     "../deye/src/registers/read_only/cost",
     "../deye/src/registers/read_only/forecast",
-    "../deye/src/registers/read_only/self_consumption",
     "../deye/src/registers/read_write",
     "../deye/src/solarman",
     "../deye/src/solarman/server",

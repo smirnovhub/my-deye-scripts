@@ -31,10 +31,8 @@ class TelebotProgressMessage:
         base_text (str): The base text to display before the animated dots.
     """
     # Stop all previous animations
-    self._running = False
-    for t in self._threads:
-      t.join()
-    self._threads.clear()
+    if self._running:
+      self.hide()
 
     # Store parameters
     self._chat_id = chat_id

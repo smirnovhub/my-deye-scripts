@@ -21,6 +21,7 @@ class TelebotFakeTestMessage:
     text: str,
     user_id: int = 1234,
     chat_id: Union[int, str] = 1234,
+    first_name = 'Tester',
   ) -> telebot.types.Message:
     """
     Generate a fake Telegram Message object.
@@ -44,7 +45,7 @@ class TelebotFakeTestMessage:
       "from": {
         "id": user_id,
         "is_bot": False,
-        "first_name": "Tester",
+        "first_name": first_name,
         "username": "tester"
       },
       "chat": {

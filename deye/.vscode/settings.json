@@ -18,7 +18,6 @@
     "src/registers/read_only",
     "src/registers/read_only/cost",
     "src/registers/read_only/forecast",
-    "src/registers/read_only/self_consumption",
     "src/registers/read_write",
     "src/solarman",
     "src/solarman/server",

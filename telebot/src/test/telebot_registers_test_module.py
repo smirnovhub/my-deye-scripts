@@ -1,14 +1,11 @@
-import telebot
-
 from typing import Callable, List
 
 from telebot_menu_item import TelebotMenuItem
-from telebot_users import TelebotUsers
+from telebot_test_users import TelebotTestUsers
 from solarman_server import SolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_registers import DeyeRegisters
-from telebot_fake_test_message import TelebotFakeTestMessage
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_deye_helper import holder_kwargs
 from deye_test_helper import get_random_by_register_type
@@ -26,48 +23,35 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.command = command
     self.register_creator = register_creator
 
-  def run_tests(self, servers: List[SolarmanServer]):
-    users = TelebotUsers()
+  @property
+  def description(self) -> str:
+    return f"{self.command.command.format(self.name).replace('_', ' ')} test"
 
+  def run_tests(self, servers: List[SolarmanServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
-      self.log.info(f'Running module {type(self).__name__}: '
-                    f"name = '{self.name}' "
-                    f"command = '{self.command}' "
-                    f"register_creator = {type(self.register_creator(self.name)).__name__}'")
+    user = TelebotTestUsers().test_user1
 
-    holder = self._init_registers(servers)
+    self.log.info(f'Running module {type(self).__name__}: '
+                  f"name = '{self.name}' "
+                  f"command = '{self.command}' "
+                  f"register_creator = {type(self.register_creator(self.name)).__name__}'")
 
     command = f'/{self.command.command.format(self.name)}'
 
-    fake_message = TelebotFakeTestMessage.make(
-      text = command,
-      user_id = users.allowed_users[0].id,
-    )
-
     self.log.info(f'Run regular command: {command}')
-    self.bot.clear_messages()
-    self.bot.process_new_messages([fake_message])
 
+    holder = self._init_registers(servers)
+    self.send_text(user, command)
     self.call_with_retry(self._check_results, holder)
 
     self.log.info(f'Run command from button: {command}')
 
-    fake_query = telebot.types.CallbackQuery(
-      id = 123,
-      chat_instance = 'fake',
-      json_string = '',
-      from_user = fake_message.from_user,
-      data = command,
-      message = fake_message,
-    )
+    self.bot.clear_messages()
 
     holder = self._init_registers(servers)
-
-    self.bot.clear_messages()
-    self.bot.process_new_callback_query([fake_query])
-
+    self.send_button_click(user, command)
     self.call_with_retry(self._check_results, holder)
 
   def _init_registers(self, servers: List[SolarmanServer]) -> DeyeRegistersHolder:
@@ -84,7 +68,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
 
       for server in servers:
         random_value = get_random_by_register_type(register)
-        server.set_register_values(random_value.register.address, random_value.values)
+        server.set_register_values(random_value.register.addresses, random_value.values)
 
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(

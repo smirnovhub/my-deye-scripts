@@ -118,33 +118,50 @@ def custom_round(value: float) -> str:
   return s.rstrip("0").rstrip(".")
 
 def format_timedelta(td: timedelta, add_seconds: bool = False) -> str:
+  """
+  Convert a timedelta object into a compact human-readable string such as
+  '2h 5m' or '1d 3h'.
+
+  The function automatically handles rollover conversions like 60s → 1m,
+  60m → 1h, 24h → 1d, etc. Negative durations are prefixed with a minus sign.
+
+  Args:
+      td (timedelta): The time difference to format.
+      add_seconds (bool): If True, include seconds in the output even when
+          higher units (minutes, hours, etc.) are present.
+
+  Returns:
+      str: A short formatted representation of the time delta.
+  """
   seconds = int(td.total_seconds())
+  sign = "-" if seconds < 0 else ""
+  seconds = abs(seconds)
 
-  if abs(seconds) < 1:
-    return '0s'
-  elif abs(seconds) < 2:
-    return '1s'
+  if seconds < 1:
+    return "0s"
 
+  # Time units in descending order
   periods = [
-    (' year', 60 * 60 * 24 * 365),
-    (' month', 60 * 60 * 24 * 30),
-    ('d', 60 * 60 * 24),
-    ('h', 60 * 60),
-    ('m', 60),
-    #('s',      1)
+    (" year", 60 * 60 * 24 * 365),
+    (" month", 60 * 60 * 24 * 30),
+    ("d", 60 * 60 * 24),
+    ("h", 60 * 60),
+    ("m", 60),
+    ("s", 1),
   ]
 
-  if add_seconds:
-    periods.append(('s', 1))
-
+  # Always include seconds if add_seconds=True, otherwise skip later
   strings = []
+  for name, length in periods:
+    if seconds >= length:
+      value, seconds = divmod(seconds, length)
+      if name == "s" and not add_seconds:
+        # Skip seconds unless requested
+        continue
+      strings.append(f"{value}{name}")
 
-  for period_name, period_seconds in periods:
-    if abs(seconds) > period_seconds:
-      period_value, seconds = divmod(abs(seconds), period_seconds)
-      strings.append("%s%s" % (period_value, period_name))
-
-  sign = "-" if seconds < 0 else ""
+  # If we ended up with "60s" -> handle as "1m"
+  # Actually handled already by divmod() above due to integer division.
   return sign + " ".join(strings)
 
 # Ensure that the specified directory exists

@@ -123,7 +123,13 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       result = revert_to_revision(commit_hash)
       stash_pop()
     except Exception as e:
-      self.bot.send_message(chat_id, str(e))
+      self.bot.send_message(chat_id, f'{str(e)}: trying to reset to HEAD and then stash pop again...')
+      try:
+        result = revert_to_revision('HEAD')
+        stash_pop()
+        self.bot.send_message(chat_id, f'All changes rolled back to the previous state: {result}')
+      except Exception as ex:
+        self.bot.send_message(chat_id, str(ex))
       return
 
     self.bot.send_message(chat_id, result)

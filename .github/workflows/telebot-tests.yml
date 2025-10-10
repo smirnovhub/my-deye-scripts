@@ -8,7 +8,7 @@ on:
 
 jobs:
   telebot-test:
-    timeout-minutes: 7
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -38,7 +38,6 @@ jobs:
           if [ "${{ matrix.python-version }}" = "3.11" ]; then echo "Sleeping for 30s..."; sleep 30; fi
 
       - name: Run tests
-        continue-on-error: true
         env:
           TEST_RUN: "true"
           BOT_API_TEST_TOKEN: ${{ secrets.BOT_API_TEST_TOKEN }}

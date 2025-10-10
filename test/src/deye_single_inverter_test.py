@@ -75,7 +75,7 @@ for register in registers.all_registers:
 
   server.clear_registers_status()
   if random_value.register.address > 0:
-    server.set_register_values(random_value.register.address, random_value.values)
+    server.set_register_values(random_value.register.addresses, random_value.values)
 
   commands = [
     sys.executable,
