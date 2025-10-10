@@ -52,62 +52,62 @@ def is_repository_up_to_date() -> bool:
   """
   # Run 'git remote show origin' to get information about remote branches
   result = _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, "remote", "show", "origin"],
+    ["remote", "show", "origin"],
     'remote show origin',
   )
   return 'up to date' in result.lower()
 
 def stash_push() -> str:
   return _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, 'stash', 'push'],
+    ['stash', 'push'],
     'stash push',
   )
 
 def stash_pop() -> str:
   return _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, 'stash', 'pop'],
+    ['stash', 'pop'],
     'stash pop',
   )
 
 def stash_clear() -> str:
   return _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, 'stash', 'clear'],
+    ['stash', 'clear'],
     'stash clear',
   )
 
 def pull() -> str:
   return _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, "pull"],
+    ["pull"],
     'pull',
   )
 
 def revert_to_revision(commit_hash: str) -> str:
   return _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, 'reset', '--hard', commit_hash],
+    ['reset', '--hard', commit_hash],
     'reset --hard',
   )
 
 def get_current_branch_name() -> str:
   return _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, "rev-parse", "--abbrev-ref", "HEAD"],
+    ["rev-parse", "--abbrev-ref", "HEAD"],
     'rev-parse --abbrev-ref HEAD',
   )
 
 def get_last_commit_hash() -> str:
   return _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, "rev-parse", "HEAD"],
+    ["rev-parse", "HEAD"],
     'rev-parse HEAD',
   )
 
 def get_last_commit_short_hash() -> str:
   return _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, "rev-parse", "--short", "HEAD"],
+    ["rev-parse", "--short", "HEAD"],
     'rev-parse --short HEAD',
   )
 
 def get_last_commit_hash_and_comment() -> str:
   last_commit = _run_git_command_and_get_result(
-    ["git", "-C", _current_dir, "log", "-1", "--pretty=format:%h %ad %s", "--date=short"],
+    ["log", "-1", "--pretty=format:%h %ad %s", "--date=short"],
     'log -1',
   )
 
@@ -135,7 +135,7 @@ def _run_git_command_and_get_result(commands: List[str], command_name: str) -> s
   """
   try:
     result = subprocess.run(
-      commands,
+      ["git", "-C", _current_dir] + commands,
       capture_output = True,
       text = True,
     )
