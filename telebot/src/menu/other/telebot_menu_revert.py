@@ -14,6 +14,7 @@ from common_utils import clock_face_one_oclock
 from telebot_constants import buttons_remove_delay_sec
 
 from telebot_git_helper import (
+  pull,
   stash_push,
   stash_pop,
   stash_clear,
@@ -126,7 +127,8 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       self.bot.send_message(chat_id, f'{str(e)}: trying to reset to HEAD and then stash pop again...')
       try:
         result = revert_to_revision('HEAD')
-        stash_pop()
+        result += pull()
+        result += stash_pop()
         self.bot.send_message(chat_id, f'All changes rolled back to the previous state: {result}')
       except Exception as ex:
         self.bot.send_message(chat_id, str(ex))
