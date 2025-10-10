@@ -37,6 +37,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     lockfile = os.path.join(lock_path, 'teletest.lock')
     self.locker = DeyeFileLocker('teletest', lockfile)
     self.logs_path = 'data/logs'
+    self.running_test = 'none'
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -50,7 +51,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       self.locker.acquire()
     except DeyeLockAlreadyAcquiredException:
       self.progress.hide()
-      self.progress.show(message.chat.id, f'{unquote(white_circle_emoji)} Tests are already running')
+      self.progress.show(message.chat.id, self.running_test)
       return
     except Exception as e:
       self.progress.hide()
@@ -75,7 +76,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
         self.locker.acquire()
       except DeyeLockAlreadyAcquiredException:
         self.progress.hide()
-        self.progress.show(message.chat.id, f'{unquote(white_circle_emoji)} Tests are already running')
+        self.progress.show(message.chat.id, self.running_test)
         return
       except Exception as e:
         self.progress.hide()
@@ -200,11 +201,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           self.write_and_flush(f, f"--- RUNNING [{i + 1}/{len(scripts)}] {test_name} ---\n\n")
 
           time.sleep(1)
+          self.running_test = (f'{unquote(white_circle_emoji)} '
+                               f'[{i + 1}/{len(scripts)}] Running: {test_name}')
           self.progress.show(
             chat_id,
-            f'{unquote(white_circle_emoji)} '
-            f'[{i + 1}/{len(scripts)}] Running: {test_name}',
+            self.running_test,
           )
+
           time.sleep(1)
 
           try:
