@@ -1,8 +1,6 @@
-import os
 import re
 import telebot
 import urllib.parse
-import subprocess
 
 from telebot_git_exception import TelebotGitException
 from telebot_menu_item import TelebotMenuItem
@@ -16,7 +14,6 @@ from telebot_utils import stop_bot
 
 from telebot_git_helper import (
   pull,
-  check_git_result_and_raise,
   get_last_commit_hash_and_comment,
 )
 
