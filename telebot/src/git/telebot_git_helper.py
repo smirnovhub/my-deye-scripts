@@ -50,75 +50,42 @@ def is_repository_up_to_date() -> bool:
   Raises:
       TelebotGitException: If the git command fails.
   """
-  try:
-    # Run 'git remote show origin' to get information about remote branches
-    result = subprocess.run(
-      ["git", "-C", _current_dir, "remote", "show", "origin"],
-      capture_output = True,
-      text = True,
-    )
+  # Run 'git remote show origin' to get information about remote branches
+  result = _run_git_command_and_get_result(
+    ["git", "-C", _current_dir, "remote", "show", "origin"],
+    'remote show origin',
+  )
+  return 'up to date' in result.lower()
 
-    check_git_result_and_raise(result)
-    # If 'up to date' appears in the output, the local branch is synchronized
-    return 'up to date' in result.stdout.lower()
-  except Exception as e:
-    raise TelebotGitException(f'git remote show origin failed: {str(e)}')
+def stash_push() -> str:
+  return _run_git_command_and_get_result(
+    ["git", "-C", _current_dir, 'stash', 'push'],
+    'stash push',
+  )
 
-def stash_push():
-  try:
-    # Stash all changes
-    result = subprocess.run(
-      ['git', '-C', _current_dir, 'stash', 'push'],
-      capture_output = True,
-      text = True,
-    )
-    check_git_result_and_raise(result)
-  except TelebotGitException as e:
-    raise TelebotGitException(f'git stash push failed: {str(e)}')
-  except Exception as e:
-    raise TelebotGitException(f'git stash push failed: {str(e)}')
+def stash_pop() -> str:
+  return _run_git_command_and_get_result(
+    ["git", "-C", _current_dir, 'stash', 'pop'],
+    'stash pop',
+  )
 
-def stash_pop():
-  try:
-    # Stash all changes
-    result = subprocess.run(
-      ['git', '-C', _current_dir, 'stash', 'pop'],
-      capture_output = True,
-      text = True,
-    )
-    check_git_result_and_raise(result)
-  except TelebotGitException as e:
-    raise TelebotGitException(f'git stash pop failed: {str(e)}')
-  except Exception as e:
-    raise TelebotGitException(f'git stash pop failed: {str(e)}')
+def stash_clear() -> str:
+  return _run_git_command_and_get_result(
+    ["git", "-C", _current_dir, 'stash', 'clear'],
+    'stash clear',
+  )
 
-def stash_clear():
-  try:
-    # Stash all changes
-    result = subprocess.run(
-      ['git', '-C', _current_dir, 'stash', 'clear'],
-      capture_output = True,
-      text = True,
-    )
-    check_git_result_and_raise(result)
-  except TelebotGitException as e:
-    raise TelebotGitException(f'git stash clear failed: {str(e)}')
-  except Exception as e:
-    raise TelebotGitException(f'git stash clear failed: {str(e)}')
+def pull() -> str:
+  return _run_git_command_and_get_result(
+    ["git", "-C", _current_dir, "pull"],
+    'pull',
+  )
 
 def revert_to_revision(commit_hash: str) -> str:
-  try:
-    result = subprocess.run(
-      ['git', '-C', _current_dir, 'reset', '--hard', commit_hash],
-      capture_output = True,
-      text = True,
-    )
-    check_git_result_and_raise(result)
-    return result.stdout
-  except TelebotGitException as e:
-    raise TelebotGitException(f'git reset --hard failed: {str(e)}')
-  except Exception as e:
-    raise TelebotGitException(f'git reset --hard failed: {str(e)}')
+  return _run_git_command_and_get_result(
+    ["git", "-C", _current_dir, 'reset', '--hard', commit_hash],
+    'reset --hard',
+  )
 
 def get_current_branch_name() -> str:
   return _run_git_command_and_get_result(
