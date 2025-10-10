@@ -15,6 +15,7 @@ from common_utils import clock_face_one_oclock
 from telebot_utils import stop_bot
 
 from telebot_git_helper import (
+  pull,
   check_git_result_and_raise,
   get_last_commit_hash_and_comment,
 )
@@ -36,20 +37,13 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, 'Unable to update: the repository is not currently on a branch')
       return
 
-    current_dir = os.path.dirname(__file__)
-
     try:
-      result = subprocess.run(
-        ['git', '-C', current_dir, 'pull'],
-        capture_output = True,
-        text = True,
-      )
-      check_git_result_and_raise(result)
+      result = pull()
     except TelebotGitException as e:
-      self.bot.send_message(message.chat.id, f'Git pull failed: {str(e)}')
+      self.bot.send_message(message.chat.id, str(e))
       return
 
-    if 'up to date' in result.stdout.lower():
+    if 'up to date' in result.lower():
       try:
         branch_name = get_current_branch_name()
         last_commit = get_last_commit_hash_and_comment()
@@ -71,7 +65,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
       return
 
     pattern = r'\d+ files? changed.*'
-    matches = re.findall(pattern, result.stdout)
+    matches = re.findall(pattern, result)
 
     for match in matches:
       self.bot.send_message(message.chat.id, match)
