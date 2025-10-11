@@ -6,9 +6,9 @@ from solarman_server import SolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_registers import DeyeRegisters
+from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder import DeyeRegistersHolder
-from telebot_deye_helper import holder_kwargs
-from deye_test_helper import get_random_by_register_type
+from deye_test_helper import DeyeTestHelper
 
 class TelebotRegistersTestModule(TelebotBaseTestModule):
   def __init__(
@@ -62,19 +62,22 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     registers = self.register_creator(self.name)
 
     for register in registers.all_registers:
-      random_value = get_random_by_register_type(register)
+      random_value = DeyeTestHelper.get_random_by_register_type(register)
       if random_value is None:
         continue
 
       for server in servers:
-        random_value = get_random_by_register_type(register)
+        random_value = DeyeTestHelper.get_random_by_register_type(register)
+        if random_value is None:
+          self.error(f"Unable to get random value for register '{register.name}' with type {type(register).__name__}")
+          break
         server.set_register_values(random_value.register.addresses, random_value.values)
 
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = self.loggers.loggers,
       register_creator = self.register_creator,
-      **holder_kwargs,
+      **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:

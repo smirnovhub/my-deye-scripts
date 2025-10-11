@@ -5,22 +5,13 @@ import random
 from datetime import datetime
 from typing import IO, Any, Optional
 
-from deye_utils import (
-  ensure_dir_and_file_exists,
-  time_format_str,
-)
+from deye_utils import DeyeUtils
+from deye_file_lock import DeyeFileLock
 
 from lock_exceptions import (
   DeyeLockTimeoutException,
   DeyeLockAlreadyAcquiredException,
   DeyeLockNotHeldException,
-)
-
-from deye_file_lock import (
-  flock,
-  LOCK_EX,
-  LOCK_NB,
-  LOCK_UN,
 )
 
 class DeyeFileLocker:
@@ -52,12 +43,12 @@ class DeyeFileLocker:
     self.timedout: bool = False
 
     # Ensure lock file exists
-    ensure_dir_and_file_exists(path, dir_mode = 0o777, file_mode = 0o666)
+    DeyeUtils.ensure_dir_and_file_exists(path, dir_mode = 0o777, file_mode = 0o666)
 
     self.rnd: int = random.randint(1000000, 9999999)
     self.log_filename: str = f'{os.path.dirname(path)}/locker.log'
 
-    ensure_dir_and_file_exists(self.log_filename, dir_mode = 0o777, file_mode = 0o666)
+    DeyeUtils.ensure_dir_and_file_exists(self.log_filename, dir_mode = 0o777, file_mode = 0o666)
 
   def log(self, message: str) -> None:
     """
@@ -67,7 +58,7 @@ class DeyeFileLocker:
         message (str): The message to log.
     """
     now = datetime.now()
-    date = now.strftime(f'[{time_format_str}]')
+    date = now.strftime(f'[{DeyeUtils.time_format_str}]')
 
     with open(self.log_filename, "a") as f:
       f.write(f'{date} [{self.rnd}] {message}\n')
@@ -92,7 +83,7 @@ class DeyeFileLocker:
     with open(filename, "rb+") as f:
       try:
         # Try to acquire exclusive lock (non-blocking)
-        flock(f, LOCK_EX | LOCK_NB)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX | DeyeFileLock.LOCK_NB)
       except BlockingIOError:
         # Someone else is working with file - do nothing
         if self.verbose:
@@ -112,7 +103,7 @@ class DeyeFileLocker:
           print(f"Trimmed {filename} to {trim_size} bytes")
       finally:
         # Always release lock
-        flock(f, LOCK_UN)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
 
   def acquire(self, timeout: int = 15) -> None:
     """
@@ -139,7 +130,7 @@ class DeyeFileLocker:
     while True:
       try:
         # Try exclusive lock, non-blocking
-        flock(self.lockfile, LOCK_EX | LOCK_NB)
+        DeyeFileLock.flock(self.lockfile, DeyeFileLock.LOCK_EX | DeyeFileLock.LOCK_NB)
         if warning_printed:
           elapsed = time.time() - self.acquire_time
           self.log(f"{self.name}: acquired exclusive lock on {self.path} after {round(elapsed, 2)} sec")
@@ -168,7 +159,7 @@ class DeyeFileLocker:
     Logs the elapsed time the lock was held.
     """
     if self.lockfile is not None:
-      flock(self.lockfile, LOCK_UN)
+      DeyeFileLock.flock(self.lockfile, DeyeFileLock.LOCK_UN)
       self.lockfile.close()
       self.lockfile = None
       elapsed = time.time() - self.acquire_time

@@ -1,7 +1,7 @@
+from deye_utils import DeyeUtils
 from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
-from deye_utils import from_long_register_values
 
 class LongFloatDeyeRegister(BaseDeyeRegister):
   def __init__(
@@ -17,7 +17,7 @@ class LongFloatDeyeRegister(BaseDeyeRegister):
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     data = interactor.read_register(self.address, self.quantity)
-    value = from_long_register_values(data, self.scale)
+    value = DeyeUtils.from_long_register_values(data, self.scale)
     return value
 
   @property

@@ -2,24 +2,20 @@ import re
 import telebot
 import urllib.parse
 
+from common_utils import CommonUtils
+from telebot_utils import TelebotUtils
 from telebot_git_exception import TelebotGitException
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
-from telebot_user_choices import ask_confirmation
-from countdown_with_cancel import countdown_with_cancel
-from telebot_git_helper import get_current_branch_name
-from common_utils import clock_face_one_oclock
-from telebot_utils import stop_bot
-
-from telebot_git_helper import (
-  pull,
-  get_last_commit_hash_and_comment,
-)
+from telebot_git_helper import TelebotGitHelper
+from telebot_user_choices import UserChoices
+from countdown_with_cancel import CountdownWithCancel
 
 class TelebotMenuUpdate(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    self.git_helper = TelebotGitHelper()
     self.update_checker = TelebotLocalUpdateChecker()
 
   @property
@@ -35,15 +31,15 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
       return
 
     try:
-      result = pull()
+      result = self.git_helper.pull()
     except TelebotGitException as e:
       self.bot.send_message(message.chat.id, str(e))
       return
 
     if 'up to date' in result.lower():
       try:
-        branch_name = get_current_branch_name()
-        last_commit = get_last_commit_hash_and_comment()
+        branch_name = self.git_helper.get_current_branch_name()
+        last_commit = self.git_helper.get_last_commit_hash_and_comment()
       except Exception as e:
         self.bot.send_message(message.chat.id, str(e))
         return
@@ -67,7 +63,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
     for match in matches:
       self.bot.send_message(message.chat.id, match)
 
-    ask_confirmation(
+    UserChoices.ask_confirmation(
       self.bot,
       message.chat.id,
       'Update completed. For the changes to take effect, need to restart the bot. '
@@ -80,7 +76,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
       self.bot.send_message(chat_id, 'Restart cancelled')
       return
 
-    countdown_with_cancel(
+    CountdownWithCancel.show_countdown(
       bot = self.bot,
       chat_id = chat_id,
       text = 'Will restart in: ',
@@ -91,9 +87,9 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
 
   def on_finish(self, chat_id: int):
     self.bot.send_message(chat_id,
-                          f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting telebot...',
+                          f'{urllib.parse.unquote(CommonUtils.clock_face_one_oclock)} Restarting telebot...',
                           parse_mode = 'HTML')
-    stop_bot(self.bot)
+    TelebotUtils.stop_bot(self.bot)
 
   def on_cancel(self, chat_id: int):
     self.bot.send_message(chat_id, 'Restart cancelled')

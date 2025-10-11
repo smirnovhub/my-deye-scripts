@@ -1,8 +1,8 @@
 from typing import List
 
+from deye_base_registers import DeyeBaseRegisters
 from deye_register_average_type import DeyeRegisterAverageType
 from charge_forecast_register import ChargeForecastRegister
-from deye_registers import DeyeRegisters
 from discharge_forecast_register import DischargeForecastRegister
 from deye_register import DeyeRegister
 from float_deye_register import FloatDeyeRegister
@@ -27,7 +27,7 @@ from today_gen_energy_cost_register import TodayGenEnergyCostRegister
 from total_gen_energy_cost_register import TotalGenEnergyCostRegister
 from system_work_mode_writable_deye_register import SystemWorkModeWritableDeyeRegister
 
-class DeyeSun6kSg03Lp1Registers(DeyeRegisters):
+class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
     self._ac_couple_frz_high_register = FloatWritableDeyeRegister(329, 50.5, 52, 'ac_couple_frz_high', 'AC Couple Frz High', 'Hz', DeyeRegisterAverageType.only_master).with_scale(100)

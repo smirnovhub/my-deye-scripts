@@ -1,24 +1,20 @@
 from datetime import datetime
 from typing import List, Optional
 
+from deye_utils import DeyeUtils
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_users import TelebotTestUsers
 from solarman_server import SolarmanServer
+from telebot_constants import TelebotConstants
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
-from deye_registers_factory import DeyeRegistersFactory
-from deye_test_helper import get_random_by_register_type
-from telebot_constants import inverter_system_time_too_big_difference_sec
-
-from deye_utils import (
-  get_current_time,
-  time_format_str,
-)
+from deye_registers import DeyeRegisters
+from deye_test_helper import DeyeTestHelper
 
 class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
-    self.registers = DeyeRegistersFactory.create_registers()
+    self.registers = DeyeRegisters()
 
   @property
   def description(self) -> str:
@@ -45,12 +41,16 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
 
     register = self.registers.inverter_system_time_register
 
-    rnd = get_random_by_register_type(register)
+    rnd = DeyeTestHelper.get_random_by_register_type(register)
+    if rnd is None:
+      self.error(f"Unable to get random value for register '{register.name}' with type {type(register).__name__}")
+      return
+
     self.log.info(f'Setting time to server: {rnd.value}')
     master_server.set_register_values(register.addresses, rnd.values)
 
-    date_time = datetime.strptime(rnd.value, time_format_str)
-    time_diff = date_time - get_current_time()
+    date_time = datetime.strptime(rnd.value, DeyeUtils.time_format_str)
+    time_diff = date_time - DeyeUtils.get_current_time()
     diff_seconds = int(abs(time_diff.total_seconds()))
 
     command = f'/{TelebotMenuItem.deye_sync_time.command}'
@@ -59,14 +59,14 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
 
     self.send_text(user, command)
 
-    if diff_seconds > inverter_system_time_too_big_difference_sec:
+    if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
       self.wait_for_text_regex(f'.*The difference is about {diff_seconds} seconds'
                                '.+Are you sure to sync inverter time.*')
 
       self.log.info(f"Replying 'yes' for time sync confirmation...")
       self.send_text(user, 'yes')
 
-    changed_to = get_current_time().strftime(time_format_str)
+    changed_to = DeyeUtils.get_current_time().strftime(DeyeUtils.time_format_str)
     changed_pattern = (rf'{register.description}.+changed '
                        f'from {rnd.value} '
                        f'to {changed_to}')
@@ -81,17 +81,21 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     master_server.clear_registers()
     master_server.clear_registers_status()
 
-    rnd = get_random_by_register_type(register)
+    rnd = DeyeTestHelper.get_random_by_register_type(register)
+    if rnd is None:
+      self.error(f"Unable to get random value for register '{register.name}' with type {type(register).__name__}")
+      return
+
     self.log.info(f'Setting time to server: {rnd.value}')
     master_server.set_register_values(register.addresses, rnd.values)
 
-    date_time = datetime.strptime(rnd.value, time_format_str)
-    time_diff = date_time - get_current_time()
+    date_time = datetime.strptime(rnd.value, DeyeUtils.time_format_str)
+    time_diff = date_time - DeyeUtils.get_current_time()
     diff_seconds = int(abs(time_diff.total_seconds()))
 
     self.send_button_click(user, command)
 
-    if diff_seconds > inverter_system_time_too_big_difference_sec:
+    if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
       self.wait_for_text_regex(f'.*The difference is about {diff_seconds} seconds'
                                '.+Are you sure to sync inverter time.*')
 

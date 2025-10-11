@@ -1,16 +1,13 @@
 from typing import Any, List, Union
 
 from datetime import datetime
+
+from deye_utils import DeyeUtils
 from deye_base_enum import DeyeBaseEnum
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
-
-from deye_utils import (
-  custom_round,
-  time_format_str,
-)
 
 class BaseDeyeRegister(DeyeRegister):
   def __init__(self,
@@ -107,11 +104,11 @@ class BaseDeyeRegister(DeyeRegister):
   @property
   def pretty_value(self) -> str:
     if isinstance(self.value, float):
-      return custom_round(self.value)
+      return DeyeUtils.custom_round(self.value)
     elif isinstance(self.value, DeyeBaseEnum):
       return self.value.pretty
     elif isinstance(self.value, datetime):
-      return self.value.strftime(time_format_str)
+      return self.value.strftime(DeyeUtils.time_format_str)
 
     return str(self.value)
 

@@ -1,13 +1,12 @@
 from typing import List, Optional
 
 from telebot_test_users import TelebotTestUsers
-from deye_registers_factory import DeyeRegistersFactory
+from deye_registers import DeyeRegisters
 from solarman_server import SolarmanServer
 from deye_base_enum import DeyeBaseEnum
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
-from deye_test_helper import get_random_by_register_type
-from deye_test_helper import get_random_by_register_value_type
+from deye_test_helper import DeyeTestHelper
 
 class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
   """
@@ -43,7 +42,7 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
     self.log.info(f'Running module {type(self).__name__}...')
 
     user = TelebotTestUsers().test_user1
-    registers = DeyeRegistersFactory.create_registers()
+    registers = DeyeRegisters()
     master_server: Optional[SolarmanServer] = None
 
     for srv in servers:
@@ -59,7 +58,7 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
       if not register.can_write:
         continue
 
-      old_random_value = get_random_by_register_type(register)
+      old_random_value = DeyeTestHelper.get_random_by_register_type(register)
       if old_random_value is None:
         self.log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
         continue
@@ -69,7 +68,7 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
       new_random_value: Optional[str] = None
 
       for i in range(15):
-        new_random_value = get_random_by_register_value_type(register)
+        new_random_value = DeyeTestHelper.get_random_by_register_value_type(register)
         if str(new_random_value) != str(old_random_value.value):
           break
       else:

@@ -1,7 +1,7 @@
 import json
 
+from deye_utils import DeyeUtils
 from deye_file_with_lock import DeyeFileWithLock
-from deye_utils import ensure_file_exists
 
 class KeyValueStore:
   """
@@ -27,7 +27,7 @@ class KeyValueStore:
     self._filename = filename
     self._locker = DeyeFileWithLock()
 
-    ensure_file_exists(filename)
+    DeyeUtils.ensure_file_exists(filename)
 
   def set(self, key: str, value):
     """

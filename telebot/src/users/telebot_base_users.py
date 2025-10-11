@@ -2,33 +2,28 @@ import logging
 
 from typing import List, Optional
 
+from deye_utils import DeyeUtils
 from telebot_user import TelebotUser
 from deye_registers import DeyeRegisters
 from deye_exceptions import DeyeNotImplementedException
-from deye_registers_factory import DeyeRegistersFactory
+from deye_registers import DeyeRegisters
 
 class TelebotBaseUsers:
   _instance = None
-  registers: DeyeRegisters
 
   def __new__(cls, *args, **kwargs):
     if cls._instance is None:
-      from deye_utils import is_tests_on
-      from telebot_test_users import TelebotTestUsers
-      if is_tests_on():
-        cls._instance = super().__new__(TelebotTestUsers)
-        TelebotBaseUsers.registers = None
+      if DeyeUtils.is_tests_on():
+        from telebot_test_users import TelebotTestUsers
+        cls._instance = super().__new__(TelebotTestUsers) # type: ignore
         cls.__init__(cls._instance)
       else:
-        cls._instance = super().__new__(cls)
-        TelebotBaseUsers.registers = None
+        cls._instance = super().__new__(cls) # type: ignore
 
     return cls._instance
 
   def __init__(self):
-    if TelebotBaseUsers.registers is None:
-      TelebotBaseUsers.registers = DeyeRegistersFactory.create_registers()
-    self.registers = TelebotBaseUsers.registers
+    self.registers = DeyeRegisters()
 
   @property
   def allowed_users(self) -> List[TelebotUser]:
@@ -54,9 +49,7 @@ class TelebotBaseUsers:
 
   def _validate_users(self, users: List[TelebotUser]):
     """Validate that all users in the list have unique IDs."""
-    from deye_utils import is_tests_on
-
-    if is_tests_on():
+    if DeyeUtils.is_tests_on():
       log = logging.getLogger()
       ids = [user.id for user in users]
       duplicates = {i for i in ids if ids.count(i) > 1}

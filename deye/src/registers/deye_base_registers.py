@@ -3,7 +3,7 @@ from typing import List, Optional
 from deye_register import DeyeRegister
 from deye_exceptions import DeyeNotImplementedException
 
-class DeyeRegisters:
+class DeyeBaseRegisters:
   def __init__(self, prefix: str = ''):
     self._prefix = prefix
 

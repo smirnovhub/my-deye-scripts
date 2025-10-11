@@ -2,7 +2,7 @@ from typing import List
 
 from solarman_server import SolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
-from deye_registers_factory import DeyeRegistersFactory
+from deye_registers import DeyeRegisters
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_users import TelebotTestUsers
 from testable_telebot import TestableTelebot
@@ -22,7 +22,7 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
     self.log.info(f'Running module {type(self).__name__}...')
 
     user = TelebotTestUsers().test_user3
-    registers = DeyeRegistersFactory.create_registers()
+    registers = DeyeRegisters()
 
     allowed_commands: List[str] = [
       TelebotMenuItem.deye_all_info.command.format(self.loggers.accumulated_registers_prefix),

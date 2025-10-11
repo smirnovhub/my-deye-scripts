@@ -1,23 +1,16 @@
 import telebot
 
 from datetime import datetime
-from telebot_users import TelebotUsers
+
+from deye_utils import DeyeUtils
+from deye_file_lock import DeyeFileLock
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_send_message import send_private_telegram_message
-from deye_utils import is_tests_on
-
-from deye_file_lock import (
-  flock,
-  LOCK_EX,
-  LOCK_SH,
-  LOCK_UN,
-)
 
 class TelebotMenuRequestAccess(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.users = TelebotUsers()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -42,7 +35,7 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
       result = self.add_user_to_file('data/access_requests.txt', user.id, name)
       if result:
         self.bot.send_message(message.chat.id, f'Access requested for user {user.id}')
-        if not is_tests_on():
+        if not DeyeUtils.is_tests_on():
           send_private_telegram_message(f'<b>Access requested:</b>\n{info}')
       else:
         self.bot.send_message(message.chat.id, f'Access already requested for user {user.id}')
@@ -56,9 +49,9 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
       f.seek(0)
 
       # Acquire shared lock for reading
-      flock(f, LOCK_SH)
+      DeyeFileLock.flock(f, DeyeFileLock.LOCK_SH)
       lines = f.readlines()
-      flock(f, LOCK_UN)
+      DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
 
       # Check if user_id already exists
       for line in lines:
@@ -66,10 +59,10 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
           return False
 
       # Acquire exclusive lock for writing
-      flock(f, LOCK_EX)
+      DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
       now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
       f.write(f'[{now}] [{user_id}] [{user_name}]\n')
       f.flush()
-      flock(f, LOCK_UN)
+      DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
 
       return True

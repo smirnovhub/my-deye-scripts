@@ -1,13 +1,12 @@
 import time
 import telebot
 
+from deye_utils import DeyeUtils
+from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from deye_file_with_lock import DeyeFileWithLock
-from deye_utils import ensure_file_exists
-from telebot_command_choice import ask_command_choice
-from telebot_git_helper import is_repository_up_to_date
-from telebot_git_helper import get_current_branch_name
-from telebot_constants import git_repository_remote_check_period_sec
+from telebot_git_helper import TelebotGitHelper
+from telebot_command_choice import CommandChoice
 
 class TelebotRemoteUpdateChecker:
   """
@@ -20,17 +19,18 @@ class TelebotRemoteUpdateChecker:
   """
   def __init__(self):
     self.locker = DeyeFileWithLock()
+    self.git_helper = TelebotGitHelper()
     self.ask_file_name = 'data/last_remote_update_ask_time.txt'
-    ensure_file_exists(self.ask_file_name)
+    DeyeUtils.ensure_file_exists(self.ask_file_name)
 
   def is_on_branch(self):
     last_ask_time = self._load_last_remote_update_ask_time()
-    if time.time() - last_ask_time < git_repository_remote_check_period_sec:
+    if time.time() - last_ask_time < TelebotConstants.git_repository_remote_check_period_sec:
       # Too soon since the last check; skip
       return True
 
     try:
-      result = get_current_branch_name() != 'HEAD'
+      result = self.git_helper.get_current_branch_name() != 'HEAD'
       if not result:
         # Save the current check time
         self._save_last_remote_update_ask_time(time.time())
@@ -55,7 +55,7 @@ class TelebotRemoteUpdateChecker:
         bool: True if a user prompt was sent, False otherwise.
     """
     last_ask_time = self._load_last_remote_update_ask_time()
-    if time.time() - last_ask_time < git_repository_remote_check_period_sec:
+    if time.time() - last_ask_time < TelebotConstants.git_repository_remote_check_period_sec:
       # Too soon since the last check; skip
       return False
 
@@ -63,9 +63,9 @@ class TelebotRemoteUpdateChecker:
     self._save_last_remote_update_ask_time(time.time())
 
     # Check if the remote repository is up to date
-    if not is_repository_up_to_date():
+    if not self.git_helper.is_repository_up_to_date():
       # Prompt the user to update the bot
-      ask_command_choice(
+      CommandChoice.ask_command_choice(
         bot,
         message.chat.id,
         '<b>Telebot has updates. Do you want to update it now?</b>',

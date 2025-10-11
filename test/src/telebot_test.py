@@ -23,11 +23,11 @@ import_dirs(
   ],
 )
 
+from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
-from deye_utils import turn_tests_on
-from deye_test_helper import test_success_str
+from deye_test_helper import DeyeTestHelper
 
-turn_tests_on()
+DeyeUtils.turn_tests_on()
 
 logging.basicConfig(
   level = logging.INFO,
@@ -59,7 +59,7 @@ result = subprocess.run(
 output = result.stdout.strip() + '\n' + result.stderr.strip()
 log.info(f'Command output: {output}')
 
-str_to_find = test_success_str.lower()
+str_to_find = DeyeTestHelper.test_success_str.lower()
 
 if str_to_find in output.lower():
   log.info(f"String '{str_to_find}' found. Test is ok")

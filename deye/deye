@@ -21,14 +21,10 @@ import_dirs(current_path, ['src', '../common'])
 from time import perf_counter
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
+from deye_file_lock import DeyeFileLock
 from deye_file_locker import DeyeFileLocker
 from deye_exceptions import DeyeKnownException
 from deye_register_processor import DeyeRegisterProcessor
-
-from deye_file_lock import (
-  lock_path,
-  inverter_lock_file_name,
-)
 
 class DeyeArgumentParser(argparse.ArgumentParser):
   def error(self, message):
@@ -116,7 +112,7 @@ try:
   current = perf_counter()
 
   # Initialize locker
-  lockfile = os.path.join(lock_path, inverter_lock_file_name)
+  lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name)
   locker = DeyeFileLocker(os.path.basename(__file__), lockfile, verbose = args.verbose_output == True)
 
   locker.acquire()

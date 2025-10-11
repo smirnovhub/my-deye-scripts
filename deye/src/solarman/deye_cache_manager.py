@@ -5,17 +5,8 @@ import time
 
 from datetime import datetime
 
-from deye_utils import (
-  ensure_file_exists,
-  time_format_str,
-)
-
-from deye_file_lock import (
-  flock,
-  LOCK_EX,
-  LOCK_SH,
-  LOCK_UN,
-)
+from deye_utils import DeyeUtils
+from deye_file_lock import DeyeFileLock
 
 # -------------------------------
 # Class for caching register data
@@ -32,16 +23,16 @@ class DeyeCacheManager:
 
   def save_to_cache(self, register_addr, quantity, data):
     filename = self.get_cache_filename(register_addr, quantity)
-    now = datetime.now().strftime(time_format_str)
+    now = datetime.now().strftime(DeyeUtils.time_format_str)
 
-    ensure_file_exists(filename, mode = 0o666)
+    DeyeUtils.ensure_file_exists(filename, mode = 0o666)
 
     if self.verbose:
       print(f"{self.name}: saving cache to {filename}...")
 
     with open(filename, "r+", encoding = "utf-8") as f:
       try:
-        flock(f, LOCK_EX)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
         f.seek(0)
         f.truncate(0)
         json.dump(
@@ -57,7 +48,7 @@ class DeyeCacheManager:
           indent = 2,
         )
       finally:
-        flock(f, LOCK_UN)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
 
     if self.verbose:
       print(f"{self.name}: saved to cache address = {register_addr}, quantity = {quantity}, data = {data}")
@@ -87,10 +78,10 @@ class DeyeCacheManager:
 
     with open(filename, "r", encoding = "utf-8") as f:
       try:
-        flock(f, LOCK_SH)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_SH)
         content = json.load(f)
       finally:
-        flock(f, LOCK_UN)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
 
     return content.get("data")
 

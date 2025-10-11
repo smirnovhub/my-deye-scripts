@@ -1,8 +1,8 @@
+from deye_utils import DeyeUtils
 from system_time_writable_deye_register import SystemTimeWritableDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_exceptions import DeyeNotImplementedException
-from deye_utils import get_current_time
 
 class SystemTimeDiffDeyeRegister(SystemTimeWritableDeyeRegister):
   def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
@@ -15,7 +15,7 @@ class SystemTimeDiffDeyeRegister(SystemTimeWritableDeyeRegister):
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     value = super().read_internal(interactor)
-    value = int(round((value - get_current_time()).total_seconds()))
+    value = int(round((value - DeyeUtils.get_current_time()).total_seconds()))
     return value
 
   def write(self, interactor: DeyeModbusInteractor, value):

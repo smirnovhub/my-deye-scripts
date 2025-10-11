@@ -3,16 +3,12 @@ import telebot
 
 from typing import Optional, cast
 from datetime import datetime
-from telebot_users import TelebotUsers
-from telebot_base_handler import TelebotBaseHandler
-from telebot_utils import get_inline_button_by_data
-from deye_utils import ensure_dir_exists
 
-from deye_file_lock import (
-  flock,
-  LOCK_EX,
-  LOCK_UN,
-)
+from deye_utils import DeyeUtils
+from telebot_utils import TelebotUtils
+from telebot_users import TelebotUsers
+from deye_file_lock import DeyeFileLock
+from telebot_base_handler import TelebotBaseHandler
 
 telebot.apihelper.ENABLE_MIDDLEWARE = True
 
@@ -24,8 +20,8 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     self.max_file_size = 1024 * 1024 * 1
     self.users = TelebotUsers()
 
-    ensure_dir_exists(self.known_users_messages_path)
-    ensure_dir_exists(self.unknown_users_messages_path)
+    DeyeUtils.ensure_dir_exists(self.known_users_messages_path)
+    DeyeUtils.ensure_dir_exists(self.unknown_users_messages_path)
 
   def register_handlers(self):
     @self.bot.middleware_handler(update_types = ['message'])
@@ -34,7 +30,7 @@ class TelebotLoggingHandler(TelebotBaseHandler):
 
     @self.bot.middleware_handler(update_types = ['callback_query'])
     def handle_callback(bot: telebot.TeleBot, call: telebot.types.CallbackQuery):
-      button = get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data) if call.data else None
+      button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data) if call.data else None
       button_text = button.text if button is not None else 'Unknown'
 
       self.log_event(user = call.from_user,
@@ -63,12 +59,12 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     with open(file_name, "a+", encoding = "utf-8") as f:
       try:
         # Acquire exclusive lock for writing
-        flock(f, LOCK_EX)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         f.write(f'[{now}] [{user_id}] [{user_name}] [{type}] [{message}]\n')
         f.flush()
       finally:
-        flock(f, LOCK_UN)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
 
   def trim_file(self, filename, trim_size):
     if not os.path.exists(filename):
@@ -83,7 +79,7 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     with open(filename, "rb+") as f:
       try:
         # Acquire exclusive lock for writing
-        flock(f, LOCK_EX)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
 
         # Move to position where last `max_size` bytes start
         f.seek(-trim_size, os.SEEK_END)
@@ -95,4 +91,4 @@ class TelebotLoggingHandler(TelebotBaseHandler):
         f.truncate()
       finally:
         # Always release lock
-        flock(f, LOCK_UN)
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)

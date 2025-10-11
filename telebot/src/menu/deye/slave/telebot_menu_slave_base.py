@@ -1,26 +1,16 @@
 import re
-import logging
 import telebot
 
 from typing import List
-from deye_loggers import DeyeLoggers
+
+from telebot_utils import TelebotUtils
 from deye_registers import DeyeRegisters
+from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_menu_item import TelebotMenuItem
+from telebot_constants import TelebotConstants
 from telebot_menu_item_handler import TelebotMenuItemHandler
-from telebot_command_choice import ask_command_choice
-from telebot_user_choices_helper import row_break_str
-
-from telebot_deye_helper import (
-  holder_kwargs,
-  get_register_values,
-  get_choices_of_inverters,
-)
-
-from telebot_constants import (
-  sync_inverter_time_button_name,
-  inverter_system_time_need_sync_difference_sec,
-)
+from telebot_command_choice import CommandChoice
 
 class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
   def __init__(
@@ -32,8 +22,6 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     slave_command: TelebotMenuItem,
   ):
     super().__init__(bot)
-    self.log = logging.getLogger()
-    self.loggers = DeyeLoggers()
     self.registers = registers
     self.all_command = all_command
     self.master_command = master_command
@@ -76,7 +64,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     holder = DeyeRegistersHolder(
       loggers = [logger],
       register_creator = lambda _: self.registers,
-      **holder_kwargs,
+      **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
@@ -87,22 +75,22 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     finally:
       holder.disconnect()
 
-    choices = get_choices_of_inverters(
+    choices = TelebotDeyeHelper.get_choices_of_inverters(
       user_id = message.from_user.id,
       all_command = self.all_command,
       master_command = self.master_command,
       slave_command = self.slave_command,
     )
 
-    if abs(self.registers.inverter_system_time_diff_register.value) > inverter_system_time_need_sync_difference_sec:
+    if abs(self.registers.inverter_system_time_diff_register.value) > TelebotConstants.inverter_system_time_need_sync_difference_sec:
       # add line break for keyboard
-      choices[row_break_str] = row_break_str
+      choices[TelebotUtils.row_break_str] = TelebotUtils.row_break_str
       # add time sync command
-      choices[sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
+      choices[TelebotConstants.sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
 
-    info = get_register_values(holder.all_registers[slave_name].all_registers)
+    info = TelebotDeyeHelper.get_register_values(holder.all_registers[slave_name].all_registers)
 
-    ask_command_choice(
+    CommandChoice.ask_command_choice(
       self.bot,
       message.chat.id,
       f'<b>Inverter: {slave_name}</b>\n{info}',

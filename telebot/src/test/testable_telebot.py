@@ -7,10 +7,10 @@ import telebot
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
+from deye_utils import DeyeUtils
+from telebot_constants import TelebotConstants
 from telebot_fake_test_message import TelebotFakeTestMessage
-from telebot_deye_helper import get_object_as_str
-from deye_utils import ensure_dir_exists
-from telebot_constants import undo_button_name
+from telebot_deye_helper import TelebotDeyeHelper
 
 @dataclass
 class MessageTestData:
@@ -51,7 +51,7 @@ class TestableTelebot(telebot.TeleBot):
     self.messages: List[MessageTestData] = []
     self.log = logging.getLogger()
 
-    ensure_dir_exists(os.path.dirname(TestableTelebot.telebot_test_log_file_name))
+    DeyeUtils.ensure_dir_exists(os.path.dirname(TestableTelebot.telebot_test_log_file_name))
 
     if os.path.exists(TestableTelebot.telebot_test_log_file_name):
       os.remove(TestableTelebot.telebot_test_log_file_name)
@@ -92,7 +92,7 @@ class TestableTelebot(telebot.TeleBot):
 
       for keyboards in message.reply_markup.keyboard:
         for keyboard in keyboards:
-          if keyboard.text == undo_button_name:
+          if keyboard.text == TelebotConstants.undo_button_name:
             return keyboard.callback_data
 
     return None
@@ -189,7 +189,7 @@ class TestableTelebot(telebot.TeleBot):
 
     def fmt(value):
       """Format a value for logging."""
-      s = get_object_as_str(value)
+      s = TelebotDeyeHelper.get_object_as_str(value)
       # Replace literal "\n" with actual newline
       if isinstance(value, str):
         s = s.replace(r"\n", "\n")

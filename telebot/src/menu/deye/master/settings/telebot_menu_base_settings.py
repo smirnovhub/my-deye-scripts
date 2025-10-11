@@ -1,19 +1,12 @@
-import logging
 import telebot
 
 from typing import List
-from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
 from deye_registers_holder import DeyeRegistersHolder
+from telebot_deye_helper import TelebotDeyeHelper
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
-from telebot_command_choice import ask_command_choice
-
-from telebot_deye_helper import (
-  holder_kwargs,
-  get_choices_of_inverters,
-  get_register_values,
-)
+from telebot_command_choice import CommandChoice
 
 class TelebotMenuBaseSettings(TelebotMenuItemHandler):
   def __init__(
@@ -25,8 +18,6 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
     master_command: TelebotMenuItem,
   ):
     super().__init__(bot)
-    self.log = logging.getLogger()
-    self.loggers = DeyeLoggers()
     self.registers = registers
     self.main_command = main_command
     self.all_command = all_command
@@ -54,7 +45,7 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master] if self.main_command == self.master_command else self.loggers.loggers,
       register_creator = lambda _: self.registers,
-      **holder_kwargs,
+      **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
@@ -65,7 +56,7 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
     finally:
       holder.disconnect()
 
-    choices = get_choices_of_inverters(
+    choices = TelebotDeyeHelper.get_choices_of_inverters(
       user_id = message.from_user.id,
       all_command = self.all_command,
       master_command = self.master_command,
@@ -73,13 +64,13 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
     )
 
     if self.main_command == self.master_command:
-      info = get_register_values(holder.master_registers.all_registers)
+      info = TelebotDeyeHelper.get_register_values(holder.master_registers.all_registers)
       inverter_name = self.loggers.master.name.title()
     else:
-      info = get_register_values(holder.accumulated_registers.all_registers)
+      info = TelebotDeyeHelper.get_register_values(holder.accumulated_registers.all_registers)
       inverter_name = self.loggers.accumulated_registers_prefix.title()
 
-    ask_command_choice(
+    CommandChoice.ask_command_choice(
       self.bot,
       message.chat.id,
       f'<b>{inverter_name} settings:</b>\n{info}',

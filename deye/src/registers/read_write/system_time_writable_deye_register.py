@@ -1,14 +1,11 @@
 import re
 
 from datetime import datetime
+
+from deye_utils import DeyeUtils
 from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
-
-from deye_utils import (
-  to_bytes,
-  to_inv_time,
-)
 
 class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
   def __init__(
@@ -28,7 +25,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     data = interactor.read_register(self.address, self.quantity)
-    year, month, day, hour, minute, second = to_bytes(data)
+    year, month, day, hour, minute, second = DeyeUtils.to_bytes(data)
 
     try:
       value = datetime(year + 2000, month, day, hour, minute, second)
@@ -53,7 +50,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
     except ValueError as e:
       self.error(f'write(): {str(e)}')
 
-    values = to_inv_time([year - 2000, month, day, hour, minute, second])
+    values = DeyeUtils.to_inv_time([year - 2000, month, day, hour, minute, second])
 
     if interactor.write_register(self.address, values) != len(values):
       self.error(f'write(): something went wrong while writing {self.description}')
