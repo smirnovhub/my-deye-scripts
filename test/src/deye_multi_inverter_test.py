@@ -25,14 +25,14 @@ import_dirs(
   ],
 )
 
+from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
-from deye_registers_factory import DeyeRegistersFactory
+from deye_registers import DeyeRegisters
 from solarman_server import SolarmanServer
 from deye_register_average_type import DeyeRegisterAverageType
-from deye_test_helper import get_random_by_register_type
-from deye_utils import custom_round, turn_tests_on
+from deye_test_helper import DeyeTestHelper
 
-turn_tests_on()
+DeyeUtils.turn_tests_on()
 
 logging.basicConfig(
   level = logging.INFO,
@@ -42,7 +42,7 @@ logging.basicConfig(
 
 log = logging.getLogger()
 loggers = DeyeLoggers()
-registers = DeyeRegistersFactory.create_registers()
+registers = DeyeRegisters()
 
 if not loggers.is_test_loggers:
   log.info('Your loggers are not test loggers')
@@ -74,14 +74,14 @@ for register in registers.all_registers:
   total_value = 0.0
   values: List[str] = []
 
-  random_value = get_random_by_register_type(register)
+  random_value = DeyeTestHelper.get_random_by_register_type(register)
   if random_value is None:
     continue
 
   divider = loggers.count if register.avg_type == DeyeRegisterAverageType.average else 1
 
   for server in servers:
-    random_value = get_random_by_register_type(register)
+    random_value = DeyeTestHelper.get_random_by_register_type(register)
     if random_value is None:
       continue
     server.set_register_values(random_value.register.addresses, random_value.values)
@@ -91,7 +91,7 @@ for register in registers.all_registers:
       pass
     values.append(random_value.value)
 
-  total_val = custom_round(total_value)
+  total_val = DeyeUtils.custom_round(total_value)
 
   inverters = ','.join(logger.name for logger in loggers.loggers)
 

@@ -24,13 +24,13 @@ import_dirs(
   ],
 )
 
+from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
-from deye_registers_factory import DeyeRegistersFactory
+from deye_registers import DeyeRegisters
 from solarman_server import SolarmanServer
-from deye_test_helper import get_random_by_register_value_type
-from deye_utils import turn_tests_on
+from deye_test_helper import DeyeTestHelper
 
-turn_tests_on()
+DeyeUtils.turn_tests_on()
 
 logging.basicConfig(
   level = logging.INFO,
@@ -40,7 +40,7 @@ logging.basicConfig(
 
 log = logging.getLogger()
 loggers = DeyeLoggers()
-registers = DeyeRegistersFactory.create_registers()
+registers = DeyeRegisters()
 
 if not loggers.is_test_loggers:
   log.info('Your loggers are not test loggers')
@@ -61,7 +61,7 @@ for register in registers.all_registers:
   if not register.can_write:
     continue
 
-  value = get_random_by_register_value_type(register)
+  value = DeyeTestHelper.get_random_by_register_value_type(register)
   if value is None:
     log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
     continue
