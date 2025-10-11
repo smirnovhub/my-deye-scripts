@@ -2,12 +2,9 @@ import telebot
 
 from typing import Dict, List, Callable
 from dataclasses import dataclass
-from telebot_user_choices_helper import get_keyboard_for_choices
-from telebot_utils import remove_inline_buttons_with_delay
-from telebot_constants import buttons_remove_delay_sec
 
-# Prefix for sequential choice buttons
-_sequential_prefix_str = "_seq_"
+from telebot_utils import TelebotUtils
+from telebot_constants import TelebotConstants
 
 @dataclass
 class StepState:
@@ -20,178 +17,187 @@ class StepState:
   final_callback: Callable[[int, List[str]], None]
   user_input_callback: Callable[[int, str], None]
 
-# Storage for sequential step states: chat_id -> state
-_step_states: Dict[int, StepState] = {}
+class SequentialChoices:
+  # Prefix for sequential choice buttons
+  _sequential_prefix_str = "_seq_"
 
-# Flag to ensure we register the global callback handler only once per bot instance
-_is_global_handler_registered = False
+  # Storage for sequential step states: chat_id -> state
+  _step_states: Dict[int, StepState] = {}
 
-def ask_sequential_choices(
-  bot: telebot.TeleBot,
-  chat_id: int,
-  text: str,
-  options: List[Dict[str, str]],
-  final_callback: Callable[[int, List[str]], None],
-  user_input_callback: Callable[[int, str], None],
-  max_per_row: int = 5,
-) -> telebot.types.Message:
-  """
-  Sends a message with inline keyboards for multiple sequential choices.
-  Uses a single global callback handler for all steps (safe for multiple invocations).
+  # Flag to ensure we register the global callback handler only once per bot instance
+  _is_global_handler_registered = False
 
-  Parameters:
-      bot: TeleBot instance.
-      chat_id: Telegram chat ID.
-      text: Text of the initial message.
-      options: List of dicts; each dict is a step with button_label -> callback_data.
-      final_callback: Function(chat_id, results_list) called at the end.
-      max_per_row: Maximum buttons per row.
+  @staticmethod
+  def ask_sequential_choices(
+    bot: telebot.TeleBot,
+    chat_id: int,
+    text: str,
+    options: List[Dict[str, str]],
+    final_callback: Callable[[int, List[str]], None],
+    user_input_callback: Callable[[int, str], None],
+    max_per_row: int = 5,
+  ) -> telebot.types.Message:
+    """
+    Sends a message with inline keyboards for multiple sequential choices.
+    Uses a single global callback handler for all steps (safe for multiple invocations).
 
-  Returns:
-      telebot.types.Message: The message object sent.
-  """
-  if not options:
-    return bot.send_message(chat_id, text, parse_mode = "HTML")
+    Parameters:
+        bot: TeleBot instance.
+        chat_id: Telegram chat ID.
+        text: Text of the initial message.
+        options: List of dicts; each dict is a step with button_label -> callback_data.
+        final_callback: Function(chat_id, results_list) called at the end.
+        max_per_row: Maximum buttons per row.
 
-  _register_global_handler(bot)
+    Returns:
+        telebot.types.Message: The message object sent.
+    """
+    if not options:
+      return bot.send_message(chat_id, text, parse_mode = "HTML")
 
-  # Send initial message with first step buttons
-  first_step_options = options[0]
-  keyboard = get_keyboard_for_choices(first_step_options, max_per_row, _sequential_prefix_str)
-  message = bot.send_message(chat_id, text, reply_markup = keyboard, parse_mode = "HTML")
+    SequentialChoices._register_global_handler(bot)
 
-  # Initialize state for this chat
-  _step_states[chat_id] = StepState(
-    message_text = text,
-    options = options,
-    results = [],
-    current_step = 0,
-    message_id = message.message_id,
-    max_per_row = max_per_row,
-    final_callback = final_callback,
-    user_input_callback = user_input_callback,
-  )
+    # Send initial message with first step buttons
+    first_step_options = options[0]
+    keyboard = TelebotUtils.get_keyboard_for_choices(first_step_options, max_per_row,
+                                                     SequentialChoices._sequential_prefix_str)
+    message = bot.send_message(chat_id, text, reply_markup = keyboard, parse_mode = "HTML")
 
-  # Clear any pending next-step handlers for this chat
-  bot.clear_step_handler_by_chat_id(message.chat.id)
-  bot.register_next_step_handler(
-    message,
-    _sequential_choices_next_step_handler,
-    bot,
-    message.message_id,
-  )
+    # Initialize state for this chat
+    SequentialChoices._step_states[chat_id] = StepState(
+      message_text = text,
+      options = options,
+      results = [],
+      current_step = 0,
+      message_id = message.message_id,
+      max_per_row = max_per_row,
+      final_callback = final_callback,
+      user_input_callback = user_input_callback,
+    )
 
-  return message
+    # Clear any pending next-step handlers for this chat
+    bot.clear_step_handler_by_chat_id(message.chat.id)
+    bot.register_next_step_handler(
+      message,
+      SequentialChoices._sequential_choices_next_step_handler,
+      bot,
+      message.message_id,
+    )
 
-def _sequential_choices_next_step_handler(
-  message: telebot.types.Message,
-  bot: telebot.TeleBot,
-  message_id: int,
-):
-  """
-  Handles user input after a choice message is sent.
-  - Removes the inline keyboard from the original message.
-  - If input is a command, passes it to normal command handling.
-  - If input matches one of the valid options, calls the stored callback.
-  - Otherwise, replies with a warning message if provided.
-  """
-  remove_inline_buttons_with_delay(
-    bot = bot,
-    chat_id = message.chat.id,
-    message_id = message_id,
-    delay = buttons_remove_delay_sec,
-  )
+    return message
 
-  # if we received new command, process it
-  if message.text.startswith('/'):
-    bot.process_new_messages([message])
-    return
+  @staticmethod
+  def _sequential_choices_next_step_handler(
+    message: telebot.types.Message,
+    bot: telebot.TeleBot,
+    message_id: int,
+  ):
+    """
+    Handles user input after a choice message is sent.
+    - Removes the inline keyboard from the original message.
+    - If input is a command, passes it to normal command handling.
+    - If input matches one of the valid options, calls the stored callback.
+    - Otherwise, replies with a warning message if provided.
+    """
+    TelebotUtils.remove_inline_buttons_with_delay(
+      bot = bot,
+      chat_id = message.chat.id,
+      message_id = message_id,
+      delay = TelebotConstants.buttons_remove_delay_sec,
+    )
 
-  # Call the optional text callback with user's input
-  state = _step_states.get(message.chat.id)
-  if state and message.text is not None:
-    state.user_input_callback(message.chat.id, message.text)
+    # if we received new command, process it
+    if message.text.startswith('/'):
+      bot.process_new_messages([message])
+      return
 
-def _register_global_handler(bot: telebot.TeleBot):
-  """
-  Register a single global callback handler for sequential choice steps.
-  Only triggers for buttons defined in the current step of an active chat.
-  """
-  global _is_global_handler_registered
-  if _is_global_handler_registered:
-    return
+    # Call the optional text callback with user's input
+    state = SequentialChoices._step_states.get(message.chat.id)
+    if state and message.text is not None:
+      state.user_input_callback(message.chat.id, message.text)
 
-  _is_global_handler_registered = True
+  @staticmethod
+  def _register_global_handler(bot: telebot.TeleBot):
+    """
+    Register a single global callback handler for sequential choice steps.
+    Only triggers for buttons defined in the current step of an active chat.
+    """
+    if SequentialChoices._is_global_handler_registered:
+      return
 
-  @bot.callback_query_handler(func = lambda c: _is_valid_sequential_choice(bot, c))
-  def handle_sequential_choice(call: telebot.types.CallbackQuery):
+    SequentialChoices._is_global_handler_registered = True
+
+    @bot.callback_query_handler(func = lambda c: SequentialChoices._is_valid_sequential_choice(bot, c))
+    def handle_sequential_choice(call: telebot.types.CallbackQuery):
+      chat_id = call.message.chat.id
+      state = SequentialChoices._step_states.get(chat_id)
+
+      # If bot restarted and no state exists, remove buttons
+      if not state:
+        TelebotUtils.remove_inline_buttons_with_delay(
+          bot = bot,
+          chat_id = chat_id,
+          message_id = call.message.message_id,
+          delay = TelebotConstants.buttons_remove_delay_sec,
+        )
+
+        # No active sequential step for this chat
+        return
+
+      options_array = state.options
+      message_id = state.message_id
+      max_per_row = state.max_per_row
+
+      # Save the choice (without prefix)
+      clean_data = call.data[len(SequentialChoices._sequential_prefix_str):]
+      state.results.append(clean_data)
+      state.current_step += 1
+
+      bot.answer_callback_query(call.id)
+
+      # If last step, call final callback
+      if state.current_step >= len(options_array):
+        TelebotUtils.remove_inline_buttons_with_delay(
+          bot = bot,
+          chat_id = chat_id,
+          message_id = message_id,
+          delay = TelebotConstants.buttons_remove_delay_sec,
+        )
+        state.final_callback(chat_id, state.results)
+        del SequentialChoices._step_states[chat_id]
+        return
+
+      # Otherwise, send next step buttons
+      next_options = options_array[state.current_step]
+      keyboard = TelebotUtils.get_keyboard_for_choices(next_options, max_per_row,
+                                                       SequentialChoices._sequential_prefix_str)
+      bot.edit_message_reply_markup(chat_id = chat_id, message_id = message_id, reply_markup = keyboard)
+
+  @staticmethod
+  def _is_valid_sequential_choice(bot: telebot.TeleBot, call: telebot.types.CallbackQuery) -> bool:
+    """
+    Check if the callback belongs to an active sequential choice step.
+    """
+    if not call.data.startswith(SequentialChoices._sequential_prefix_str):
+      return False
+
     chat_id = call.message.chat.id
-    state = _step_states.get(chat_id)
+    state = SequentialChoices._step_states.get(chat_id)
 
-    # If bot restarted and no state exists, remove buttons
+    # If no state exists (bot restarted), remove buttons
     if not state:
-      remove_inline_buttons_with_delay(
+      TelebotUtils.remove_inline_buttons_with_delay(
         bot = bot,
         chat_id = chat_id,
         message_id = call.message.message_id,
-        delay = buttons_remove_delay_sec,
+        delay = TelebotConstants.buttons_remove_delay_sec,
       )
+      return False
 
-      # No active sequential step for this chat
-      return
-
+    step_idx = state.current_step
     options_array = state.options
-    message_id = state.message_id
-    max_per_row = state.max_per_row
+    if step_idx >= len(options_array):
+      return False
 
-    # Save the choice (without prefix)
-    clean_data = call.data[len(_sequential_prefix_str):]
-    state.results.append(clean_data)
-    state.current_step += 1
-
-    bot.answer_callback_query(call.id)
-
-    # If last step, call final callback
-    if state.current_step >= len(options_array):
-      remove_inline_buttons_with_delay(
-        bot = bot,
-        chat_id = chat_id,
-        message_id = message_id,
-        delay = buttons_remove_delay_sec,
-      )
-      state.final_callback(chat_id, state.results)
-      del _step_states[chat_id]
-      return
-
-    # Otherwise, send next step buttons
-    next_options = options_array[state.current_step]
-    keyboard = get_keyboard_for_choices(next_options, max_per_row, _sequential_prefix_str)
-    bot.edit_message_reply_markup(chat_id = chat_id, message_id = message_id, reply_markup = keyboard)
-
-def _is_valid_sequential_choice(bot: telebot.TeleBot, call: telebot.types.CallbackQuery) -> bool:
-  """
-  Check if the callback belongs to an active sequential choice step.
-  """
-  if not call.data.startswith(_sequential_prefix_str):
-    return False
-
-  chat_id = call.message.chat.id
-  state = _step_states.get(chat_id)
-
-  # If no state exists (bot restarted), remove buttons
-  if not state:
-    remove_inline_buttons_with_delay(
-      bot = bot,
-      chat_id = chat_id,
-      message_id = call.message.message_id,
-      delay = buttons_remove_delay_sec,
-    )
-    return False
-
-  step_idx = state.current_step
-  options_array = state.options
-  if step_idx >= len(options_array):
-    return False
-
-  clean_data = call.data[len(_sequential_prefix_str):]
-  return clean_data in options_array[step_idx].values()
+    clean_data = call.data[len(SequentialChoices._sequential_prefix_str):]
+    return clean_data in options_array[step_idx].values()

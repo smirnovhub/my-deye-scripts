@@ -6,14 +6,17 @@ import time
 
 from typing import List
 
+from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from all_settings_registers import AllSettingsRegisters
 from master_settings_registers import MasterSettingsRegisters
+from common_utils import CommonUtils
 from telebot_menu_item import TelebotMenuItem
 from accumulated_info_registers import AccumulatedInfoRegisters
 from slave_info_registers import SlaveInfoRegisters
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
+from deye_test_helper import DeyeTestHelper
 from solarman_server import SolarmanServer
 from forecast_registers import ForecastRegisters
 from master_info_registers import MasterInfoRegisters
@@ -29,13 +32,6 @@ from telebot_writable_registers_test2_module import TelebotWritableRegistersTest
 from telebot_writable_registers_test3_module import TelebotWritableRegistersTest3Module
 from telebot_writable_registers_undo_test_module import TelebotWritableRegistersUndoTestModule
 from telebot_send_message import send_private_telegram_message
-from deye_utils import format_timedelta
-from deye_test_helper import test_success_str
-
-from common_utils import (
-  large_green_circle_emoji,
-  large_red_circle_emoji,
-)
 
 class TeleTest:
   def __init__(self, bot: TestableTelebot):
@@ -67,11 +63,11 @@ class TeleTest:
         start_time = datetime.datetime.now()
         self._clear_data(servers, log)
         module.run_tests(servers)
-        delta = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-        send_private_telegram_message(f'{large_green_circle_emoji} [{i + 1}/{len(modules)}] '
+        delta = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+        send_private_telegram_message(f'{CommonUtils.large_green_circle_emoji} [{i + 1}/{len(modules)}] '
                                       f'<b>Success</b> after {delta}: {module.description}')
-      print(test_success_str)
-      log.info(test_success_str)
+      print(DeyeTestHelper.test_success_str)
+      log.info(DeyeTestHelper.test_success_str)
     except Exception as e:
       info = ''
       if isinstance(module, TelebotRegistersTestModule):
@@ -81,8 +77,8 @@ class TeleTest:
       print(msg)
       log.info(msg)
 
-      delta = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-      send_private_telegram_message(f'{large_red_circle_emoji} [{i + 1}/{len(modules)}] '
+      delta = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+      send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} [{i + 1}/{len(modules)}] '
                                     f'<b>Failed</b> after {delta}: {module.description}: {msg}')
       sys.exit(1)
 

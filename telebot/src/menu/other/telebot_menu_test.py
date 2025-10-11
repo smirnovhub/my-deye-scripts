@@ -11,6 +11,9 @@ from io import BufferedReader
 from urllib.parse import unquote
 from typing import Dict, List, TextIO
 
+from deye_utils import DeyeUtils
+from common_utils import CommonUtils
+from deye_file_lock import DeyeFileLock
 from deye_file_locker import DeyeFileLocker
 from telebot_menu_item import TelebotMenuItem
 from testable_telebot import TestableTelebot
@@ -18,23 +21,14 @@ from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from lock_exceptions import DeyeLockAlreadyAcquiredException
 from telebot_progress_message import TelebotProgressMessage
-from telebot_advanced_choice import ButtonChoice, ask_advanced_choice
-from deye_utils import format_timedelta, ensure_dir_exists
-from deye_file_lock import lock_path
-
-from common_utils import (
-  large_green_circle_emoji,
-  large_yellow_circle_emoji,
-  white_circle_emoji,
-  large_red_circle_emoji,
-)
+from telebot_advanced_choice import AdvancedChoiceButton, AdvancedChoice
 
 class TelebotMenuTest(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self.update_checker = TelebotLocalUpdateChecker()
     self.progress = TelebotProgressMessage(bot)
-    lockfile = os.path.join(lock_path, 'teletest.lock')
+    lockfile = os.path.join(DeyeFileLock.lock_path, 'teletest.lock')
     self.locker = DeyeFileLocker('teletest', lockfile)
     self.logs_path = 'data/logs'
     self.running_test = 'none'
@@ -58,7 +52,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, str(e))
       return
 
-    ensure_dir_exists(self.logs_path)
+    DeyeUtils.ensure_dir_exists(self.logs_path)
 
     scripts = self.find_py_files('../test/src')
 
@@ -71,7 +65,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     options: Dict[str, str] = {all_tests: all_tests}
     options.update({os.path.basename(s).replace('.py', '').replace('_', ' '): s for s in scripts})
 
-    def on_choice(chat_id: int, choice: ButtonChoice):
+    def on_choice(chat_id: int, choice: AdvancedChoiceButton):
       try:
         self.locker.acquire()
       except DeyeLockAlreadyAcquiredException:
@@ -91,13 +85,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
         time.sleep(1)
 
-        t = format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
+        t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
 
         if failed_count == len(tests):
           self.send_results(
             scripts,
             message.chat.id,
-            f'{unquote(large_red_circle_emoji)} '
+            f'{unquote(CommonUtils.large_red_circle_emoji)} '
             f'<b>All tests failed</b> after {t}. '
             'Check logs for details.',
           )
@@ -105,7 +99,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           self.send_results(
             scripts,
             message.chat.id,
-            f'{unquote(large_yellow_circle_emoji)} '
+            f'{unquote(CommonUtils.large_yellow_circle_emoji)} '
             f"<b>{failed_count} test(s) failed</b> and "
             f"{len(scripts) - failed_count} test(s) completed successfully in {t}. "
             "Check logs for details.",
@@ -114,16 +108,16 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           self.send_results(
             scripts,
             message.chat.id,
-            f'{unquote(large_green_circle_emoji)} '
+            f'{unquote(CommonUtils.large_green_circle_emoji)} '
             f'All tests completed successfully in {t}.',
           )
       except Exception as e:
         time.sleep(1)
-        t = format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
+        t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
         self.send_results(
           scripts,
           message.chat.id,
-          f'{unquote(large_red_circle_emoji)} '
+          f'{unquote(CommonUtils.large_red_circle_emoji)} '
           f'Tests failed after {t}. '
           'Check test log for details: {str(e)}',
         )
@@ -136,7 +130,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
         except Exception:
           pass
 
-    ask_advanced_choice(
+    AdvancedChoice.ask_advanced_choice(
       self.bot,
       message.chat.id,
       'Select test to run:',
@@ -201,7 +195,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           self.write_and_flush(f, f"--- RUNNING [{i + 1}/{len(scripts)}] {test_name} ---\n\n")
 
           time.sleep(1)
-          self.running_test = (f'{unquote(white_circle_emoji)} '
+          self.running_test = (f'{unquote(CommonUtils.white_circle_emoji)} '
                                f'[{i + 1}/{len(scripts)}] Running: {test_name}')
           self.progress.show(
             chat_id,
@@ -221,10 +215,10 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             self.progress.hide()
             time.sleep(1)
             self.write_and_flush(f, f"An exception while running {test_name}: {e}\n")
-            t = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+            t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
             self.bot.send_message(
               chat_id,
-              f'{unquote(large_red_circle_emoji)} '
+              f'{unquote(CommonUtils.large_red_circle_emoji)} '
               f'[{i + 1}/{len(scripts)}] '
               f'<b>Failed</b> after {t}: {test_name}',
               parse_mode = 'HTML',
@@ -237,10 +231,10 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             time.sleep(1)
             msg = f"Error: {test_name} exited with code {result.returncode}. Tests failed."
             self.write_and_flush(f, f"{msg}\n")
-            t = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+            t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
             self.bot.send_message(
               chat_id,
-              f'{unquote(large_red_circle_emoji)} '
+              f'{unquote(CommonUtils.large_red_circle_emoji)} '
               f'[{i + 1}/{len(scripts)}] '
               f'<b>Failed</b> after {t}: {test_name}',
               parse_mode = 'HTML',
@@ -248,7 +242,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             failed_count += 1
             continue
 
-          t = format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+          t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
 
           # Ensure at least X seconds since the previous iteration
           elapsed = time.time() - last_iteration_time
@@ -261,7 +255,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           last_iteration_time = time.time()
           self.bot.send_message(
             chat_id,
-            f'{unquote(large_green_circle_emoji)} '
+            f'{unquote(CommonUtils.large_green_circle_emoji)} '
             f'[{i + 1}/{len(scripts)}] '
             f'<b>Success</b> after {t}: {test_name}',
             parse_mode = 'HTML',

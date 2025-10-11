@@ -1,8 +1,8 @@
 from typing import List
 from deye_register import DeyeRegister
-from deye_registers_factory import DeyeRegistersFactory
+from deye_registers import DeyeRegisters
 
-class SlaveInfoRegisters(DeyeRegistersFactory.get_registers_class()): # type: ignore
+class SlaveInfoRegisters(DeyeRegisters):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
 
