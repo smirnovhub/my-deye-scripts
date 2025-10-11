@@ -5,7 +5,6 @@ import struct
 import requests
 
 from typing import Union, List
-from deye_loggers import DeyeLoggers
 from datetime import datetime, timedelta
 from pysolarmanv5 import NoSocketAvailableError
 
@@ -233,6 +232,7 @@ class DeyeUtils:
 
   @staticmethod
   def get_test_retry_count():
+    from deye_loggers import DeyeLoggers
     loggers = DeyeLoggers()
     return 15 + loggers.count * 4
 

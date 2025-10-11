@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
 from deye_system_type import DeyeSystemType
 from deye_exceptions import DeyeNotImplementedException
@@ -9,9 +10,8 @@ class DeyeBaseLoggers:
 
   def __new__(cls, *args, **kwargs):
     if cls._instance is None:
-      from deye_utils import DeyeUtils
-      from deye_test_loggers import DeyeTestLoggers
       if DeyeUtils.is_tests_on():
+        from deye_test_loggers import DeyeTestLoggers
         cls._instance = super().__new__(DeyeTestLoggers) # type: ignore
       else:
         cls._instance = super().__new__(cls) # type: ignore

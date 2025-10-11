@@ -2,6 +2,7 @@ import logging
 
 from typing import List, Optional
 
+from deye_utils import DeyeUtils
 from telebot_user import TelebotUser
 from deye_registers import DeyeRegisters
 from deye_exceptions import DeyeNotImplementedException
@@ -12,9 +13,8 @@ class TelebotBaseUsers:
 
   def __new__(cls, *args, **kwargs):
     if cls._instance is None:
-      from deye_utils import DeyeUtils
-      from telebot_test_users import TelebotTestUsers
       if DeyeUtils.is_tests_on():
+        from telebot_test_users import TelebotTestUsers
         cls._instance = super().__new__(TelebotTestUsers) # type: ignore
         cls.__init__(cls._instance)
       else:
@@ -49,7 +49,6 @@ class TelebotBaseUsers:
 
   def _validate_users(self, users: List[TelebotUser]):
     """Validate that all users in the list have unique IDs."""
-    from deye_utils import DeyeUtils
     if DeyeUtils.is_tests_on():
       log = logging.getLogger()
       ids = [user.id for user in users]
