@@ -2,15 +2,8 @@ import os
 import time
 from typing import IO, Any, Optional
 
+from deye_file_lock import DeyeFileLock
 from lock_exceptions import DeyeLockTimeoutException
-
-from deye_file_lock import (
-  flock,
-  LOCK_SH,
-  LOCK_EX,
-  LOCK_NB,
-  LOCK_UN,
-)
 
 class DeyeFileWithLock:
   """
@@ -53,11 +46,11 @@ class DeyeFileWithLock:
 
     start_time = time.time()
     warning_printed = False
-    self.lock_name = "exclusive" if lock_type == LOCK_EX else "shared"
+    self.lock_name = "exclusive" if lock_type == DeyeFileLock.LOCK_EX else "shared"
 
     while True:
       try:
-        flock(file_obj, lock_type | LOCK_NB)
+        DeyeFileLock.flock(file_obj, lock_type | DeyeFileLock.LOCK_NB)
         if self.verbose:
           elapsed = round(time.time() - start_time, 1)
           if warning_printed:
@@ -100,7 +93,7 @@ class DeyeFileWithLock:
     if "w" in mode or "a" in mode:
       # Write/append mode: open file for read/write (a+) and lock exclusively
       self.sfile = open(path, "a+")
-      self._acquire_lock_with_retry(self.sfile, LOCK_EX, timeout)
+      self._acquire_lock_with_retry(self.sfile, DeyeFileLock.LOCK_EX, timeout)
 
       # Position file pointer according to mode
       if "w" in mode:
@@ -111,7 +104,7 @@ class DeyeFileWithLock:
     else:
       # Read or read/write without explicit write intent: shared lock
       self.sfile = open(path, mode)
-      self._acquire_lock_with_retry(self.sfile, LOCK_SH, timeout)
+      self._acquire_lock_with_retry(self.sfile, DeyeFileLock.LOCK_SH, timeout)
 
     return self.sfile
 
@@ -122,7 +115,7 @@ class DeyeFileWithLock:
     Prints verbose messages if enabled.
     """
     if self.sfile:
-      flock(self.sfile, LOCK_UN)
+      DeyeFileLock.flock(self.sfile, DeyeFileLock.LOCK_UN)
       self.sfile.close()
       self.sfile = None
       if self.verbose:
