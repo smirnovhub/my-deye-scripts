@@ -61,7 +61,7 @@ class TestableTelebot(telebot.TeleBot):
       filemode = 'w',
       level = logging.INFO,
       format = "[%(asctime)s] [%(levelname)s] %(message)s",
-      datefmt = "%Y-%m-%d %H:%M:%S",
+      datefmt = DeyeUtils.time_format_str,
     )
 
   def clear_messages(self):

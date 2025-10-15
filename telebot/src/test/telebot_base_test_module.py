@@ -18,6 +18,7 @@ class TelebotBaseTestModule:
     self.bot = bot
     self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
+    self.retry_delay_sec = 0.01
 
   @property
   def description(self) -> str:
@@ -112,10 +113,9 @@ class TelebotBaseTestModule:
   def wait_for_server_changes(self, server: SolarmanServer, register: DeyeRegister):
     def check_server():
       if not server.is_registers_written(register.address, register.quantity):
-        self.log.info(f'Checking {register.name}... FAILED')
-        self.error(f"No changes on the server side after writing '{register.name}'")
+        self.error(f"Waiting for register '{register.name}' change on server side...")
       else:
-        self.log.info(f'Checking {register.name}... OK')
+        self.log.info(f"Register '{register.name}' changed on server side")
 
     self.call_with_retry(check_server)
 
@@ -128,24 +128,31 @@ class TelebotBaseTestModule:
     :param kwargs: Keyword arguments to pass to func.
     :raises Exception: Re-raises the last exception if all retries fail.
     """
-    retry_delay = 1.0
-    retry_count = DeyeUtils.get_test_retry_count()
+    retry_timeout = DeyeUtils.get_test_retry_timeout()
     last_exception: Optional[Exception] = None
 
     owner = getattr(func, "__self__", None)
     class_name = f'{owner.__class__.__name__}.' if owner else ''
     func_name = func.__name__
+    retry_attempt = 1
+    total_retry_time = 0.0
+    delay = self.retry_delay_sec
 
-    for i in range(retry_count):
+    while total_retry_time < retry_timeout:
       try:
         return func(*args, **kwargs)
       except Exception as e:
         last_exception = e
-        self.log.info(f"Call to {class_name}{func_name} failed: {e}. "
-                      f"Retrying in {retry_delay}s (attempt {i + 1}/{retry_count})...")
-        time.sleep(retry_delay)
+        if retry_attempt % 10 == 0:
+          self.log.info(f"Call to {class_name}{func_name} failed: {e}. "
+                        f"Retrying in {self.retry_delay_sec}s (attempt {retry_attempt})...")
+        time.sleep(delay)
+        retry_attempt += 1
+        total_retry_time += delay
+        if delay < 0.5:
+          delay *= 2
     else:
-      self.log.info(f"Retry count {retry_count} exceeded for {class_name}{func_name}")
+      self.log.info(f"Retry count {retry_timeout} exceeded for {class_name}{func_name}")
       if last_exception is not None:
         raise last_exception
 

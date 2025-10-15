@@ -45,6 +45,9 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
   # If not → append the entry and return True.
   # Entry format: YYYY-MM-DD HH:MM:SS USER_ID
   def add_user_to_file(self, file_path: str, user_id: int, user_name: str) -> bool:
+    if DeyeUtils.is_tests_on():
+      return True
+
     with open(file_path, "a+", encoding = "utf-8") as f:
       f.seek(0)
 
@@ -60,7 +63,7 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
 
       # Acquire exclusive lock for writing
       DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
-      now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+      now = datetime.now().strftime(DeyeUtils.time_format_str)
       f.write(f'[{now}] [{user_id}] [{user_name}]\n')
       f.flush()
       DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
