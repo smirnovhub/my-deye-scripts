@@ -9,6 +9,7 @@ from deye_registers import DeyeRegisters
 from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder import DeyeRegistersHolder
 from deye_test_helper import DeyeTestHelper
+from deye_exceptions import DeyeKnownException
 
 class TelebotRegistersTestModule(TelebotBaseTestModule):
   def __init__(
@@ -88,11 +89,12 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     return holder
 
   def _check_results(self, holder: DeyeRegistersHolder):
+    pattern = f'inverter: {self.name}|{self.name} settings:'
+    if not self.bot.is_messages_contains_regex(pattern):
+      raise DeyeKnownException(f"Messages don't contain expected inverter name '{pattern}'")
+
     found = True
     for register in holder.all_registers[self.name].all_registers:
-      if not self.bot.is_messages_contains(self.name):
-        self.error(f"Messages don't contain expected inverter name '{self.name}'")
-
       desc = register.description.replace('Inverter ', '')
       suffix = f' {register.suffix}'.rstrip()
       info = f'{desc}: {register.pretty_value}{suffix}'
@@ -104,4 +106,6 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
         found = False
 
     if not found:
-      self.error('Some registers info not found')
+      self.error('Some registers or values not found')
+    else:
+      self.log.info('All registers and values found')

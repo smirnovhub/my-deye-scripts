@@ -78,34 +78,33 @@ class TelebotBaseTestModule:
   def wait_for_text(self, text: str):
     def check_message():
       if not self.bot.is_messages_contains(text):
-        self.error(f"Waiting for message '{text}'...")
-      else:
-        self.log.info(f"Received message '{text}'")
+        raise DeyeKnownException(f"Waiting for message '{text}'...")
 
+    self.log.info(f"Waiting for message '{text}'...")
     self.call_with_retry(check_message)
+    self.log.info(f"Received message '{text}'")
     self.bot.clear_messages()
 
   def wait_for_text_regex(self, text: str):
     def check_message():
       if not self.bot.is_messages_contains_regex(text):
-        self.error(f"Waiting for message '{text}'...")
-      else:
-        self.log.info(f"Received message '{text}'")
+        raise DeyeKnownException(f"Waiting for message '{text}'...")
 
+    self.log.info(f"Waiting for message '{text}'...")
     self.call_with_retry(check_message)
+    self.log.info(f"Received message '{text}'")
     self.bot.clear_messages()
 
   def wait_for_text_regex_and_get_undo_data(self, text: str) -> str:
     def check_message() -> str:
       undo_data = self.bot.get_undo_data_regex(text)
       if undo_data is None:
-        self.error(f"Waiting for message with undo '{text}'...")
-      else:
-        self.log.info(f"Received message with undo '{text}'")
-
+        raise DeyeKnownException(f"Waiting for message with undo '{text}'...")
       return str(undo_data)
 
+    self.log.info(f"Waiting for message with undo '{text}'...")
     undo_data = self.call_with_retry(check_message)
+    self.log.info(f"Received message with undo '{text}'")
     self.bot.clear_messages()
 
     return str(undo_data)
@@ -113,11 +112,11 @@ class TelebotBaseTestModule:
   def wait_for_server_changes(self, server: SolarmanServer, register: DeyeRegister):
     def check_server():
       if not server.is_registers_written(register.address, register.quantity):
-        self.error(f"Waiting for register '{register.name}' change on server side...")
-      else:
-        self.log.info(f"Register '{register.name}' changed on server side")
+        raise DeyeKnownException(f"Waiting for register '{register.name}' change on server side...")
 
+    self.log.info(f"Waiting for register '{register.name}' change on server side...")
     self.call_with_retry(check_server)
+    self.log.info(f"Register '{register.name}' changed on server side")
 
   def call_with_retry(self, func: Callable, *args, **kwargs) -> Any:
     """
@@ -136,6 +135,7 @@ class TelebotBaseTestModule:
     func_name = func.__name__
     retry_attempt = 1
     total_retry_time = 0.0
+    last_print_time = 0.0
     delay = self.retry_delay_sec
 
     while total_retry_time < retry_timeout:
@@ -143,16 +143,17 @@ class TelebotBaseTestModule:
         return func(*args, **kwargs)
       except Exception as e:
         last_exception = e
-        if retry_attempt % 10 == 0:
-          self.log.info(f"Call to {class_name}{func_name} failed: {e}. "
-                        f"Retrying in {self.retry_delay_sec}s (attempt {retry_attempt})...")
+        if total_retry_time - last_print_time > 1:
+          last_print_time = total_retry_time
+          self.log.info(f"Call to '{class_name}{func_name}' failed: '{e}'. "
+                        f"Retrying attempt {retry_attempt}...")
         time.sleep(delay)
         retry_attempt += 1
         total_retry_time += delay
         if delay < 0.5:
           delay *= 2
     else:
-      self.log.info(f"Retry count {retry_timeout} exceeded for {class_name}{func_name}")
+      self.log.info(f"Retry timeout of {retry_timeout}s exceeded for {class_name}{func_name}")
       if last_exception is not None:
         raise last_exception
 
