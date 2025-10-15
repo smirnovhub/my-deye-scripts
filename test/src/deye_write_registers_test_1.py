@@ -55,8 +55,6 @@ server = SolarmanServer(
   port = logger.port,
 )
 
-all_found = True
-
 for register in registers.all_registers:
   if not register.can_write:
     continue
