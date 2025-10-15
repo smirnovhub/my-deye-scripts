@@ -177,6 +177,9 @@ class SolarmanServer():
         return False
     return True
 
+  def is_something_written(self) -> bool:
+    return bool(self.written_registers)
+
   async def start_server(self):
     """
     Start the asynchronous TCP server
