@@ -45,7 +45,7 @@ class BaseDeyeRegister(DeyeRegister):
       for interactor in interactors:
         value += round(self.read_internal(interactor) / divider, 2)
 
-      self._value = value
+      self._value = round(value, 2)
       return self._value
 
     self._value = self.read_from_master_interactor(interactors)
