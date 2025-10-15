@@ -2,32 +2,21 @@ import re
 import telebot
 import urllib.parse
 
+from common_utils import CommonUtils
+from telebot_utils import TelebotUtils
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
-from telebot_user_choices import ask_confirmation
-from countdown_with_cancel import countdown_with_cancel
-from telebot_command_choice import ask_command_choice
-from telebot_git_helper import get_current_branch_name
-from telebot_utils import remove_inline_buttons_with_delay, stop_bot
-from common_utils import clock_face_one_oclock
-from telebot_constants import buttons_remove_delay_sec
-
-from telebot_git_helper import (
-  pull,
-  stash_push,
-  stash_pop,
-  stash_clear,
-  is_repository_up_to_date,
-  revert_to_revision,
-  get_last_commits,
-  get_last_commit_short_hash,
-  get_last_commit_hash_and_comment,
-)
+from telebot_git_helper import TelebotGitHelper
+from telebot_constants import TelebotConstants
+from telebot_user_choices import UserChoices
+from telebot_command_choice import CommandChoice
+from countdown_with_cancel import CountdownWithCancel
 
 class TelebotMenuRevert(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
+    self.git_helper = TelebotGitHelper()
     self.update_checker = TelebotLocalUpdateChecker()
 
   @property
@@ -43,9 +32,9 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       return
 
     try:
-      branch_name = get_current_branch_name()
-      if not is_repository_up_to_date():
-        last_commit = get_last_commit_hash_and_comment()
+      branch_name = self.git_helper.get_current_branch_name()
+      if not self.git_helper.is_repository_up_to_date():
+        last_commit = self.git_helper.get_last_commit_hash_and_comment()
         last_commit = last_commit.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         self.bot.send_message(
           message.chat.id,
@@ -68,13 +57,13 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
         return
 
     try:
-      last_commits = get_last_commits()
+      last_commits = self.git_helper.get_last_commits()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
 
     if last_commits:
-      sent = ask_command_choice(
+      sent = CommandChoice.ask_command_choice(
         self.bot,
         message.chat.id,
         f"You are currently on branch '{branch_name}'.\n"
@@ -92,11 +81,11 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     self.bot.register_next_step_handler(message, self.handle_step2, sent.message_id)
 
   def handle_step2(self, message: telebot.types.Message, message_id: int):
-    remove_inline_buttons_with_delay(
+    TelebotUtils.remove_inline_buttons_with_delay(
       bot = self.bot,
       chat_id = message.chat.id,
       message_id = message_id,
-      delay = buttons_remove_delay_sec,
+      delay = TelebotConstants.buttons_remove_delay_sec,
     )
 
     # If we received new command, skip it
@@ -113,22 +102,22 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
 
   def do_revert(self, chat_id: int, commit_hash: str):
     try:
-      stash_clear()
+      self.git_helper.stash_clear()
 
-      short_hash = get_last_commit_short_hash()
+      short_hash = self.git_helper.get_last_commit_short_hash()
       if commit_hash.startswith(short_hash):
         self.bot.send_message(chat_id, f'You are already on {short_hash}')
         return
 
-      stash_push()
-      result = revert_to_revision(commit_hash)
-      stash_pop()
+      self.git_helper.stash_push()
+      result = self.git_helper.revert_to_revision(commit_hash)
+      self.git_helper.stash_pop()
     except Exception as e:
       self.bot.send_message(chat_id, f'{str(e)}: trying to reset to HEAD and then stash pop again...')
       try:
-        revert_to_revision('HEAD')
-        pull()
-        stash_pop()
+        self.git_helper.revert_to_revision('HEAD')
+        self.git_helper.pull()
+        self.git_helper.stash_pop()
         self.bot.send_message(
           chat_id,
           'All changes rolled back to the latest commit. '
@@ -140,7 +129,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
 
     self.bot.send_message(chat_id, result)
 
-    ask_confirmation(
+    UserChoices.ask_confirmation(
       self.bot,
       chat_id,
       'Revert completed. For the changes to take effect, need to restart the bot. '
@@ -153,7 +142,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       self.bot.send_message(chat_id, 'Restart cancelled')
       return
 
-    countdown_with_cancel(
+    CountdownWithCancel.show_countdown(
       bot = self.bot,
       chat_id = chat_id,
       text = 'Will restart in: ',
@@ -164,9 +153,9 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
 
   def on_finish(self, chat_id: int):
     self.bot.send_message(chat_id,
-                          f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting telebot...',
+                          f'{urllib.parse.unquote(CommonUtils.clock_face_one_oclock)} Restarting telebot...',
                           parse_mode = 'HTML')
-    stop_bot(self.bot)
+    TelebotUtils.stop_bot(self.bot)
 
   def on_cancel(self, chat_id: int):
     self.bot.send_message(chat_id, 'Restart cancelled')

@@ -4,6 +4,7 @@ import telebot
 
 from typing import Any, Callable, List, Optional, Set
 
+from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from telebot_user import TelebotUser
 from deye_register import DeyeRegister
@@ -11,7 +12,6 @@ from testable_telebot import TestableTelebot
 from solarman_server import SolarmanServer
 from deye_exceptions import DeyeKnownException
 from telebot_fake_test_message import TelebotFakeTestMessage
-from deye_utils import get_test_retry_count
 
 class TelebotBaseTestModule:
   def __init__(self, bot: TestableTelebot):
@@ -129,7 +129,7 @@ class TelebotBaseTestModule:
     :raises Exception: Re-raises the last exception if all retries fail.
     """
     retry_delay = 1.0
-    retry_count = get_test_retry_count()
+    retry_count = DeyeUtils.get_test_retry_count()
     last_exception: Optional[Exception] = None
 
     owner = getattr(func, "__self__", None)

@@ -3,14 +3,15 @@ import telebot
 import urllib.parse
 
 from typing import Optional
+
+from deye_utils import DeyeUtils
+from common_utils import CommonUtils
+from telebot_utils import TelebotUtils
+from telebot_constants import TelebotConstants
 from deye_file_with_lock import DeyeFileWithLock
-from telebot_user_choices import ask_choice
-from deye_utils import ensure_file_exists
-from countdown_with_cancel import countdown_with_cancel
-from telebot_git_helper import get_last_commit_hash
-from common_utils import clock_face_one_oclock
-from telebot_constants import git_repository_local_check_period_sec
-from telebot_utils import stop_bot
+from telebot_git_helper import TelebotGitHelper
+from telebot_user_choices import UserChoices
+from countdown_with_cancel import CountdownWithCancel
 
 class TelebotLocalUpdateChecker:
   """
@@ -23,12 +24,13 @@ class TelebotLocalUpdateChecker:
   """
   def __init__(self):
     self.locker = DeyeFileWithLock()
+    self.git_helper = TelebotGitHelper()
 
     self.ask_file_name = 'data/last_local_update_ask_time.txt'
     self.hash_file_name = 'data/last_commit_hash.txt'
 
-    ensure_file_exists(self.ask_file_name)
-    ensure_file_exists(self.hash_file_name)
+    DeyeUtils.ensure_file_exists(self.ask_file_name)
+    DeyeUtils.ensure_file_exists(self.hash_file_name)
 
   def check_for_local_updates(
     self,
@@ -52,7 +54,7 @@ class TelebotLocalUpdateChecker:
     """
     if not force:
       last_ask_time = self._load_last_local_update_ask_time()
-      if time.time() - last_ask_time < git_repository_local_check_period_sec:
+      if time.time() - last_ask_time < TelebotConstants.git_repository_local_check_period_sec:
         # Too soon since the last check; skip
         return False
 
@@ -73,7 +75,7 @@ class TelebotLocalUpdateChecker:
           if message is not None:
             bot.process_new_messages([message])
 
-      ask_choice(
+      UserChoices.ask_choice(
         bot,
         chat_id,
         'The local repository has changed. '
@@ -92,7 +94,7 @@ class TelebotLocalUpdateChecker:
     """
     Update the saved commit hash file with the current HEAD commit hash.
     """
-    hash = get_last_commit_hash()
+    hash = self.git_helper.get_last_commit_hash()
     self._save_last_commit_hash(hash)
 
   def _ask_for_restart(self, bot: telebot.TeleBot, chat_id: int):
@@ -105,14 +107,14 @@ class TelebotLocalUpdateChecker:
     """
     def on_finish(chat_id: int):
       bot.send_message(chat_id,
-                       f'{urllib.parse.unquote(clock_face_one_oclock)} Restarting telebot...',
+                       f'{urllib.parse.unquote(CommonUtils.clock_face_one_oclock)} Restarting telebot...',
                        parse_mode = 'HTML')
-      stop_bot(bot)
+      TelebotUtils.stop_bot(bot)
 
     def on_cancel(chat_id: int):
       bot.send_message(chat_id, 'Restart cancelled')
 
-    countdown_with_cancel(
+    CountdownWithCancel.show_countdown(
       bot = bot,
       chat_id = chat_id,
       text = 'Will restart in: ',
@@ -128,7 +130,7 @@ class TelebotLocalUpdateChecker:
     Returns:
         bool: True if the current commit hash differs from the last saved hash.
     """
-    current_hash = get_last_commit_hash()
+    current_hash = self.git_helper.get_last_commit_hash()
     last_hash = self._load_last_commit_hash()
     return len(last_hash) > 0 and len(current_hash) > 0 and last_hash != current_hash
 

@@ -5,19 +5,19 @@ from typing import Any, List, Optional, Type
 from datetime import datetime
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
+from deye_registers import DeyeRegisters
 from raising_thread import RaisingThread
 from deye_base_enum import DeyeBaseEnum
+from deye_utils import DeyeUtils
 from deye_exceptions import DeyeKnownException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
-from deye_registers_factory import DeyeRegistersFactory
-from deye_utils import get_reraised_exception
 
 class DeyeRegisterProcessor:
   def __init__(self):
     self.interactors: List[DeyeModbusInteractor] = []
     self.master_interactor: Optional[DeyeModbusInteractor] = None
-    self.registers = DeyeRegistersFactory.create_registers()
+    self.registers = DeyeRegisters()
 
   def get_arg_name(self, register: DeyeRegister, action: str) -> str:
     return f'--{action}-{register.name.replace("_", "-")}'
@@ -73,7 +73,7 @@ class DeyeRegisterProcessor:
         )
 
     except Exception as e:
-      raise get_reraised_exception(e, 'Error while adding parameters') from e
+      raise DeyeUtils.get_reraised_exception(e, 'Error while adding parameters') from e
 
   def check_parameters(self, parser: argparse.ArgumentParser, args: argparse.Namespace) -> bool:
     try:
@@ -87,7 +87,7 @@ class DeyeRegisterProcessor:
 
       return True
     except Exception as e:
-      raise get_reraised_exception(e, 'Error while checking parameters') from e
+      raise DeyeUtils.get_reraised_exception(e, 'Error while checking parameters') from e
 
   def process_parameters(self, args: argparse.Namespace):
     if len(self.interactors) < 2 or args.only_accumulated == False:
@@ -106,7 +106,7 @@ class DeyeRegisterProcessor:
 
               print(f'{interactor.name}_{register.name}{addr_list} = {value}{suffix}')
           except Exception as e:
-            raise get_reraised_exception(e,
+            raise DeyeUtils.get_reraised_exception(e,
                                          f'Error while reading register {register.name} from {interactor.name}') from e
 
     if len(self.interactors) > 1:
@@ -124,7 +124,7 @@ class DeyeRegisterProcessor:
 
             print(f'all_{register.name}{addr_list} = {value}{suffix}')
         except Exception as e:
-          raise get_reraised_exception(e, f'Error while reading register {register.name}') from e
+          raise DeyeUtils.get_reraised_exception(e, f'Error while reading register {register.name}') from e
 
     for register in self.registers.read_write_registers:
       try:
@@ -151,7 +151,7 @@ class DeyeRegisterProcessor:
 
             print(f'{self.master_interactor.name}_{register.name}{addr_list} = {value}{suffix}')
       except Exception as e:
-        raise get_reraised_exception(e, f'Error while writing register {register.name}') from e
+        raise DeyeUtils.get_reraised_exception(e, f'Error while writing register {register.name}') from e
 
   def enqueue_registers(self, args: argparse.Namespace, loggers: List[DeyeLogger]):
     for logger in loggers:
@@ -164,14 +164,14 @@ class DeyeRegisterProcessor:
         if interactor.is_master:
           self.master_interactor = interactor
       except Exception as e:
-        raise get_reraised_exception(e, f'Error while creating DeyeModbusInteractor({logger.name})') from e
+        raise DeyeUtils.get_reraised_exception(e, f'Error while creating DeyeModbusInteractor({logger.name})') from e
 
     for interactor in self.interactors:
       for register in self.get_registers_to_process(args):
         try:
           register.enqueue(interactor)
         except Exception as e:
-          raise get_reraised_exception(
+          raise DeyeUtils.get_reraised_exception(
             e, f'Error while enqueue register {register.name} to interactor {interactor.name}') from e
 
   def get_registers_to_process(self, args: argparse.Namespace) -> List[DeyeRegister]:
@@ -215,11 +215,11 @@ class DeyeRegisterProcessor:
         task.join()
 
     except Exception as e:
-      raise get_reraised_exception(e, 'Error while reading registers') from e
+      raise DeyeUtils.get_reraised_exception(e, 'Error while reading registers') from e
 
   def disconnect(self):
     for interactor in self.interactors:
       try:
         interactor.disconnect()
       except Exception as e:
-        raise get_reraised_exception(e, f'Error while disconnecting {interactor.name}') from e
+        raise DeyeUtils.get_reraised_exception(e, f'Error while disconnecting {interactor.name}') from e

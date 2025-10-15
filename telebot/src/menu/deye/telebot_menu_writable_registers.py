@@ -1,4 +1,3 @@
-import logging
 import telebot
 import textwrap
 import traceback
@@ -6,48 +5,26 @@ import traceback
 from typing import Any, List, Optional
 from datetime import datetime
 
-from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from custom_registers import CustomRegisters
 from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeValueException
 from deye_base_enum import DeyeBaseEnum
+from telebot_deye_helper import TelebotDeyeHelper
+from telebot_utils import TelebotUtils
+from telebot_constants import TelebotConstants
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_fake_message import TelebotFakeMessage
 from telebot_menu_item import TelebotMenuItem
-from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item_handler import TelebotMenuItemHandler
-from deye_registers_factory import DeyeRegistersFactory
-from telebot_user_choices import ask_confirmation
-from telebot_command_choice import ask_command_choice
-from telebot_constants import undo_button_remove_delay_sec
-
-from telebot_utils import (
-  get_inline_button_by_text,
-  remove_inline_buttons_with_delay,
-)
-
-from telebot_constants import (
-  undo_button_name,
-  buttons_remove_delay_sec,
-  sync_inverter_time_button_name,
-  inverter_system_time_need_sync_difference_sec,
-)
-
-from telebot_deye_helper import (
-  holder_kwargs,
-  build_keyboard_for_register,
-  get_keyboard_for_register,
-  get_available_registers,
-)
+from deye_registers import DeyeRegisters
+from telebot_user_choices import UserChoices
+from telebot_command_choice import CommandChoice
 
 class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.log = logging.getLogger()
-    self.loggers = DeyeLoggers()
-    self.registers = DeyeRegistersFactory.create_registers()
-    self.auth_helper = TelebotAuthHelper()
+    self.registers = DeyeRegisters()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -89,16 +66,16 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     if isinstance(register.value, datetime) and register.name == self.registers.inverter_system_time_register.name:
       time_diff = register.value - datetime.now()
       diff_seconds = int(abs(time_diff.total_seconds()))
-      if diff_seconds > inverter_system_time_need_sync_difference_sec:
-        return build_keyboard_for_register(register, [
+      if diff_seconds > TelebotConstants.inverter_system_time_need_sync_difference_sec:
+        return TelebotDeyeHelper.build_keyboard_for_register(register, [
           {
-            sync_inverter_time_button_name: f'/{TelebotMenuItem.deye_sync_time.command}'
+            TelebotConstants.sync_inverter_time_button_name: f'/{TelebotMenuItem.deye_sync_time.command}'
           },
         ])
       else:
         return None
 
-    return get_keyboard_for_register(self.registers, register)
+    return TelebotDeyeHelper.get_keyboard_for_register(self.registers, register)
 
   def process_read_write_register_step1(self, message: telebot.types.Message, register_name: str, next_step_callback):
     if not self.is_authorized(message):
@@ -123,7 +100,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       return
 
     if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register_name):
-      available_registers = get_available_registers(self.registers, self.auth_helper, message.from_user.id)
+      available_registers = TelebotDeyeHelper.get_available_registers(self.registers, self.auth_helper,
+                                                                     message.from_user.id)
       self.bot.send_message(
         message.chat.id,
         f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
@@ -148,11 +126,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       return
 
     # remove buttons from previous message
-    remove_inline_buttons_with_delay(
+    TelebotUtils.remove_inline_buttons_with_delay(
       bot = self.bot,
       chat_id = message.chat.id,
       message_id = message_id,
-      delay = buttons_remove_delay_sec,
+      delay = TelebotConstants.buttons_remove_delay_sec,
     )
 
     if not message.text:
@@ -183,7 +161,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomRegisters([register], prefix),
-      **holder_kwargs,
+      **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
@@ -213,7 +191,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomRegisters([register], prefix),
-      **holder_kwargs,
+      **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
@@ -271,11 +249,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
           finally:
             holder.disconnect()
 
-      is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
+      is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(message, TelebotConstants.undo_button_name) is not None
 
       if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed:
         suffix = f' {register.suffix}'.rstrip()
-        ask_confirmation(
+        UserChoices.ask_confirmation(
           self.bot,
           message.chat.id,
           f'Do you really want to change <b>{register.description}</b> '
@@ -307,22 +285,22 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
             f'to {register.pretty_value}{suffix}')
 
     pretty = str(old_value) if isinstance(old_value, DeyeBaseEnum) else old_pretty_value
-    is_undo_button_pressed = get_inline_button_by_text(message, undo_button_name) is not None
+    is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(message, TelebotConstants.undo_button_name) is not None
 
     if old_value != register.value and not is_undo_button_pressed:
-      sent = ask_command_choice(
+      sent = CommandChoice.ask_command_choice(
         self.bot,
         message.chat.id,
         text,
-        {undo_button_name: f'/{register.name} {pretty}'},
+        {TelebotConstants.undo_button_name: f'/{register.name} {pretty}'},
         max_per_row = 2,
       )
 
-      remove_inline_buttons_with_delay(
+      TelebotUtils.remove_inline_buttons_with_delay(
         bot = self.bot,
         chat_id = message.chat.id,
         message_id = sent.message_id,
-        delay = undo_button_remove_delay_sec,
+        delay = TelebotConstants.undo_button_remove_delay_sec,
       )
     else:
       self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')

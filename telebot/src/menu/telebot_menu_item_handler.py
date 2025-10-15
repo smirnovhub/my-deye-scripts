@@ -1,9 +1,11 @@
+import logging
 import telebot
 import traceback
 
 from typing import List
 from telebot_user import TelebotUser
 from telebot_users import TelebotUsers
+from deye_loggers import DeyeLoggers
 from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item import TelebotMenuItem
 from deye_exceptions import DeyeKnownException
@@ -23,7 +25,9 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         bot (telebot.TeleBot): The Telegram bot instance
     """
     self.bot = bot
+    self.log = logging.getLogger()
     self.users = TelebotUsers()
+    self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
     self.local_update_checker = TelebotLocalUpdateChecker()
     self.remote_update_checker = TelebotRemoteUpdateChecker()

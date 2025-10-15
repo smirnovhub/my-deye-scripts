@@ -1,8 +1,8 @@
+from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
-from deye_file_lock import lock_path
+from deye_file_lock import DeyeFileLock
 from deye_cache_manager import DeyeCacheManager
 from pysolarmanv5 import PySolarmanV5
-from deye_utils import ensure_dir_exists
 
 class DeyeModbusSolarman:
   def __init__(self, logger: DeyeLogger, **kwargs):
@@ -14,10 +14,10 @@ class DeyeModbusSolarman:
     caching_time = kwargs.get('caching_time', 3)
 
     # Ensure cache directory exists
-    ensure_dir_exists(lock_path, mode = 0o777)
+    DeyeUtils.ensure_dir_exists(DeyeFileLock.lock_path, mode = 0o777)
 
     # Initialize cache manager
-    self.cache_manager = DeyeCacheManager(self.logger.name, lock_path, caching_time, verbose = self.verbose)
+    self.cache_manager = DeyeCacheManager(self.logger.name, DeyeFileLock.lock_path, caching_time, verbose = self.verbose)
 
   def read_holding_registers(self, register_addr, quantity):
     data = self.cache_manager.load_from_cache(register_addr, quantity)

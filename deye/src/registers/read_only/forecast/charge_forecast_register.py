@@ -1,10 +1,11 @@
 from typing import List
 
 from datetime import datetime, timedelta
+
+from deye_utils import DeyeUtils
 from deye_register import DeyeRegister
 from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
-from deye_utils import format_end_date
 
 class ChargeForecastRegister(BaseDeyeRegister):
   def __init__(
@@ -81,7 +82,7 @@ class ChargeForecastRegister(BaseDeyeRegister):
       capacity = battery_capacity * (soc_delta / 100) * charge_lost_coef
       hours_to_soc = abs(capacity / battery_current)
       soc_date = datetime.now() + timedelta(hours = hours_to_soc)
-      soc_date_str = format_end_date(soc_date)
+      soc_date_str = DeyeUtils.format_end_date(soc_date)
 
       value += '{:2d}'.format(int(round(soc))) + f'%: {soc_date_str}\n'
 

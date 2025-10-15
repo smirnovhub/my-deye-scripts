@@ -1,18 +1,14 @@
-import logging
 import telebot
 
-from deye_loggers import DeyeLoggers
 from deye_registers_holder import DeyeRegistersHolder
 from forecast_registers import ForecastRegisters
+from telebot_deye_helper import TelebotDeyeHelper
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
-from telebot_deye_helper import get_register_values, holder_kwargs
 
 class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.loggers = DeyeLoggers()
-    self.log = logging.getLogger()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -29,7 +25,7 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
     holder = DeyeRegistersHolder(
       loggers = self.loggers.loggers,
       register_creator = lambda prefix: ForecastRegisters(prefix),
-      **holder_kwargs,
+      **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
@@ -44,7 +40,7 @@ class TelebotMenuBatteryForecast(TelebotMenuItemHandler):
       current_register = holder.accumulated_registers.battery_current_register
 
       result = f'<b>Inverter: {self.loggers.accumulated_registers_prefix}</b>\n'
-      result += get_register_values(holder.accumulated_registers.all_registers)
+      result += TelebotDeyeHelper.get_register_values(holder.accumulated_registers.all_registers)
 
       if abs(current_register.value) < 0.1:
         self.bot.send_message(message.chat.id, '<b>Battery is in idle mode</b>', parse_mode = 'HTML')

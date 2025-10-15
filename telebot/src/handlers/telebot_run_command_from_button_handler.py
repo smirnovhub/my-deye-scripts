@@ -1,11 +1,10 @@
 import telebot
 from typing import cast
 
+from telebot_utils import TelebotUtils
+from telebot_constants import TelebotConstants
 from telebot_fake_message import TelebotFakeMessage
 from telebot_base_handler import TelebotBaseHandler
-
-from telebot_constants import buttons_remove_delay_sec
-from telebot_utils import remove_inline_buttons_with_delay
 
 class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
   def __init__(self, bot: telebot.TeleBot):
@@ -32,11 +31,11 @@ class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
 
         self.bot.answer_callback_query(call.id)
 
-        remove_inline_buttons_with_delay(
+        TelebotUtils.remove_inline_buttons_with_delay(
           bot = self.bot,
           chat_id = call.message.chat.id,
           message_id = call.message.message_id,
-          delay = buttons_remove_delay_sec,
+          delay = TelebotConstants.buttons_remove_delay_sec,
         )
 
         self.bot.clear_step_handler_by_chat_id(call.message.chat.id)

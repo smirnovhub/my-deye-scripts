@@ -1,12 +1,12 @@
 from typing import List, Optional
 
 from telebot_test_users import TelebotTestUsers
-from deye_registers_factory import DeyeRegistersFactory
+from deye_registers import DeyeRegisters
 from solarman_server import SolarmanServer
 from deye_base_enum import DeyeBaseEnum
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
-from deye_test_helper import get_random_by_register_value_type
+from deye_test_helper import DeyeTestHelper
 
 class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
   """
@@ -42,7 +42,7 @@ class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
     self.log.info(f'Running module {type(self).__name__}...')
 
     user = TelebotTestUsers().test_user1
-    registers = DeyeRegistersFactory.create_registers()
+    registers = DeyeRegisters()
     master_server: Optional[SolarmanServer] = None
 
     for srv in servers:
@@ -58,7 +58,7 @@ class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
       if not register.can_write:
         continue
 
-      value = get_random_by_register_value_type(register, skip_zero = True)
+      value = DeyeTestHelper.get_random_by_register_value_type(register, skip_zero = True)
       if value is None:
         self.log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
         continue
