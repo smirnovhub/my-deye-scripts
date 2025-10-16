@@ -119,10 +119,6 @@ class MyTelebot:
       except Exception as e:
         print(f'An exception occurred while setting command for blocking user {user.id}: {str(e)}')
 
-    if isinstance(self.bot, TestableTelebot):
-      teleTest = TeleTest(self.bot)
-      teleTest.run_tests()
-
   def get_common_handlers(self, bot: telebot.TeleBot) -> List[TelebotBaseHandler]:
     return [
       TelebotLoggingHandler(bot),
@@ -159,3 +155,10 @@ class MyTelebot:
     return [
       TelebotMenuWritableRegisters(bot),
     ]
+
+  def run_tests(self):
+    if not isinstance(self.bot, TestableTelebot):
+      raise TypeError(f"Can't run tests because telebot is not {TestableTelebot.__name__}")
+
+    teletest = TeleTest(self.bot)
+    teletest.run_tests()
