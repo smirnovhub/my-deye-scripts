@@ -53,7 +53,8 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
     DeyeUtils.ensure_dir_exists(self.logs_path)
 
-    scripts = self.find_py_files('../test/src')
+    tests_base_dir = '../test/src'
+    scripts = self.find_py_files(tests_base_dir)
 
     self.remove_logs(scripts)
 
@@ -62,7 +63,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     os.environ['BOT_API_TEST_TOKEN'] = self.bot.token
 
     options: Dict[str, str] = {all_tests: all_tests}
-    options.update({os.path.basename(s).replace('.py', '').replace('_', ' '): s for s in scripts})
+    options.update({os.path.basename(s).replace('.py', '').replace('_', ' '): os.path.basename(s) for s in scripts})
 
     def on_choice(chat_id: int, choice: AdvancedChoiceButton):
       try:
@@ -77,14 +78,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
         return
 
       all_start_time = datetime.datetime.now()
-      tests = scripts if choice.data == all_tests else [choice.data]
+      tests = scripts if choice.data == all_tests else [os.path.join(tests_base_dir, choice.data)]
 
       try:
         failed_count = self.run_tests(message.chat.id, tests)
+        t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
 
         time.sleep(1)
-
-        t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
 
         if failed_count == len(tests):
           self.send_results(
@@ -111,14 +111,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             f'All tests completed successfully in {t}.',
           )
       except Exception as e:
-        time.sleep(1)
         t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
-        self.send_results(
-          scripts,
+        time.sleep(1)
+        self.bot.send_message(
           message.chat.id,
           f'{unquote(CommonUtils.large_red_circle_emoji)} '
           f'Tests failed after {t}. '
-          'Check test log for details: {str(e)}',
+          f'Check log files for details: {str(e)}',
         )
 
       finally:
@@ -320,17 +319,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           parse_mode = "HTML",
         )
     finally:
-      # Clean up: remove logs and zip
-      for log_file in all_log_files:
-        try:
-          os.remove(log_file)
-        except Exception:
-          pass
-
-      try:
-        os.remove(zip_file_name)
-      except Exception:
-        pass
+      self.remove_logs(scripts)
 
   def create_combined_zip(self, files: List[str]) -> str:
     """
@@ -347,7 +336,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     Returns:
       str: The name of the created ZIP file (relative to the current working directory).
     """
-    name_with_date = f"test-logs-{datetime.datetime.now().strftime(DeyeUtils.time_format_str)}.zip"
+    name_with_date = f"test-logs-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.zip"
 
     with zipfile.ZipFile(name_with_date, 'w', zipfile.ZIP_DEFLATED) as zf:
       for file_path in files:
