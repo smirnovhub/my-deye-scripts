@@ -106,7 +106,7 @@ for register in registers.all_registers:
 
     for server in servers:
       if server.is_something_written():
-        log.info(f"Changes on server '{server.name}' detected. We shold not write to slaves")
+        log.info(f"Changes on server '{server.name}' detected. We should not write to slaves")
         sys.exit(1)
 
 log.info('No changes on server side tedected. Test is ok')
