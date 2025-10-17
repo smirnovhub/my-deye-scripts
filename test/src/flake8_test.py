@@ -44,6 +44,7 @@ def run_test(path: str):
     log.info(f'Command returned non-zero exit code: {result.returncode}. Test failed.')
     sys.exit(1)
 
+run_test('common')
 run_test('deye')
 run_test('telebot')
 run_test('test')
