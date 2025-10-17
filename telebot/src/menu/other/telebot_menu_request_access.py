@@ -29,7 +29,7 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
             f"User name: {user_name}\n"
             f"Phone: {phone}")
 
-    if self.users.is_user_allowed(user.id):
+    if self.users.is_user_blocked(user.id) or self.users.is_user_allowed(user.id):
       self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
     else:
       result = self.add_user_to_file('data/access_requests.txt', user.id, name)

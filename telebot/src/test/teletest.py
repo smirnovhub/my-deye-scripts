@@ -1,8 +1,7 @@
-import datetime
-import logging
-
 import sys
 import time
+import logging
+import datetime
 
 from typing import List
 
@@ -23,6 +22,7 @@ from master_info_registers import MasterInfoRegisters
 from telebot_registers_test_module import TelebotRegistersTestModule
 from today_stat_registers import TodayStatRegisters
 from total_stat_registers import TotalStatRegisters
+from telebot_blocked_user_test_module import TelebotBlockedUserTestModule
 from telebot_unauthorized_user_test_module import TelebotUnauthorizedUserTestModule
 from telebot_unknown_command_test_module import TelebotUnknownCommandTestModule
 from telebot_inverter_time_sync_test_module import TelebotInverterTimeSyncTestModule
@@ -40,8 +40,7 @@ class TeleTest:
 
   def run_tests(self):
     if not self.loggers.is_test_loggers:
-      print('Your loggers are not test loggers')
-      return
+      raise ValueError('Your loggers are not test loggers')
 
     servers: List[SolarmanServer] = []
 
@@ -87,6 +86,7 @@ class TeleTest:
 
   def _get_test_modules(self, bot: TestableTelebot) -> List[TelebotBaseTestModule]:
     modules: List[TelebotBaseTestModule] = [
+      TelebotBlockedUserTestModule(bot),
       TelebotUnauthorizedUserTestModule(bot),
       TelebotUnknownCommandTestModule(bot),
       TelebotAllowedCommandsTestModule(bot),
