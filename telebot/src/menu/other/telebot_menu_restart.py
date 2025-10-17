@@ -26,7 +26,7 @@ class TelebotMenuRestart(TelebotMenuItemHandler):
     UserChoices.ask_confirmation(
       self.bot, message.chat.id, f'<b>Warning!</b> Bot process will be killed '
       'and will <b>not</b> restart automatically if you didn\'t configure it '
-      'for automatic restart. <b>Do you really want to kill bot proccess?</b>', self.on_user_confirmation)
+      'for automatic restart. <b>Do you really want to kill bot process?</b>', self.on_user_confirmation)
 
   def on_user_confirmation(self, chat_id: int, result: bool):
     if result:
