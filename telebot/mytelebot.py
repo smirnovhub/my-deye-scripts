@@ -117,7 +117,7 @@ class MyTelebot:
       try:
         bot.set_my_commands([], scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:
-        print(f'An exception occurred while setting command for blocking user {user.id}: {str(e)}')
+        print(f'An exception occurred while setting command for blocked user {user.id}: {str(e)}')
 
   def get_common_handlers(self, bot: telebot.TeleBot) -> List[TelebotBaseHandler]:
     return [
