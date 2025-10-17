@@ -19,6 +19,7 @@ class TelebotBaseTestModule:
     self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
     self.retry_delay_sec = 0.01
+    self.retry_timeout = DeyeUtils.get_test_retry_timeout()
 
   @property
   def description(self) -> str:
@@ -118,7 +119,14 @@ class TelebotBaseTestModule:
     self.call_with_retry(check_server)
     self.log.info(f"Register '{register.name}' changed on server side")
 
-  def call_with_retry(self, func: Callable, *args, **kwargs) -> Any:
+  def call_with_retry(
+    self,
+    func: Callable,
+    *args,
+    retry_delay_sec: Optional[float] = None,
+    retry_timeout: Optional[int] = None,
+    **kwargs,
+  ) -> Any:
     """
     Calls a function repeatedly until it succeeds or retries are exhausted.
 
@@ -127,7 +135,12 @@ class TelebotBaseTestModule:
     :param kwargs: Keyword arguments to pass to func.
     :raises Exception: Re-raises the last exception if all retries fail.
     """
-    retry_timeout = DeyeUtils.get_test_retry_timeout()
+    if retry_delay_sec is None:
+      retry_delay_sec = self.retry_delay_sec
+
+    if retry_timeout is None:
+      retry_timeout = self.retry_timeout
+
     last_exception: Optional[Exception] = None
 
     owner = getattr(func, "__self__", None)
@@ -136,10 +149,10 @@ class TelebotBaseTestModule:
     retry_attempt = 1
     total_retry_time = 0.0
     last_print_time = 0.0
-    delay = self.retry_delay_sec
 
     while total_retry_time < retry_timeout:
       try:
+        time.sleep(retry_delay_sec)
         return func(*args, **kwargs)
       except Exception as e:
         last_exception = e
@@ -147,11 +160,10 @@ class TelebotBaseTestModule:
           last_print_time = total_retry_time
           self.log.info(f"Call to '{class_name}{func_name}' failed: '{e}'. "
                         f"Retrying attempt {retry_attempt}...")
-        time.sleep(delay)
         retry_attempt += 1
-        total_retry_time += delay
-        if delay < 0.5:
-          delay *= 2
+        total_retry_time += retry_delay_sec
+        if retry_delay_sec < 0.5:
+          retry_delay_sec *= 2
     else:
       self.log.info(f"Retry timeout of {retry_timeout}s exceeded for {class_name}{func_name}")
       if last_exception is not None:
