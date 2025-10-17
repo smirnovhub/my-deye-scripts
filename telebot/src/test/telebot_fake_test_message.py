@@ -1,6 +1,7 @@
 import time
-from typing import Union
 import telebot
+
+from typing import Union
 
 class TelebotFakeTestMessage:
   """

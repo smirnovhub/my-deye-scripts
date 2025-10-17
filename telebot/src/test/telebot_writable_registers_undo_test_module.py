@@ -103,5 +103,5 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
       else:
         self.log.info(f"Undo data is ok for register '{register.name}'")
 
-    self.log.info('Seems all registers processed currectly')
+    self.log.info('Seems all registers have correct undo buttons')
     self.log.info(f'Module {type(self).__name__} done successfully')
