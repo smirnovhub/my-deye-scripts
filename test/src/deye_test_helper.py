@@ -234,7 +234,7 @@ class DeyeTestHelper:
     values = DeyeUtils.to_inv_time(as_ints)
 
     # Format datetime as a string
-    datetime_str = random_dt.strftime("%Y-%m-%d %H:%M:%S")
+    datetime_str = random_dt.strftime(DeyeUtils.time_format_str)
 
     return DeyeRegisterRandomValue(register, datetime_str, values)
 
@@ -335,4 +335,4 @@ class DeyeTestHelper:
     start = datetime(2000, 1, 1)
     end = datetime.now()
     random_date = start + timedelta(seconds = random.randint(0, int((end - start).total_seconds())))
-    return random_date.strftime("%Y-%m-%d %H:%M:%S")
+    return random_date.strftime(DeyeUtils.time_format_str)

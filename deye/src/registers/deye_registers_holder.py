@@ -70,13 +70,13 @@ class DeyeRegistersHolder:
     return self._registers[self._all_loggers.accumulated_registers_prefix]
 
   def read_registers(self):
-    def log_retry(attempt, retry_count, exception):
+    def log_retry(attempt, total_attempts, exception):
       self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-                    f'{str(exception)}, retrying... (attempt {attempt}/{retry_count})')
+                    f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
 
     if DeyeUtils.is_tests_on():
-      retry_count = DeyeUtils.get_test_retry_count()
-      self._read_registers_with_retry_internal(retry_count = retry_count, on_retry = log_retry)
+      retry_timeout = DeyeUtils.get_test_retry_timeout()
+      self._read_registers_with_retry_internal(retry_timeout = retry_timeout, on_retry = log_retry)
     else:
       self._read_registers_internal()
 
@@ -131,36 +131,41 @@ class DeyeRegistersHolder:
 
   def _read_registers_with_retry_internal(
     self,
-    retry_count = 3,
-    retry_delay = 3,
+    retry_timeout,
+    retry_delay = 1,
     on_retry: Optional[Callable[[int, int, Exception], None]] = None,
   ):
     last_exception: Optional[Exception] = None
-    for i in range(retry_count):
+    retry_attempt = 1
+    total_retry_time = 0
+    total_attempts = round(retry_timeout / retry_delay)
+
+    while total_retry_time < retry_timeout:
       try:
         self._read_registers_internal()
+        return
       except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
         last_exception = e
         if on_retry:
-          on_retry(i + 1, retry_count, e)
+          on_retry(retry_attempt, total_attempts, e)
         time.sleep(retry_delay)
-        continue
-      break
+        retry_attempt += 1
+        total_retry_time += retry_delay
     else:
       if last_exception is not None:
         raise last_exception
 
   def write_register(self, register: DeyeRegister, value):
-    def log_retry(attempt, retry_count, exception):
+    def log_retry(attempt, total_attempts, exception):
       self.log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
-                    f'{str(exception)}, retrying... (attempt {attempt}/{retry_count})')
+                    f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
 
     if DeyeUtils.is_tests_on():
-      retry_count = DeyeUtils.get_test_retry_count()
+      retry_timeout = DeyeUtils.get_test_retry_timeout()
       return self._write_register_with_retry_internal(
         register,
         value,
-        retry_count = retry_count,
+        retry_timeout = retry_timeout,
         on_retry = log_retry,
       )
     else:
@@ -184,20 +189,25 @@ class DeyeRegistersHolder:
     self,
     register: DeyeRegister,
     value,
-    retry_count = 3,
-    retry_delay = 3,
+    retry_timeout,
+    retry_delay = 1,
     on_retry: Optional[Callable[[int, int, Exception], None]] = None,
   ):
     last_exception: Optional[Exception] = None
-    for i in range(retry_count):
+    retry_attempt = 1
+    total_retry_time = 0
+    total_attempts = round(retry_timeout / retry_delay)
+
+    while total_retry_time < retry_timeout:
       try:
         return self._write_register_internal(register, value)
       except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
         last_exception = e
         if on_retry:
-          on_retry(i + 1, retry_count, e)
+          on_retry(retry_attempt, total_attempts, e)
         time.sleep(retry_delay)
-        continue
+        retry_attempt += 1
+        total_retry_time += retry_delay
     else:
       if last_exception is not None:
         raise last_exception

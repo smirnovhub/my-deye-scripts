@@ -7,7 +7,6 @@ import zipfile
 import telebot
 import datetime
 
-from io import BufferedReader
 from urllib.parse import unquote
 from typing import Dict, List, TextIO
 
@@ -54,7 +53,8 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
     DeyeUtils.ensure_dir_exists(self.logs_path)
 
-    scripts = self.find_py_files('../test/src')
+    tests_base_dir = '../test/src'
+    scripts = self.find_py_files(tests_base_dir)
 
     self.remove_logs(scripts)
 
@@ -63,7 +63,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     os.environ['BOT_API_TEST_TOKEN'] = self.bot.token
 
     options: Dict[str, str] = {all_tests: all_tests}
-    options.update({os.path.basename(s).replace('.py', '').replace('_', ' '): s for s in scripts})
+    options.update({os.path.basename(s).replace('.py', '').replace('_', ' '): os.path.basename(s) for s in scripts})
 
     def on_choice(chat_id: int, choice: AdvancedChoiceButton):
       try:
@@ -78,14 +78,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
         return
 
       all_start_time = datetime.datetime.now()
-      tests = scripts if choice.data == all_tests else [choice.data]
+      tests = scripts if choice.data == all_tests else [os.path.join(tests_base_dir, choice.data)]
 
       try:
         failed_count = self.run_tests(message.chat.id, tests)
+        t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
 
         time.sleep(1)
-
-        t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
 
         if failed_count == len(tests):
           self.send_results(
@@ -112,14 +111,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             f'All tests completed successfully in {t}.',
           )
       except Exception as e:
-        time.sleep(1)
         t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
-        self.send_results(
-          scripts,
+        time.sleep(1)
+        self.bot.send_message(
           message.chat.id,
           f'{unquote(CommonUtils.large_red_circle_emoji)} '
           f'Tests failed after {t}. '
-          'Check test log for details: {str(e)}',
+          f'Check log files for details: {str(e)}',
         )
 
       finally:
@@ -278,71 +276,70 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
   def send_results(self, scripts: List[str], chat_id: int, message: str):
     """
-    Send a list of files and their zip archives as a media group with a caption.
-    Non-existing files are ignored.
-    """
-    media_group: List[telebot.types.InputMediaDocument] = []
-    zip_files: List[str] = []
-    open_files: List[BufferedReader] = []
+    Collects all available log files related to the provided scripts,
+    combines them into a single ZIP archive, sends it to the specified Telegram chat,
+    and then removes both the original log files and the created ZIP file.
 
+    Parameters:
+      scripts: List[str]
+          A list of script file paths (.py) whose corresponding log files should be sent.
+      chat_id: int
+          The Telegram chat ID where the files will be sent.
+      message: str
+          The message text that will accompany the sent ZIP file.
+
+    Returns:
+      None: The method performs its actions (sending files and cleanup) and does not
+    """
+    all_log_files: List[str] = []
+
+    # Collect log files from scripts
     for script in scripts:
       file_path = os.path.join(self.logs_path, os.path.basename(script).replace('.py', '.log'))
-      if not os.path.exists(file_path):
-        continue # skip non-existing files
+      if os.path.exists(file_path):
+        all_log_files.append(file_path)
 
-      zip_file = self.create_zip_file(file_path)
-      zip_files.append(zip_file)
-
-      f = open(zip_file, 'rb')
-      open_files.append(f)
-
-      # Add zip file
-      media_group.append(
-        telebot.types.InputMediaDocument(telebot.types.InputFile(
-          f,
-          file_name = os.path.basename(zip_file),
-        )))
-
+    # Add telebot test log if exists
     if os.path.exists(TestableTelebot.telebot_test_log_file_name):
-      telebot_zip_file = self.create_zip_file(TestableTelebot.telebot_test_log_file_name)
-      zip_files.append(telebot_zip_file)
+      all_log_files.append(TestableTelebot.telebot_test_log_file_name)
 
-      tf = open(telebot_zip_file, 'rb')
-      open_files.append(tf)
-
-      # Add zip file
-      media_group.append(
-        telebot.types.InputMediaDocument(telebot.types.InputFile(
-          tf,
-          file_name = os.path.basename(telebot_zip_file),
-        )))
-
-    if media_group:
-      # Add caption to the first file only
-      media_group[-1].parse_mode = "HTML"
-      media_group[-1].caption = message + ' Log files attached.'
-      self.bot.send_media_group(chat_id, list(media_group))
-    else:
+    if not all_log_files:
       self.bot.send_message(chat_id, message, parse_mode = "HTML")
+      return
 
-    for of in open_files:
-      of.close()
+    # Create one combined zip
+    zip_file_name = self.create_combined_zip(all_log_files)
 
-    # Clean up files
-    for log_file in zip_files:
-      try:
-        os.remove(log_file)
-      except Exception:
-        pass
+    try:
+      with open(zip_file_name, 'rb') as f:
+        self.bot.send_document(
+          chat_id,
+          telebot.types.InputFile(f, file_name = os.path.basename(zip_file_name)),
+          caption = message + ' Log files attached.',
+          parse_mode = "HTML",
+        )
+    finally:
+      self.remove_logs(scripts)
 
-  def create_zip_file(self, file_path: str) -> str:
-    file_base = os.path.splitext(file_path.replace("_", "-"))[0]
-    file_ext = os.path.splitext(file_path)[1]
-    name_with_date = f"{file_base}-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
-    zip_file_name = f"{name_with_date}.zip"
+  def create_combined_zip(self, files: List[str]) -> str:
+    """
+    Creates a single ZIP archive containing all specified log files.
 
-    # Create zip
-    with zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_DEFLATED) as zf:
-      zf.write(file_path, arcname = os.path.basename(f'{name_with_date}{file_ext}'))
+    Each file is added to the archive under its base name (without directories)
+    to keep the ZIP clean and portable. The resulting ZIP filename includes
+    a timestamp to ensure uniqueness.
 
-    return zip_file_name
+    Parameters:
+      files: List[str]
+          A list of absolute paths to the log files that should be included in the archive.
+
+    Returns:
+      str: The name of the created ZIP file (relative to the current working directory).
+    """
+    name_with_date = f"test-logs-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.zip"
+
+    with zipfile.ZipFile(name_with_date, 'w', zipfile.ZIP_DEFLATED) as zf:
+      for file_path in files:
+        zf.write(file_path, arcname = os.path.basename(file_path))
+
+    return name_with_date

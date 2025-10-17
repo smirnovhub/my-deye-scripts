@@ -56,11 +56,12 @@ class SolarmanServer():
     self.address = address
     self.serial = serial
     self.port = port
-    self.log = logging.getLogger()
-    self.log.info(f"{self.name}: starting SolarmanServer at {address}:{port}")
     self.registers: Dict[int, int] = {}
     self.readed_registers: Set[int] = set()
     self.written_registers: Set[int] = set()
+
+    self.log = logging.getLogger()
+    self.log.info(f"{self.name}: starting SolarmanServer at {address}:{port}")
 
     try:
       self.loop = asyncio.get_running_loop()
@@ -176,6 +177,9 @@ class SolarmanServer():
       if address not in self.written_registers:
         return False
     return True
+
+  def is_something_written(self) -> bool:
+    return bool(self.written_registers)
 
   async def start_server(self):
     """

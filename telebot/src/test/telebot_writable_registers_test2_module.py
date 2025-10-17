@@ -113,7 +113,7 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
       self.wait_for_server_changes(master_server, register)
       self.wait_for_text_regex(rf'{register.description}.+changed from .+ to ')
 
-    self.log.info('Seems all registers processed currectly')
+    self.log.info('Seems all writable registers processed correctly')
     self.log.info(f'Module {type(self).__name__} done successfully')
 
   def _check_results(self, server: SolarmanServer, registers: List[DeyeRegister]):
@@ -122,7 +122,7 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
           register.address,
           register.quantity,
       ) or not self.bot.is_messages_contains_regex(rf'.*{register.description}.+changed from.+to.+'):
-        self.log.info(f'Checking {register.name}... FAILED')
+        self.log.info(f'Checking {register.name} - FAILED')
         self.error(f"No changes after writing '{register.name}'")
       else:
-        self.log.info(f'Checking {register.name}... OK')
+        self.log.info(f'Checking {register.name} - OK')

@@ -72,10 +72,10 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
         if str(new_random_value) != str(old_random_value.value):
           break
       else:
-        self.error("Cant't generate register random value")
+        self.error("Can't generate register random value")
 
       if new_random_value is None:
-        self.error("Cant't generate register random value")
+        self.error("Can't generate register random value")
         break
 
       command = f'/{register.name}'
@@ -103,5 +103,5 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
       else:
         self.log.info(f"Undo data is ok for register '{register.name}'")
 
-    self.log.info('Seems all registers processed currectly')
+    self.log.info('Seems all registers have correct undo buttons')
     self.log.info(f'Module {type(self).__name__} done successfully')

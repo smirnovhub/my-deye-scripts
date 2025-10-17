@@ -37,7 +37,7 @@ DeyeUtils.turn_tests_on()
 logging.basicConfig(
   level = logging.INFO,
   format = "[%(asctime)s] [%(levelname)s] %(message)s",
-  datefmt = "%Y-%m-%d %H:%M:%S",
+  datefmt = DeyeUtils.time_format_str,
 )
 
 log = logging.getLogger()
@@ -46,6 +46,10 @@ registers = DeyeRegisters()
 
 if not loggers.is_test_loggers:
   log.info('Your loggers are not test loggers')
+  sys.exit(1)
+
+if not loggers.slaves:
+  log.info("You don't have slave loggers to run this test")
   sys.exit(1)
 
 servers: List[SolarmanServer] = []

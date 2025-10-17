@@ -1,8 +1,7 @@
-import datetime
-import logging
-
 import sys
 import time
+import logging
+import datetime
 
 from typing import List
 
@@ -23,6 +22,7 @@ from master_info_registers import MasterInfoRegisters
 from telebot_registers_test_module import TelebotRegistersTestModule
 from today_stat_registers import TodayStatRegisters
 from total_stat_registers import TotalStatRegisters
+from telebot_blocked_user_test_module import TelebotBlockedUserTestModule
 from telebot_unauthorized_user_test_module import TelebotUnauthorizedUserTestModule
 from telebot_unknown_command_test_module import TelebotUnknownCommandTestModule
 from telebot_inverter_time_sync_test_module import TelebotInverterTimeSyncTestModule
@@ -40,8 +40,7 @@ class TeleTest:
 
   def run_tests(self):
     if not self.loggers.is_test_loggers:
-      print('Your loggers are not test loggers')
-      return
+      raise ValueError('Your loggers are not test loggers')
 
     servers: List[SolarmanServer] = []
 
@@ -59,13 +58,9 @@ class TeleTest:
 
     try:
       for i, module in enumerate(modules):
-        time.sleep(1)
         start_time = datetime.datetime.now()
         self._clear_data(servers, log)
         module.run_tests(servers)
-        delta = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-        send_private_telegram_message(f'{CommonUtils.large_green_circle_emoji} [{i + 1}/{len(modules)}] '
-                                      f'<b>Success</b> after {delta}: {module.description}')
       print(DeyeTestHelper.test_success_str)
       log.info(DeyeTestHelper.test_success_str)
     except Exception as e:
@@ -78,25 +73,20 @@ class TeleTest:
       log.info(msg)
 
       delta = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+      time.sleep(1)
       send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} [{i + 1}/{len(modules)}] '
                                     f'<b>Failed</b> after {delta}: {module.description}: {msg}')
       sys.exit(1)
 
   def _clear_data(self, servers: List[SolarmanServer], log: logging.Logger):
     self.bot.clear_messages()
-    time.sleep(3)
-
-    if not self.bot.is_messages_empty():
-      print('Error: still receiving messages from previous module. Exiting...')
-      log.info('Error: still receiving messages from previous module. Exiting...')
-      sys.exit(1)
-
     for server in servers:
       server.clear_registers()
       server.clear_registers_status()
 
   def _get_test_modules(self, bot: TestableTelebot) -> List[TelebotBaseTestModule]:
     modules: List[TelebotBaseTestModule] = [
+      TelebotBlockedUserTestModule(bot),
       TelebotUnauthorizedUserTestModule(bot),
       TelebotUnknownCommandTestModule(bot),
       TelebotAllowedCommandsTestModule(bot),

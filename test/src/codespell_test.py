@@ -20,15 +20,11 @@ log = logging.getLogger()
 
 def run_test(path: str):
   commands = [
-    "flake8",
+    "codespell",
     os.path.join(base_path, path),
-    "--count",
-    "--select=E9,F63,F7,F82",
-    "--show-source",
-    "--statistics",
   ]
 
-  log.info(f'Running flake8 for {path}...')
+  log.info(f'Running codespell for {path}...')
   log.info(f'Command to execute: {commands}')
 
   result = subprocess.run(

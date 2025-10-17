@@ -3,6 +3,7 @@ import telebot
 import traceback
 
 from typing import List
+
 from telebot_user import TelebotUser
 from telebot_users import TelebotUsers
 from deye_loggers import DeyeLoggers
@@ -106,6 +107,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         bool: True if authorized, False otherwise
     """
     if self.users.is_user_blocked(message.from_user.id):
+      self.bot.send_message(message.chat.id, 'User is not authorized')
       return False
 
     if not self.users.is_user_allowed(message.from_user.id):

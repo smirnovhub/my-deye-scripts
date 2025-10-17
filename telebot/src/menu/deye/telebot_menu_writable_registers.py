@@ -81,6 +81,22 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
+    register = self.registers.get_register_by_name(register_name)
+    if register is None:
+      self.bot.send_message(message.chat.id, f'Register {register_name} not found')
+      self.bot.clear_step_handler_by_chat_id(message.chat.id)
+      return
+
+    if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register_name):
+      available_registers = TelebotDeyeHelper.get_available_registers(self.registers, self.auth_helper,
+                                                                      message.from_user.id)
+      self.bot.send_message(
+        message.chat.id,
+        f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
+        parse_mode = 'HTML',
+      )
+      return
+
     pos = message.text.find(' ')
     if message.from_user and pos != -1:
       param = message.text[pos + 1:].strip()
@@ -92,22 +108,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
         )
         self.process_read_write_register_step2(fake_message, message.id, register_name)
         return
-
-    register = self.registers.get_register_by_name(register_name)
-    if register is None:
-      self.bot.send_message(message.chat.id, f'Register {register_name} not found')
-      self.bot.clear_step_handler_by_chat_id(message.chat.id)
-      return
-
-    if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register_name):
-      available_registers = TelebotDeyeHelper.get_available_registers(self.registers, self.auth_helper,
-                                                                     message.from_user.id)
-      self.bot.send_message(
-        message.chat.id,
-        f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
-        parse_mode = 'HTML',
-      )
-      return
 
     try:
       text = self.get_register_value(register)
@@ -249,7 +249,10 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
           finally:
             holder.disconnect()
 
-      is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(message, TelebotConstants.undo_button_name) is not None
+      is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(
+        message,
+        TelebotConstants.undo_button_name,
+      ) is not None
 
       if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed:
         suffix = f' {register.suffix}'.rstrip()
@@ -285,7 +288,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
             f'to {register.pretty_value}{suffix}')
 
     pretty = str(old_value) if isinstance(old_value, DeyeBaseEnum) else old_pretty_value
-    is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(message, TelebotConstants.undo_button_name) is not None
+
+    is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(
+      message,
+      TelebotConstants.undo_button_name,
+    ) is not None
 
     if old_value != register.value and not is_undo_button_pressed:
       sent = CommandChoice.ask_command_choice(

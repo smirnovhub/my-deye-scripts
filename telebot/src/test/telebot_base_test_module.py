@@ -18,6 +18,8 @@ class TelebotBaseTestModule:
     self.bot = bot
     self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
+    self.retry_delay_sec = 0.01
+    self.retry_timeout = DeyeUtils.get_test_retry_timeout()
 
   @property
   def description(self) -> str:
@@ -77,34 +79,33 @@ class TelebotBaseTestModule:
   def wait_for_text(self, text: str):
     def check_message():
       if not self.bot.is_messages_contains(text):
-        self.error(f"Waiting for message '{text}'...")
-      else:
-        self.log.info(f"Received message '{text}'")
+        raise DeyeKnownException(f"Waiting for message '{text}'...")
 
+    self.log.info(f"Waiting for message '{text}'...")
     self.call_with_retry(check_message)
+    self.log.info(f"Received message '{text}'")
     self.bot.clear_messages()
 
   def wait_for_text_regex(self, text: str):
     def check_message():
       if not self.bot.is_messages_contains_regex(text):
-        self.error(f"Waiting for message '{text}'...")
-      else:
-        self.log.info(f"Received message '{text}'")
+        raise DeyeKnownException(f"Waiting for message '{text}'...")
 
+    self.log.info(f"Waiting for message '{text}'...")
     self.call_with_retry(check_message)
+    self.log.info(f"Received message '{text}'")
     self.bot.clear_messages()
 
   def wait_for_text_regex_and_get_undo_data(self, text: str) -> str:
     def check_message() -> str:
       undo_data = self.bot.get_undo_data_regex(text)
       if undo_data is None:
-        self.error(f"Waiting for message with undo '{text}'...")
-      else:
-        self.log.info(f"Received message with undo '{text}'")
-
+        raise DeyeKnownException(f"Waiting for message with undo '{text}'...")
       return str(undo_data)
 
+    self.log.info(f"Waiting for message with undo '{text}'...")
     undo_data = self.call_with_retry(check_message)
+    self.log.info(f"Received message with undo '{text}'")
     self.bot.clear_messages()
 
     return str(undo_data)
@@ -112,14 +113,20 @@ class TelebotBaseTestModule:
   def wait_for_server_changes(self, server: SolarmanServer, register: DeyeRegister):
     def check_server():
       if not server.is_registers_written(register.address, register.quantity):
-        self.log.info(f'Checking {register.name}... FAILED')
-        self.error(f"No changes on the server side after writing '{register.name}'")
-      else:
-        self.log.info(f'Checking {register.name}... OK')
+        raise DeyeKnownException(f"Waiting for register '{register.name}' change on server side...")
 
+    self.log.info(f"Waiting for register '{register.name}' change on server side...")
     self.call_with_retry(check_server)
+    self.log.info(f"Register '{register.name}' changed on server side")
 
-  def call_with_retry(self, func: Callable, *args, **kwargs) -> Any:
+  def call_with_retry(
+    self,
+    func: Callable,
+    *args,
+    retry_delay_sec: Optional[float] = None,
+    retry_timeout: Optional[int] = None,
+    **kwargs,
+  ) -> Any:
     """
     Calls a function repeatedly until it succeeds or retries are exhausted.
 
@@ -128,24 +135,37 @@ class TelebotBaseTestModule:
     :param kwargs: Keyword arguments to pass to func.
     :raises Exception: Re-raises the last exception if all retries fail.
     """
-    retry_delay = 1.0
-    retry_count = DeyeUtils.get_test_retry_count()
+    if retry_delay_sec is None:
+      retry_delay_sec = self.retry_delay_sec
+
+    if retry_timeout is None:
+      retry_timeout = self.retry_timeout
+
     last_exception: Optional[Exception] = None
 
     owner = getattr(func, "__self__", None)
     class_name = f'{owner.__class__.__name__}.' if owner else ''
     func_name = func.__name__
+    retry_attempt = 1
+    total_retry_time = 0.0
+    last_print_time = 0.0
 
-    for i in range(retry_count):
+    while total_retry_time < retry_timeout:
       try:
+        time.sleep(retry_delay_sec)
         return func(*args, **kwargs)
       except Exception as e:
         last_exception = e
-        self.log.info(f"Call to {class_name}{func_name} failed: {e}. "
-                      f"Retrying in {retry_delay}s (attempt {i + 1}/{retry_count})...")
-        time.sleep(retry_delay)
+        if total_retry_time - last_print_time > 1:
+          last_print_time = total_retry_time
+          self.log.info(f"Call to '{class_name}{func_name}' failed: '{e}'. "
+                        f"Retrying attempt {retry_attempt}...")
+        retry_attempt += 1
+        total_retry_time += retry_delay_sec
+        if retry_delay_sec < 0.5:
+          retry_delay_sec *= 2
     else:
-      self.log.info(f"Retry count {retry_count} exceeded for {class_name}{func_name}")
+      self.log.info(f"Retry timeout of {retry_timeout}s exceeded for {class_name}{func_name}")
       if last_exception is not None:
         raise last_exception
 

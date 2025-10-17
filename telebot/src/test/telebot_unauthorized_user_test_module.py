@@ -37,5 +37,5 @@ class TelebotUnauthorizedUserTestModule(TelebotBaseTestModule):
       else:
         self.wait_for_text(f'User {user.id} is not authorized')
 
-    self.log.info('Seems unauthorized users processed currectly')
+    self.log.info('Seems unauthorized users processed correctly')
     self.log.info(f'Module {type(self).__name__} done successfully')

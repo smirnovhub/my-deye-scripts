@@ -32,7 +32,7 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
       self.log.info(f"Sending command '/{command}'")
 
       self.send_text(user, f'/{command}')
-      self.wait_for_text_regex(rf'.*Unknown command: /.*{command}.*')
+      self.wait_for_text_regex(rf'Unknown command: /.*{command}')
 
     for i in range(5):
       command = ''.join(random.choices(choices, k = 16))
@@ -41,7 +41,7 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
       self.log.info(f"Sending command '/{command} {param}'")
 
       self.send_text(user, f'/{command} {param}')
-      self.wait_for_text_regex(rf'.*Unknown command: /.*{command}.*')
+      self.wait_for_text_regex(rf'Unknown command: /.*{command}')
 
-    self.log.info('Seems unknown commands processed currectly')
+    self.log.info('Seems unknown commands processed correctly')
     self.log.info(f'Module {type(self).__name__} done successfully')

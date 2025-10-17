@@ -56,10 +56,7 @@ parser.add_argument('-v', '--verbose-output', action = 'store_true', help = 'ver
 parser.add_argument('-c', '--caching-time', type = int, default = 3, help = 'caching time for requests')
 parser.add_argument('-p', '--print-addresses', action = 'store_true', help = 'print register addresses')
 parser.add_argument('--connection-timeout', type = int_range(1, 60), default = 10, help = argparse.SUPPRESS)
-
-if loggers.count > 1:
-  parser.add_argument('-i', '--inverter', help = f'specify inverter ({inverters_str})', default = loggers.master.name)
-
+parser.add_argument('-i', '--inverter', help = f'specify inverter ({inverters_str})' if loggers.count > 1 else argparse.SUPPRESS, default = loggers.master.name)
 parser.add_argument('-a', '--get-all', action = 'store_true', help = 'get all parameters')
 parser.add_argument('-o',
                     '--only-accumulated',

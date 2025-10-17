@@ -1,5 +1,6 @@
-from datetime import datetime
 from typing import List, Optional
+
+from datetime import datetime
 
 from deye_utils import DeyeUtils
 from telebot_menu_item import TelebotMenuItem
@@ -60,8 +61,8 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.send_text(user, command)
 
     if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
-      self.wait_for_text_regex(f'.*The difference is about {diff_seconds} seconds'
-                               '.+Are you sure to sync inverter time.*')
+      self.wait_for_text_regex(f'The difference is about {diff_seconds} seconds'
+                               '.+Are you sure to sync inverter time')
 
       self.log.info(f"Replying 'yes' for time sync confirmation...")
       self.send_text(user, 'yes')
@@ -96,8 +97,8 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.send_button_click(user, command)
 
     if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
-      self.wait_for_text_regex(f'.*The difference is about {diff_seconds} seconds'
-                               '.+Are you sure to sync inverter time.*')
+      self.wait_for_text_regex(f'The difference is about {diff_seconds} seconds'
+                               '.+Are you sure to sync inverter time')
 
       self.log.info(f"Replying 'yes' for time sync confirmation...")
       self.send_text(user, 'yes')
@@ -109,5 +110,5 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.wait_for_text_regex(changed_pattern)
     self.wait_for_server_changes(master_server, register)
 
-    self.log.info('Time change found. Everything looks good')
+    self.log.info('Seems inverter time sync works correctly')
     self.log.info(f'Module {type(self).__name__} done successfully')

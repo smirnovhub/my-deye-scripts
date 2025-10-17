@@ -18,7 +18,7 @@ journalctl -u telebot.service --no-pager | tail -n 30
 
 bot will be automatically restarted in the case of the crash!
 
-fix pathes to actual in /etc/systemd/system/telebot.service:
+fix paths to actual in /etc/systemd/system/telebot.service:
 WorkingDirectory=/home/dmitry/git/scripts/deye/telebot
 ExecStart=/home/dmitry/git/scripts/deye/telebot/telebot
 

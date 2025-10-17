@@ -78,16 +78,23 @@ class TelebotTestUsers(TelebotBaseUsers):
     )
 
   @property
-  def blocked_user(self) -> TelebotUser:
+  def blocked_user1(self) -> TelebotUser:
     return TelebotUser(
       name = 'Maria Georgiou',
       id = 7654321,
     )
 
   @property
+  def blocked_user2(self) -> TelebotUser:
+    return TelebotUser(
+      name = 'Sophia Dimitriadis',
+      id = 234235646,
+    )
+
+  @property
   def allowed_users(self) -> List[TelebotUser]:
-    return [self.test_user1, self.test_user2, self.test_user3]
+    return [self.test_user1, self.test_user2, self.test_user3, self.blocked_user2]
 
   @property
   def blocked_users(self) -> List[TelebotUser]:
-    return [self.blocked_user]
+    return [self.blocked_user1, self.blocked_user2]

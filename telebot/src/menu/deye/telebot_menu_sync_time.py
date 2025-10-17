@@ -69,7 +69,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         self.bot, message.chat.id, f'<b>Warning!</b> '
         f'Difference between inverter time and current time is too big:\n'
         f'Current time: <b>{now}</b>\n'
-        f'Inverter time: <b>{self.register.value.strftime("%Y-%m-%d %H:%M:%S")}</b>\n'
+        f'Inverter time: <b>{self.register.value.strftime(DeyeUtils.time_format_str)}</b>\n'
         f'The difference is about {diff_seconds} seconds.\n'
         f'<b>Are you sure to sync inverter time?</b>', self.on_user_confirmation)
     elif diff_seconds > TelebotConstants.inverter_system_time_does_not_need_sync_threshold_sec:

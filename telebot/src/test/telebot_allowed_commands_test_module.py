@@ -1,3 +1,5 @@
+import random
+
 from typing import List
 
 from solarman_server import SolarmanServer
@@ -45,19 +47,39 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
         if register.name not in allowed_registers:
           disabled_registers.append(register.name)
 
-    for command in self.get_all_registered_commands():
-      self.log.info(f"Sending command '/{command}' from user {user.id} {user.name}")
+    self.log.info('Checking commands without arguments...')
 
-      self.send_text(user, f'/{command}')
+    for command in self.get_all_registered_commands():
+      cmd = f'/{command}'
+      self.log.info(f"Sending command '{cmd}' from user {user.id} {user.name}")
+      self.send_text(user, cmd)
 
       if command in disabled_registers:
-        self.wait_for_text_regex(".*You can't change.*")
+        register = registers.get_register_by_name(command)
+        self.wait_for_text_regex(f"You can't change.+{register.description}")
       elif command in allowed_registers:
-        self.wait_for_text_regex(".*Current.*value:.*Enter new value.*")
+        register = registers.get_register_by_name(command)
+        self.wait_for_text_regex(f"Current.+{register.description}.+value:.*Enter new value")
       elif command in allowed_commands:
-        self.wait_for_text_regex(".*Inverter:.*")
+        self.wait_for_text("Inverter:")
       else:
-        self.wait_for_text_regex('.*Command is not allowed.*')
+        self.wait_for_text('Command is not allowed')
 
-    self.log.info('Seems commands access rights processed currectly')
+    self.log.info('Checking commands with arguments...')
+
+    for command in self.get_all_registered_commands():
+      if command in allowed_registers or command in allowed_commands:
+        continue
+
+      cmd = f'/{command} {random.randint(1000, 9999)}'
+      self.log.info(f"Sending command '{cmd}' from user {user.id} {user.name}")
+      self.send_text(user, cmd)
+
+      if command in disabled_registers:
+        register = registers.get_register_by_name(command)
+        self.wait_for_text_regex(f"You can't change.+{register.description}")
+      else:
+        self.wait_for_text('Command is not allowed')
+
+    self.log.info('Seems commands access rights processed correctly')
     self.log.info(f'Module {type(self).__name__} done successfully')

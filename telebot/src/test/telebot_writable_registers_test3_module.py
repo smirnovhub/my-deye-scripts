@@ -86,8 +86,7 @@ class TelebotWritableRegistersTest3Module(TelebotBaseTestModule):
       self.send_text(user, command)
 
       suffix = f' {register.suffix}'.rstrip()
-      self.wait_for_text_regex(rf'.*New value \({value}{suffix}\) is '
-                               'the same as old value. Nothing changed.*')
+      self.wait_for_text(rf'New value ({value}{suffix}) is the same as old value. Nothing changed')
 
-    self.log.info('Seems all registers processed currectly')
+    self.log.info('Seems all writable registers processed correctly')
     self.log.info(f'Module {type(self).__name__} done successfully')

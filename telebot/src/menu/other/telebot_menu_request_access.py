@@ -29,7 +29,7 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
             f"User name: {user_name}\n"
             f"Phone: {phone}")
 
-    if self.users.is_user_allowed(user.id):
+    if self.users.is_user_blocked(user.id) or self.users.is_user_allowed(user.id):
       self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
     else:
       result = self.add_user_to_file('data/access_requests.txt', user.id, name)
@@ -45,6 +45,9 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
   # If not → append the entry and return True.
   # Entry format: YYYY-MM-DD HH:MM:SS USER_ID
   def add_user_to_file(self, file_path: str, user_id: int, user_name: str) -> bool:
+    if DeyeUtils.is_tests_on():
+      return True
+
     with open(file_path, "a+", encoding = "utf-8") as f:
       f.seek(0)
 
@@ -60,7 +63,7 @@ class TelebotMenuRequestAccess(TelebotMenuItemHandler):
 
       # Acquire exclusive lock for writing
       DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
-      now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+      now = datetime.now().strftime(DeyeUtils.time_format_str)
       f.write(f'[{now}] [{user_id}] [{user_name}]\n')
       f.flush()
       DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
