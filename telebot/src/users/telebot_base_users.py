@@ -24,6 +24,8 @@ class TelebotBaseUsers:
 
   def __init__(self):
     self.registers = DeyeRegisters()
+    self._validate_users(self.allowed_users, 'allowed users')
+    self._validate_users(self.blocked_users, 'blocked users')
 
   @property
   def allowed_users(self) -> List[TelebotUser]:
@@ -34,7 +36,6 @@ class TelebotBaseUsers:
     raise DeyeNotImplementedException('blocked_users')
 
   def is_user_allowed(self, user_id: int) -> bool:
-    self._validate_users(self.allowed_users)
     return any(user.id == user_id for user in self.allowed_users)
 
   def get_allowed_user(self, user_id: int) -> Optional[TelebotUser]:
@@ -44,17 +45,15 @@ class TelebotBaseUsers:
     return None
 
   def is_user_blocked(self, user_id: int) -> bool:
-    self._validate_users(self.blocked_users)
     return any(user.id == user_id for user in self.blocked_users)
 
-  def _validate_users(self, users: List[TelebotUser]):
+  def _validate_users(self, users: List[TelebotUser], text: str):
     """Validate that all users in the list have unique IDs."""
-    if DeyeUtils.is_tests_on():
-      log = logging.getLogger()
-      ids = [user.id for user in users]
-      duplicates = {i for i in ids if ids.count(i) > 1}
-      if duplicates:
-        msg = f"ERROR: duplicated user IDs detected: {duplicates}"
-        log.info(msg)
-        print(msg)
-        raise ValueError(msg)
+    log = logging.getLogger()
+    ids = [user.id for user in users]
+    duplicates = {i for i in ids if ids.count(i) > 1}
+    if duplicates:
+      msg = f"ERROR: duplicated user IDs detected in {text}: {duplicates}"
+      log.info(msg)
+      print(msg)
+      raise ValueError(msg)
