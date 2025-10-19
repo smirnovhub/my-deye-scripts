@@ -221,7 +221,7 @@ class UserChoices:
 
     UserChoices._is_global_handler_registered = True
 
-    @bot.callback_query_handler(func = lambda call: call.data.startswith(UserChoices._choice_prefix))
+    @bot.callback_query_handler(func = TelebotUtils.make_callback_query_filter(UserChoices._choice_prefix))
     def handle(call: telebot.types.CallbackQuery):
       """Handle choice buttons with one handler."""
       bot.answer_callback_query(call.id)

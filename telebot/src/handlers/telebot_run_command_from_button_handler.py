@@ -1,4 +1,5 @@
 import telebot
+
 from typing import cast
 
 from telebot_utils import TelebotUtils
@@ -18,7 +19,7 @@ class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
     and executed using process_new_messages().
     Otherwise, the callback will be handled as a normal inline button.
     """
-    @self.bot.callback_query_handler(func = lambda call: call.data and call.data.startswith('/'))
+    @self.bot.callback_query_handler(func = TelebotUtils.make_callback_query_filter('/'))
     def handle(call: telebot.types.CallbackQuery):
       if call.data:
         # If callback_data looks like a command (starts with '/'),

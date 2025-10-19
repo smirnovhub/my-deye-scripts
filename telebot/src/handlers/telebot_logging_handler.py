@@ -26,16 +26,23 @@ class TelebotLoggingHandler(TelebotBaseHandler):
   def register_handlers(self):
     @self.bot.middleware_handler(update_types = ['message'])
     def handle_message(bot: telebot.TeleBot, message: telebot.types.Message):
-      self.log_event(user = message.from_user, event_type = 'message', content = repr(message.text))
+      self.log_event(
+        user = message.from_user,
+        event_type = 'send_message',
+        content = repr(message.text),
+      )
 
     @self.bot.middleware_handler(update_types = ['callback_query'])
     def handle_callback(bot: telebot.TeleBot, call: telebot.types.CallbackQuery):
-      button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data) if call.data else None
+      button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message),
+                                                      call.data) if call.data else None
       button_text = button.text if button is not None else 'Unknown'
 
-      self.log_event(user = call.from_user,
-                     event_type = 'button',
-                     content = f'text = {repr(button_text)}, data = {repr(call.data)}')
+      self.log_event(
+        user = call.from_user,
+        event_type = 'press_button',
+        content = f'text = {repr(button_text)}, data = {repr(call.data)}',
+      )
 
   def log_event(self, user: Optional[telebot.types.User], event_type: str, content: str):
     if user is None:
