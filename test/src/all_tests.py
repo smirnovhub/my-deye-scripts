@@ -32,15 +32,32 @@ from telebot_test_utils import TelebotTestUtils
 start_time = datetime.datetime.now()
 scripts = TelebotTestUtils.find_tests()
 
+success_count = 0
+failed_count = 0
+
 for i, script in enumerate(scripts):
-  print(f"\n--- RUNNING {i + 1}/{len(scripts)} {script} ---\n")
+  br = '\n' if i > 0 else ''
+  print(f"{br}--- RUNNING {i + 1}/{len(scripts)} {script} ---\n")
+
   time.sleep(3)
+
+  test_start_time = datetime.datetime.now()
+
   result = subprocess.run([sys.executable, "-u", script])
+
+  t = DeyeUtils.format_timedelta(datetime.datetime.now() - test_start_time, add_seconds = True)
   if result.returncode != 0:
-    t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-    print(f"\nError: {script} exited with code {result.returncode}. Tests failed after {t}.")
-    sys.exit(result.returncode)
+    print(f"\nError: {script} exited with code {result.returncode}. Test failed after {t}")
+    failed_count += 1
+  else:
+    print(f"\n{script}: test completed successfully after {t}")
+    success_count += 1
 
 t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-print('\nAll tests completed successfully.')
-print(f"Total execution time: {t}")
+
+if success_count == 0:
+  print(f'\nAll tests failed after {t}')
+elif success_count == len(scripts):
+  print(f'\nAll tests completed successfully after {t}')
+else:
+  print(f'\n{failed_count} test(s) failed and {success_count} test(s) completed successfully after {t}')
