@@ -28,6 +28,19 @@ class TelebotBaseTestModule:
   def run_tests(self, servers: List[SolarmanServer]):
     raise NotImplementedError(f'{self.__class__.__name__}: run_tests() is not implemented')
 
+  def get_master_server(self, servers: List[SolarmanServer]) -> SolarmanServer:
+    master_server: Optional[SolarmanServer] = None
+
+    for srv in servers:
+      if srv.name == self.loggers.master.name:
+        master_server = srv
+        break
+
+    if master_server is None:
+      raise DeyeKnownException('Master server not found')
+
+    return master_server
+
   def get_all_registered_commands(self) -> List[str]:
     """
     Retrieve all command names registered via @bot.message_handler decorators.
@@ -98,17 +111,31 @@ class TelebotBaseTestModule:
 
   def wait_for_text_regex_and_get_undo_data(self, text: str) -> str:
     def check_message() -> str:
-      undo_data = self.bot.get_undo_data_regex(text)
-      if undo_data is None:
+      data = self.bot.get_undo_data_regex(text)
+      if data is None:
         raise DeyeKnownException(f"Waiting for message with undo '{text}'...")
-      return str(undo_data)
+      return str(data)
 
     self.log.info(f"Waiting for message with undo '{text}'...")
-    undo_data = self.call_with_retry(check_message)
+    result = self.call_with_retry(check_message)
     self.log.info(f"Received message with undo '{text}'")
     self.bot.clear_messages()
 
-    return str(undo_data)
+    return str(result)
+
+  def wait_for_text_regex_and_get_buttons_data(self, text: str) -> List[str]:
+    def check_message() -> List[str]:
+      data = self.bot.get_buttons_data_regex(text)
+      if data is None:
+        raise DeyeKnownException(f"Waiting for message with buttons '{text}'...")
+      return data
+
+    self.log.info(f"Waiting for message with buttons '{text}'...")
+    result = self.call_with_retry(check_message)
+    self.log.info(f"Received message with buttons '{text}'")
+    self.bot.clear_messages()
+
+    return result
 
   def wait_for_server_changes(self, server: SolarmanServer, register: DeyeRegister):
     def check_server():

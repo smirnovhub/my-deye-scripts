@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from datetime import datetime
 
@@ -13,6 +13,24 @@ from deye_registers import DeyeRegisters
 from deye_test_helper import DeyeTestHelper
 
 class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
+  """
+  Module `TelebotInverterTimeSyncTestModule` tests the **inverter time
+  synchronization** feature via the Telegram bot.
+
+  The goal is to ensure that the bot correctly synchronizes the inverter's
+  system time with the server time, handling large time differences with
+  user confirmation when needed.
+
+  **Test flow:**
+  - Selects the inverter system time register and sets a random time on the server.  
+  - Sends the time sync command via the bot (regular command and button click).  
+  - If the time difference exceeds a threshold, confirms the synchronization prompt.  
+  - Verifies that the inverter's time is updated correctly on the server.  
+  - Checks that the bot reports the change from the old to the new time.  
+
+  This module ensures reliable time synchronization, proper handling of large
+  time differences, and correct reporting by the bot.
+  """
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
     self.registers = DeyeRegisters()
@@ -27,18 +45,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
-    self.log.info(f'Running module {type(self).__name__}...')
-
-    master_server: Optional[SolarmanServer] = None
-
-    for srv in servers:
-      if srv.name == self.loggers.master.name:
-        master_server = srv
-        break
-
-    if master_server is None:
-      self.error(f'Master server not found')
-      return
+    master_server = self.get_master_server(servers)
 
     register = self.registers.inverter_system_time_register
 
@@ -111,4 +118,3 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.wait_for_server_changes(master_server, register)
 
     self.log.info('Seems inverter time sync works correctly')
-    self.log.info(f'Module {type(self).__name__} done successfully')
