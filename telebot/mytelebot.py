@@ -8,7 +8,7 @@ from telebot_base_handler import TelebotBaseHandler
 from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item import TelebotMenuItem
 from telebot_logging_handler import TelebotLoggingHandler
-from telebot_menu_request_access import TelebotMenuRequestAccess
+from telebot_menu_start import TelebotMenuStart
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_menu_all_info import TelebotMenuAllInfo
 from telebot_menu_sync_time import TelebotMenuSyncTime
@@ -127,7 +127,7 @@ class MyTelebot:
 
   def get_default_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
     return [
-      TelebotMenuRequestAccess(bot),
+      TelebotMenuStart(bot),
     ]
 
   def get_authorized_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:

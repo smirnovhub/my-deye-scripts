@@ -8,7 +8,7 @@ class TelebotMenuItem(Enum):
   _description: str
   _system_type: DeyeSystemType
 
-  request_access = ('request_access', 'Request access')
+  start = ('start', 'Start')
   restart = ('restart', 'Restart bot', DeyeSystemType.none)
   revert = ('revert', 'Revert bot', DeyeSystemType.none)
   update = ('update', 'Update bot', DeyeSystemType.none)
