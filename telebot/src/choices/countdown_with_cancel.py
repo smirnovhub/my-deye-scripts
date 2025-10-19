@@ -1,27 +1,28 @@
+import time
 import telebot
 import threading
-import time
 
+from dataclasses import dataclass
 from typing import Callable, Dict
 
-from telebot_constants import TelebotConstants
 from telebot_utils import TelebotUtils
+from telebot_constants import TelebotConstants
+
+@dataclass
+class CountdownEntry:
+  stop_event: threading.Event
+  on_cancel: Callable[[int], None]
+  on_finish: Callable[[int], None]
+  text: str
+  chat_id: int
+  keyboard: telebot.types.InlineKeyboardMarkup
 
 class CountdownWithCancel:
   # Unique prefix for countdown cancel buttons
   _countdown_prefix = "_countdown_"
 
-  # Private keys for entries in _countdown_callbacks (lowercase, private)
-  _stop_event_str = "stop_event"
-  _on_cancel_str = "on_cancel"
-  _on_finish_str = "on_finish"
-  _text_str = "text"
-  _chat_id_str = "chat_id"
-  _keyboard_str = "keyboard"
-
   # Global storage for countdown states, keyed by message_id
-  # Each value is a dict with keys: 'stop_event', 'on_cancel', 'on_finish', 'text', 'chat_id', 'keyboard'
-  _countdown_callbacks: Dict[int, dict] = {}
+  _countdown_callbacks: Dict[int, CountdownEntry] = {}
 
   # Flag to ensure we register the global callback handler only once per bot instance
   _is_global_handler_registered = False
@@ -52,7 +53,7 @@ class CountdownWithCancel:
         on_finish: Callback executed when countdown ends normally. Receives chat_id.
         on_cancel: Optional callback executed when countdown is cancelled. Receives chat_id.
     """
-    # --- Create keyboard with one Cancel button using your helper ---
+    # Create keyboard with one Cancel button using your helper
     cancel_keyboard = TelebotUtils.get_keyboard_for_choices(
       options = {"Cancel": "btn"},
       max_per_row = 1,
@@ -66,14 +67,14 @@ class CountdownWithCancel:
     stop_event = threading.Event()
 
     # Store state globally keyed by message_id so global handler can find it
-    CountdownWithCancel._countdown_callbacks[message.message_id] = {
-      CountdownWithCancel._stop_event_str: stop_event,
-      CountdownWithCancel._on_cancel_str: on_cancel,
-      CountdownWithCancel._on_finish_str: on_finish,
-      CountdownWithCancel._text_str: text,
-      CountdownWithCancel._chat_id_str: chat_id,
-      CountdownWithCancel._keyboard_str: cancel_keyboard,
-    }
+    CountdownWithCancel._countdown_callbacks[message.message_id] = CountdownEntry(
+      stop_event = stop_event,
+      on_cancel = on_cancel,
+      on_finish = on_finish,
+      text = text,
+      chat_id = chat_id,
+      keyboard = cancel_keyboard,
+    )
 
     CountdownWithCancel._register_global_handler(bot)
 
@@ -97,6 +98,7 @@ class CountdownWithCancel:
       CountdownWithCancel._countdown_callbacks.pop(message.message_id, None)
 
       stop_event.set()
+
       try:
         bot.delete_message(chat_id, message.message_id)
       except Exception:
@@ -105,18 +107,19 @@ class CountdownWithCancel:
       if called_from_user:
         try:
           on_cancel(chat_id)
-        except Exception:
-          pass
+        except Exception as e:
+          bot.send_message(chat_id, str(e))
       else:
         try:
           on_finish(chat_id)
-        except Exception:
-          pass
+        except Exception as e:
+          bot.send_message(chat_id, str(e))
 
     def countdown_loop():
       for sec_left in range(seconds - 1, -1, -1):
         if stop_event.is_set():
           return
+
         time.sleep(1)
 
         if stop_event.is_set():
@@ -155,7 +158,6 @@ class CountdownWithCancel:
     - If the user sent a command (text starting with '/'), forwards it to
       the normal command handler.
     """
-
     # If countdown still running — stop it and update the original countdown message
     if not stop_event.is_set():
       stop_event.set()
@@ -170,8 +172,8 @@ class CountdownWithCancel:
 
       try:
         on_cancel(message.chat.id)
-      except Exception:
-        pass
+      except Exception as e:
+        bot.send_message(message.chat.id, str(e))
 
     TelebotUtils.remove_inline_buttons_with_delay(
       bot = bot,
@@ -193,7 +195,7 @@ class CountdownWithCancel:
 
     CountdownWithCancel._is_global_handler_registered = True
 
-    @bot.callback_query_handler(func = lambda call: call.data.startswith(CountdownWithCancel._countdown_prefix))
+    @bot.callback_query_handler(func = TelebotUtils.make_callback_query_filter(CountdownWithCancel._countdown_prefix))
     def _global_handle_cancel(call: telebot.types.CallbackQuery):
       """
       Global handler for Cancel buttons of countdowns.
@@ -217,20 +219,15 @@ class CountdownWithCancel:
           pass
         return
 
-      stop_event_local = entry[CountdownWithCancel._stop_event_str]
-      chat_id_local = entry[CountdownWithCancel._chat_id_str]
-      on_cancel_local = entry[CountdownWithCancel._on_cancel_str]
-
       # If not already stopped — stop and update message
-      if not stop_event_local.is_set():
-        stop_event_local.set()
+      if not entry.stop_event.is_set():
+        entry.stop_event.set()
         try:
-          bot.delete_message(chat_id_local, msg_id)
+          bot.delete_message(entry.chat_id, msg_id)
         except Exception:
           pass
 
-        if on_cancel_local:
-          try:
-            on_cancel_local(chat_id_local)
-          except Exception:
-            pass
+        try:
+          entry.on_cancel(entry.chat_id)
+        except Exception as e:
+          bot.send_message(entry.chat_id, str(e))
