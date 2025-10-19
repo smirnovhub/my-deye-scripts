@@ -45,11 +45,11 @@ loggers = DeyeLoggers()
 registers = DeyeRegisters()
 
 if not loggers.is_test_loggers:
-  log.info('Your loggers are not test loggers')
+  log.info('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 if not loggers.slaves:
-  log.info("You don't have slave loggers to run this test")
+  log.info("ERROR: you don't have slave loggers to run this test")
   sys.exit(1)
 
 servers: List[SolarmanServer] = []
