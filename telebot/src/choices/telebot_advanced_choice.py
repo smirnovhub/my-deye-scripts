@@ -6,15 +6,46 @@ from dataclasses import dataclass
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 
+# Represents a single button choice with display text and associated data
 @dataclass
 class AdvancedChoiceButton:
   text: str
   data: str
 
+# Holds all information required to render and track a paginated list of options
+@dataclass
+class PagedOptions:
+  # Available options (label → value)
+  options: Dict[str, str]
+  # Message text above the buttons
+  text: str
+  # Callback when user makes a choice
+  callback: Callable[[int, AdvancedChoiceButton], None]
+  # Current page number
+  page: int
+  # Number of option rows per page
+  max_lines_per_page: int
+  # Number of buttons per row
+  max_per_row: int
+  # Telegram chat ID for this message
+  chat_id: int
+  # Total number of pages
+  total_pages: int
+
 class AdvancedChoice:
-  _choice_callbacks: Dict[int, Callable[[int, AdvancedChoiceButton], None]] = {}
+  # Prefix used to identify all callback_data strings for this feature
   _choice_prefix = '_adv_choice_'
+
+  # Constants for navigation / special buttons
+  _page_prev = "!prev!_"
+  _page_next = "!next!_"
+  _noop = "!noop!_"
+
+  # Prevents multiple registrations of the same callback handler
   _is_global_handler_registered = False
+
+  # Stores state of paged option menus by message_id
+  _paged_options: Dict[int, PagedOptions] = {}
 
   @staticmethod
   def ask_advanced_choice(
@@ -24,48 +55,51 @@ class AdvancedChoice:
     options: Dict[str, str],
     callback: Callable[[int, AdvancedChoiceButton], None],
     max_per_row: int = 5,
+    max_lines_per_page: int = 5,
   ) -> telebot.types.Message:
     """
-    Sends a message to the specified chat with an inline keyboard containing
-    a list of options for the user to choose from. Each option has a display
-    text and an associated data value.
-
-    When the user presses a button, the provided callback is called with a
-    dictionary containing 'text' and 'data' of the chosen option.
-
-    Parameters:
-        bot (telebot.TeleBot): The bot instance used to send messages.
-        chat_id (int): The Telegram chat ID where the message should be sent.
-        text (str): The text shown above the choice buttons.
-        options (Dict[str, str]): Mapping from button text to associated data.
-        callback (Callable[[int, Dict[str, str]]]): Function called when the user
-                                                      presses a button. Receives
-                                                      chat_id and dict with
-                                                      'text' and 'data'.
-        max_per_row (int, optional): Maximum number of buttons per row. Default is 5.
-
-    Returns:
-        telebot.types.Message: The sent message object.
+    Sends a message with paginated inline keyboard choices.
+    - Registers global callback handler if not already registered.
+    - Saves menu state in _paged_options.
+    - Displays the first page.
     """
+    # If there are no options, send plain text message
     if not options:
       return bot.send_message(chat_id, text, parse_mode = 'HTML')
 
-    # Ensure the global callback handler is registered
+    # Validate that option values do not conflict with reserved navigation/noop
+    try:
+      AdvancedChoice._validate_option_values(options)
+    except Exception as e:
+      return bot.send_message(chat_id, f'{AdvancedChoice.__name__}: {str(e)}')
+
+    # Ensure the callback handler is registered only once
     AdvancedChoice._register_global_handler(bot)
 
-    # Create callback_data mapping for buttons
-    # Format: _choice_prefix + button_text + "_" to identify button presses
-    options_dict = {text: f"{AdvancedChoice._choice_prefix}{data}_" for text, data in options.items()}
+    # Initialize menu state
+    page_data = PagedOptions(
+      options = options,
+      text = text,
+      callback = callback,
+      page = 0,
+      max_lines_per_page = max_lines_per_page,
+      max_per_row = max_per_row,
+      chat_id = chat_id,
+      total_pages = (len(options) + max_lines_per_page - 1) // max_lines_per_page,
+    )
 
-    # Generate inline keyboard
-    keyboard = TelebotUtils.get_keyboard_for_choices(options_dict, max_per_row)
+    # Save state before sending
+    # We'll use message_id as key after sending
+    # Create keyboard for first page
+    keyboard = AdvancedChoice._build_keyboard_for_page(page_data)
 
-    # Send message with inline keyboard
+    # Send the message already with first page keyboard
     message = bot.send_message(chat_id, text, reply_markup = keyboard, parse_mode = 'HTML')
 
-    # Store callback function associated with this message
-    AdvancedChoice._choice_callbacks[message.message_id] = callback
+    # Save state with actual message_id
+    AdvancedChoice._paged_options[message.message_id] = page_data
 
+    # Register a next-step handler (used if user sends new message instead of clicking)
     bot.register_next_step_handler(
       message,
       AdvancedChoice._user_advanced_choice_next_step_handler,
@@ -77,26 +111,149 @@ class AdvancedChoice:
     return message
 
   @staticmethod
+  def _validate_option_values(options: Dict[str, str]):
+    """
+    Ensures that none of the option values conflict with reserved navigation
+    or noop identifiers. Raises ValueError if a conflict is found.
+    """
+    reserved_values = [
+      AdvancedChoice._page_prev.rstrip("_"),
+      AdvancedChoice._page_next.rstrip("_"),
+      AdvancedChoice._noop.rstrip("_")
+    ]
+
+    for value in options.values():
+      if value in reserved_values:
+        raise ValueError(f"option value '{value}' is reserved and cannot be used as a button data.")
+
+  @staticmethod
+  def _build_keyboard_for_page(page_data: PagedOptions) -> telebot.types.InlineKeyboardMarkup:
+    """
+    Builds an InlineKeyboardMarkup for a given PagedOptions page.
+    Fills empty slots with placeholder buttons to keep last page layout uniform.
+    Adds navigation buttons (Prev / Next) and a center page indicator if needed.
+    Returns the keyboard ready to use in send_message or edit_message_text.
+    """
+    # Extract options for current page
+    options_list = list(page_data.options.items())
+    page = page_data.page
+    max_lines = page_data.max_lines_per_page
+    max_per_row = page_data.max_per_row
+
+    start = page * max_lines
+    end = start + max_lines
+    page_options = options_list[start:end] # list of (text, data) tuples
+
+    # Build list of InlineKeyboardButton for actual options
+    buttons = []
+    for text, data in page_options:
+      buttons.append(
+        telebot.types.InlineKeyboardButton(
+          text,
+          callback_data = data if data.startswith('/') else f"{AdvancedChoice._choice_prefix}{data}_",
+        ))
+
+    # Calculate total buttons needed to fill exactly max_lines * max_per_row slots
+    total_buttons_needed = min(max_lines * max_per_row, len(options_list))
+
+    # Fill remaining slots with non-clickable placeholders (use a callback with prefix)
+    while len(buttons) < total_buttons_needed:
+      buttons.append(
+        telebot.types.InlineKeyboardButton(
+          " ",
+          callback_data = f"{AdvancedChoice._choice_prefix}{AdvancedChoice._noop}",
+        ))
+
+    # Arrange buttons into rows
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    for i in range(0, len(buttons), max_per_row):
+      keyboard.row(*buttons[i:i + max_per_row])
+
+    # Hide navigation if all options fit on one page
+    if page_data.total_pages > 1:
+      prev_callback = f"{AdvancedChoice._choice_prefix}{AdvancedChoice._page_prev}"
+      next_callback = f"{AdvancedChoice._choice_prefix}{AdvancedChoice._page_next}"
+
+      prev_button = telebot.types.InlineKeyboardButton("Prev", callback_data = prev_callback)
+      next_button = telebot.types.InlineKeyboardButton("Next", callback_data = next_callback)
+
+      # Add center button showing current page (non-clickable / harmless callback)
+      page_label = f"{page + 1}/{page_data.total_pages}"
+      page_button = telebot.types.InlineKeyboardButton(
+        page_label,
+        callback_data = f"{AdvancedChoice._choice_prefix}{AdvancedChoice._page_next}",
+      )
+
+      # Put Prev, PageIndicator, Next on the same row
+      keyboard.row(prev_button, page_button, next_button)
+
+    return keyboard
+
+  @staticmethod
+  def _edit_message_with_page(bot: telebot.TeleBot, message_id: int):
+    """
+    Updates the message to display a specific page of options with navigation buttons.
+    Always adds two navigation buttons ("Prev" and "Next") when there are multiple pages.
+    Ensures the last page always contains exactly max_lines_per_page rows by filling
+    empty slots with placeholder buttons that have no meaningful callback.
+    """
+    page_data = AdvancedChoice._paged_options.get(message_id)
+    if not page_data:
+      return
+
+    keyboard = AdvancedChoice._build_keyboard_for_page(page_data)
+
+    # Try to edit the message text with updated keyboard
+    try:
+      bot.edit_message_text(
+        page_data.text,
+        chat_id = page_data.chat_id,
+        message_id = message_id,
+        reply_markup = keyboard,
+        parse_mode = 'HTML',
+      )
+    except Exception:
+      # Ignore exceptions (e.g., message already edited/deleted)
+      pass
+
+  @staticmethod
   def _register_global_handler(bot: telebot.TeleBot) -> None:
     """
-    Registers a global callback query handler for multiple-choice selections.
-
-    This handler:
-      - Captures all button presses that start with `_choice_prefix`.
-      - Acknowledges the button press.
-      - Removes inline buttons after a short delay.
-      - Invokes the stored callback with a dictionary containing 'text' and 'data'.
+    Registers a single global callback_query_handler for all advanced choice interactions.
+    Handles:
+      - Page navigation ("Prev" / "Next")
+      - User selections
     """
     if AdvancedChoice._is_global_handler_registered:
       return
-
     AdvancedChoice._is_global_handler_registered = True
 
-    @bot.callback_query_handler(func = lambda call: call.data.startswith(AdvancedChoice._choice_prefix))
+    @bot.callback_query_handler(func = TelebotUtils.make_callback_query_filter(AdvancedChoice._choice_prefix))
     def handle(call: telebot.types.CallbackQuery):
-      """Handle inline button presses for advanced choices."""
       bot.answer_callback_query(call.id)
 
+      data = call.data
+      msg_id = call.message.message_id
+      page_data = AdvancedChoice._paged_options.get(msg_id)
+
+      if not page_data:
+        return
+
+      # Handle page navigation buttons
+      if f"{AdvancedChoice._choice_prefix}{AdvancedChoice._noop}" == data:
+        return
+      elif f"{AdvancedChoice._choice_prefix}{AdvancedChoice._page_prev}" == data:
+        # Navigate to the prev page with circular behavior
+        page_data.page = (page_data.page - 1) % page_data.total_pages
+        AdvancedChoice._edit_message_with_page(bot, msg_id)
+        return
+      elif f"{AdvancedChoice._choice_prefix}{AdvancedChoice._page_next}" == data:
+        # Navigate to the next page with circular behavior
+        page_data.page = (page_data.page + 1) % page_data.total_pages
+        AdvancedChoice._edit_message_with_page(bot, msg_id)
+        return
+
+      # Handle specific option selection
       TelebotUtils.remove_inline_buttons_with_delay(
         bot = bot,
         chat_id = call.message.chat.id,
@@ -104,25 +261,28 @@ class AdvancedChoice:
         delay = TelebotConstants.buttons_remove_delay_sec,
       )
 
-      if call.data.startswith(AdvancedChoice._choice_prefix):
-        callback = AdvancedChoice._choice_callbacks.pop(call.message.message_id, None)
-        if callback:
-          choice_text = call.data[len(AdvancedChoice._choice_prefix):-1] # strip prefix & trailing "_"
-          # Build dictionary with button text and associated data
-          button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message), str(call.data))
-          choice = AdvancedChoiceButton(text = button.text if button else 'unknown', data = choice_text)
+      # Extract choice data from callback_data string
+      choice_text = data[len(AdvancedChoice._choice_prefix):-1]
+      button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message), str(data))
+      choice = AdvancedChoiceButton(text = button.text if button else 'unknown', data = choice_text)
 
-          try:
-            bot.edit_message_text(
-              f'{call.message.text} {choice.text}',
-              chat_id = call.message.chat.id,
-              message_id = call.message.message_id,
-              parse_mode = 'HTML',
-            )
-          except Exception:
-            pass
+      # Update message to reflect user’s selection
+      try:
+        bot.edit_message_text(
+          f'{call.message.text} {choice.text}',
+          chat_id = call.message.chat.id,
+          message_id = call.message.message_id,
+          parse_mode = 'HTML',
+        )
+      except Exception:
+        pass
 
-          callback(call.message.chat.id, choice)
+      # Remove saved state
+      AdvancedChoice._paged_options.pop(msg_id, None)
+
+      # Execute the callback
+      callback = page_data.callback
+      callback(call.message.chat.id, choice)
 
   @staticmethod
   def _user_advanced_choice_next_step_handler(
@@ -132,12 +292,10 @@ class AdvancedChoice:
     text: str,
   ):
     """
-    Handles the user's response after an advanced choice message is sent.
-    - Removes the inline keyboard from the original message.
-    - If the user sent a command (text starting with '/'), forwards it to
-      the normal command handler.
-    - Otherwise, does not process input (callback handling is not included
-      in this function).
+    Handles user messages after an advanced choice was asked.
+    - Removes inline buttons.
+    - If the user sends a command (starting with '/'), it forwards it to the bot.
+    - If the user sends anything else, marks the question as skipped.
     """
     TelebotUtils.remove_inline_buttons_with_delay(
       bot = bot,
@@ -147,6 +305,7 @@ class AdvancedChoice:
     )
 
     try:
+      # Indicate that user skipped the selection
       bot.edit_message_text(
         f'{text} skipped',
         chat_id = message.chat.id,
@@ -156,6 +315,6 @@ class AdvancedChoice:
     except Exception:
       pass
 
-    # if we received new command, process it
+    # Forward new commands to the bot
     if message.text.startswith('/'):
       bot.process_new_messages([message])
