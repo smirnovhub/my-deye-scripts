@@ -85,15 +85,33 @@ class TestableTelebot(telebot.TeleBot):
   def get_undo_data_regex(self, pattern: str) -> Optional[str]:
     for message in self.messages:
       if message.reply_markup is None:
-        return None
+        continue
 
       if not re.search(pattern, message.text, flags = re.IGNORECASE | re.DOTALL):
-        return None
+        continue
 
       for keyboards in message.reply_markup.keyboard:
         for keyboard in keyboards:
           if keyboard.text == TelebotConstants.undo_button_name:
             return keyboard.callback_data
+
+    return None
+
+  def get_buttons_data_regex(self, pattern: str) -> Optional[List[str]]:
+    for message in self.messages:
+      if not re.search(pattern, message.text, flags = re.IGNORECASE | re.DOTALL):
+        continue
+
+      if not message.reply_markup:
+        return []
+
+      result: List[str] = []
+      for keyboards in message.reply_markup.keyboard:
+        for keyboard in keyboards:
+          if keyboard.callback_data:
+            result.append(keyboard.callback_data)
+
+      return result
 
     return None
 

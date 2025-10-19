@@ -35,9 +35,9 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     user = TelebotTestUsers().test_user1
 
     self.log.info(f'Running module {type(self).__name__}: '
-                  f"name = '{self.name}' "
-                  f"command = '{self.command}' "
-                  f"register_creator = {type(self.register_creator(self.name)).__name__}'")
+                  f"name = '{self.name}', "
+                  f"command = '{self.command}', "
+                  f"register_creator = '{type(self.register_creator(self.name)).__name__}'")
 
     command = f'/{self.command.command.format(self.name)}'
 

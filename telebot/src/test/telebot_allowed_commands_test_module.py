@@ -10,6 +10,27 @@ from telebot_test_users import TelebotTestUsers
 from testable_telebot import TestableTelebot
 
 class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
+  """
+  Module `TelebotAllowedCommandsTestModule` verifies that the Telegram bot
+  enforces **command access rights** correctly for a specific allowed user.
+
+  The goal is to ensure that the user can only execute permitted commands
+  and register modifications, while all other commands are blocked.
+
+  **Test flow:**
+  - Defines allowed commands and registers for the user.  
+  - Identifies writable registers that are not allowed for modification.  
+  - Sends all registered commands without arguments:
+    - Allowed registers → bot prompts for current value input.  
+    - Allowed commands → bot responds with relevant info.  
+    - Disabled registers → bot informs the user they cannot change it.  
+    - Any other command → bot responds that it is not allowed.  
+  - Sends commands with arguments for disallowed registers and commands:
+    - Confirms that the bot rejects unauthorized changes.  
+
+  This module ensures that command permissions and access controls are
+  enforced correctly for the user.
+  """
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
 
@@ -20,8 +41,6 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
   def run_tests(self, servers: List[SolarmanServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
-
-    self.log.info(f'Running module {type(self).__name__}...')
 
     user = TelebotTestUsers().test_user3
     registers = DeyeRegisters()
@@ -82,4 +101,3 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
         self.wait_for_text('Command is not allowed')
 
     self.log.info('Seems commands access rights processed correctly')
-    self.log.info(f'Module {type(self).__name__} done successfully')

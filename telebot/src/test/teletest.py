@@ -30,7 +30,10 @@ from telebot_allowed_commands_test_module import TelebotAllowedCommandsTestModul
 from telebot_writable_registers_test1_module import TelebotWritableRegistersTest1Module
 from telebot_writable_registers_test2_module import TelebotWritableRegistersTest2Module
 from telebot_writable_registers_test3_module import TelebotWritableRegistersTest3Module
+from telebot_writable_registers_test4_module import TelebotWritableRegistersTest4Module
+from telebot_writable_registers_test5_module import TelebotWritableRegistersTest5Module
 from telebot_writable_registers_undo_test_module import TelebotWritableRegistersUndoTestModule
+from telebot_writable_registers_buttons_test_module import TelebotWritableRegistersButtonsTestModule
 from telebot_send_message import send_private_telegram_message
 
 class TeleTest:
@@ -60,7 +63,9 @@ class TeleTest:
       for i, module in enumerate(modules):
         start_time = datetime.datetime.now()
         self._clear_data(servers, log)
+        log.info(f'Running module {type(module).__name__}...')
         module.run_tests(servers)
+        log.info(f'Module {type(module).__name__} done successfully')
       print(DeyeTestHelper.test_success_str)
       log.info(DeyeTestHelper.test_success_str)
     except Exception as e:
@@ -93,7 +98,10 @@ class TeleTest:
       TelebotWritableRegistersTest1Module(bot),
       TelebotWritableRegistersTest2Module(bot),
       TelebotWritableRegistersTest3Module(bot),
+      TelebotWritableRegistersTest4Module(bot),
+      TelebotWritableRegistersTest5Module(bot),
       TelebotWritableRegistersUndoTestModule(bot),
+      TelebotWritableRegistersButtonsTestModule(bot),
       TelebotInverterTimeSyncTestModule(bot),
       TelebotRegistersTestModule(
         bot,
