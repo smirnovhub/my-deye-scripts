@@ -319,6 +319,11 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           parse_mode = "HTML",
         )
     finally:
+      try:
+        os.remove(zip_file_name)
+      except Exception:
+        pass
+
       self.remove_logs(scripts)
 
   def create_combined_zip(self, files: List[str]) -> str:
@@ -336,10 +341,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     Returns:
       str: The name of the created ZIP file (relative to the current working directory).
     """
-    name_with_date = f"test-logs-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.zip"
+    zip_file_name = os.path.join(
+      self.logs_path,
+      f"test-logs-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.zip",
+    )
 
-    with zipfile.ZipFile(name_with_date, 'w', zipfile.ZIP_DEFLATED) as zf:
+    with zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_DEFLATED) as zf:
       for file_path in files:
         zf.write(file_path, arcname = os.path.basename(file_path))
 
-    return name_with_date
+    return zip_file_name
