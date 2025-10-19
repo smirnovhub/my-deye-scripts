@@ -40,8 +40,13 @@ loggers = DeyeLoggers()
 log = logging.getLogger()
 start_time = time.time()
 
+token = os.getenv('BOT_API_TEST_TOKEN', '')
+if not token:
+  log.info('ERROR: BOT_API_TEST_TOKEN not found in your environment')
+  sys.exit(1)
+
 if not loggers.is_test_loggers:
-  log.info('Your loggers are not test loggers')
+  log.info('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 commands = [
