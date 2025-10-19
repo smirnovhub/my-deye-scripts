@@ -22,6 +22,7 @@
     "../deye/src/solarman",
     "../deye/src/solarman/server",
     "../deye/src/utils",
+    "../telebot/src/test",
     "src"
   ],
   "python.analysis.useImportHeuristic": true,
