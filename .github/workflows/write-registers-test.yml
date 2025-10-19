@@ -34,3 +34,4 @@ jobs:
         run: |
           python -u test/src/deye_write_registers_test_1.py
           python -u test/src/deye_write_registers_test_2.py
+          python -u test/src/deye_write_registers_test_3.py

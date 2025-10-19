@@ -35,7 +35,7 @@ DeyeUtils.turn_tests_on()
 logging.basicConfig(
   level = logging.INFO,
   format = "[%(asctime)s] [%(levelname)s] %(message)s",
-  datefmt = "%Y-%m-%d %H:%M:%S",
+  datefmt = DeyeUtils.time_format_str,
 )
 
 log = logging.getLogger()
@@ -54,8 +54,6 @@ server = SolarmanServer(
   serial = logger.serial,
   port = logger.port,
 )
-
-all_found = True
 
 for register in registers.all_registers:
   if not register.can_write:

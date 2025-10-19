@@ -223,7 +223,7 @@ class DeyeUtils:
       return DeyeUnknownException(f'{message}: {str(e)}')
 
   @staticmethod
-  def is_tests_on():
+  def is_tests_on() -> bool:
     return os.getenv('TEST_RUN', '').strip().lower() == 'true'
 
   @staticmethod
@@ -231,10 +231,10 @@ class DeyeUtils:
     os.environ['TEST_RUN'] = 'true'
 
   @staticmethod
-  def get_test_retry_count():
+  def get_test_retry_timeout() -> int:
     from deye_loggers import DeyeLoggers
     loggers = DeyeLoggers()
-    return 15 + loggers.count * 4
+    return 5 + loggers.count * 2
 
   @staticmethod
   def get_current_time() -> datetime:

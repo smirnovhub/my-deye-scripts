@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import logging
 import subprocess
 
@@ -32,11 +33,12 @@ DeyeUtils.turn_tests_on()
 logging.basicConfig(
   level = logging.INFO,
   format = "[%(asctime)s] [%(levelname)s] %(message)s",
-  datefmt = "%Y-%m-%d %H:%M:%S",
+  datefmt = DeyeUtils.time_format_str,
 )
 
 loggers = DeyeLoggers()
 log = logging.getLogger()
+start_time = time.time()
 
 if not loggers.is_test_loggers:
   log.info('Your loggers are not test loggers')
@@ -63,6 +65,7 @@ str_to_find = DeyeTestHelper.test_success_str.lower()
 
 if str_to_find in output.lower():
   log.info(f"String '{str_to_find}' found. Test is ok")
+  log.info(f"Execution time: {round(time.time() - start_time, 3)} sec")
   sys.exit(0)
 else:
   log.info(f"String '{str_to_find}' not found. Test failed")
