@@ -130,8 +130,42 @@ class TelebotUtils:
     return keyboard
 
   @staticmethod
+  def make_callback_query_filter(prefix: str):
+    """
+    Creates a callback query filter function for use with TeleBot's
+    `callback_query_handler`.
+
+    The returned function checks whether the received `CallbackQuery`
+    object has non-empty `data` and whether it starts with the specified
+    prefix string. Useful for registering different handlers for
+    callback commands with distinct prefixes.
+
+    Args:
+        prefix (str): The prefix that `call.data` must start with (e.g., "/").
+
+    Returns:
+        A filter function compatible with `callback_query_handler(func=...)`
+        that returns True when the callback data starts with the given prefix.
+    """
+    def filter_func(call):
+      return isinstance(call, telebot.types.CallbackQuery) and call.data and call.data.startswith(prefix)
+
+    return filter_func
+
+  @staticmethod
   def stop_bot(bot: telebot.TeleBot):
+    """
+    Gracefully stops the running TeleBot instance and terminates the process.
+
+    This method first calls `bot.stop_bot()` to stop all polling and background
+    threads associated with the TeleBot instance. If the bot shuts down correctly,
+    the process should naturally exit. However, as a safeguard, the method waits
+    a minute and then forcefully terminates the process using `os._exit(1)`.
+
+    Args:
+        bot (telebot.TeleBot): The TeleBot instance to stop.
+    """
     bot.stop_bot()
+    time.sleep(60)
     # exit will never fire if bot has stopped in right way
-    time.sleep(45)
     os._exit(1)

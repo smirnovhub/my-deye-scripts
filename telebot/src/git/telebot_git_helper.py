@@ -92,7 +92,7 @@ class TelebotGitHelper:
 
     return last_commit
 
-  def get_last_commits(self, pr_max_count: int = 5, regular_commits_max_count = 10) -> Dict[str, str]:
+  def get_last_commits(self, pr_max_count: int = 5, regular_commits_max_count = 25) -> Dict[str, str]:
     """
     Get all merge commits of the format "Merge pull request #<number>" in the local repository.
     If no merge commits are found, return the last `max_count` commits.

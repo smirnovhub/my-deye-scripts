@@ -45,7 +45,7 @@ loggers = DeyeLoggers()
 registers = DeyeRegisters()
 
 if not loggers.is_test_loggers:
-  log.info('Your loggers are not test loggers')
+  log.info('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 logger = loggers.master

@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 import time
 import subprocess
@@ -15,6 +14,7 @@ from common_utils import CommonUtils
 from deye_file_lock import DeyeFileLock
 from deye_file_locker import DeyeFileLocker
 from telebot_menu_item import TelebotMenuItem
+from telebot_test_utils import TelebotTestUtils
 from testable_telebot import TestableTelebot
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
@@ -54,7 +54,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     DeyeUtils.ensure_dir_exists(self.logs_path)
 
     tests_base_dir = '../test/src'
-    scripts = self.find_py_files(tests_base_dir)
+    scripts = TelebotTestUtils.find_tests(tests_base_dir)
 
     self.remove_logs(scripts)
 
@@ -141,27 +141,6 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       self.locker.release()
     except Exception:
       pass
-
-  def find_py_files(self, base_path: str = ".") -> List[str]:
-    """
-    Recursively search for Python test files matching patterns:
-      - *_test.py
-      - *_test_<number>.py
-    Returns their relative paths.
-    """
-    pattern = re.compile(r".*_test(?:_\d+)?\.py$")
-    matched_files = []
-
-    base_path = os.path.normpath(base_path)
-
-    for root, _, files in os.walk(base_path):
-      for f in files:
-        if pattern.match(f):
-          rel_path = os.path.relpath(os.path.join(root, f))
-          matched_files.append(rel_path)
-
-    matched_files.sort()
-    return matched_files
 
   def remove_logs(self, scripts: List[str]):
     for script in scripts:
@@ -319,6 +298,11 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           parse_mode = "HTML",
         )
     finally:
+      try:
+        os.remove(zip_file_name)
+      except Exception:
+        pass
+
       self.remove_logs(scripts)
 
   def create_combined_zip(self, files: List[str]) -> str:
@@ -336,10 +320,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     Returns:
       str: The name of the created ZIP file (relative to the current working directory).
     """
-    name_with_date = f"test-logs-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.zip"
+    zip_file_name = os.path.join(
+      self.logs_path,
+      f"test-logs-{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.zip",
+    )
 
-    with zipfile.ZipFile(name_with_date, 'w', zipfile.ZIP_DEFLATED) as zf:
+    with zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_DEFLATED) as zf:
       for file_path in files:
         zf.write(file_path, arcname = os.path.basename(file_path))
 
-    return name_with_date
+    return zip_file_name

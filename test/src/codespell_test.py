@@ -33,7 +33,7 @@ def run_test(path: str):
     text = True,
   )
 
-  output = result.stdout.strip() + '\n' + result.stderr.strip()
+  output = (result.stdout.strip() + '\n' + result.stderr.strip()).strip()
   log.info(f'Command output: {output}')
 
   if result.returncode != 0:

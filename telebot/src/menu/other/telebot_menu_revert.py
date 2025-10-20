@@ -10,7 +10,7 @@ from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_git_helper import TelebotGitHelper
 from telebot_constants import TelebotConstants
 from telebot_user_choices import UserChoices
-from telebot_command_choice import CommandChoice
+from telebot_advanced_choice import AdvancedChoice
 from countdown_with_cancel import CountdownWithCancel
 
 class TelebotMenuRevert(TelebotMenuItemHandler):
@@ -63,7 +63,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       return
 
     if last_commits:
-      sent = CommandChoice.ask_command_choice(
+      sent = AdvancedChoice.ask_advanced_choice(
         self.bot,
         message.chat.id,
         f"You are currently on branch '{branch_name}'.\n"
@@ -72,6 +72,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
           item: f"/revert {hash}"
           for item, hash in last_commits.items()
         },
+        callback = lambda _, __: None,
         max_per_row = 1,
       )
     else:

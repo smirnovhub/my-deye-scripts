@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from deye_register import DeyeRegister
 from telebot_test_users import TelebotTestUsers
@@ -43,20 +43,9 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
-    self.log.info(f'Running module {type(self).__name__}...')
-
     self.bot.clear_messages()
 
-    master_server: Optional[SolarmanServer] = None
-
-    for srv in servers:
-      if srv.name == self.loggers.master.name:
-        master_server = srv
-        break
-
-    if master_server is None:
-      self.error('Master server not found')
-      return
+    master_server = self.get_master_server(servers)
 
     master_server.clear_registers()
     master_server.clear_registers_status()
@@ -114,7 +103,6 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
       self.wait_for_text_regex(rf'{register.description}.+changed from .+ to ')
 
     self.log.info('Seems all writable registers processed correctly')
-    self.log.info(f'Module {type(self).__name__} done successfully')
 
   def _check_results(self, server: SolarmanServer, registers: List[DeyeRegister]):
     for register in registers:

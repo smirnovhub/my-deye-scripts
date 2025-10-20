@@ -19,7 +19,7 @@ class StepState:
 
 class SequentialChoices:
   # Prefix for sequential choice buttons
-  _sequential_prefix_str = "_seq_"
+  _seq_prefix = "_seq_"
 
   # Storage for sequential step states: chat_id -> state
   _step_states: Dict[int, StepState] = {}
@@ -59,9 +59,19 @@ class SequentialChoices:
 
     # Send initial message with first step buttons
     first_step_options = options[0]
-    keyboard = TelebotUtils.get_keyboard_for_choices(first_step_options, max_per_row,
-                                                     SequentialChoices._sequential_prefix_str)
-    message = bot.send_message(chat_id, text, reply_markup = keyboard, parse_mode = "HTML")
+
+    keyboard = TelebotUtils.get_keyboard_for_choices(
+      first_step_options,
+      max_per_row,
+      SequentialChoices._seq_prefix,
+    )
+
+    message = bot.send_message(
+      chat_id,
+      text,
+      reply_markup = keyboard,
+      parse_mode = "HTML",
+    )
 
     # Initialize state for this chat
     SequentialChoices._step_states[chat_id] = StepState(
@@ -127,7 +137,7 @@ class SequentialChoices:
 
     SequentialChoices._is_global_handler_registered = True
 
-    @bot.callback_query_handler(func = lambda c: SequentialChoices._is_valid_sequential_choice(bot, c))
+    @bot.callback_query_handler(func = TelebotUtils.make_callback_query_filter(SequentialChoices._seq_prefix))
     def handle_sequential_choice(call: telebot.types.CallbackQuery):
       chat_id = call.message.chat.id
       state = SequentialChoices._step_states.get(chat_id)
@@ -144,12 +154,19 @@ class SequentialChoices:
         # No active sequential step for this chat
         return
 
+      step_idx = state.current_step
       options_array = state.options
+      if step_idx >= len(options_array):
+        return
+
+      clean_data = call.data[len(SequentialChoices._seq_prefix):]
+      if not clean_data in options_array[step_idx].values():
+        return
+
       message_id = state.message_id
       max_per_row = state.max_per_row
 
       # Save the choice (without prefix)
-      clean_data = call.data[len(SequentialChoices._sequential_prefix_str):]
       state.results.append(clean_data)
       state.current_step += 1
 
@@ -163,41 +180,16 @@ class SequentialChoices:
           message_id = message_id,
           delay = TelebotConstants.buttons_remove_delay_sec,
         )
+
         state.final_callback(chat_id, state.results)
         del SequentialChoices._step_states[chat_id]
         return
 
       # Otherwise, send next step buttons
       next_options = options_array[state.current_step]
-      keyboard = TelebotUtils.get_keyboard_for_choices(next_options, max_per_row,
-                                                       SequentialChoices._sequential_prefix_str)
-      bot.edit_message_reply_markup(chat_id = chat_id, message_id = message_id, reply_markup = keyboard)
+      keyboard = TelebotUtils.get_keyboard_for_choices(next_options, max_per_row, SequentialChoices._seq_prefix)
 
-  @staticmethod
-  def _is_valid_sequential_choice(bot: telebot.TeleBot, call: telebot.types.CallbackQuery) -> bool:
-    """
-    Check if the callback belongs to an active sequential choice step.
-    """
-    if not call.data.startswith(SequentialChoices._sequential_prefix_str):
-      return False
-
-    chat_id = call.message.chat.id
-    state = SequentialChoices._step_states.get(chat_id)
-
-    # If no state exists (bot restarted), remove buttons
-    if not state:
-      TelebotUtils.remove_inline_buttons_with_delay(
-        bot = bot,
-        chat_id = chat_id,
-        message_id = call.message.message_id,
-        delay = TelebotConstants.buttons_remove_delay_sec,
-      )
-      return False
-
-    step_idx = state.current_step
-    options_array = state.options
-    if step_idx >= len(options_array):
-      return False
-
-    clean_data = call.data[len(SequentialChoices._sequential_prefix_str):]
-    return clean_data in options_array[step_idx].values()
+      try:
+        bot.edit_message_reply_markup(chat_id = chat_id, message_id = message_id, reply_markup = keyboard)
+      except Exception as e:
+        bot.send_message(chat_id, str(e))

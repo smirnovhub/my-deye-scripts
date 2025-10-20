@@ -8,13 +8,13 @@ from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_send_message import send_private_telegram_message
 
-class TelebotMenuRequestAccess(TelebotMenuItemHandler):
+class TelebotMenuStart(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
 
   @property
   def command(self) -> TelebotMenuItem:
-    return TelebotMenuItem.request_access
+    return TelebotMenuItem.start
 
   def process_message(self, message: telebot.types.Message):
     user = message.from_user

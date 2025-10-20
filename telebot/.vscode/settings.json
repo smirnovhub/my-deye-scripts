@@ -22,7 +22,6 @@
     "../deye/src/solarman",
     "../deye/src/solarman/server",
     "../deye/src/utils",
-    "../test/src",
     "src",
     "src/choices",
     "src/git",

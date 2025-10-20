@@ -10,23 +10,22 @@ from deye_test_helper import DeyeTestHelper
 
 class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
   """
-  Module `TelebotWritableRegistersTest1Module` is a test suite for validating
-  writable Deye registers via a testable Telegram bot.
+  Module `TelebotWritableRegistersUndoTestModule` tests the correctness of
+  **Undo buttons** for writable Deye registers in the Telegram bot.
 
-  For each writable register, the following steps are performed:
+  The goal is to ensure that after a register value is changed, the bot
+  generates a valid Undo command that restores the previous value.
 
-  1. **Generate test value**:  
-    A random valid value is generated according to the register's type,
-    skipping zero if required.
+  **Test flow:**
+  - Iterates through all writable registers.  
+  - Sets a random initial value on the server.  
+  - Changes it to a new random value via the bot.  
+  - Waits for confirmation and retrieves the Undo button data.  
+  - Checks that the Undo command matches the expected format
+    `/<register_name> <old_value>`.
 
-  2. **Simulate command via Telegram bot**:  
-    - Sends a command in the form `/register_name`.
-    - Checks if the bot asks for the current value (prompt verification).
-
-  3. **Send new value**:  
-    - Sends the generated value as a Telegram message.
-    - Verifies that the server registers are updated.
-    - Checks that the bot replies with a confirmation message reflecting the change.
+  This module confirms that all writable registers produce correct Undo buttons
+  and that the bot supports reliable rollback of recent changes.
   """
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
@@ -39,20 +38,9 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
-    self.log.info(f'Running module {type(self).__name__}...')
-
     user = TelebotTestUsers().test_user1
     registers = DeyeRegisters()
-    master_server: Optional[SolarmanServer] = None
-
-    for srv in servers:
-      if srv.name == self.loggers.master.name:
-        master_server = srv
-        break
-
-    if master_server is None:
-      self.error('Master server not found')
-      return
+    master_server = self.get_master_server(servers)
 
     for register in registers.all_registers:
       if not register.can_write:
@@ -104,4 +92,3 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
         self.log.info(f"Undo data is ok for register '{register.name}'")
 
     self.log.info('Seems all registers have correct undo buttons')
-    self.log.info(f'Module {type(self).__name__} done successfully')

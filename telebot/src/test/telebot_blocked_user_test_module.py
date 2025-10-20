@@ -7,6 +7,23 @@ from telebot_users import TelebotUsers
 from testable_telebot import TestableTelebot
 
 class TelebotBlockedUserTestModule(TelebotBaseTestModule):
+  """
+  Module `TelebotBlockedUserTestModule` tests how the Telegram bot handles
+  commands from **blocked users**.
+
+  The goal is to ensure that blocked users cannot execute any commands
+  and receive appropriate notifications.
+
+  **Test flow:**
+  - Iterates through all blocked users.  
+  - Sends every registered bot command from each blocked user.  
+  - Checks responses:
+    - Access request command → bot responds that the command is not allowed.  
+    - Any other command → bot responds that the user is not authorized.  
+
+  This module confirms that blocked users are prevented from performing
+  actions and that the bot handles them consistently.
+  """
   def __init__(self, bot: TestableTelebot):
     super().__init__(bot)
 
@@ -18,8 +35,6 @@ class TelebotBlockedUserTestModule(TelebotBaseTestModule):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
-    self.log.info(f'Running module {type(self).__name__}...')
-
     users = TelebotUsers().blocked_users
 
     for user in users:
@@ -28,10 +43,9 @@ class TelebotBlockedUserTestModule(TelebotBaseTestModule):
 
         self.send_text(user, f'/{command}')
 
-        if command == TelebotMenuItem.request_access.command:
+        if command == TelebotMenuItem.start.command:
           self.wait_for_text('Command is not allowed for this user')
         else:
           self.wait_for_text('User is not authorized')
 
     self.log.info('Seems blocked users processed correctly')
-    self.log.info(f'Module {type(self).__name__} done successfully')
