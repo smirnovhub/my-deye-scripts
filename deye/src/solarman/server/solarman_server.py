@@ -59,6 +59,7 @@ class SolarmanServer():
     self.registers: Dict[int, int] = {}
     self.readed_registers: Set[int] = set()
     self.written_registers: Set[int] = set()
+    self.random_values_on_read = False
 
     self.log = logging.getLogger()
     self.log.info(f"{self.name}: starting SolarmanServer at {address}:{port}")
@@ -70,6 +71,18 @@ class SolarmanServer():
       self.loop = asyncio.new_event_loop()
       thr = threading.Thread(target = self.sync_runner, daemon = True)
       thr.start()
+
+  def set_random_mode(self, rnd_mode: bool):
+    """
+    Enables or disables random value generation when reading registers.
+
+    When this mode is enabled (True), all register read operations
+    will return random values instead of actual data. This is useful for testing
+    and simulation purposes.
+
+    :param rnd_mode: True to enable random values on read, False to disable.
+    """
+    self.random_values_on_read = rnd_mode
 
   def set_register_value(self, address: int, value: int):
     """
@@ -302,7 +315,12 @@ class SolarmanServer():
     elif isinstance(func, ReadHoldingRegisters):
       if func.quantity is None or func.starting_address is None:
         raise ValueError("ReadHoldingRegisters request missing starting_address or quantity")
-      read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
+
+      if self.random_values_on_read:
+        read_values = [random.randint(0, 2**16 - 1) for x in range(func.quantity)]
+      else:
+        read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
+
       res = func.create_response_pdu(read_values)
       new_values = self.get_new_registers_values(func.starting_address, read_values)
 
