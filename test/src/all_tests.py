@@ -4,6 +4,7 @@ import time
 import datetime
 import subprocess
 
+from typing import List
 from pathlib import Path
 
 base_path = '../..'
@@ -32,8 +33,8 @@ from telebot_test_utils import TelebotTestUtils
 start_time = datetime.datetime.now()
 scripts = TelebotTestUtils.find_tests()
 
-success_count = 0
-failed_count = 0
+success: List[str] = []
+failed: List[str] = []
 
 for i, script in enumerate(scripts):
   br = '\n' if i > 0 else ''
@@ -48,16 +49,20 @@ for i, script in enumerate(scripts):
   t = DeyeUtils.format_timedelta(datetime.datetime.now() - test_start_time, add_seconds = True)
   if result.returncode != 0:
     print(f"\nError: {script} exited with code {result.returncode}. Test failed after {t}")
-    failed_count += 1
+    failed.append(script)
   else:
     print(f"\n{script}: test completed successfully after {t}")
-    success_count += 1
+    success.append(script)
 
 t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
 
-if success_count == 0:
+if len(success) == 0:
   print(f'\nAll tests failed after {t}')
-elif success_count == len(scripts):
+elif len(success) == len(scripts):
   print(f'\nAll tests completed successfully after {t}')
 else:
-  print(f'\n{failed_count} test(s) failed and {success_count} test(s) completed successfully after {t}')
+  print(f'\n{len(failed)} test(s) failed and {len(success)} test(s) completed successfully after {t}\n')
+  success_tests = '\n  '.join(success)
+  failed_tests = '\n  '.join(failed)
+  print(f"Success tests:\n  {success_tests}\n")
+  print(f"Failed tests:\n  {failed_tests}")
