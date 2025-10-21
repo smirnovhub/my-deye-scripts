@@ -1,3 +1,5 @@
+from typing import List
+
 from deye_utils import DeyeUtils
 from system_time_writable_deye_register import SystemTimeWritableDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
@@ -13,10 +15,14 @@ class SystemTimeDiffDeyeRegister(SystemTimeWritableDeyeRegister):
   def can_write(self) -> bool:
     return False
 
+  def read(self, interactors: List[DeyeModbusInteractor]):
+    value = super().read(interactors)
+    self._value = round(value)
+    return self._value
+
   def read_internal(self, interactor: DeyeModbusInteractor):
     value = super().read_internal(interactor)
-    value = int(round((value - DeyeUtils.get_current_time()).total_seconds()))
-    return value
+    return int(round((value - DeyeUtils.get_current_time()).total_seconds()))
 
   def write(self, interactor: DeyeModbusInteractor, value):
     raise DeyeNotImplementedException(f'{type(self).__name__}.write() is not supported')
