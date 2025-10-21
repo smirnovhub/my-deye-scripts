@@ -1,6 +1,7 @@
 from typing import List
 
 from deye_base_registers import DeyeBaseRegisters
+from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
 from charge_forecast_register import ChargeForecastRegister
 from discharge_forecast_register import DischargeForecastRegister
@@ -21,15 +22,14 @@ from system_time_writable_deye_register import SystemTimeWritableDeyeRegister
 from temperature_deye_register import TemperatureDeyeRegister
 from test_deye_register import TestDeyeRegister
 from time_of_use_int_writable_deye_register import TimeOfUseIntWritableDeyeRegister
-from today_pv_production_energy_cost_register import TodayPvProductionEnergyCostRegister
-from total_pv_production_energy_cost_register import TotalPvProductionEnergyCostRegister
-from today_gen_energy_cost_register import TodayGenEnergyCostRegister
-from total_gen_energy_cost_register import TotalGenEnergyCostRegister
+from today_energy_cost_register import TodayEnergyCostRegister
+from total_energy_cost_register import TotalEnergyCostRegister
 from system_work_mode_writable_deye_register import SystemWorkModeWritableDeyeRegister
 
 class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
+    energy_cost = DeyeEnergyCost()
     self._ac_couple_frz_high_register = FloatWritableDeyeRegister(329, 50.5, 52, 'ac_couple_frz_high', 'AC Couple Frz High', 'Hz', DeyeRegisterAverageType.only_master).with_scale(100)
     self._backup_delay_register = IntWritableDeyeRegister(311, 0, 30000, 'backup_delay', 'Backup Delay', 'ms', DeyeRegisterAverageType.only_master)
     self._battery_bms_charge_current_limit_register = IntDeyeRegister(314, 'battery_bms_charge_current_limit', 'Battery BMS Charge Current Limit', 'A', DeyeRegisterAverageType.only_master)
@@ -88,21 +88,25 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     self._today_grid_purchased_energy_register = FloatDeyeRegister(76, 'today_grid_purchased_energy', 'Today Grid Purchased Energy', 'kWh', DeyeRegisterAverageType.accumulate)
     self._today_gen_energy_register = FloatDeyeRegister(62, 'today_gen_energy', 'Today Gen Energy', 'kWh', DeyeRegisterAverageType.accumulate)
     self._today_load_consumption_register = FloatDeyeRegister(84, 'today_load_consumption', 'Today Load Consumption', 'kWh', DeyeRegisterAverageType.accumulate)
-    self._today_production_register = FloatDeyeRegister(108, 'today_production', 'Today Production', 'kWh', DeyeRegisterAverageType.accumulate)
+    self._today_pv_production_register = FloatDeyeRegister(108, 'today_pv_production', 'Today PV Production', 'kWh', DeyeRegisterAverageType.accumulate)
     self._total_battery_charged_energy_register = LongFloatDeyeRegister(72, 'total_battery_charged_energy', 'Total Battery Charged Energy', 'kWh', DeyeRegisterAverageType.accumulate)
     self._total_battery_discharged_energy_register = LongFloatDeyeRegister(74, 'total_battery_discharged_energy', 'Total Battery Discharged Energy', 'kWh', DeyeRegisterAverageType.accumulate)
     self._total_grid_feed_in_energy_register = LongFloatDeyeRegister(81, 'total_grid_feed_in_energy', 'Total Grid Feed-in Energy', 'kWh', DeyeRegisterAverageType.accumulate)
     self._total_grid_purchased_energy_register = LongFloatSplittedDeyeRegister(78, 2, 'total_grid_purchased_energy', 'Total Grid Purchased Energy', 'kWh', DeyeRegisterAverageType.accumulate)
     self._total_gen_energy_register = LongFloatSplittedDeyeRegister(92, 3, 'total_gen_energy', 'Total Gen Energy', 'kWh', DeyeRegisterAverageType.accumulate)
     self._total_load_consumption_register = LongFloatDeyeRegister(85, 'total_load_consumption', 'Total Load Consumption', 'kWh', DeyeRegisterAverageType.accumulate)
-    self._total_production_register = LongFloatDeyeRegister(96, 'total_production', 'Total Production', 'kWh', DeyeRegisterAverageType.accumulate)
+    self._total_pv_production_register = LongFloatDeyeRegister(96, 'total_pv_production', 'Total PV Production', 'kWh', DeyeRegisterAverageType.accumulate)
     self._zero_export_power_register = IntWritableDeyeRegister(206, 0, 100, 'zero_export_power', 'Zero Export Power', 'W', DeyeRegisterAverageType.only_master)
     self._pv_total_current_register = SumDeyeRegister([self.pv1_current_register, self.pv2_current_register], 'pv_total_current', 'PV Total current', 'A', DeyeRegisterAverageType.special)
     self._pv_total_power_register = SumDeyeRegister([self.pv1_power_register, self.pv2_power_register], 'pv_total_power', 'PV Total power', 'W', DeyeRegisterAverageType.special)
-    self._today_production_cost_register = TodayPvProductionEnergyCostRegister(self._today_production_register, 'today_production_cost', 'Today Production Cost', DeyeRegisterAverageType.special)
-    self._total_production_cost_register = TotalPvProductionEnergyCostRegister(self._total_production_register, 'total_production_cost', 'Total Production Cost', DeyeRegisterAverageType.special)
-    self._today_gen_energy_cost_register = TodayGenEnergyCostRegister(self._today_gen_energy_register, 'today_gen_energy_cost', 'Today Gen Energy Cost', DeyeRegisterAverageType.special)
-    self._total_gen_energy_cost_register = TotalGenEnergyCostRegister(self._total_gen_energy_register, 'total_gen_energy_cost', 'Total Gen Energy Cost', DeyeRegisterAverageType.special)
+    self._today_pv_production_cost_register = TodayEnergyCostRegister(self._today_pv_production_register, energy_cost.pv_energy_costs, 'today_pv_production_cost', 'Today PV Production Cost', DeyeRegisterAverageType.special)
+    self._today_grid_purchased_energy_cost_register = TodayEnergyCostRegister(self._today_grid_purchased_energy_register, energy_cost.grid_purchased_energy_costs, 'today_grid_purchased_energy_cost', 'Today Grid Purchased Energy Cost', DeyeRegisterAverageType.special)
+    self._today_grid_feed_in_energy_cost_register = TodayEnergyCostRegister(self._today_grid_feed_in_energy_register, energy_cost.grid_feed_in_energy_costs, 'today_grid_feed_in_energy_cost', 'Today Grid Feed-in Energy Cost', DeyeRegisterAverageType.special)
+    self._today_gen_energy_cost_register = TodayEnergyCostRegister(self._today_gen_energy_register, energy_cost.gen_energy_costs, 'today_gen_energy_cost', 'Today Gen Energy Cost', DeyeRegisterAverageType.special)
+    self._total_pv_production_cost_register = TotalEnergyCostRegister(self._total_pv_production_register, energy_cost.pv_energy_costs, 'total_pv_production_cost', 'Total PV Production Cost', DeyeRegisterAverageType.special)
+    self._total_grid_purchased_energy_cost_register = TotalEnergyCostRegister(self._total_grid_purchased_energy_register, energy_cost.grid_purchased_energy_costs, 'total_grid_purchased_energy_cost', 'Total Grid Purchased Energy Cost', DeyeRegisterAverageType.special)
+    self._total_grid_feed_in_energy_cost_register = TotalEnergyCostRegister(self._total_grid_feed_in_energy_register, energy_cost.grid_feed_in_energy_costs, 'total_grid_feed_in_energy_cost', 'Total Grid Feed-in Energy Cost', DeyeRegisterAverageType.special)
+    self._total_gen_energy_cost_register = TotalEnergyCostRegister(self._total_gen_energy_register, energy_cost.gen_energy_costs, 'total_gen_energy_cost', 'Total Gen Energy Cost', DeyeRegisterAverageType.special)
 
     self._charge_forecast_register = ChargeForecastRegister(
       battery_soc_register = self.battery_soc_register,
@@ -186,19 +190,23 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       self._today_grid_purchased_energy_register,
       self._today_gen_energy_register,
       self._today_load_consumption_register,
-      self._today_production_register,
+      self._today_pv_production_register,
+      self._today_pv_production_cost_register,
+      self._today_grid_purchased_energy_cost_register,
+      self._today_grid_feed_in_energy_cost_register,
+      self._today_gen_energy_cost_register,
       self._total_battery_charged_energy_register,
       self._total_battery_discharged_energy_register,
       self._total_grid_feed_in_energy_register,
       self._total_grid_purchased_energy_register,
       self._total_gen_energy_register,
       self._total_load_consumption_register,
-      self._total_production_register,
-      self._zero_export_power_register,
-      self._today_production_cost_register,
-      self._today_gen_energy_cost_register,
-      self._total_production_cost_register,
+      self._total_pv_production_register,
+      self._total_pv_production_cost_register,
+      self._total_grid_purchased_energy_cost_register,
+      self._total_grid_feed_in_energy_cost_register,
       self._total_gen_energy_cost_register,
+      self._zero_export_power_register,
     ]
 
     self._forecast_registers: List[DeyeRegister] = [
@@ -484,12 +492,20 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     return self._today_load_consumption_register
 
   @property
-  def today_production_register(self) -> DeyeRegister:
-    return self._today_production_register
+  def today_pv_production_register(self) -> DeyeRegister:
+    return self._today_pv_production_register
 
   @property
-  def today_production_cost_register(self) -> DeyeRegister:
-    return self._today_production_cost_register
+  def today_pv_production_cost_register(self) -> DeyeRegister:
+    return self._today_pv_production_cost_register
+
+  @property
+  def today_grid_purchased_energy_cost_register(self) -> DeyeRegister:
+    return self._today_grid_purchased_energy_cost_register
+
+  @property
+  def today_grid_feed_in_energy_cost_register(self) -> DeyeRegister:
+    return self._today_grid_feed_in_energy_cost_register
 
   @property
   def today_gen_energy_cost_register(self) -> DeyeRegister:
@@ -520,12 +536,20 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     return self._total_load_consumption_register
 
   @property
-  def total_production_register(self) -> DeyeRegister:
-    return self._total_production_register
+  def total_pv_production_register(self) -> DeyeRegister:
+    return self._total_pv_production_register
 
   @property
-  def total_production_cost_register(self) -> DeyeRegister:
-    return self._total_production_cost_register
+  def total_pv_production_cost_register(self) -> DeyeRegister:
+    return self._total_pv_production_cost_register
+
+  @property
+  def total_grid_purchased_energy_cost_register(self) -> DeyeRegister:
+    return self._total_grid_purchased_energy_cost_register
+
+  @property
+  def total_grid_feed_in_energy_cost_register(self) -> DeyeRegister:
+    return self._total_grid_feed_in_energy_cost_register
 
   @property
   def total_gen_energy_cost_register(self) -> DeyeRegister:

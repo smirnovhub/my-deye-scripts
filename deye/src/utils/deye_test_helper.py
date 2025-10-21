@@ -9,17 +9,15 @@ from deye_register import DeyeRegister
 from int_deye_register import IntDeyeRegister
 from signed_int_deye_register import SignedIntDeyeRegister
 from deye_base_enum import DeyeBaseEnum
-from deye_energy_cost import DeyeEnergyCost
 from float_deye_register import FloatDeyeRegister
 from signed_float_deye_register import SignedFloatDeyeRegister
 from temperature_deye_register import TemperatureDeyeRegister
 from long_float_deye_register import LongFloatDeyeRegister
 from sum_deye_register import SumDeyeRegister
-from long_float_splitted_deye_register import LongFloatSplittedDeyeRegister
 from system_time_writable_deye_register import SystemTimeWritableDeyeRegister
 from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
-from today_energy_cost_base_register import TodayEnergyCostBaseRegister
-from total_energy_cost_base_register import TotalEnergyCostBaseRegister
+from today_energy_cost_register import TodayEnergyCostRegister
+from total_energy_cost_register import TotalEnergyCostRegister
 from time_of_use_int_writable_deye_register import TimeOfUseIntWritableDeyeRegister
 
 class DeyeRegisterRandomValue:
@@ -83,9 +81,6 @@ class DeyeTestHelper:
     if isinstance(register.value, DeyeBaseEnum):
       return DeyeTestHelper._handle_enum_register(register)
 
-    elif isinstance(register, LongFloatSplittedDeyeRegister):
-      return DeyeTestHelper._handle_long_float_splitted_register(register)
-
     elif isinstance(register, LongFloatDeyeRegister):
       return DeyeTestHelper._handle_long_float_register(register)
 
@@ -113,10 +108,10 @@ class DeyeTestHelper:
     elif isinstance(register, SystemTimeWritableDeyeRegister):
       return DeyeTestHelper._handle_system_time_writable_register(register)
 
-    elif isinstance(register, TotalEnergyCostBaseRegister):
+    elif isinstance(register, TotalEnergyCostRegister):
       return DeyeTestHelper._handle_total_energy_cost_register(register, randoms)
 
-    elif isinstance(register, TodayEnergyCostBaseRegister):
+    elif isinstance(register, TodayEnergyCostRegister):
       return DeyeTestHelper._handle_today_energy_cost_register(register, randoms)
 
     elif isinstance(register, SumDeyeRegister):
@@ -133,25 +128,10 @@ class DeyeTestHelper:
     return None
 
   @staticmethod
-  def _handle_long_float_splitted_register(register: LongFloatSplittedDeyeRegister) -> DeyeRegisterRandomValue:
-    # Compute the maximum safe value for 2 registers (32-bit unsigned)
-    max_val = DeyeTestHelper.unsigned_long_max_value // register.scale
-
-    # Generate a random value within the allowed range
-    val = int(random.uniform(0, max_val)) / register.scale
-
-    # Get the two 16-bit registers representing the 32-bit value
-    values = DeyeUtils.to_long_register_values(val, register.scale, len(register.addresses)) # values[0], values[1]
-
-    # Round the value for further use
-    value = DeyeUtils.custom_round(val)
-    return DeyeRegisterRandomValue(register, value, values)
-
-  @staticmethod
   def _handle_long_float_register(register: LongFloatDeyeRegister) -> DeyeRegisterRandomValue:
     max_val = DeyeTestHelper.unsigned_long_max_value // register.scale
-    val = int(random.uniform(0, max_val) * register.scale // register.scale) / register.scale
-    values = DeyeUtils.to_long_register_values(val, register.scale, register.quantity)
+    val = int(random.uniform(0, max_val)) / register.scale
+    values = DeyeUtils.to_long_register_values(val, register.scale, len(register.addresses))
     value = DeyeUtils.custom_round(val)
     return DeyeRegisterRandomValue(register, value, values)
 
@@ -240,33 +220,31 @@ class DeyeTestHelper:
 
   @staticmethod
   def _handle_total_energy_cost_register(
-    register: TotalEnergyCostBaseRegister,
+    register: TotalEnergyCostRegister,
     randoms: List[DeyeRegisterRandomValue],
   ) -> Optional[DeyeRegisterRandomValue]:
-    energy_cost = DeyeEnergyCost()
     for rnd in randoms:
-      if rnd.register.name == register.production_register.name:
-        total_cost = 0
-        production = float(rnd.value)
+      if rnd.register.name == register.energy_register.name:
+        total_cost = 0.0
+        energy = float(rnd.value)
 
-        for prod, cost in reversed(list(energy_cost.pv_energy_costs.items())):
-          delta = production - prod
+        for en, cost in reversed(list(register.energy_costs.items())):
+          delta = energy - en
           total_cost += delta * cost
-          production -= delta
+          energy -= delta
 
         return DeyeRegisterRandomValue(register, DeyeUtils.custom_round(total_cost), rnd.values)
     return None
 
   @staticmethod
   def _handle_today_energy_cost_register(
-    register: TodayEnergyCostBaseRegister,
+    register: TodayEnergyCostRegister,
     randoms: List[DeyeRegisterRandomValue],
   ) -> Optional[DeyeRegisterRandomValue]:
-    energy_cost = DeyeEnergyCost()
     for rnd in randoms:
-      if rnd.register.name == register.production_register.name:
-        production = float(rnd.value)
-        value = production * energy_cost.current_pv_energy_cost
+      if rnd.register.name == register.energy_register.name:
+        energy = float(rnd.value)
+        value = energy * register.current_energy_cost
         return DeyeRegisterRandomValue(register, DeyeUtils.custom_round(value), rnd.values)
     return None
 
