@@ -1,3 +1,4 @@
+import math
 from typing import Any, List, Union
 
 from datetime import datetime
@@ -10,13 +11,15 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
 class BaseDeyeRegister(DeyeRegister):
-  def __init__(self,
-               address: int,
-               quantity: int,
-               name: str,
-               description: str,
-               suffix: str,
-               avg = DeyeRegisterAverageType.none):
+  def __init__(
+    self,
+    address: int,
+    quantity: int,
+    name: str,
+    description: str,
+    suffix: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
     self._address = address
     self._quantity = quantity
     self._scale: int = 1
@@ -38,14 +41,30 @@ class BaseDeyeRegister(DeyeRegister):
       self._value = self.read_from_master_interactor(interactors)
       return self._value
 
-    divider = len(interactors) if self._avg == DeyeRegisterAverageType.average else 1
+    if self._avg == DeyeRegisterAverageType.accumulate:
+      total: Union[int, float]
 
-    if self._avg == DeyeRegisterAverageType.accumulate or self._avg == DeyeRegisterAverageType.average:
-      value = 0.0
+      if isinstance(self._value, int):
+        total = 0
+      else:
+        total = 0.0
+
       for interactor in interactors:
-        value += round(self.read_internal(interactor) / divider, 2)
+        total += self.read_internal(interactor)
+      self._value = total
+      return self._value
+    elif self._avg == DeyeRegisterAverageType.average:
+      total = 0.0
+      divider = len(interactors)
 
-      self._value = round(value, 2)
+      from float_deye_register import FloatDeyeRegister
+      digits = round(math.log10(self.scale)) if isinstance(self, FloatDeyeRegister) else 2
+
+      for interactor in interactors:
+        total += round(self.read_internal(interactor) / divider, digits)
+
+      self._value = round(total, digits)
+
       return self._value
 
     self._value = self.read_from_master_interactor(interactors)
