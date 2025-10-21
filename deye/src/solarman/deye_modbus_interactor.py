@@ -65,7 +65,7 @@ class DeyeModbusInteractor:
         if (idx + start) in group:
           self.registers_queue[idx + start] = value
 
-  def read_register(self, register_addr: int, quantity: int):
+  def read_register(self, register_addr: int, quantity: int) -> List[int]:
     result = []
 
     for i in range(quantity):

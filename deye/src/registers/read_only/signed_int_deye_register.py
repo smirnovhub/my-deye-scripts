@@ -15,5 +15,5 @@ class SignedIntDeyeRegister(IntDeyeRegister):
     super().__init__(address, name, description, suffix, avg)
 
   def read_internal(self, interactor: DeyeModbusInteractor):
-    value = DeyeUtils.to_signed(interactor.read_register(self.address, self.quantity)[0])
-    return value
+    data = interactor.read_register(self.address, self.quantity)
+    return DeyeUtils.to_signed(data[0])

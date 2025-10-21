@@ -15,5 +15,5 @@ class IntDeyeRegister(BaseDeyeRegister):
     self._value = 0
 
   def read_internal(self, interactor: DeyeModbusInteractor):
-    value = interactor.read_register(self.address, self.quantity)[0]
-    return value
+    data = interactor.read_register(self.address, self.quantity)
+    return data[0]
