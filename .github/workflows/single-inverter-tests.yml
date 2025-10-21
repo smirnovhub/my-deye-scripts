@@ -32,4 +32,5 @@ jobs:
 
       - name: Run tests
         run: |
+          python -u test/src/deye_register_types_test.py
           python -u test/src/deye_single_inverter_test.py
