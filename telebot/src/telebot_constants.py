@@ -1,4 +1,7 @@
 class TelebotConstants:
+  default_title = 'Inverter'
+  today_stat_title = 'Today stat'
+  total_stat_title = 'Total stat'
   undo_button_name = 'Undo'
   undo_button_remove_delay_sec = 5
   sync_inverter_time_button_name = 'Sync inverter time'

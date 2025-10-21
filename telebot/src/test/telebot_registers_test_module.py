@@ -1,5 +1,6 @@
 from typing import Callable, List
 
+from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_users import TelebotTestUsers
 from solarman_server import SolarmanServer
@@ -18,11 +19,13 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     name: str,
     command: TelebotMenuItem,
     register_creator: Callable[[str], DeyeRegisters],
+    title: str = TelebotConstants.default_title,
   ):
     super().__init__(bot)
     self.name = name
     self.command = command
     self.register_creator = register_creator
+    self.title = title
 
   @property
   def description(self) -> str:
@@ -89,13 +92,15 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     return holder
 
   def _check_results(self, holder: DeyeRegistersHolder):
-    pattern = f'inverter: {self.name}|{self.name} settings:'
+    pattern = f'{self.title}: {self.name}|{self.name} settings:'
     if not self.bot.is_messages_contains_regex(pattern):
-      raise DeyeKnownException(f"Messages don't contain expected inverter name '{pattern}'")
+      raise DeyeKnownException(f"Messages don't contain expected title '{pattern}'")
 
     found = True
     for register in holder.all_registers[self.name].all_registers:
       desc = register.description.replace('Inverter ', '')
+      desc = desc.replace('Today ', '')
+      desc = desc.replace('Total ', '')
       suffix = f' {register.suffix}'.rstrip()
       info = f'{desc}: {register.pretty_value}{suffix}'
 

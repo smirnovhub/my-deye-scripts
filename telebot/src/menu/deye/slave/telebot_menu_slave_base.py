@@ -20,12 +20,14 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     all_command: TelebotMenuItem,
     master_command: TelebotMenuItem,
     slave_command: TelebotMenuItem,
+    title: str = TelebotConstants.default_title,
   ):
     super().__init__(bot)
     self.registers = registers
     self.all_command = all_command
     self.master_command = master_command
     self.slave_command = slave_command
+    self.title = title
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -82,7 +84,8 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
       slave_command = self.slave_command,
     )
 
-    if abs(self.registers.inverter_system_time_diff_register.value) > TelebotConstants.inverter_system_time_need_sync_difference_sec:
+    if abs(self.registers.inverter_system_time_diff_register.value
+           ) > TelebotConstants.inverter_system_time_need_sync_difference_sec:
       # add line break for keyboard
       choices[TelebotUtils.row_break_str] = TelebotUtils.row_break_str
       # add time sync command
@@ -93,7 +96,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     CommandChoice.ask_command_choice(
       self.bot,
       message.chat.id,
-      f'<b>Inverter: {slave_name}</b>\n{info}',
+      f'<b>{self.title}: {slave_name}</b>\n{info}',
       choices,
       max_per_row = 2,
     )
