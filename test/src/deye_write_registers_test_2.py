@@ -89,7 +89,11 @@ for register in holder.master_registers.all_registers:
     write_values[register.name] = holder.write_register(register, value)
 
 log.info(f'Reading of all registers...')
-holder.read_registers()
+
+try:
+  holder.read_registers()
+finally:
+  holder.disconnect()
 
 for register in holder.master_registers.all_registers:
   if not register.can_write:
