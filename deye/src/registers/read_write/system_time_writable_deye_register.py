@@ -25,7 +25,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
   def read_internal(self, interactor: DeyeModbusInteractor):
     data = interactor.read_register(self.address, self.quantity)
-    year, month, day, hour, minute, second = DeyeUtils.to_bytes(data)
+    year, month, day, hour, minute, second = DeyeUtils.to_unsigned_bytes(data)
 
     try:
       value = datetime(year + 2000, month, day, hour, minute, second)
