@@ -35,7 +35,8 @@ class DeyeRegistersHolder:
     # Initialize locker
     verbose = kwargs.get('verbose', False)
     name = kwargs.get('name', os.path.basename(__file__))
-    lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name)
+    suffix = '_test' if self._all_loggers.is_test_loggers else ''
+    lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name_template.format(suffix))
     self.locker = DeyeFileLocker(name, lockfile, verbose = verbose)
 
     for logger in self._loggers:

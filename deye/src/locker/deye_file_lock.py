@@ -9,7 +9,7 @@ class DeyeFileLock:
   LOCK_NB = 0x4 # Non-blocking
   LOCK_UN = 0x8 # Unlock
 
-  inverter_lock_file_name = 'inverter.lock'
+  inverter_lock_file_name_template = 'inverter{0}.lock'
 
   if os.name == 'nt':
     import msvcrt
