@@ -68,7 +68,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     self._gen_power_register = SignedIntDeyeRegister(166, 'gen_power', 'Gen Power', 'W', DeyeRegisterAverageType.accumulate)
     self._inverter_ac_temperature_register = TemperatureDeyeRegister(91, 'inverter_ac_temperature', 'Inverter AC Temperature', 'deg', DeyeRegisterAverageType.average)
     self._inverter_dc_temperature_register = TemperatureDeyeRegister(90, 'inverter_dc_temperature', 'Inverter DC Temperature', 'deg', DeyeRegisterAverageType.average)
-    self._inverter_system_time_diff_register = SystemTimeDiffDeyeRegister(22, 'inverter_system_time_diff', 'Inverter System Time Diff', 'sec', DeyeRegisterAverageType.average)
     self._inverter_system_time_register = SystemTimeWritableDeyeRegister(22, 'inverter_system_time', 'Inverter System Time', '')
     self._load_frequency_register = FloatDeyeRegister(192, 'load_frequency', 'Load Frequency', 'Hz', DeyeRegisterAverageType.average).with_scale(100)
     self._load_power_register = IntDeyeRegister(178, 'load_power', 'Load Power', 'W', DeyeRegisterAverageType.accumulate)
@@ -108,13 +107,20 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     self._total_grid_feed_in_energy_cost_register = TotalEnergyCostRegister(self._total_grid_feed_in_energy_register, energy_cost.grid_feed_in_energy_costs, 'total_grid_feed_in_energy_cost', 'Total Grid Feed-in Energy Cost', DeyeRegisterAverageType.special)
     self._total_gen_energy_cost_register = TotalEnergyCostRegister(self._total_gen_energy_register, energy_cost.gen_energy_costs, 'total_gen_energy_cost', 'Total Gen Energy Cost', DeyeRegisterAverageType.special)
 
+    self._inverter_system_time_diff_register = SystemTimeDiffDeyeRegister(
+      self._inverter_system_time_register,
+      'inverter_system_time_diff',
+      'Inverter System Time Diff',
+      'sec',
+      DeyeRegisterAverageType.average,
+    )
+
     self._charge_forecast_register = ChargeForecastRegister(
       battery_soc_register = self.battery_soc_register,
       battery_capacity_register = self._battery_capacity_register,
       battery_current_register = self._battery_current_register,
       name = 'charge_forecast',
       description = 'Charge Forecast',
-      suffix = '',
     )
 
     self._discharge_forecast_register = DischargeForecastRegister(
@@ -123,7 +129,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       battery_current_register = self._battery_current_register,
       name = 'discharge_forecast',
       description = 'Discharge Forecast',
-      suffix = '',
     )
 
     self._test1_register = IntDeyeRegister(316, 'test1', 'Test1', '')

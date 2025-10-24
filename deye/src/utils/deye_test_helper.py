@@ -81,6 +81,12 @@ class DeyeTestHelper:
     if isinstance(register.value, DeyeBaseEnum):
       return DeyeTestHelper._handle_enum_register(register)
 
+    elif isinstance(register, TotalEnergyCostRegister):
+      return DeyeTestHelper._handle_total_energy_cost_register(register, randoms)
+
+    elif isinstance(register, TodayEnergyCostRegister):
+      return DeyeTestHelper._handle_today_energy_cost_register(register, randoms)
+
     elif isinstance(register, LongFloatDeyeRegister):
       return DeyeTestHelper._handle_long_float_register(register)
 
@@ -93,26 +99,20 @@ class DeyeTestHelper:
     elif isinstance(register, FloatDeyeRegister):
       return DeyeTestHelper._handle_float_register(register)
 
+    elif isinstance(register, TimeOfUseIntWritableDeyeRegister):
+      return DeyeTestHelper._handle_time_of_use_int_register(register)
+
+    elif isinstance(register, SystemTimeDiffDeyeRegister):
+      return DeyeTestHelper._handle_system_time_diff_writable_register(register, randoms)
+
     elif isinstance(register, SignedIntDeyeRegister):
       return DeyeTestHelper._handle_signed_int_register(register)
 
     elif isinstance(register, IntDeyeRegister):
       return DeyeTestHelper._handle_int_register(register)
 
-    elif isinstance(register, TimeOfUseIntWritableDeyeRegister):
-      return DeyeTestHelper._handle_time_of_use_int_register(register)
-
-    elif isinstance(register, SystemTimeDiffDeyeRegister):
-      return DeyeTestHelper._handle_system_time_diff_writable_register(register)
-
     elif isinstance(register, SystemTimeWritableDeyeRegister):
       return DeyeTestHelper._handle_system_time_writable_register(register)
-
-    elif isinstance(register, TotalEnergyCostRegister):
-      return DeyeTestHelper._handle_total_energy_cost_register(register, randoms)
-
-    elif isinstance(register, TodayEnergyCostRegister):
-      return DeyeTestHelper._handle_today_energy_cost_register(register, randoms)
 
     elif isinstance(register, SumDeyeRegister):
       return DeyeTestHelper._handle_sum_register(register, randoms)
@@ -178,8 +178,14 @@ class DeyeTestHelper:
     return DeyeRegisterRandomValue(register, DeyeUtils.custom_round(value), values)
 
   @staticmethod
-  def _handle_system_time_diff_writable_register(register: SystemTimeDiffDeyeRegister) -> DeyeRegisterRandomValue:
-    rnd = DeyeTestHelper._handle_system_time_writable_register(register)
+  def _handle_system_time_diff_writable_register(
+    register: SystemTimeDiffDeyeRegister,
+    randoms: List[DeyeRegisterRandomValue],
+  ) -> Optional[DeyeRegisterRandomValue]:
+    rnd = DeyeTestHelper._get_random_by_register(register.system_time_register, randoms)
+    if rnd is None:
+      return None
+
     date = datetime.strptime(rnd.value, DeyeUtils.time_format_str)
     value = int(round((date - DeyeUtils.get_current_time()).total_seconds()))
     return DeyeRegisterRandomValue(register, value, rnd.values)
@@ -223,30 +229,32 @@ class DeyeTestHelper:
     register: TotalEnergyCostRegister,
     randoms: List[DeyeRegisterRandomValue],
   ) -> Optional[DeyeRegisterRandomValue]:
-    for rnd in randoms:
-      if rnd.register.name == register.energy_register.name:
-        total_cost = 0.0
-        energy = float(rnd.value)
+    rnd = DeyeTestHelper._get_random_by_register(register.energy_register, randoms)
+    if rnd is None:
+      return None
 
-        for en, cost in reversed(list(register.energy_costs.items())):
-          delta = energy - en
-          total_cost += delta * cost
-          energy -= delta
+    total_cost = 0.0
+    energy = float(rnd.value)
 
-        return DeyeRegisterRandomValue(register, DeyeUtils.custom_round(total_cost), rnd.values)
-    return None
+    for en, cost in reversed(list(register.energy_costs.items())):
+      delta = energy - en
+      total_cost += delta * cost
+      energy -= delta
+
+    return DeyeRegisterRandomValue(register, DeyeUtils.custom_round(total_cost), rnd.values)
 
   @staticmethod
   def _handle_today_energy_cost_register(
     register: TodayEnergyCostRegister,
     randoms: List[DeyeRegisterRandomValue],
   ) -> Optional[DeyeRegisterRandomValue]:
-    for rnd in randoms:
-      if rnd.register.name == register.energy_register.name:
-        energy = float(rnd.value)
-        value = energy * register.current_energy_cost
-        return DeyeRegisterRandomValue(register, DeyeUtils.custom_round(value), rnd.values)
-    return None
+    rnd = DeyeTestHelper._get_random_by_register(register.energy_register, randoms)
+    if rnd is None:
+      return None
+
+    energy = float(rnd.value)
+    value = energy * register.current_energy_cost
+    return DeyeRegisterRandomValue(register, DeyeUtils.custom_round(value), rnd.values)
 
   @staticmethod
   def _handle_sum_register(
@@ -255,18 +263,14 @@ class DeyeTestHelper:
   ) -> DeyeRegisterRandomValue:
     values: List[float] = []
 
-    for reg in register.registers:
-      found = False
-      for rnd in randoms:
-        if rnd.register.name == reg.name:
-          values.append(float(rnd.value))
-          DeyeTestHelper.log.info(f"Adding value for nested register '{reg.name}' "
-                                  f"with type {type(reg).__name__}: {rnd.value} {reg.suffix}")
-          found = True
-          break
+    for reg in register.nested_registers:
+      rnd = DeyeTestHelper._get_random_by_register(reg, randoms)
+      if rnd is None:
+        raise ValueError(f"ERROR: nested register '{reg.name}' not found")
 
-      if not found:
-        DeyeTestHelper.log.info(f"WARNING! Nested register '{reg.name}' not found")
+      values.append(float(rnd.value))
+      DeyeTestHelper.log.info(f"Adding value for nested register '{reg.name}' "
+                              f"with type {type(reg).__name__}: {rnd.value} {reg.suffix}")
 
     return DeyeRegisterRandomValue(register, DeyeUtils.custom_round(sum(values)), [])
 
@@ -314,3 +318,13 @@ class DeyeTestHelper:
     end = datetime.now()
     random_date = start + timedelta(seconds = random.randint(0, int((end - start).total_seconds())))
     return random_date.strftime(DeyeUtils.time_format_str)
+
+  @staticmethod
+  def _get_random_by_register(
+    register: DeyeRegister,
+    randoms: List[DeyeRegisterRandomValue],
+  ) -> Optional[DeyeRegisterRandomValue]:
+    for rnd in randoms:
+      if rnd.register.name == register.name:
+        return rnd
+    return None
