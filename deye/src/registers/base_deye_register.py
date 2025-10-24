@@ -32,11 +32,11 @@ class BaseDeyeRegister(DeyeRegister):
     self._max_value: Union[int, float] = 0
     self._loggers = DeyeLoggers()
 
-  def enqueue(self, interactor: DeyeModbusInteractor):
+  def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     if interactor.is_master or self._avg != DeyeRegisterAverageType.only_master:
       interactor.enqueue_register(self.address, self.quantity)
 
-  def read(self, interactors: List[DeyeModbusInteractor]):
+  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     if len(interactors) == 1:
       self._value = self.read_from_master_interactor(interactors)
       return self._value
@@ -57,7 +57,9 @@ class BaseDeyeRegister(DeyeRegister):
       total = 0.0
       divider = len(interactors)
 
+      from int_deye_register import IntDeyeRegister
       from float_deye_register import FloatDeyeRegister
+
       digits = round(math.log10(self.scale)) if isinstance(self, FloatDeyeRegister) else 2
 
       for interactor in interactors:
@@ -65,12 +67,15 @@ class BaseDeyeRegister(DeyeRegister):
 
       self._value = round(total, digits)
 
+      if isinstance(self, IntDeyeRegister):
+        self._value = round(self._value)
+
       return self._value
 
     self._value = self.read_from_master_interactor(interactors)
     return self._value
 
-  def read_from_master_interactor(self, interactors: List[DeyeModbusInteractor]):
+  def read_from_master_interactor(self, interactors: List[DeyeModbusInteractor]) -> Any:
     master_interactor = None
     for interactor in interactors:
       if interactor.name == self._loggers.master.name:
