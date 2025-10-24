@@ -1,3 +1,5 @@
+from typing import Any
+
 from int_deye_register import IntDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
@@ -20,14 +22,14 @@ class SystemWorkModeWritableDeyeRegister(IntDeyeRegister):
   def can_write(self) -> bool:
     return True
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     value = super().read_internal(interactor)
     for mode in self._register_type:
       if value == mode.value:
         return mode
     return self._register_type.unknown
 
-  def write(self, interactor: DeyeModbusInteractor, value):
+  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
     if not isinstance(value, self._register_type):
       self.error(f'write(): value should be of type {self._register_type.__name__}')
 

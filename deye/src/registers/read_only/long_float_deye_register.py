@@ -1,3 +1,5 @@
+from typing import Any
+
 from deye_utils import DeyeUtils
 from float_deye_register import FloatDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
@@ -15,6 +17,6 @@ class LongFloatDeyeRegister(FloatDeyeRegister):
   ):
     super().__init__(address, name, description, suffix, avg, quantity)
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     data = interactor.read_register(self.address, self.quantity)
     return DeyeUtils.from_long_register_values(data, self.scale)

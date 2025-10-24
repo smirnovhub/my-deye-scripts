@@ -1,3 +1,5 @@
+from typing import Any
+
 from float_deye_register import FloatDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
@@ -21,7 +23,7 @@ class FloatWritableDeyeRegister(FloatDeyeRegister):
   def can_write(self) -> bool:
     return True
 
-  def write(self, interactor: DeyeModbusInteractor, value):
+  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
     try:
       value = float(value)
     except Exception as e:

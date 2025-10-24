@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from deye_utils import DeyeUtils
 from long_float_deye_register import LongFloatDeyeRegister
@@ -22,7 +22,7 @@ class LongFloatSplittedDeyeRegister(LongFloatDeyeRegister):
   def addresses(self) -> List[int]:
     return [self.address, self.address + self._split_offset]
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     data = interactor.read_register(self.address, self.quantity)
     return DeyeUtils.from_long_register_values([data[0], data[self._split_offset]], self.scale)
 

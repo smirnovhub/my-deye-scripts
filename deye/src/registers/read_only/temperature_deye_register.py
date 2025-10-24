@@ -1,3 +1,5 @@
+from typing import Any
+
 from float_deye_register import FloatDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
@@ -13,7 +15,7 @@ class TemperatureDeyeRegister(FloatDeyeRegister):
   ):
     super().__init__(address, name, description, suffix, avg)
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     data = interactor.read_register(self.address, self.quantity)
     return (data[0] + self.shift) / self.scale
 

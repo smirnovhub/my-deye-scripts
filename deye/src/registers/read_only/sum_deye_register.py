@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from deye_register import DeyeRegister
 from base_deye_register import BaseDeyeRegister
@@ -25,18 +25,18 @@ class SumDeyeRegister(BaseDeyeRegister):
       addr_list.extend(register.addresses)
     return list(set(addr_list))
 
-  def enqueue(self, interactor: DeyeModbusInteractor):
+  def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     for register in self._registers:
       register.enqueue(interactor)
 
-  def read(self, interactors: List[DeyeModbusInteractor]):
+  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     for register in self._registers:
       register.read(interactors)
     return super().read(interactors)
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     return sum(register.value for register in self._registers)
 
   @property
-  def registers(self) -> List[DeyeRegister]:
+  def nested_registers(self) -> List[DeyeRegister]:
     return self._registers
