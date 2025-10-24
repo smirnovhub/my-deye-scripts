@@ -1,8 +1,10 @@
-from base_deye_register import BaseDeyeRegister
+from typing import Any
+
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
+from int_writable_deye_register import IntWritableDeyeRegister
 
-class TimeOfUseIntWritableDeyeRegister(BaseDeyeRegister):
+class TimeOfUseIntWritableDeyeRegister(IntWritableDeyeRegister):
   def __init__(
     self,
     address: int,
@@ -13,23 +15,16 @@ class TimeOfUseIntWritableDeyeRegister(BaseDeyeRegister):
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
-    super().__init__(address, 6, name, description, suffix, avg)
-    self._value = 0
-    self._min_value = min_value
-    self._max_value = max_value
+    super().__init__(address, min_value, max_value, name, description, suffix, avg, 6)
 
-  @property
-  def can_write(self) -> bool:
-    return True
-
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     data = interactor.read_register(self.address, self.quantity)
     # Without rounding, small floating-point errors (e.g. 3.334999...)
     # cause inconsistent results, making random-based tests fail unpredictably.
     # Rounding to 2 decimals ensures stable, repeatable test outcomes.
     return round(sum(data) / len(data))
 
-  def write(self, interactor: DeyeModbusInteractor, value):
+  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
     try:
       value = int(value)
     except Exception as e:
