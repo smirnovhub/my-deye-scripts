@@ -5,6 +5,7 @@ from typing import List
 from solarman_server import SolarmanServer
 from telebot_base_test_module import TelebotBaseTestModule
 from deye_registers import DeyeRegisters
+from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_users import TelebotTestUsers
 from testable_telebot import TestableTelebot
@@ -73,6 +74,12 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
       self.log.info(f"Sending command '{cmd}' from user {user.id} {user.name}")
       self.send_text(user, cmd)
 
+      titles = [
+        TelebotConstants.default_title,
+        TelebotConstants.today_stat_title,
+        TelebotConstants.total_stat_title,
+      ]
+
       if command in disabled_registers:
         register = registers.get_register_by_name(command)
         self.wait_for_text_regex(f"You can't change.+{register.description}")
@@ -80,7 +87,7 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
         register = registers.get_register_by_name(command)
         self.wait_for_text_regex(f"Current.+{register.description}.+value:.*Enter new value")
       elif command in allowed_commands:
-        self.wait_for_text("Inverter:")
+        self.wait_for_text_regex(':|'.join(titles))
       else:
         self.wait_for_text('Command is not allowed')
 

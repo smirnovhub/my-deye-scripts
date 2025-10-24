@@ -59,6 +59,7 @@ class SolarmanServer():
     self.registers: Dict[int, int] = {}
     self.readed_registers: Set[int] = set()
     self.written_registers: Set[int] = set()
+    self.random_values_on_read = False
 
     self.log = logging.getLogger()
     self.log.info(f"{self.name}: starting SolarmanServer at {address}:{port}")
@@ -71,7 +72,19 @@ class SolarmanServer():
       thr = threading.Thread(target = self.sync_runner, daemon = True)
       thr.start()
 
-  def set_register_value(self, address: int, value: int):
+  def set_random_mode(self, rnd_mode: bool) -> None:
+    """
+    Enables or disables random value generation when reading registers.
+
+    When this mode is enabled (True), all register read operations
+    will return random values instead of actual data. This is useful for testing
+    and simulation purposes.
+
+    :param rnd_mode: True to enable random values on read, False to disable.
+    """
+    self.random_values_on_read = rnd_mode
+
+  def set_register_value(self, address: int, value: int) -> None:
     """
     Set the value of a single register (for testing purposes).
 
@@ -88,7 +101,7 @@ class SolarmanServer():
     self.log.info(f"{self.name}: setting register value {{{address}: {value}}}")
     self.registers[address] = value
 
-  def set_register_values(self, addresses: List[int], values: List[int]):
+  def set_register_values(self, addresses: List[int], values: List[int]) -> None:
     """
     Set multiple register values starting from a given address (for testing purposes).
 
@@ -103,15 +116,15 @@ class SolarmanServer():
         The list of values to store in consecutive registers.
     """
     if len(addresses) != len(values):
-      self.log.info(f"{self.name}: addresses count ({len(addresses)}) should be the same as values count (len(values))")
-      return
+      raise ValueError(f"{self.name}: addresses count ({len(addresses)}) should be "
+                       f"the same as values count ({len(values)})")
 
     self.log.info(f"{self.name}: setting register addresses {addresses} to values {values}")
 
     for i, address in enumerate(addresses):
       self.registers[address] = values[i]
 
-  def clear_registers(self):
+  def clear_registers(self) -> None:
     """
     Clear all register values (for testing purposes).
 
@@ -120,7 +133,7 @@ class SolarmanServer():
     """
     self.registers.clear()
 
-  def clear_registers_status(self):
+  def clear_registers_status(self) -> None:
     """
     Clear the read and written registers tracking (for testing purposes).
 
@@ -130,7 +143,7 @@ class SolarmanServer():
     self.readed_registers.clear()
     self.written_registers.clear()
 
-  def is_registers_readed(self, starting_address: int, quantity: int):
+  def is_registers_readed(self, starting_address: int, quantity: int) -> bool:
     """
     Check if a range of registers has been read (for testing purposes).
 
@@ -154,7 +167,7 @@ class SolarmanServer():
         return False
     return True
 
-  def is_registers_written(self, starting_address: int, quantity: int):
+  def is_registers_written(self, starting_address: int, quantity: int) -> bool:
     """
     Check if a range of registers has been written (for testing purposes).
 
@@ -181,7 +194,7 @@ class SolarmanServer():
   def is_something_written(self) -> bool:
     return bool(self.written_registers)
 
-  async def start_server(self):
+  async def start_server(self) -> None:
     """
     Start the asynchronous TCP server
 
@@ -203,7 +216,7 @@ class SolarmanServer():
       reuse_port = False if _WIN_PLATFORM else True,
     )
 
-  def sync_runner(self):
+  def sync_runner(self) -> None:
     """
     Run the asynchronous server in a dedicated thread
 
@@ -214,7 +227,7 @@ class SolarmanServer():
     self.loop.create_task(self.start_server())
     self.loop.run_forever()
 
-  async def stream_handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+  async def stream_handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     """
     Asynchronous handler for an individual TCP client connection.
 
@@ -302,7 +315,12 @@ class SolarmanServer():
     elif isinstance(func, ReadHoldingRegisters):
       if func.quantity is None or func.starting_address is None:
         raise ValueError("ReadHoldingRegisters request missing starting_address or quantity")
-      read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
+
+      if self.random_values_on_read:
+        read_values = [random.randint(0, 2**16 - 1) for x in range(func.quantity)]
+      else:
+        read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
+
       res = func.create_response_pdu(read_values)
       new_values = self.get_new_registers_values(func.starting_address, read_values)
 

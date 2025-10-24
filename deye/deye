@@ -109,8 +109,9 @@ try:
   current = perf_counter()
 
   # Initialize locker
-  lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name)
-  locker = DeyeFileLocker(os.path.basename(__file__), lockfile, verbose = args.verbose_output == True)
+  suffix = '_test' if loggers.is_test_loggers else ''
+  lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name_template.format(suffix))
+  locker = DeyeFileLocker(os.path.basename(__file__) + suffix, lockfile, verbose = args.verbose_output == True)
 
   locker.acquire()
 

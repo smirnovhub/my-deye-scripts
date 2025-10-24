@@ -286,12 +286,20 @@ class DeyeBaseRegisters:
     raise self.not_implemented('today_load_consumption_register')
 
   @property
-  def today_production_register(self) -> DeyeRegister:
-    raise self.not_implemented('today_production_register')
+  def today_pv_production_register(self) -> DeyeRegister:
+    raise self.not_implemented('today_pv_production_register')
 
   @property
-  def today_production_cost_register(self) -> DeyeRegister:
-    raise self.not_implemented('today_production_cost_register')
+  def today_pv_production_cost_register(self) -> DeyeRegister:
+    raise self.not_implemented('today_pv_production_cost_register')
+
+  @property
+  def today_grid_purchased_energy_cost_register(self) -> DeyeRegister:
+    raise self.not_implemented('today_grid_purchased_energy_cost_register')
+
+  @property
+  def today_grid_feed_in_energy_cost_register(self) -> DeyeRegister:
+    raise self.not_implemented('today_grid_feed_in_energy_cost_register')
 
   @property
   def today_gen_energy_cost_register(self) -> DeyeRegister:
@@ -322,12 +330,20 @@ class DeyeBaseRegisters:
     raise self.not_implemented('total_load_consumption_register')
 
   @property
-  def total_production_register(self) -> DeyeRegister:
-    raise self.not_implemented('total_production_register')
+  def total_pv_production_register(self) -> DeyeRegister:
+    raise self.not_implemented('total_pv_production_register')
 
   @property
-  def total_production_cost_register(self) -> DeyeRegister:
-    raise self.not_implemented('total_production_cost_register')
+  def total_pv_production_cost_register(self) -> DeyeRegister:
+    raise self.not_implemented('total_pv_production_cost_register')
+
+  @property
+  def total_grid_purchased_energy_cost_register(self) -> DeyeRegister:
+    raise self.not_implemented('total_grid_purchased_energy_cost_register')
+
+  @property
+  def total_grid_feed_in_energy_cost_register(self) -> DeyeRegister:
+    raise self.not_implemented('total_grid_feed_in_energy_cost_register')
 
   @property
   def total_gen_energy_cost_register(self) -> DeyeRegister:

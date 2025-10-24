@@ -1,3 +1,5 @@
+from typing import Any
+
 from int_deye_register import IntDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
@@ -12,8 +14,9 @@ class IntWritableDeyeRegister(IntDeyeRegister):
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
+    quantity: int = 1,
   ):
-    super().__init__(address, name, description, suffix, avg)
+    super().__init__(address, name, description, suffix, avg, quantity)
     self._min_value = min_value
     self._max_value = max_value
 
@@ -21,7 +24,7 @@ class IntWritableDeyeRegister(IntDeyeRegister):
   def can_write(self) -> bool:
     return True
 
-  def write(self, interactor: DeyeModbusInteractor, value):
+  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
     try:
       value = int(value)
     except Exception:

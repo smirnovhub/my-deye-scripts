@@ -3,6 +3,7 @@ import re
 import json
 import time
 
+from typing import Any, Optional
 from datetime import datetime
 
 from deye_utils import DeyeUtils
@@ -21,7 +22,7 @@ class DeyeCacheManager:
   def get_cache_filename(self, register_addr, quantity) -> str:
     return os.path.join(self.cache_path, f"registers-{self.name}-{register_addr}-{quantity}.json")
 
-  def save_to_cache(self, register_addr, quantity, data):
+  def save_to_cache(self, register_addr, quantity, data) -> None:
     filename = self.get_cache_filename(register_addr, quantity)
     now = datetime.now().strftime(DeyeUtils.time_format_str)
 
@@ -53,7 +54,7 @@ class DeyeCacheManager:
     if self.verbose:
       print(f"{self.name}: saved to cache address = {register_addr}, quantity = {quantity}, data = {data}")
 
-  def load_from_cache(self, register_addr, quantity):
+  def load_from_cache(self, register_addr, quantity) -> Optional[Any]:
     if self.caching_time < 1:
       return None
 
@@ -85,7 +86,7 @@ class DeyeCacheManager:
 
     return content.get("data")
 
-  def remove_overlapping(self, register_addr, values):
+  def remove_overlapping(self, register_addr, values) -> None:
     # Remove cache files overlapping with the given register range
     to_delete_start = register_addr
     to_delete_end = register_addr + len(values) - 1 # inclusive
