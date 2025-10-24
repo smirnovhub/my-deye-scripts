@@ -6,16 +6,16 @@ from deye_exceptions import DeyeValueException
 from deye_register_average_type import DeyeRegisterAverageType
 
 class DeyeRegister:
-  def enqueue(self, interactor: DeyeModbusInteractor):
+  def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     raise self.not_implemented('enqueue()')
 
-  def read(self, interactors: List[DeyeModbusInteractor]):
+  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     raise self.not_implemented('read()')
 
-  def write(self, interactor: DeyeModbusInteractor, value):
+  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
     raise self.not_implemented('write()')
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     raise self.not_implemented('read_internal()')
 
   @property
