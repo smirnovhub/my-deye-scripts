@@ -4,6 +4,8 @@ import time
 
 from typing import Optional, List
 
+from telebot_utils import TelebotUtils
+
 class TelebotProgressMessage:
   def __init__(self, bot: telebot.TeleBot) -> None:
     """
@@ -82,8 +84,7 @@ class TelebotProgressMessage:
     self.hide()
 
     # If we received new command, process it
-    if message.text.startswith('/'):
-      self.bot.process_new_messages([message])
+    TelebotUtils.forward_next(self.bot, message)
 
   def hide(self) -> None:
     """

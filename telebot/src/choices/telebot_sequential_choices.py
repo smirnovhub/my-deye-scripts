@@ -117,8 +117,7 @@ class SequentialChoices:
     )
 
     # if we received new command, process it
-    if message.text.startswith('/'):
-      bot.process_new_messages([message])
+    if TelebotUtils.forward_next(bot, message):
       return
 
     # Call the optional text callback with user's input

@@ -183,8 +183,7 @@ class CountdownWithCancel:
     )
 
     # If we received new command, process it
-    if message.text.startswith('/'):
-      bot.process_new_messages([message])
+    if TelebotUtils.forward_next(bot, message):
       return
 
   # Register a single global callback_query handler (only once)

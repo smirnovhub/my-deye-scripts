@@ -316,5 +316,4 @@ class AdvancedChoice:
       pass
 
     # Forward new commands to the bot
-    if message.text.startswith('/'):
-      bot.process_new_messages([message])
+    TelebotUtils.forward_next(bot, message)
