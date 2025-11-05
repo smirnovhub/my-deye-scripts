@@ -1,22 +1,43 @@
+from typing import Any, List
+
+from datetime import datetime
+
+from deye_exceptions import DeyeValueException
+from deye_register import DeyeRegister
 from deye_utils import DeyeUtils
-from system_time_writable_deye_register import SystemTimeWritableDeyeRegister
+from int_deye_register import IntDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
-from deye_exceptions import DeyeNotImplementedException
 
-class SystemTimeDiffDeyeRegister(SystemTimeWritableDeyeRegister):
-  def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
-    super().__init__(address, name, description, suffix, avg)
-    self._value = 0
+class SystemTimeDiffDeyeRegister(IntDeyeRegister):
+  def __init__(
+    self,
+    system_time_register: DeyeRegister,
+    name: str,
+    description: str,
+    suffix: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
+    super().__init__(0, name, description, suffix, avg, 0)
+    self._system_time_register = system_time_register
 
   @property
-  def can_write(self) -> bool:
-    return False
+  def addresses(self) -> List[int]:
+    return self._system_time_register.addresses
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
-    value = super().read_internal(interactor)
-    value = int(round((value - DeyeUtils.get_current_time()).total_seconds()))
-    return value
+  def enqueue(self, interactor: DeyeModbusInteractor) -> None:
+    self._system_time_register.enqueue(interactor)
 
-  def write(self, interactor: DeyeModbusInteractor, value):
-    raise DeyeNotImplementedException(f'{type(self).__name__}.write() is not supported')
+  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
+    self._system_time_register.read(interactors)
+    return super().read(interactors)
+
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
+    value = self._system_time_register.read_internal(interactor)
+    if not isinstance(value, datetime):
+      raise DeyeValueException(f"{type(self).__name__}.read_internal(): system time value should by of type 'datetime'")
+    return int(round((value - DeyeUtils.get_current_time()).total_seconds()))
+
+  @property
+  def system_time_register(self) -> DeyeRegister:
+    return self._system_time_register

@@ -20,14 +20,14 @@ class DeyeModbusInteractor:
   def is_master(self) -> bool:
     return self.logger.name == self.loggers.master.name
 
-  def clear_registers_queue(self):
+  def clear_registers_queue(self) -> None:
     self.registers_queue.clear()
 
-  def enqueue_register(self, register_addr: int, quantity: int):
+  def enqueue_register(self, register_addr: int, quantity: int) -> None:
     for i in range(quantity):
       self.registers_queue[register_addr + i] = 0
 
-  def process_enqueued_registers(self):
+  def process_enqueued_registers(self) -> None:
     if len(self.registers_queue) == 0:
       return
 
@@ -65,7 +65,7 @@ class DeyeModbusInteractor:
         if (idx + start) in group:
           self.registers_queue[idx + start] = value
 
-  def read_register(self, register_addr: int, quantity: int):
+  def read_register(self, register_addr: int, quantity: int) -> List[int]:
     result = []
 
     for i in range(quantity):
@@ -74,8 +74,8 @@ class DeyeModbusInteractor:
 
     return result
 
-  def write_register(self, register_addr: int, values: List[int]):
+  def write_register(self, register_addr: int, values: List[int]) -> int:
     return self.solarman.write_multiple_holding_registers(register_addr, values)
 
-  def disconnect(self):
+  def disconnect(self) -> None:
     self.solarman.disconnect()

@@ -19,12 +19,14 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     all_command: TelebotMenuItem,
     master_command: TelebotMenuItem,
     slave_command: TelebotMenuItem,
+    title: str = TelebotConstants.default_title,
   ):
     super().__init__(bot)
     self.registers = registers
     self.all_command = all_command
     self.master_command = master_command
     self.slave_command = slave_command
+    self.title = title
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -80,7 +82,7 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     CommandChoice.ask_command_choice(
       self.bot,
       message.chat.id,
-      f'<b>Inverter: {self.loggers.accumulated_registers_prefix}</b>\n{info}',
+      f'<b>{self.title}: {self.loggers.accumulated_registers_prefix}</b>\n{info}',
       choices,
       max_per_row = 2,
     )

@@ -1,3 +1,4 @@
+import math
 import os
 import sys
 import time
@@ -29,8 +30,10 @@ from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
 from solarman_server import SolarmanServer
-from deye_register_average_type import DeyeRegisterAverageType
 from deye_test_helper import DeyeTestHelper
+from float_deye_register import FloatDeyeRegister
+from deye_register_average_type import DeyeRegisterAverageType
+from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
 
 DeyeUtils.turn_tests_on()
 
@@ -88,12 +91,20 @@ for register in registers.all_registers:
     random_value = DeyeTestHelper.get_random_by_register_type(register)
     if random_value is None:
       continue
+
     server.set_register_values(random_value.register.addresses, random_value.values)
-    try:
-      total_value += round(float(random_value.value) / divider, 2)
-    except:
-      pass
+
+    digits = round(math.log10(register.scale)) if isinstance(register, FloatDeyeRegister) else 2
+
+    if isinstance(register.value, int) or isinstance(register.value, float):
+      total_value += round(float(random_value.value) / divider, digits)
+
+    total_value = round(total_value, digits)
+
     values.append(random_value.value)
+
+  if isinstance(register, SystemTimeDiffDeyeRegister):
+    total_value = round(total_value)
 
   total_val = DeyeUtils.custom_round(total_value)
 

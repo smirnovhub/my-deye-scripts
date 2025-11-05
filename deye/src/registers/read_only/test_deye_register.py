@@ -1,3 +1,5 @@
+from typing import Any
+
 from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 
@@ -6,7 +8,7 @@ class TestDeyeRegister(BaseDeyeRegister):
     super().__init__(address, quantity, name, description, suffix)
     self._value = 0
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     values = interactor.read_register(self.address, self.quantity)
 
     for idx, x in enumerate(values):

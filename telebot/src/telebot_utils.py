@@ -153,6 +153,15 @@ class TelebotUtils:
     return filter_func
 
   @staticmethod
+  def forward_next(bot: telebot.TeleBot, message: telebot.types.Message) -> bool:
+    is_forward = message.forward_from_chat is not None and message.forward_from_chat.username is not None
+    # Forward new commands or forwarded message to the bot
+    if is_forward or message.text.startswith('/'):
+      bot.process_new_messages([message])
+      return True
+    return False
+
+  @staticmethod
   def stop_bot(bot: telebot.TeleBot):
     """
     Gracefully stops the running TeleBot instance and terminates the process.

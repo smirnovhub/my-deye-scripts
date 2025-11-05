@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from int_deye_register import IntDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
@@ -10,7 +10,7 @@ class GridStateDeyeRegister(IntDeyeRegister):
     super().__init__(address, name, description, suffix, avg)
     self._value = DeyeGridState.unknown
 
-  def read(self, interactors: List[DeyeModbusInteractor]):
+  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     if self._avg == DeyeRegisterAverageType.none or len(interactors) == 1:
       self._value = self.read_from_master_interactor(interactors)
       return self._value
@@ -23,7 +23,7 @@ class GridStateDeyeRegister(IntDeyeRegister):
 
     return self._value
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     value = super().read_internal(interactor)
     for state in DeyeGridState:
       if value == state.value:

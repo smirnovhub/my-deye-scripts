@@ -6,7 +6,6 @@ import zipfile
 import telebot
 import datetime
 
-from urllib.parse import unquote
 from typing import Dict, List, TextIO
 
 from deye_utils import DeyeUtils
@@ -90,7 +89,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           self.send_results(
             scripts,
             message.chat.id,
-            f'{unquote(CommonUtils.large_red_circle_emoji)} '
+            f'{CommonUtils.large_red_circle_emoji} '
             f'<b>All tests failed</b> after {t}. '
             'Check logs for details.',
           )
@@ -98,7 +97,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           self.send_results(
             scripts,
             message.chat.id,
-            f'{unquote(CommonUtils.large_yellow_circle_emoji)} '
+            f'{CommonUtils.large_yellow_circle_emoji} '
             f"<b>{failed_count} test(s) failed</b> and "
             f"{len(scripts) - failed_count} test(s) completed successfully in {t}. "
             "Check logs for details.",
@@ -107,7 +106,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           self.send_results(
             scripts,
             message.chat.id,
-            f'{unquote(CommonUtils.large_green_circle_emoji)} '
+            f'{CommonUtils.large_green_circle_emoji} '
             f'All tests completed successfully in {t}.',
           )
       except Exception as e:
@@ -115,7 +114,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
         time.sleep(1)
         self.bot.send_message(
           message.chat.id,
-          f'{unquote(CommonUtils.large_red_circle_emoji)} '
+          f'{CommonUtils.large_red_circle_emoji} '
           f'Tests failed after {t}. '
           f'Check log files for details: {str(e)}',
         )
@@ -172,7 +171,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           self.write_and_flush(f, f"--- RUNNING [{i + 1}/{len(scripts)}] {test_name} ---\n\n")
 
           time.sleep(1)
-          self.running_test = (f'{unquote(CommonUtils.white_circle_emoji)} '
+          self.running_test = (f'{CommonUtils.white_circle_emoji} '
                                f'[{i + 1}/{len(scripts)}] Running: {test_name}')
           self.progress.show(
             chat_id,
@@ -195,7 +194,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
             self.bot.send_message(
               chat_id,
-              f'{unquote(CommonUtils.large_red_circle_emoji)} '
+              f'{CommonUtils.large_red_circle_emoji} '
               f'[{i + 1}/{len(scripts)}] '
               f'<b>Failed</b> after {t}: {test_name}',
               parse_mode = 'HTML',
@@ -211,7 +210,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
             t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
             self.bot.send_message(
               chat_id,
-              f'{unquote(CommonUtils.large_red_circle_emoji)} '
+              f'{CommonUtils.large_red_circle_emoji} '
               f'[{i + 1}/{len(scripts)}] '
               f'<b>Failed</b> after {t}: {test_name}',
               parse_mode = 'HTML',
@@ -232,7 +231,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           last_iteration_time = time.time()
           self.bot.send_message(
             chat_id,
-            f'{unquote(CommonUtils.large_green_circle_emoji)} '
+            f'{CommonUtils.large_green_circle_emoji} '
             f'[{i + 1}/{len(scripts)}] '
             f'<b>Success</b> after {t}: {test_name}',
             parse_mode = 'HTML',

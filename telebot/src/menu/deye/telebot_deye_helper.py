@@ -46,6 +46,8 @@ class TelebotDeyeHelper:
 
     for register in registers:
       desc = register.description.replace('Inverter ', '')
+      desc = desc.replace('Today ', '')
+      desc = desc.replace('Total ', '')
       result += f'{desc}: {register.pretty_value} {register.suffix}\n'
 
     return result

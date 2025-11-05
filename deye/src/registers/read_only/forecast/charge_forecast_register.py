@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from datetime import datetime, timedelta
 
@@ -6,6 +6,7 @@ from deye_utils import DeyeUtils
 from deye_register import DeyeRegister
 from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
+from deye_register_average_type import DeyeRegisterAverageType
 
 class ChargeForecastRegister(BaseDeyeRegister):
   def __init__(
@@ -15,9 +16,8 @@ class ChargeForecastRegister(BaseDeyeRegister):
     battery_current_register: DeyeRegister,
     name: str,
     description: str,
-    suffix: str,
   ):
-    super().__init__(0, 0, name, description, suffix)
+    super().__init__(0, 0, name, description, '', DeyeRegisterAverageType.only_master)
     self._value = ''
 
     self._battery_soc_register = battery_soc_register
@@ -31,18 +31,18 @@ class ChargeForecastRegister(BaseDeyeRegister):
       self._battery_current_register.addresses
     return list(set(addresses))
 
-  def enqueue(self, interactor: DeyeModbusInteractor):
+  def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     self._battery_soc_register.enqueue(interactor)
     self._battery_capacity_register.enqueue(interactor)
     self._battery_current_register.enqueue(interactor)
 
-  def read(self, interactors: List[DeyeModbusInteractor]):
+  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     self._battery_soc_register.read(interactors)
     self._battery_capacity_register.read(interactors)
     self._battery_current_register.read(interactors)
     return super().read(interactors)
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     # Charge forecast
     battery_soc = self._battery_soc_register.value
     battery_capacity = self._battery_capacity_register.value

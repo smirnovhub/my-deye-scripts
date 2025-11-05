@@ -1,5 +1,6 @@
 import re
 
+from typing import Any
 from datetime import datetime
 
 from deye_utils import DeyeUtils
@@ -23,9 +24,9 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
   def can_write(self) -> bool:
     return True
 
-  def read_internal(self, interactor: DeyeModbusInteractor):
+  def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     data = interactor.read_register(self.address, self.quantity)
-    year, month, day, hour, minute, second = DeyeUtils.to_bytes(data)
+    year, month, day, hour, minute, second = DeyeUtils.to_unsigned_bytes(data)
 
     try:
       value = datetime(year + 2000, month, day, hour, minute, second)
@@ -34,7 +35,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
     return value
 
-  def write(self, interactor: DeyeModbusInteractor, value):
+  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
     val = str(value)
 
     if not re.match(r'^\d{4}\-\d{2}\-\d{2}\s\d{2}\:\d{2}\:\d{2}$', val):

@@ -1,6 +1,5 @@
 import re
 import telebot
-import urllib.parse
 
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
@@ -90,8 +89,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     )
 
     # If we received new command, skip it
-    if message.text.startswith('/'):
-      self.bot.process_new_messages([message])
+    if TelebotUtils.forward_next(self.bot, message):
       return
 
     if message.text is not None:
@@ -153,9 +151,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     )
 
   def on_finish(self, chat_id: int):
-    self.bot.send_message(chat_id,
-                          f'{urllib.parse.unquote(CommonUtils.clock_face_one_oclock)} Restarting telebot...',
-                          parse_mode = 'HTML')
+    self.bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...', parse_mode = 'HTML')
     TelebotUtils.stop_bot(self.bot)
 
   def on_cancel(self, chat_id: int):

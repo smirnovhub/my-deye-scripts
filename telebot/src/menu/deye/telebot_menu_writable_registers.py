@@ -138,8 +138,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       return
 
     # if we received new command, process it
-    if message.text.startswith('/'):
-      self.bot.process_new_messages([message])
+    if TelebotUtils.forward_next(self.bot, message):
       return
 
     register = self.registers.get_register_by_name(register_name)

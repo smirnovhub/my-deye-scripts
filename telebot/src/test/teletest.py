@@ -1,15 +1,14 @@
 import sys
 import time
 import logging
-import datetime
 
 from typing import List
 
-from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from all_settings_registers import AllSettingsRegisters
 from master_settings_registers import MasterSettingsRegisters
 from common_utils import CommonUtils
+from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from accumulated_info_registers import AccumulatedInfoRegisters
 from slave_info_registers import SlaveInfoRegisters
@@ -60,8 +59,7 @@ class TeleTest:
     modules = self._get_test_modules(self.bot)
 
     try:
-      for i, module in enumerate(modules):
-        start_time = datetime.datetime.now()
+      for module in modules:
         self._clear_data(servers, log)
         log.info(f'Running module {type(module).__name__}...')
         module.run_tests(servers)
@@ -76,11 +74,10 @@ class TeleTest:
       msg = f'An exception occurred while running {type(module).__name__}{info}: {str(e)}'
       print(msg)
       log.info(msg)
-
-      delta = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
       time.sleep(1)
-      send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} [{i + 1}/{len(modules)}] '
-                                    f'<b>Failed</b> after {delta}: {module.description}: {msg}')
+      send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} '
+                                    f'<b>Telebot test failed</b> while running '
+                                    f'{type(module).__name__}{info}: {str(e)}')
       sys.exit(1)
 
   def _clear_data(self, servers: List[SolarmanServer], log: logging.Logger):
@@ -120,24 +117,28 @@ class TeleTest:
         name = self.loggers.accumulated_registers_prefix,
         command = TelebotMenuItem.deye_all_today_stat,
         register_creator = lambda prefix: TodayStatRegisters(prefix),
+        title = TelebotConstants.today_stat_title,
       ),
       TelebotRegistersTestModule(
         bot,
         name = self.loggers.master.name,
         command = TelebotMenuItem.deye_master_today_stat,
         register_creator = lambda prefix: TodayStatRegisters(prefix),
+        title = TelebotConstants.today_stat_title,
       ),
       TelebotRegistersTestModule(
         bot,
         name = self.loggers.accumulated_registers_prefix,
         command = TelebotMenuItem.deye_all_total_stat,
         register_creator = lambda prefix: TotalStatRegisters(prefix),
+        title = TelebotConstants.total_stat_title,
       ),
       TelebotRegistersTestModule(
         bot,
         name = self.loggers.master.name,
         command = TelebotMenuItem.deye_master_total_stat,
         register_creator = lambda prefix: TotalStatRegisters(prefix),
+        title = TelebotConstants.total_stat_title,
       ),
       TelebotRegistersTestModule(
         bot,
@@ -172,12 +173,14 @@ class TeleTest:
           name = logger.name,
           command = TelebotMenuItem.deye_slave_today_stat,
           register_creator = lambda prefix: TodayStatRegisters(prefix),
+          title = TelebotConstants.today_stat_title,
         ),
         TelebotRegistersTestModule(
           bot,
           name = logger.name,
           command = TelebotMenuItem.deye_slave_total_stat,
           register_creator = lambda prefix: TotalStatRegisters(prefix),
+          title = TelebotConstants.total_stat_title,
         ),
       ])
 

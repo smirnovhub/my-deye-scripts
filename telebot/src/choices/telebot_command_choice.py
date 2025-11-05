@@ -68,5 +68,4 @@ class CommandChoice:
     )
 
     # if we received new command, process it
-    if message.text.startswith('/'):
-      bot.process_new_messages([message])
+    TelebotUtils.forward_next(bot, message)

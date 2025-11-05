@@ -2,7 +2,7 @@ import os
 import time
 import logging
 
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
@@ -35,7 +35,8 @@ class DeyeRegistersHolder:
     # Initialize locker
     verbose = kwargs.get('verbose', False)
     name = kwargs.get('name', os.path.basename(__file__))
-    lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name)
+    suffix = '_test' if self._all_loggers.is_test_loggers else ''
+    lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name_template.format(suffix))
     self.locker = DeyeFileLocker(name, lockfile, verbose = verbose)
 
     for logger in self._loggers:
@@ -69,7 +70,7 @@ class DeyeRegistersHolder:
   def accumulated_registers(self) -> DeyeRegisters:
     return self._registers[self._all_loggers.accumulated_registers_prefix]
 
-  def read_registers(self):
+  def read_registers(self) -> None:
     def log_retry(attempt, total_attempts, exception):
       self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
@@ -80,7 +81,7 @@ class DeyeRegistersHolder:
     else:
       self._read_registers_internal()
 
-  def _read_registers_internal(self):
+  def _read_registers_internal(self) -> None:
     try:
       self.locker.acquire()
     except DeyeLockAlreadyAcquiredException:
@@ -134,7 +135,7 @@ class DeyeRegistersHolder:
     retry_timeout,
     retry_delay = 1,
     on_retry: Optional[Callable[[int, int, Exception], None]] = None,
-  ):
+  ) -> None:
     last_exception: Optional[Exception] = None
     retry_attempt = 1
     total_retry_time = 0
@@ -155,7 +156,7 @@ class DeyeRegistersHolder:
       if last_exception is not None:
         raise last_exception
 
-  def write_register(self, register: DeyeRegister, value):
+  def write_register(self, register: DeyeRegister, value) -> Any:
     def log_retry(attempt, total_attempts, exception):
       self.log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
@@ -171,7 +172,7 @@ class DeyeRegistersHolder:
     else:
       return self._write_register_internal(register, value)
 
-  def _write_register_internal(self, register: DeyeRegister, value):
+  def _write_register_internal(self, register: DeyeRegister, value) -> Any:
     try:
       self.locker.acquire()
     except DeyeLockAlreadyAcquiredException:
@@ -192,7 +193,7 @@ class DeyeRegistersHolder:
     retry_timeout,
     retry_delay = 1,
     on_retry: Optional[Callable[[int, int, Exception], None]] = None,
-  ):
+  ) -> Any:
     last_exception: Optional[Exception] = None
     retry_attempt = 1
     total_retry_time = 0
@@ -212,7 +213,7 @@ class DeyeRegistersHolder:
       if last_exception is not None:
         raise last_exception
 
-  def disconnect(self):
+  def disconnect(self) -> None:
     last_exception = None
     try:
       for interactor in self._interactors:
