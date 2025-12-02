@@ -6,7 +6,7 @@ from typing import Any, List, Optional
 from datetime import datetime
 
 from deye_register import DeyeRegister
-from custom_registers import CustomRegisters
+from custom_single_registers import CustomSingleRegisters
 from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeValueException
 from deye_base_enum import DeyeBaseEnum
@@ -77,7 +77,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     return TelebotDeyeHelper.get_keyboard_for_register(self.registers, register)
 
-  def process_read_write_register_step1(self, message: telebot.types.Message, register_name: str, next_step_callback):
+  def process_read_write_register_step1(
+    self,
+    message: telebot.types.Message,
+    register_name: str,
+    next_step_callback,
+  ):
     if not self.is_authorized(message):
       return
 
@@ -88,11 +93,16 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       return
 
     if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register_name):
-      available_registers = TelebotDeyeHelper.get_available_registers(self.registers, self.auth_helper,
-                                                                      message.from_user.id)
+      available_registers = TelebotDeyeHelper.get_available_registers(
+        self.registers,
+        self.auth_helper,
+        message.from_user.id,
+      )
+
       self.bot.send_message(
         message.chat.id,
-        f'You can\'t change <b>{register.description}</b>. Available registers to change:\n{available_registers}',
+        f"You can't change <b>{register.description}</b>. "
+        f"Available registers to change:\n{available_registers}",
         parse_mode = 'HTML',
       )
       return
@@ -121,7 +131,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, str(e))
       print(traceback.format_exc())
 
-  def process_read_write_register_step2(self, message: telebot.types.Message, message_id: int, register_name: str):
+  def process_read_write_register_step2(
+    self,
+    message: telebot.types.Message,
+    message_id: int,
+    register_name: str,
+  ):
     if not self.is_authorized(message):
       return
 
@@ -159,7 +174,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomRegisters([register], prefix),
+      register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
@@ -189,7 +204,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomRegisters([register], prefix),
+      register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 

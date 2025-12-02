@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Dict, Optional
 
 from deye_register import DeyeRegister
 from deye_exceptions import DeyeNotImplementedException
@@ -12,18 +12,15 @@ class DeyeBaseRegisters:
     return self._prefix
 
   def get_register_by_name(self, name: str) -> Optional[DeyeRegister]:
-    for register in self.all_registers:
-      if register.name == name:
-        return register
-    return None
+    return self.all_registers_map.get(name)
 
   @property
   def all_registers(self) -> List[DeyeRegister]:
     raise self.not_implemented('all_registers')
 
   @property
-  def forecast_registers(self) -> List[DeyeRegister]:
-    raise self.not_implemented('forecast_registers')
+  def all_registers_map(self) -> Dict[str, DeyeRegister]:
+    raise self.not_implemented('all_registers_map')
 
   @property
   def test_registers(self) -> List[DeyeRegister]:
@@ -112,14 +109,6 @@ class DeyeBaseRegisters:
   @property
   def ct_ratio_register(self) -> DeyeRegister:
     raise self.not_implemented('ct_ratio_register')
-
-  @property
-  def charge_forecast_register(self) -> DeyeRegister:
-    raise self.not_implemented('charge_forecast_register')
-
-  @property
-  def discharge_forecast_register(self) -> DeyeRegister:
-    raise self.not_implemented('discharge_forecast_register')
 
   @property
   def gen_peak_shaving_power_register(self) -> DeyeRegister:
@@ -252,6 +241,10 @@ class DeyeBaseRegisters:
   @property
   def system_work_mode_register(self) -> DeyeRegister:
     raise self.not_implemented('system_work_mode_register')
+
+  @property
+  def time_of_use_register(self) -> DeyeRegister:
+    raise self.not_implemented('time_of_use_register')
 
   @property
   def time_of_use_power_register(self) -> DeyeRegister:

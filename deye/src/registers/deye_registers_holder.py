@@ -123,13 +123,6 @@ class DeyeRegistersHolder:
         raise DeyeUtils.get_reraised_exception(
           e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
-    for register in self.accumulated_registers.forecast_registers:
-      try:
-        register.read(self._interactors)
-      except Exception as e:
-        raise DeyeUtils.get_reraised_exception(
-          e, f'{type(self).__name__}: error while reading register {register.name}') from e
-
   def _read_registers_with_retry_internal(
     self,
     retry_timeout,

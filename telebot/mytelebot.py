@@ -3,6 +3,7 @@ import telebot
 from typing import List
 
 from deye_loggers import DeyeLoggers
+from telebot_menu_time_of_use import TelebotMenuTimeOfUse
 from telebot_users import TelebotUsers
 from telebot_base_handler import TelebotBaseHandler
 from telebot_auth_helper import TelebotAuthHelper
@@ -31,6 +32,8 @@ from testable_telebot import TestableTelebot
 from telebot_menu_revert import TelebotMenuRevert
 from telebot_menu_update import TelebotMenuUpdate
 from telebot_menu_test import TelebotMenuTest
+from telebot_menu_battery_forecast_by_percent import TelebotMenuBatteryForecastByPercent
+from telebot_menu_battery_forecast_by_time import TelebotMenuBatteryForecastByTime
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
 from telebot_send_message import send_private_telegram_message
@@ -143,7 +146,10 @@ class MyTelebot:
       TelebotMenuSlaveTotalStat(bot),
       TelebotMenuAllSettings(bot),
       TelebotMenuMasterSettings(bot),
+      TelebotMenuTimeOfUse(bot),
       TelebotMenuBatteryForecast(bot),
+      TelebotMenuBatteryForecastByPercent(bot),
+      TelebotMenuBatteryForecastByTime(bot),
       TelebotMenuSyncTime(bot),
       TelebotMenuRestart(bot),
       TelebotMenuRevert(bot),

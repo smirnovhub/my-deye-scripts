@@ -1,0 +1,7 @@
+.idea/
+.eggs/
+build/
+dist/
+example.py
+suntime.egg-info/
+suntime/__pycache__/

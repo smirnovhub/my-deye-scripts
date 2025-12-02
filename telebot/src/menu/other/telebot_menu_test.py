@@ -12,14 +12,17 @@ from deye_utils import DeyeUtils
 from common_utils import CommonUtils
 from deye_file_lock import DeyeFileLock
 from deye_file_locker import DeyeFileLocker
+from telebot_advanced_choice import AdvancedChoice
+from telebot_constants import TelebotConstants
+from telebot_fake_message import TelebotFakeMessage
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_utils import TelebotTestUtils
+from telebot_utils import TelebotUtils
 from testable_telebot import TestableTelebot
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from lock_exceptions import DeyeLockAlreadyAcquiredException
 from telebot_progress_message import TelebotProgressMessage
-from telebot_advanced_choice import AdvancedChoiceButton, AdvancedChoice
 
 class TelebotMenuTest(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
@@ -30,6 +33,9 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     self.locker = DeyeFileLocker('teletest', lockfile)
     self.logs_path = 'data/logs'
     self.running_test = 'none'
+    self.intro_text = 'Select test to run:'
+    self.tests_base_dir = '../test/src'
+    self.all_tests = 'all_tests'
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -39,107 +45,152 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     if not self.is_authorized(message):
       return
 
-    try:
-      self.locker.acquire()
-    except DeyeLockAlreadyAcquiredException:
-      self.progress.hide()
-      self.progress.show(message.chat.id, self.running_test)
-      return
-    except Exception as e:
-      self.progress.hide()
-      self.bot.send_message(message.chat.id, str(e))
+    if not self.acquire_lock(message.chat.id):
       return
 
-    DeyeUtils.ensure_dir_exists(self.logs_path)
+    try:
+      DeyeUtils.ensure_dir_exists(self.logs_path)
 
-    tests_base_dir = '../test/src'
-    scripts = TelebotTestUtils.find_tests(tests_base_dir)
+      tests_scripts = TelebotTestUtils.find_tests(self.tests_base_dir)
+      self.remove_logs(tests_scripts)
 
-    self.remove_logs(scripts)
+      os.environ['BOT_API_TEST_TOKEN'] = self.bot.token
 
-    all_tests = 'all tests'
-
-    os.environ['BOT_API_TEST_TOKEN'] = self.bot.token
-
-    options: Dict[str, str] = {all_tests: all_tests}
-    options.update({os.path.basename(s).replace('.py', '').replace('_', ' '): os.path.basename(s) for s in scripts})
-
-    def on_choice(chat_id: int, choice: AdvancedChoiceButton):
-      try:
-        self.locker.acquire()
-      except DeyeLockAlreadyAcquiredException:
-        self.progress.hide()
-        self.progress.show(message.chat.id, self.running_test)
-        return
-      except Exception as e:
-        self.progress.hide()
-        self.bot.send_message(message.chat.id, str(e))
-        return
-
-      all_start_time = datetime.datetime.now()
-      tests = scripts if choice.data == all_tests else [os.path.join(tests_base_dir, choice.data)]
-
-      try:
-        failed_count = self.run_tests(message.chat.id, tests)
-        t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
-
-        time.sleep(1)
-
-        if failed_count == len(tests):
-          self.send_results(
-            scripts,
-            message.chat.id,
-            f'{CommonUtils.large_red_circle_emoji} '
-            f'<b>All tests failed</b> after {t}. '
-            'Check logs for details.',
+      pos = message.text.find(' ')
+      if message.from_user and pos != -1:
+        param = message.text[pos + 1:].strip()
+        if param:
+          fake_message = TelebotFakeMessage(
+            message,
+            param,
+            message.from_user,
           )
-        elif failed_count > 0:
-          self.send_results(
-            scripts,
-            message.chat.id,
-            f'{CommonUtils.large_yellow_circle_emoji} '
-            f"<b>{failed_count} test(s) failed</b> and "
-            f"{len(scripts) - failed_count} test(s) completed successfully in {t}. "
-            "Check logs for details.",
-          )
-        else:
-          self.send_results(
-            scripts,
-            message.chat.id,
-            f'{CommonUtils.large_green_circle_emoji} '
-            f'All tests completed successfully in {t}.',
-          )
-      except Exception as e:
-        t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
-        time.sleep(1)
-        self.bot.send_message(
-          message.chat.id,
-          f'{CommonUtils.large_red_circle_emoji} '
-          f'Tests failed after {t}. '
-          f'Check log files for details: {str(e)}',
-        )
 
-      finally:
-        try:
-          self.locker.release()
-          self.progress.hide()
-          self.remove_logs(scripts)
-        except Exception:
-          pass
+          self.release_lock()
 
-    AdvancedChoice.ask_advanced_choice(
-      self.bot,
-      message.chat.id,
-      'Select test to run:',
-      options,
-      on_choice,
-      max_per_row = 1,
-    )
+          self.process_test_next_step(
+            fake_message,
+            message.id,
+            tests_scripts = tests_scripts,
+          )
+
+          return
+
+      tests_names = [os.path.splitext(os.path.basename(f))[0] for f in tests_scripts]
+      options: Dict[str, str] = {self.all_tests: f'/{TelebotMenuItem.test.command} {self.all_tests}'}
+      options.update({s: f"/{TelebotMenuItem.test.command} {s}" for s in tests_names})
+
+      sent = AdvancedChoice.ask_advanced_choice(
+        self.bot,
+        message.chat.id,
+        self.intro_text,
+        options,
+        lambda _, __: None,
+        max_per_row = 1,
+        edit_message_with_user_selection = True,
+      )
+
+      self.bot.clear_step_handler_by_chat_id(message.chat.id)
+      self.bot.register_next_step_handler(
+        message,
+        self.process_test_next_step,
+        sent.message_id,
+        tests_scripts = tests_scripts,
+      )
+
+    finally:
+      self.release_lock()
+
+  def process_test_next_step(
+    self,
+    message: telebot.types.Message,
+    message_id: int,
+    tests_scripts: List[str],
+  ):
+    # If we received new command, process it
+    if TelebotUtils.forward_next(self.bot, message):
+      TelebotUtils.remove_inline_buttons_with_delay(
+        bot = self.bot,
+        chat_id = message.chat.id,
+        message_id = message_id,
+        delay = TelebotConstants.buttons_remove_delay_sec,
+      )
+      return
+
+    text = f"{self.intro_text} {message.text.replace('_', ' ')}"
 
     try:
-      self.locker.release()
+      self.bot.edit_message_text(text, message.chat.id, message_id, parse_mode = 'HTML')
     except Exception:
       pass
+
+    test_name = message.text
+    if not test_name:
+      self.bot.send_message(message.chat.id, 'Test name is empty')
+      return
+
+    if test_name != self.all_tests:
+      found = False
+      t = test_name + '.py'
+      for tests_script in tests_scripts:
+        if t in tests_script:
+          test_name = tests_script
+          found = True
+          break
+
+      if not found:
+        self.bot.send_message(message.chat.id, f"Test '{test_name}' not found")
+        return
+
+    if not self.acquire_lock(message.chat.id):
+      return
+
+    try:
+      all_start_time = datetime.datetime.now()
+      tests = tests_scripts if test_name == self.all_tests else [test_name]
+
+      failed_count = self.run_tests(message.chat.id, tests)
+      t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
+
+      time.sleep(1)
+
+      if failed_count == len(tests):
+        self.send_results(
+          tests_scripts,
+          message.chat.id,
+          f'{CommonUtils.large_red_circle_emoji} '
+          f'<b>All tests failed</b> after {t}. '
+          'Check logs for details.',
+        )
+      elif failed_count > 0:
+        self.send_results(
+          tests_scripts,
+          message.chat.id,
+          f'{CommonUtils.large_yellow_circle_emoji} '
+          f"<b>{failed_count} test(s) failed</b> and "
+          f"{len(tests_scripts) - failed_count} test(s) completed successfully in {t}. "
+          "Check logs for details.",
+        )
+      else:
+        self.send_results(
+          tests_scripts,
+          message.chat.id,
+          f'{CommonUtils.large_green_circle_emoji} '
+          f'All tests completed successfully in {t}.',
+        )
+    except Exception as e:
+      t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
+      time.sleep(1)
+      self.bot.send_message(
+        message.chat.id,
+        f'{CommonUtils.large_red_circle_emoji} '
+        f'Tests failed after {t}. '
+        f'Check log files for details: {str(e)}',
+      )
+
+    finally:
+      self.release_lock()
+      self.remove_logs(tests_scripts)
 
   def remove_logs(self, scripts: List[str]):
     for script in scripts:
@@ -329,3 +380,23 @@ class TelebotMenuTest(TelebotMenuItemHandler):
         zf.write(file_path, arcname = os.path.basename(file_path))
 
     return zip_file_name
+
+  def acquire_lock(self, chat_id: int) -> bool:
+    try:
+      self.locker.acquire()
+      return True
+    except DeyeLockAlreadyAcquiredException:
+      self.progress.hide()
+      self.progress.show(chat_id, self.running_test)
+      return False
+    except Exception as e:
+      self.progress.hide()
+      self.bot.send_message(chat_id, str(e))
+      return False
+
+  def release_lock(self) -> None:
+    try:
+      self.locker.release()
+      self.progress.hide()
+    except Exception:
+      pass

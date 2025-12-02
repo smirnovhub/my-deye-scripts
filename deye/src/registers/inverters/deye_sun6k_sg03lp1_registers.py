@@ -1,10 +1,8 @@
-from typing import List
+from typing import List, Dict
 
 from deye_base_registers import DeyeBaseRegisters
 from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
-from charge_forecast_register import ChargeForecastRegister
-from discharge_forecast_register import DischargeForecastRegister
 from deye_register import DeyeRegister
 from float_deye_register import FloatDeyeRegister
 from float_writable_deye_register import FloatWritableDeyeRegister
@@ -22,6 +20,7 @@ from system_time_writable_deye_register import SystemTimeWritableDeyeRegister
 from temperature_deye_register import TemperatureDeyeRegister
 from test_deye_register import TestDeyeRegister
 from time_of_use_int_writable_deye_register import TimeOfUseIntWritableDeyeRegister
+from time_of_use_writable_deye_register import TimeOfUseWritableDeyeRegister
 from today_energy_cost_register import TodayEnergyCostRegister
 from total_energy_cost_register import TotalEnergyCostRegister
 from system_work_mode_writable_deye_register import SystemWorkModeWritableDeyeRegister
@@ -73,10 +72,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     self._load_power_register = IntDeyeRegister(178, 'load_power', 'Load Power', 'W', DeyeRegisterAverageType.accumulate)
     self._load_voltage_register = FloatDeyeRegister(157, 'load_voltage', 'Load Voltage', 'V', DeyeRegisterAverageType.average)
     self._pv1_current_register = FloatDeyeRegister(110, 'pv1_current', 'PV1 current', 'A', DeyeRegisterAverageType.accumulate)
-    self._pv1_power_register = IntDeyeRegister(186, 'pv1_power', 'PV1 power', 'W', DeyeRegisterAverageType.accumulate)
+    self._pv1_power_register = IntDeyeRegister(186, 'pv1_power', 'PV1 Power', 'W', DeyeRegisterAverageType.accumulate)
     self._pv1_voltage_register = FloatDeyeRegister(109, 'pv1_voltage', 'PV1 voltage', 'V', DeyeRegisterAverageType.average)
     self._pv2_current_register = FloatDeyeRegister(112, 'pv2_current', 'PV2 current', 'A', DeyeRegisterAverageType.accumulate)
-    self._pv2_power_register = IntDeyeRegister(187, 'pv2_power', 'PV2 power', 'W', DeyeRegisterAverageType.accumulate)
+    self._pv2_power_register = IntDeyeRegister(187, 'pv2_power', 'PV2 Power', 'W', DeyeRegisterAverageType.accumulate)
     self._pv2_voltage_register = FloatDeyeRegister(111, 'pv2_voltage', 'PV2 voltage', 'V', DeyeRegisterAverageType.average)
     self._system_work_mode_register = SystemWorkModeWritableDeyeRegister(244, 'system_work_mode', 'System Work Mode', '', DeyeRegisterAverageType.only_master)
     self._time_of_use_power_register = TimeOfUseIntWritableDeyeRegister(256, 0, 6000, 'time_of_use_power', 'Time Of Use Power', 'W', DeyeRegisterAverageType.accumulate)
@@ -97,7 +96,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     self._total_pv_production_register = LongFloatDeyeRegister(96, 'total_pv_production', 'Total PV Production', 'kWh', DeyeRegisterAverageType.accumulate)
     self._zero_export_power_register = IntWritableDeyeRegister(206, 0, 100, 'zero_export_power', 'Zero Export Power', 'W', DeyeRegisterAverageType.only_master)
     self._pv_total_current_register = SumDeyeRegister([self.pv1_current_register, self.pv2_current_register], 'pv_total_current', 'PV Total current', 'A', DeyeRegisterAverageType.special)
-    self._pv_total_power_register = SumDeyeRegister([self.pv1_power_register, self.pv2_power_register], 'pv_total_power', 'PV Total power', 'W', DeyeRegisterAverageType.special)
+    self._pv_total_power_register = SumDeyeRegister([self.pv1_power_register, self.pv2_power_register], 'pv_total_power', 'PV Total Power', 'W', DeyeRegisterAverageType.special)
     self._today_pv_production_cost_register = TodayEnergyCostRegister(self._today_pv_production_register, energy_cost.pv_energy_costs, 'today_pv_production_cost', 'Today PV Production Cost', DeyeRegisterAverageType.special)
     self._today_grid_purchased_energy_cost_register = TodayEnergyCostRegister(self._today_grid_purchased_energy_register, energy_cost.grid_purchased_energy_costs, 'today_grid_purchased_energy_cost', 'Today Grid Purchased Energy Cost', DeyeRegisterAverageType.special)
     self._today_grid_feed_in_energy_cost_register = TodayEnergyCostRegister(self._today_grid_feed_in_energy_register, energy_cost.grid_feed_in_energy_costs, 'today_grid_feed_in_energy_cost', 'Today Grid Feed-in Energy Cost', DeyeRegisterAverageType.special)
@@ -107,28 +106,26 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     self._total_grid_feed_in_energy_cost_register = TotalEnergyCostRegister(self._total_grid_feed_in_energy_register, energy_cost.grid_feed_in_energy_costs, 'total_grid_feed_in_energy_cost', 'Total Grid Feed-in Energy Cost', DeyeRegisterAverageType.special)
     self._total_gen_energy_cost_register = TotalEnergyCostRegister(self._total_gen_energy_register, energy_cost.gen_energy_costs, 'total_gen_energy_cost', 'Total Gen Energy Cost', DeyeRegisterAverageType.special)
 
+    self._time_of_use_register = TimeOfUseWritableDeyeRegister(
+      weekly_address = 248,
+      charge_address = 274,
+      time_address = 250,
+      power_address = 256,
+      soc_address = 268,
+      min_soc = 15,
+      max_power = 6000,
+      name = 'time_of_use',
+      description = 'Time Of Use',
+      suffix = '',
+      avg = DeyeRegisterAverageType.only_master,
+    )
+
     self._inverter_system_time_diff_register = SystemTimeDiffDeyeRegister(
       self._inverter_system_time_register,
       'inverter_system_time_diff',
       'Inverter System Time Diff',
       'sec',
       DeyeRegisterAverageType.average,
-    )
-
-    self._charge_forecast_register = ChargeForecastRegister(
-      battery_soc_register = self.battery_soc_register,
-      battery_capacity_register = self._battery_capacity_register,
-      battery_current_register = self._battery_current_register,
-      name = 'charge_forecast',
-      description = 'Charge Forecast',
-    )
-
-    self._discharge_forecast_register = DischargeForecastRegister(
-      battery_soc_register = self.battery_soc_register,
-      battery_capacity_register = self._battery_capacity_register,
-      battery_current_register = self._battery_current_register,
-      name = 'discharge_forecast',
-      description = 'Discharge Forecast',
     )
 
     self._test1_register = IntDeyeRegister(316, 'test1', 'Test1', '')
@@ -187,6 +184,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       self._pv_total_current_register,
       self._pv_total_power_register,
       self._system_work_mode_register,
+      self._time_of_use_register,
       self._time_of_use_power_register,
       self._time_of_use_soc_register,
       self._today_battery_charged_energy_register,
@@ -214,10 +212,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       self._zero_export_power_register,
     ]
 
-    self._forecast_registers: List[DeyeRegister] = [
-      self._charge_forecast_register,
-      self._discharge_forecast_register,
-    ]
+    self._all_registers_map: Dict[str, DeyeRegister] = {reg.name: reg for reg in self._all_registers}
 
     self._test_registers: List[DeyeRegister] = [
       self._test1_register,
@@ -233,8 +228,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     return self._all_registers
 
   @property
-  def forecast_registers(self) -> List[DeyeRegister]:
-    return self._forecast_registers
+  def all_registers_map(self) -> Dict[str, DeyeRegister]:
+    return self._all_registers_map
 
   @property
   def test_registers(self) -> List[DeyeRegister]:
@@ -323,14 +318,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @property
   def ct_ratio_register(self) -> DeyeRegister:
     return self._ct_ratio_register
-
-  @property
-  def charge_forecast_register(self) -> DeyeRegister:
-    return self._charge_forecast_register
-
-  @property
-  def discharge_forecast_register(self) -> DeyeRegister:
-    return self._discharge_forecast_register
 
   @property
   def gen_peak_shaving_power_register(self) -> DeyeRegister:
@@ -463,6 +450,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @property
   def system_work_mode_register(self) -> DeyeRegister:
     return self._system_work_mode_register
+
+  @property
+  def time_of_use_register(self) -> DeyeRegister:
+    return self._time_of_use_register
 
   @property
   def time_of_use_power_register(self) -> DeyeRegister:

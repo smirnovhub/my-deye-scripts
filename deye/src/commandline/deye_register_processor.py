@@ -65,13 +65,6 @@ class DeyeRegisterProcessor:
           help = set_help,
         )
 
-      for register in self.registers.forecast_registers:
-        parser.add_argument(
-          self.get_arg_name(register, 'get'),
-          action = 'store_true',
-          help = self.get_arg_desc(register, 'get'),
-        )
-
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, 'Error while adding parameters') from e
 
@@ -186,10 +179,7 @@ class DeyeRegisterProcessor:
     if args.get_all_read_write == True:
       result.extend(self.registers.read_write_registers)
 
-    if args.forecast == True:
-      result.extend(self.registers.forecast_registers)
-
-    all_registers = self.registers.all_registers + self.registers.forecast_registers
+    all_registers = self.registers.all_registers
 
     for register in all_registers:
       arg_name = f'get_{register.name}'
