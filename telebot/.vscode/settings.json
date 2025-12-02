@@ -30,6 +30,7 @@
     "src/menu",
     "src/menu/deye",
     "src/menu/deye/all",
+    "src/menu/deye/forecast",
     "src/menu/deye/master",
     "src/menu/deye/master/settings",
     "src/menu/deye/registers",
