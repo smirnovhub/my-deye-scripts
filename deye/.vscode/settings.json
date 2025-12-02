@@ -17,8 +17,9 @@
     "src/registers/inverters",
     "src/registers/read_only",
     "src/registers/read_only/cost",
-    "src/registers/read_only/forecast",
     "src/registers/read_write",
+    "src/registers/read_write/time_of_use",
+    "src/registers/read_write/time_of_use/data",
     "src/solarman",
     "src/solarman/server",
     "src/utils"
