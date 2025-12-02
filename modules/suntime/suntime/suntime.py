@@ -159,16 +159,23 @@ class Sun:
 
         #10. Return
         hr = self._force_range(int(UT), 24)
-        min = round((UT - int(UT))*60, 0)
-        if min == 60:
+        minutes = (UT - int(UT))*60
+        min = int(minutes)
+        sec = round((minutes - min)*60, 0)
+
+        if sec >= 60:
+          min += 1
+          sec = 0
+
+        if min >= 60:
             hr += 1
             min = 0
 
         #10. check corner case https://github.com/SatAgro/suntime/issues/1
-        if hr == 24:
+        if hr >= 24:
             hr = 0
             day += 1
-            
+
             if day > calendar.monthrange(year, month)[1]:
                 day = 1
                 month += 1
@@ -177,7 +184,7 @@ class Sun:
                     month = 1
                     year += 1
 
-        return datetime.datetime(year, month, day, hr, int(min), tzinfo=tz.tzutc())
+        return datetime.datetime(year, month, day, hr, int(min), int(sec), tzinfo=tz.tzutc())
 
     @staticmethod
     def _force_range(v, max):
