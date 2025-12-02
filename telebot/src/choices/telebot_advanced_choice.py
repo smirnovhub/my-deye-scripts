@@ -31,6 +31,8 @@ class PagedOptions:
   chat_id: int
   # Total number of pages
   total_pages: int
+  # Do we need too edit message and add selection
+  edit_message_with_user_selection: bool
 
 class AdvancedChoice:
   # Prefix used to identify all callback_data strings for this feature
@@ -56,6 +58,7 @@ class AdvancedChoice:
     callback: Callable[[int, AdvancedChoiceButton], None],
     max_per_row: int = 5,
     max_lines_per_page: int = 5,
+    edit_message_with_user_selection: bool = False,
   ) -> telebot.types.Message:
     """
     Sends a message with paginated inline keyboard choices.
@@ -86,6 +89,7 @@ class AdvancedChoice:
       max_per_row = max_per_row,
       chat_id = chat_id,
       total_pages = (len(options) + max_lines_per_page - 1) // max_lines_per_page,
+      edit_message_with_user_selection = edit_message_with_user_selection,
     )
 
     # Save state before sending
@@ -106,6 +110,7 @@ class AdvancedChoice:
       bot,
       message.message_id,
       text,
+      edit_message_with_user_selection,
     )
 
     return message
@@ -268,12 +273,13 @@ class AdvancedChoice:
 
       # Update message to reflect user’s selection
       try:
-        bot.edit_message_text(
-          f'{call.message.text} {choice.text}',
-          chat_id = call.message.chat.id,
-          message_id = call.message.message_id,
-          parse_mode = 'HTML',
-        )
+        if page_data.edit_message_with_user_selection:
+          bot.edit_message_text(
+            f'{call.message.text} {choice.text}',
+            chat_id = call.message.chat.id,
+            message_id = call.message.message_id,
+            parse_mode = 'HTML',
+          )
       except Exception:
         pass
 
@@ -290,6 +296,7 @@ class AdvancedChoice:
     bot: telebot.TeleBot,
     message_id: int,
     text: str,
+    edit_message_with_user_selection: bool,
   ):
     """
     Handles user messages after an advanced choice was asked.
@@ -306,12 +313,13 @@ class AdvancedChoice:
 
     try:
       # Indicate that user skipped the selection
-      bot.edit_message_text(
-        f'{text} skipped',
-        chat_id = message.chat.id,
-        message_id = message_id,
-        parse_mode = 'HTML',
-      )
+      if edit_message_with_user_selection:
+        bot.edit_message_text(
+          f'{text} skipped',
+          chat_id = message.chat.id,
+          message_id = message_id,
+          parse_mode = 'HTML',
+        )
     except Exception:
       pass
 

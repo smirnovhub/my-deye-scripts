@@ -28,7 +28,10 @@ class TelebotMenuItem(Enum):
   deye_all_settings = ('{0}_settings', '{0} settings', DeyeSystemType.none)
   deye_master_settings = ('{0}_settings', '{0} settings')
   deye_battery_forecast = ('forecast', 'Battery forecast')
+  deye_battery_forecast_by_percent = ('forecast_by_percent', 'Battery forecast by percent', DeyeSystemType.none)
+  deye_battery_forecast_by_time = ('forecast_by_time', 'Battery forecast by time', DeyeSystemType.none)
   deye_sync_time = ('sync_time', 'Sync inverter time')
+  deye_time_of_use = ('time_of_use', 'Time of Use')
   deye_writable_registers = ('{0}', '{0}')
 
   unknown_command_echo = ('', '')

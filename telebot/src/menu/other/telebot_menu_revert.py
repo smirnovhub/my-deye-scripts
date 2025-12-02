@@ -73,6 +73,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
         },
         callback = lambda _, __: None,
         max_per_row = 1,
+        edit_message_with_user_selection = True,
       )
     else:
       sent = self.bot.send_message(message.chat.id, 'Enter commit hash to revert to:')

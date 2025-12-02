@@ -158,6 +158,18 @@ class TeleTest:
         command = TelebotMenuItem.deye_battery_forecast,
         register_creator = lambda prefix: ForecastRegisters(prefix),
       ),
+      TelebotRegistersTestModule(
+        bot,
+        name = self.loggers.accumulated_registers_prefix,
+        command = TelebotMenuItem.deye_battery_forecast_by_percent,
+        register_creator = lambda prefix: ForecastRegisters(prefix),
+      ),
+      TelebotRegistersTestModule(
+        bot,
+        name = self.loggers.accumulated_registers_prefix,
+        command = TelebotMenuItem.deye_battery_forecast_by_time,
+        register_creator = lambda prefix: ForecastRegisters(prefix),
+      ),
     ]
 
     for logger in self.loggers.slaves:
