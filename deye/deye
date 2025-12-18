@@ -62,7 +62,6 @@ parser.add_argument('-o',
                     '--only-accumulated',
                     action = 'store_true',
                     help = 'get only accumulated parameters for all inverters')
-parser.add_argument('-f', '--forecast', action = 'store_true', help = 'get battery forecast registers')
 parser.add_argument('-t', '--test', action = 'store_true', help = 'get test registers')
 parser.add_argument('--get-all-read-only', action = 'store_true', help = 'get all read only parameters')
 parser.add_argument('--get-all-read-write', action = 'store_true', help = 'get all read/write parameters')

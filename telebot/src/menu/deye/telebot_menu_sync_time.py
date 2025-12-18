@@ -7,7 +7,7 @@ from deye_utils import DeyeUtils
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_utils import TelebotUtils
 from deye_exceptions import DeyeKnownException
-from custom_registers import CustomRegisters
+from custom_single_registers import CustomSingleRegisters
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from deye_registers_holder import DeyeRegistersHolder
@@ -34,18 +34,24 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       return
 
     if not self.auth_helper.is_writable_register_allowed(message.from_user.id, self.register.name):
-      available_registers = TelebotDeyeHelper.get_available_registers(self.registers, self.auth_helper,
-                                                                     message.from_user.id)
+      available_registers = TelebotDeyeHelper.get_available_registers(
+        self.registers,
+        self.auth_helper,
+        message.from_user.id,
+      )
+
       self.bot.send_message(
         message.chat.id,
-        f'You can\'t change <b>{self.register.description}</b>. Available registers to change:\n{available_registers}',
-        parse_mode = 'HTML')
+        f"You can't change <b>{self.register.description}</b>. "
+        f"Available registers to change:\n{available_registers}",
+        parse_mode = 'HTML',
+      )
       return
 
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomRegisters([self.register], prefix),
+      register_creator = lambda prefix: CustomSingleRegisters(self.register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
@@ -58,7 +64,11 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       holder.disconnect()
 
     if not isinstance(self.register.value, datetime):
-      self.bot.send_message(message.chat.id, 'Register type is not datetime', parse_mode = 'HTML')
+      self.bot.send_message(
+        message.chat.id,
+        f'Register type is not {datetime.__name__}',
+        parse_mode = 'HTML',
+      )
       return
 
     now = DeyeUtils.get_current_time().strftime(DeyeUtils.time_format_str)
@@ -66,16 +76,24 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     diff_seconds = int(abs(time_diff.total_seconds()))
     if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
       UserChoices.ask_confirmation(
-        self.bot, message.chat.id, f'<b>Warning!</b> '
+        self.bot,
+        message.chat.id,
+        f'<b>Warning!</b> '
         f'Difference between inverter time and current time is too big:\n'
         f'Current time: <b>{now}</b>\n'
         f'Inverter time: <b>{self.register.value.strftime(DeyeUtils.time_format_str)}</b>\n'
         f'The difference is about {diff_seconds} seconds.\n'
-        f'<b>Are you sure to sync inverter time?</b>', self.on_user_confirmation)
+        f'<b>Are you sure to sync inverter time?</b>',
+        self.on_user_confirmation,
+      )
     elif diff_seconds > TelebotConstants.inverter_system_time_does_not_need_sync_threshold_sec:
       self.on_user_confirmation(message.chat.id, True)
     else:
-      self.bot.send_message(message.chat.id, 'The inverter time is already synced', parse_mode = 'HTML')
+      self.bot.send_message(
+        message.chat.id,
+        'The inverter time is already synced',
+        parse_mode = 'HTML',
+      )
 
   def on_user_confirmation(self, chat_id: int, result: bool):
     if result:
@@ -94,7 +112,8 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         finally:
           holder.disconnect()
 
-        text = f'<b>{self.register.description}</b> changed from {old_value} to {result} {self.register.suffix}'
+        text = (f'<b>{self.register.description}</b> changed from {old_value} '
+                f'to {result} {self.register.suffix}')
 
         sent = CommandChoice.ask_command_choice(
           self.bot,

@@ -59,17 +59,17 @@ spaces_before_comment = 1
 """
 
 def get_dirs(path: str, base_dirs: List[str]):
-  pathes = []
+  paths = []
   for base in base_dirs:
     for subdir in Path(os.path.join(path, base)).glob('**/'):
       if subdir.is_dir() and not subdir.name.startswith('.') and subdir.name != '__pycache__':
         next_path = str(subdir).replace(f'{path}{os.sep}', '')
-        pathes.append(f'"{next_path}"')
-  return sorted(pathes)
+        paths.append(f'"{next_path}"')
+  return sorted(paths)
 
 def process(path: str, base_dirs: List[str]):
-  pathes = get_dirs(path, base_dirs)
-  text = settings_text.replace('INCLUDES', ',\n    '.join(pathes))
+  paths = get_dirs(path, base_dirs)
+  text = settings_text.replace('INCLUDES', ',\n    '.join(paths))
 
   modules_path = os.path.relpath(modules_dir, Path.cwd() / path)
 

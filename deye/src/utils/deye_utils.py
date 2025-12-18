@@ -84,43 +84,69 @@ class DeyeUtils:
 
   @staticmethod
   def format_end_date(date: datetime) -> str:
-    date_str1 = date.strftime('%Y-%m-%d')
-    date_str2 = datetime.now().strftime('%Y-%m-%d')
-    date_str3 = (datetime.now() + timedelta(hours = 24)).strftime('%Y-%m-%d')
+    """
+    Format a datetime object as a human-readable string with 'today', 'tomorrow', 
+    or a full date.
 
-    return 'today, ' + date.strftime('%H:%M') if date_str1 == date_str2 else\
-      ('tomorrow, ' + date.strftime('%H:%M') if date_str1 == date_str3 else\
-      date.strftime('%Y-%m-%d, %H:%M'))
+    The function compares the given date to the current date and the next day:
+      - If the date is today, returns "today, HH:MM".
+      - If the date is tomorrow, returns "tomorrow, HH:MM".
+      - Otherwise, returns "YYYY-MM-DD, HH:MM".
+
+    Args:
+        date (datetime): The datetime object to format.
+
+    Returns:
+        str: Formatted string representing the date and time.
+    """
+    today = datetime.now()
+    tomorrow = today + timedelta(days = 1)
+
+    date_day = date.date()
+    today_day = today.date()
+    tomorrow_day = tomorrow.date()
+
+    time_str = date.strftime('%H:%M')
+
+    if date_day == today_day:
+      return f"today, {time_str}"
+    if date_day == tomorrow_day:
+      return f"tomorrow, {time_str}"
+    return date.strftime('%Y-%m-%d, %H:%M')
 
   @staticmethod
-  def custom_round(value: float) -> str:
+  def custom_round(value: float, digits: int = 2) -> str:
     """
-    Rounds a floating-point number to two decimal places and returns it as a string,
-    removing any unnecessary trailing zeros and the decimal point if it becomes redundant.
+    Round a floating-point number to a specified number of decimal places and return
+    it as a cleaned string without unnecessary trailing zeros or a trailing dot.
 
     Steps:
-    1. Round the input `value` to 2 decimal places.
-    2. Convert the rounded number to a string with exactly 2 decimal places.
-    3. Remove trailing zeros and a trailing decimal point (if any) to make the output clean.
+    1. Round the input value to `digits` decimal places.
+    2. Convert the rounded value to a string with exactly `digits` decimal places.
+    3. Remove trailing zeros and a trailing decimal point if they become redundant.
 
     Examples:
-        custom_round(3.1400) -> "3.14"
-
-        custom_round(2.0)    -> "2"
-        
-        custom_round(2.500)  -> "2.5"
+        custom_round(3.14159, 2) -> "3.14"
+        custom_round(2.0, 2)     -> "2"
+        custom_round(2.500, 2)   -> "2.5"
+        custom_round(7.0, 0)     -> "7"
 
     Args:
         value (float): The number to round and format.
+        digits (int): Number of decimal places to preserve before cleanup.
 
     Returns:
-        str: The rounded number as a string without unnecessary trailing zeros or dot.
+        str: The formatted number without unnecessary trailing zeros or a final dot.
     """
     # Round the number to the specified number of decimal places
-    rounded = round(value, 2)
+    rounded = round(value, digits)
+
+    # No decimal part required — simply return integer-like string
+    if digits == 0:
+      return str(int(rounded))
 
     # Convert to string with fixed decimal places
-    s = f"{rounded:.{2}f}"
+    s = f"{rounded:.{digits}f}"
 
     # Strip trailing zeros and a trailing dot if present
     return s.rstrip("0").rstrip(".")

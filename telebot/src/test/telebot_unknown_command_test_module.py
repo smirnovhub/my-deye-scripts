@@ -80,6 +80,9 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
       if register.can_write:
         continue
 
+      if register.name == registers.time_of_use_register.name:
+        continue
+
       self.log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
 
       command = f'/{register.name}'

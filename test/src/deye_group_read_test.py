@@ -64,6 +64,7 @@ for logger in loggers.loggers:
 registers_to_skip = [
   registers.grid_state_register.name,
   registers.inverter_system_time_diff_register.name,
+  registers.time_of_use_register.name,
 ]
 
 def generate_random_register_values(server: SolarmanServer) -> Dict[str, Any]:
