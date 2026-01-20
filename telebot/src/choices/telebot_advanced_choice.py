@@ -104,6 +104,7 @@ class AdvancedChoice:
     AdvancedChoice._paged_options[message.message_id] = page_data
 
     # Register a next-step handler (used if user sends new message instead of clicking)
+    bot.clear_step_handler_by_chat_id(chat_id)
     bot.register_next_step_handler(
       message,
       AdvancedChoice._user_advanced_choice_next_step_handler,

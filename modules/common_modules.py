@@ -10,6 +10,7 @@ modules = [
   'uModbus',
   'pysolarmanv5',
   'pyTelegramBotAPI',
+  'suntime',
 ]
 
 # Add specific module directories to sys.path so they can be imported

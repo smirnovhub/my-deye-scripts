@@ -1,5 +1,7 @@
 import telebot
 
+from typing import Dict
+
 from deye_utils import DeyeUtils
 from deye_registers_holder import DeyeRegistersHolder
 from forecast_registers import ForecastRegisters
@@ -74,14 +76,19 @@ class TelebotMenuBatteryForecastBase(TelebotMenuItemHandler):
         soc_date_str = DeyeUtils.format_end_date(item.date)
         result += f'{item.soc}%: {soc_date_str}\n'
 
+      choices: Dict[str, str] = {}
+
+      if self.auth_helper.is_menu_item_allowed(message.from_user.id, TelebotMenuItem.deye_battery_forecast_by_percent):
+        choices['By percent'] = f'/{TelebotMenuItem.deye_battery_forecast_by_percent.command}'
+
+      if self.auth_helper.is_menu_item_allowed(message.from_user.id, TelebotMenuItem.deye_battery_forecast_by_time):
+        choices['By time'] = f'/{TelebotMenuItem.deye_battery_forecast_by_time.command}'
+
       CommandChoice.ask_command_choice(
         self.bot,
         message.chat.id,
         result,
-        {
-          'By percent': f'/{TelebotMenuItem.deye_battery_forecast_by_percent.command}',
-          'By time': f'/{TelebotMenuItem.deye_battery_forecast_by_time.command}',
-        },
+        choices,
         max_per_row = 2,
       )
     except Exception as e:

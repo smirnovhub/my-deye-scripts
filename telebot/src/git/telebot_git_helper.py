@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 from subprocess import CompletedProcess
 
 from deye_exceptions import DeyeValueException
@@ -11,6 +11,7 @@ from telebot_git_exception import TelebotGitException
 class TelebotGitHelper:
   def __init__(self):
     self._current_dir = os.path.dirname(__file__)
+    self._local_repo_mark = 'git.dmitry'
 
   def is_repository_up_to_date(self) -> bool:
     """
@@ -69,9 +70,53 @@ class TelebotGitHelper:
     )
 
   def get_last_commit_hash(self) -> str:
+    repo_name = self.get_repo_name()
+
+    # Return global last commit hash for production repo
+    if self._local_repo_mark not in repo_name:
+      return self._run_git_command_and_get_result(
+        ["rev-parse", "HEAD"],
+        'rev-parse HEAD',
+      )
+
+    # Return last commit hash for top-level folder in working repo
+
+    # Find the root of the Git repository
+    # This command returns the absolute path to the folder containing the .git directory
+    repo_root = self._run_git_command_and_get_result(
+      ['rev-parse', '--show-toplevel'],
+      'rev-parse --show-toplevel',
+      cwd = self._current_dir,
+    )
+
+    # Calculate the relative path from the repo root to the script's directory
+    # Example: if root is '/projects/app' and script is in '/projects/app/src/utils'
+    # the relative path will be 'src/utils'
+    rel_path = os.path.relpath(self._current_dir, repo_root)
+
+    # Extract the top-level directory name from the relative path
+    # Using os.sep ensures it works on both Windows and Linux
+    top_folder_name = rel_path.split(os.sep)[0]
+
+    # Handle the edge case where the script is executed directly from the repo root
+    if top_folder_name == ".":
+      target_path = repo_root
+    else:
+      # Reconstruct the full path to that top-level folder
+      target_path = os.path.join(repo_root, top_folder_name)
+
+    # Get the hash of the latest commit that affected this specific folder
+    # 'rev-list -1 HEAD -- <path>' returns the most recent commit ID for the given path
     return self._run_git_command_and_get_result(
-      ["rev-parse", "HEAD"],
-      'rev-parse HEAD',
+      ['rev-list', '-1', 'HEAD', '--', target_path],
+      'rev-list -1 HEAD',
+      cwd = repo_root,
+    )
+
+  def get_repo_name(self) -> str:
+    return self._run_git_command_and_get_result(
+      ["config", "--get", "remote.origin.url"],
+      'config --get remote.origin.url',
     )
 
   def get_last_commit_short_hash(self) -> str:
@@ -178,7 +223,12 @@ class TelebotGitHelper:
 
     return commits_dict
 
-  def _run_git_command_and_get_result(self, commands: List[str], command_name: str) -> str:
+  def _run_git_command_and_get_result(
+    self,
+    commands: List[str],
+    command_name: str,
+    cwd: Optional[str] = None,
+  ) -> str:
     """
     Execute a git command and return its stdout output as a string.
 
@@ -197,6 +247,7 @@ class TelebotGitHelper:
     try:
       result = subprocess.run(
         ["git", "-C", self._current_dir] + commands,
+        cwd = cwd,
         capture_output = True,
         text = True,
       )

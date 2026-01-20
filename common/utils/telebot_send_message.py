@@ -14,6 +14,14 @@ def send_private_telegram_message(message):
   except:
     print(f'Error while sending message to {TelebotCredentials.PRIVATE_CHAT_ID}')
 
+def send_public_telegram_message(message):
+  try:
+    if is_bot_token_correct(TelebotCredentials.BOT_API_TOKEN) and is_chat_id_correct(TelebotCredentials.PUBLIC_CHAT_ID):
+      url = _api_url.format(TelebotCredentials.BOT_API_TOKEN, TelebotCredentials.PUBLIC_CHAT_ID, message)
+      requests.get(url)
+  except:
+    print(f'Error while sending message to {TelebotCredentials.PUBLIC_CHAT_ID}')
+
 def is_bot_token_correct(token: str) -> bool:
   pattern = re.compile(r"^\d+:.+$")
   if pattern.match(token):
