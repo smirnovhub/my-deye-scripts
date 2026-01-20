@@ -26,14 +26,7 @@ class BatteryForecastData:
   items: List[BatteryForecastItem]
 
 class BatteryForecastUtils:
-  default_charge_lost_coef = 1.25
   forecast_lower_soc = 10
-
-  charge_lost_coef_by_current = {
-    1.3: 5,
-    default_charge_lost_coef: 9999,
-  }
-
   @staticmethod
   def get_forecast_by_percent(
     battery_soc: int,
@@ -132,6 +125,8 @@ class BatteryForecastUtils:
 
     charge_lost_coef = BatteryForecastUtils.get_charge_lost_coef(battery_current)
 
+    now = datetime.now()
+
     while True:
       soc += percent_step
 
@@ -145,7 +140,7 @@ class BatteryForecastUtils:
 
       capacity = battery_capacity * (soc_delta / 100) * charge_lost_coef
       hours_to_soc = abs(capacity / battery_current)
-      soc_date = datetime.now() + timedelta(hours = hours_to_soc)
+      soc_date = now + timedelta(hours = hours_to_soc)
 
       items.append(BatteryForecastItem(
         soc = round(soc),
@@ -182,11 +177,13 @@ class BatteryForecastUtils:
     if soc == battery_soc:
       soc -= percent_step
 
+    now = datetime.now()
+
     while soc >= BatteryForecastUtils.forecast_lower_soc:
       soc_delta = battery_soc - soc
       capacity = battery_capacity * (soc_delta / 100)
       hours_to_soc = abs(capacity / battery_current)
-      soc_date = datetime.now() + timedelta(hours = hours_to_soc)
+      soc_date = now + timedelta(hours = hours_to_soc)
 
       items.append(BatteryForecastItem(
         soc = round(soc),
@@ -360,7 +357,7 @@ class BatteryForecastUtils:
       hours_to_soc = abs(capacity / battery_current)
 
       # exact datetime for final soc
-      soc_date = datetime.now() + timedelta(hours = hours_to_soc)
+      soc_date = now + timedelta(hours = hours_to_soc)
 
       # append the final soc point
       items.append(BatteryForecastItem(
@@ -377,8 +374,17 @@ class BatteryForecastUtils:
   @staticmethod
   def get_charge_lost_coef(battery_current: float) -> float:
     battery_current = abs(battery_current)
-    for coef, current in BatteryForecastUtils.charge_lost_coef_by_current.items():
-      if battery_current <= current:
-        print(f'COEF = {coef}')
-        return coef
-    return BatteryForecastUtils.default_charge_lost_coef
+
+    current1, coef1 = 3, 1.3
+    current2, coef2 = 25, 1.0
+
+    # Compute the slope of the line
+    slope = (coef2 - coef1) / (current2 - current1)
+
+    # Apply the linear interpolation formula
+    charge_lost_coef = coef1 + slope * (battery_current - current1)
+
+    if charge_lost_coef < 1:
+      charge_lost_coef = 1
+
+    return charge_lost_coef
