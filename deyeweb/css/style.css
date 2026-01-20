@@ -1,0 +1,128 @@
+td {
+  border: none;
+  font: bold 12px Verdana, Arial, Helvetica, sans-serif;
+  color: #000000;
+}
+
+body {
+  font: normal 12px Verdana, Arial, Helvetica, sans-serif;
+}
+
+img {
+  border-style: none;
+}
+
+table {
+  border: none;
+  border-collapse: collapse;
+}
+
+div.scrollmenu {
+  background-color: white;
+  overflow: auto;
+  white-space: nowrap;
+}
+
+div.scrollmenu a {
+  display: inline-block;
+  color: black;
+  text-align: center;
+  padding: 15px 25px 15px 25px;
+  margin: 0px 10px 10px 5px;
+  text-decoration: none;
+  font-size: 25px;
+  font-size: 4vw;
+  font-weight: bold;
+  border: 1px solid black;
+}
+
+div.scrollmenu a:hover {
+  background-color: #dddddd;
+}
+
+/* Style the tab content (and add height:100% for full page content) */
+.tabcontent {
+  color: black;
+  display: none;
+  padding-top: 35px;
+  height: 100%;
+}
+
+.tablink {
+  background-color: #dddddd;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.counter {
+  font-size: 30px;
+}
+
+.remote_data {}
+
+.remote_data_with_spinner {}
+
+.default_open {}
+
+@supports (-webkit-touch-callout: none) {
+
+  /* Hide horizontal scrollbar on ios */
+  ::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
+  }
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+details>summary {
+  list-style: none;
+}
+
+details>summary::-webkit-details-marker {
+  display: none;
+}
+
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
+td {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lock-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: 100%;
+  pointer-events: none;
+}
+
+.dark-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 160%;
+  height: 200%;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.fixed {
+  flex-shrink: 0;
+  text-align: center;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scroll-wrapper {
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
