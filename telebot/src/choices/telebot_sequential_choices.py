@@ -9,6 +9,7 @@ from telebot_constants import TelebotConstants
 @dataclass
 class ButtonNode:
   label: str
+  text: str = ''
   id: str = ''
   children: List["ButtonNode"] = field(default_factory = list)
 
@@ -34,28 +35,28 @@ class SequentialChoices:
     bot: telebot.TeleBot,
     chat_id: int,
     text: str,
-    buttons: ButtonNode,
+    root: ButtonNode,
     final_callback: Callable[[int, List[ButtonNode]], None],
     max_per_row: int = 5,
   ) -> telebot.types.Message:
     """
     Starts a sequential menu using ButtonNode tree.
     """
-    if not buttons.children:
+    if not root.children:
       return bot.send_message(chat_id, text, parse_mode = "HTML")
 
     SequentialChoices._register_global_handler(bot)
 
     keyboard = TelebotUtils.get_keyboard_for_choices({
       child.label: str(i)
-      for i, child in enumerate(buttons.children)
+      for i, child in enumerate(root.children)
     }, max_per_row, SequentialChoices._seq_prefix)
 
-    message = bot.send_message(chat_id, text, reply_markup = keyboard, parse_mode = "HTML")
+    message = bot.send_message(chat_id, root.text if root.text else text, reply_markup = keyboard, parse_mode = "HTML")
 
     SequentialChoices._step_states[chat_id] = StepState(
       message_text = text,
-      current_node = buttons,
+      current_node = root,
       results = [],
       message_id = message.message_id,
       max_per_row = max_per_row,
@@ -144,10 +145,18 @@ class SequentialChoices:
       }, state.max_per_row, SequentialChoices._seq_prefix)
 
       try:
-        bot.edit_message_reply_markup(
-          chat_id = chat_id,
-          message_id = state.message_id,
-          reply_markup = keyboard,
-        )
+        if child_node.text and child_node.text != current_node.text:
+          bot.edit_message_text(
+            child_node.text,
+            chat_id = chat_id,
+            message_id = state.message_id,
+            reply_markup = keyboard,
+          )
+        else:
+          bot.edit_message_reply_markup(
+            chat_id = chat_id,
+            message_id = state.message_id,
+            reply_markup = keyboard,
+          )
       except Exception as e:
         bot.send_message(chat_id, str(e))
