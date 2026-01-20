@@ -5,6 +5,7 @@
     "../modules/uModbus",
     "../modules/pysolarmanv5",
     "../modules/pyTelegramBotAPI",
+    "../modules/suntime",
     "../common",
     "../common/utils",
     "src",
