@@ -1,0 +1,6 @@
+Options -Indexes
+
+<FilesMatch "\.py$">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
