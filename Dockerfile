@@ -40,10 +40,7 @@ RUN git clone https://github.com/smirnovhub/my-deye-scripts.git \
  && git submodule update --init --recursive
 
 # Copy pre-configured configs to container
-COPY --chown=$USER_NAME:$USER_NAME common/deye_loggers.py \
-                                common/telebot_credentials.py \
-                                common/telebot_users.py \
-                                my-deye-scripts/common/
+COPY --chown=$USER_NAME:$USER_NAME common/*.py my-deye-scripts/common/
 
 # Starting the bot
 CMD ["python3", "my-deye-scripts/telebot/telebot"]
