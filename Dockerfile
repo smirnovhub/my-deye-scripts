@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+# Set remote repository name
+ARG REPO_NAME=my-deye-scripts
+
 # Set username variable
 ARG USER_NAME=telebot
 
@@ -31,19 +34,19 @@ USER $USER_NAME
 # Install required Python packages
 RUN pip install --no-cache-dir requests
 
-# Set working directory inside the container
+# Set working directory
 WORKDIR $APP_DIR
 
 # Clone the project and initialize submodules
-RUN git clone https://github.com/smirnovhub/my-deye-scripts.git \
- && cd my-deye-scripts \
+RUN git clone https://github.com/smirnovhub/$REPO_NAME.git \
+ && cd $REPO_NAME \
  && git submodule update --init --recursive
 
 # Copy pre-configured configs to container
-COPY --chown=$USER_NAME:$USER_NAME common/deye_loggers.py \
-                                common/telebot_credentials.py \
-                                common/telebot_users.py \
-                                my-deye-scripts/common/
+COPY --chown=$USER_NAME:$USER_NAME common/*.py $REPO_NAME/common/
+
+# Set working directory
+WORKDIR $APP_DIR/$REPO_NAME
 
 # Starting the bot
-CMD ["python3", "my-deye-scripts/telebot/telebot"]
+CMD ["python3", "telebot/telebot"]
