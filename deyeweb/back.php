@@ -26,7 +26,8 @@ if (!is_resource($process)) {
 }
 
 // Prepare JSON payload
-$payload = prepareJsonPayload();
+$json = file_get_contents('php://input');
+$payload = prepareJsonPayload($json);
 
 // Send JSON payload to Python
 fwrite($pipes[0], $payload);
