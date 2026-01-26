@@ -1,5 +1,9 @@
+import re
+
 from typing import Any, Dict
 
+from git_helper import GitHelper
+from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
@@ -25,6 +29,7 @@ class DeyeWebParamsProcessor:
     self.selections_config = DeyeWebSelectionsConfig()
     self.selections_builder_config = DeyeWebSelectionsBuilderConfig()
     self.style_manager = DeyeWebStyleManager()
+    self.git_helper = GitHelper()
 
   def get_params(self, json_data: Any) -> Dict[str, str]:
     session_id = self.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
@@ -43,6 +48,8 @@ class DeyeWebParamsProcessor:
       return self.get_forecast()
     elif command == DeyeWebRemoteCommand.get_forecast_by_time:
       return self.get_forecast()
+    elif command == DeyeWebRemoteCommand.update_scripts:
+      return self.update_scripts()
     elif command == DeyeWebRemoteCommand.write_register:
       register_name = self.get_json_field(json_data, DeyeWebConstants.json_register_name_field)
       register_value = self.get_json_field(json_data, DeyeWebConstants.json_register_value_field)
@@ -77,9 +84,35 @@ class DeyeWebParamsProcessor:
 
     result: Dict[str, str] = {}
 
-    id = DeyeWebUtils.short(DeyeWebConstants.forecast_id)
+    id = DeyeWebUtils.short(DeyeWebSection.forecast.title)
 
     result[id] = 'Battery forecast'
+
+    return result
+
+  def update_scripts(self) -> Dict[str, str]:
+    result: Dict[str, str] = {}
+
+    id = DeyeWebUtils.short(DeyeWebSection.update.title)
+
+    current_branch_name = self.git_helper.get_current_branch_name()
+
+    if current_branch_name == 'HEAD':
+      result[id] = 'Unable to update: the repository is not currently on a branch'
+      return result
+
+    pull_result = self.git_helper.pull()
+
+    if 'up to date' in pull_result.lower():
+      last_commit = self.git_helper.get_last_commit_hash_and_comment()
+      result[id] = ("Already up to date. "
+                    f"You are currently on '{current_branch_name}':\n<b>{last_commit}</b>")
+      return result
+
+    pattern = r'\d+ files? changed.*'
+    matches = re.findall(pattern, pull_result)
+
+    result[id] = "\n".join(matches)
 
     return result
 

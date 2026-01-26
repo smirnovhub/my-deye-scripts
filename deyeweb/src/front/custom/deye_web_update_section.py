@@ -4,9 +4,9 @@ from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
 
-class DeyeWebForecastSection(DeyeWebBaseSection):
+class DeyeWebUpdateSection(DeyeWebBaseSection):
   def __init__(self):
-    super().__init__(DeyeWebSection.forecast)
+    super().__init__(DeyeWebSection.update)
 
   def build_tab_content(self) -> str:
     id1 = DeyeWebUtils.short(DeyeWebConstants.page_template.format(self.section.id))
@@ -14,7 +14,7 @@ class DeyeWebForecastSection(DeyeWebBaseSection):
 
     style_id1 = self.style_manager.register_style(DeyeWebConstants.flex_center_style)
 
-    command = DeyeWebRemoteCommand.get_forecast_by_percent.name
+    command = DeyeWebRemoteCommand.update_scripts.name
 
     on_click = f"""onclick="{command}('{id2}')" """
 
@@ -26,7 +26,7 @@ class DeyeWebForecastSection(DeyeWebBaseSection):
         <table class="{style_id1}">
           <tr>
             <td {on_click} class="{cursor_style_id}">
-              Get forecast
+              Update scripts
             </td>
           </tr>
         </table>

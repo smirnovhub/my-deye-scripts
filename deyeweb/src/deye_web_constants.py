@@ -16,7 +16,6 @@ class DeyeWebConstants:
   selection_content_field_template = '{0}_{1}_content_field'
   remote_data_name = 'remote_data'
   remote_data_with_spinner_name = 'remote_data_with_spinner'
-  forecast_id = 'forecast'
 
   grid_low_voltage_change_max_grid_power = 150
 

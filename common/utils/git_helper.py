@@ -6,9 +6,9 @@ from typing import Dict, List, Optional, Tuple
 from subprocess import CompletedProcess
 
 from deye_exceptions import DeyeValueException
-from telebot_git_exception import TelebotGitException
+from git_exceptions import GitException
 
-class TelebotGitHelper:
+class GitHelper:
   def __init__(self):
     self._current_dir = os.path.dirname(__file__)
     self._local_repo_mark = 'git.dmitry'
@@ -24,7 +24,7 @@ class TelebotGitHelper:
         bool: True if the repository is synchronized, False otherwise.
 
     Raises:
-        TelebotGitException: If the git command fails.
+        GitException: If the git command fails.
     """
     # Run 'git remote show origin' to get information about remote branches
     result = self._run_git_command_and_get_result(
@@ -148,7 +148,7 @@ class TelebotGitHelper:
         dict[str, str]: Dictionary where key is "YYYY-MM-DD <message>-N" and value is the commit hash.
 
     Raises:
-        TelebotGitException: If the git command fails
+        GitException: If the git command fails
         DeyeValueException: If other exception occurred
     """
     commits_dict: Dict[str, str] = {}
@@ -240,7 +240,7 @@ class TelebotGitHelper:
         str: The standard output of the executed command, stripped of leading/trailing whitespace.
 
     Raises:
-        TelebotGitException: If the command fails for any reason, including:
+        GitException: If the command fails for any reason, including:
             - A non-zero exit code detected
             - Any other unexpected exception
     """
@@ -253,10 +253,10 @@ class TelebotGitHelper:
       )
       self._check_git_result_and_raise(result)
       return result.stdout.strip()
-    except TelebotGitException as e:
-      raise TelebotGitException(f'git {command_name} failed: {str(e)}')
+    except GitException as e:
+      raise GitException(f'git {command_name} failed: {str(e)}')
     except Exception as e:
-      raise TelebotGitException(f'git {command_name} failed: {str(e)}')
+      raise GitException(f'git {command_name} failed: {str(e)}')
 
   def _check_git_result_and_raise(self, result: CompletedProcess):
     if result.returncode == 0:
@@ -270,7 +270,7 @@ class TelebotGitHelper:
       return
 
     if 'conflict' in output or 'would be overwritten' in output:
-      raise TelebotGitException('local changes conflict with remote changes')
+      raise GitException('local changes conflict with remote changes')
 
     if 'fatal:' in stderr:
       index = stderr.find('fatal:') + len('fatal:')
@@ -281,6 +281,6 @@ class TelebotGitHelper:
       else:
         error_text = result.stderr[index:].strip()
 
-      raise TelebotGitException(error_text)
+      raise GitException(error_text)
 
-    raise TelebotGitException('git returned a non-zero exit code')
+    raise GitException('git returned a non-zero exit code')

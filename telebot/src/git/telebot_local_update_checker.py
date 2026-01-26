@@ -5,10 +5,10 @@ from typing import Optional
 
 from deye_utils import DeyeUtils
 from common_utils import CommonUtils
+from git_helper import GitHelper
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 from deye_file_with_lock import DeyeFileWithLock
-from telebot_git_helper import TelebotGitHelper
 from telebot_user_choices import UserChoices
 from countdown_with_cancel import CountdownWithCancel
 
@@ -23,7 +23,7 @@ class TelebotLocalUpdateChecker:
   """
   def __init__(self):
     self.locker = DeyeFileWithLock()
-    self.git_helper = TelebotGitHelper()
+    self.git_helper = GitHelper()
 
     self.ask_file_name = 'data/last_local_update_ask_time.txt'
     self.hash_file_name = 'data/last_commit_hash.txt'

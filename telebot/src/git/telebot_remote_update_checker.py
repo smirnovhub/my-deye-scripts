@@ -1,11 +1,11 @@
 import time
 import telebot
 
+from git_helper import GitHelper
 from deye_utils import DeyeUtils
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from deye_file_with_lock import DeyeFileWithLock
-from telebot_git_helper import TelebotGitHelper
 from telebot_command_choice import CommandChoice
 
 class TelebotRemoteUpdateChecker:
@@ -19,7 +19,7 @@ class TelebotRemoteUpdateChecker:
   """
   def __init__(self):
     self.locker = DeyeFileWithLock()
-    self.git_helper = TelebotGitHelper()
+    self.git_helper = GitHelper()
     self.ask_file_name = 'data/last_remote_update_ask_time.txt'
     DeyeUtils.ensure_file_exists(self.ask_file_name)
 
