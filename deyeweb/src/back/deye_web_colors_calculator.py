@@ -66,8 +66,8 @@ class DeyeWebColorsCalculator:
 
   def load_colors(self, ) -> Dict[str, DeyeWebColor]:
     saved_colors_str = self.store.get('colors')
-    saved_colors = ast.literal_eval(str(saved_colors_str))
-    return self._restore_colors(cast(Dict[str, str], saved_colors))
+    saved_colors = cast(Dict[str, str], ast.literal_eval(str(saved_colors_str)))
+    return self._restore_colors(saved_colors) if saved_colors else {}
 
   def _restore_colors(self, obj: Dict[str, str]) -> Dict[str, DeyeWebColor]:
     return {k: DeyeWebColor[v] for k, v in obj.items()}
