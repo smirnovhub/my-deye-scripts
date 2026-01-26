@@ -13,14 +13,14 @@ RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /et
 
 # Install system dependencies: Python, pip, and other tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  mc \
+#  mc \
+#  iputils-ping \
+#  traceroute \
+#  curl \
+#  net-tools \
+  git \
   locales \
   openssl \
-  iputils-ping \
-  traceroute \
-  curl \
-  net-tools \
-  git \
   python3 \
   python3-pip \
   python3-venv && \
