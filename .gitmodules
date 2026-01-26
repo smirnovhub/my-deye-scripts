@@ -10,3 +10,7 @@
 	path = modules/pyTelegramBotAPI
 	url = https://github.com/smirnovhub/pyTelegramBotAPI.git
 	branch = master
+[submodule "modules/dateutil"]
+	path = modules/dateutil
+	url = https://github.com/smirnovhub/dateutil.git
+	branch = master

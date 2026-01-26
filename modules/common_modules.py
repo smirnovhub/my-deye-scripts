@@ -11,6 +11,7 @@ modules = [
   'pysolarmanv5',
   'pyTelegramBotAPI',
   'suntime',
+  'dateutil/src',
 ]
 
 # Add specific module directories to sys.path so they can be imported
