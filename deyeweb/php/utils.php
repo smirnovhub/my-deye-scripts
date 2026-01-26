@@ -23,16 +23,21 @@ function startSession(int $days = 7): void
 /**
  * Build a JSON-encoded payload with the current PHP session ID included.
  *
- * This function takes an array of parameters, adds the current PHP session ID
+ * This function takes json parameter as string, adds the current PHP session ID
  * under the "session_id" key, and returns the resulting structure as a JSON string.
  *
- * @param array $params  Key-value pairs that should be included in the payload.
+ * @param string $json  Current payload as JSON string.
  *
  * @return string  JSON-encoded payload containing the input parameters and session ID.
  */
-function prepareJsonPayload(array $params): string
+function prepareJsonPayload(string $json): string
 {
-  $payloadArray = $params;
+  $payloadArray = json_decode($json, true);
+
+  if (!is_array($payloadArray)) {
+    $payloadArray = [];
+  }
+
   $payloadArray['session_id'] = session_id();
   return json_encode($payloadArray);
 }
@@ -82,4 +87,12 @@ function readPipeWithTimeout($pipe, int $timeout_sec = 7): string
   }
 
   return $response;
+}
+
+function getErrorMessage(string $message): string
+{
+  $errorResponse = [
+    'error'  => $message
+  ];
+  return json_encode($errorResponse);
 }
