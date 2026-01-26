@@ -1,0 +1,82 @@
+FROM php:8.2-apache
+
+# Set remote repository name
+ARG REPO_NAME=my-deye-scripts
+
+# Set application directory variable
+ARG APP_DIR=/var/www
+
+# Set the correct time zone according to your actual location.
+# Otherwise, the local time will be incorrect!
+ENV TIMEZONE=Europe/Kyiv
+RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /etc/timezone
+
+# Install system dependencies: Python, pip, and other tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  mc \
+  locales \
+  openssl \
+  iputils-ping \
+  curl \
+  net-tools \
+  git \
+  python3 \
+  python3-pip \
+  python3-venv \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install required Python packages
+RUN pip install --no-cache-dir six requests --break-system-packages
+
+# Generate locales
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
+
+# Set working directory
+WORKDIR $APP_DIR
+
+# Clone the project and initialize submodules
+RUN git clone https://github.com/smirnovhub/$REPO_NAME.git \
+  && cd $REPO_NAME \
+  && git submodule update --init --recursive
+
+# Copy pre-configured configs to container
+COPY --chown=$USER_NAME:$USER_NAME common/*.py $REPO_NAME/common/
+
+# Create symlink
+RUN rm -rf /var/www/html
+RUN ln -s $REPO_NAME/deyeweb html
+
+ENV TERM=xterm
+ENV EDITOR=mcedit
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+# 7. Enable Apache rewrite module (common for PHP apps)
+RUN a2enmod rewrite && \
+  a2enmod ssl && \
+  a2enmod headers
+
+# Generate a self-signed certificate
+# -nodes means "no DES" (don't encrypt the private key with a password)
+RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/apache-selfsigned.key \
+  -out /etc/ssl/certs/apache-selfsigned.crt \
+  -subj "/C=UA/L=Kyiv/O=Development/CN=localhost"
+
+# Enable the default SSL configuration of Apache
+RUN a2ensite default-ssl
+
+# (Optional) Point Apache to our new certificates 
+# By default, default-ssl uses snakeoil certs, let's point to ours:
+RUN sed -i 's|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/apache-selfsigned.crt|' /etc/apache2/sites-available/default-ssl.conf
+RUN sed -i 's|SSLCertificateKeyFile.*|SSLCertificateKeyFile /etc/ssl/private/apache-selfsigned.key|' /etc/apache2/sites-available/default-ssl.conf
+
+# Add colors to ls command
+RUN echo "alias ls='ls --color=auto'" >> /root/.bashrc
+
+# Apache runs on ports 80 and 443
+EXPOSE 80 443
+
+# The base image already has "CMD [apache2-foreground]"
+# so we don't need to redefine it unless we have custom startup logic

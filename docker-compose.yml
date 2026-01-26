@@ -1,0 +1,17 @@
+services:
+  telebot:
+    build:
+      context: .
+      dockerfile: telebot/Dockerfile
+    image: telebot
+    restart: always
+
+  deyeweb:
+    build:
+      context: .
+      dockerfile: deyeweb/Dockerfile
+    image: deyeweb
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
