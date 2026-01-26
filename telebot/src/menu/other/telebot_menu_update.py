@@ -1,20 +1,20 @@
 import re
 import telebot
 
+from git_helper import GitHelper
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
-from telebot_git_exception import TelebotGitException
+from git_exceptions import GitException
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
-from telebot_git_helper import TelebotGitHelper
 from telebot_user_choices import UserChoices
 from countdown_with_cancel import CountdownWithCancel
 
 class TelebotMenuUpdate(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.git_helper = TelebotGitHelper()
+    self.git_helper = GitHelper()
     self.update_checker = TelebotLocalUpdateChecker()
 
   @property
@@ -31,7 +31,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
 
     try:
       result = self.git_helper.pull()
-    except TelebotGitException as e:
+    except GitException as e:
       self.bot.send_message(message.chat.id, str(e))
       return
 
