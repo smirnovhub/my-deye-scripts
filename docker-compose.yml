@@ -4,14 +4,18 @@ services:
       context: .
       dockerfile: telebot/Dockerfile
     image: telebot
-    restart: always
+    container_name: telebot
+    hostname: telebot
+    restart: unless-stopped
 
   deyeweb:
     build:
       context: .
       dockerfile: deyeweb/Dockerfile
     image: deyeweb
+    container_name: deyeweb
+    hostname: deyeweb
     ports:
       - "80:80"
       - "443:443"
-    restart: always
+    restart: unless-stopped

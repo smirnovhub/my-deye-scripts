@@ -20,6 +20,7 @@ class DeyeWebFormattersConfig:
       registers.battery_bms_charge_current_limit_register.name: DeyeWebThresholdFormatter(320, 100, DeyeWebConstants.threshold_colors, will_affect_tab_color = False),
       registers.battery_bms_discharge_current_limit_register.name: DeyeWebThresholdFormatter(320, 320, DeyeWebConstants.threshold_colors),
       registers.battery_power_register.name: DeyeWebBatteryPowerFormatter(3000, 1500),
+      registers.battery_current_register.name: DeyeWebBatteryPowerFormatter(60, 30),
       registers.battery_soc_register.name: DeyeWebBatterySocFormatter(50, 30),
       registers.battery_soh_register.name: DeyeWebBatterySocFormatter(98, 90),
       registers.battery_temperature_register.name: DeyeWebThresholdFormatter(35, 30, DeyeWebConstants.threshold_reversed_colors),

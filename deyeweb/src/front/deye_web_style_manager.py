@@ -30,6 +30,9 @@ class DeyeWebStyleManager:
             "red-text": "color: red;"
         }
     """
+    if not self.styles:
+      return ''
+
     parts = []
 
     for class_name, style in self.styles.items():

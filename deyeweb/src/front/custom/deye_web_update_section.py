@@ -1,4 +1,5 @@
 from deye_web_base_section import DeyeWebBaseSection
+from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_web_section import DeyeWebSection
@@ -12,34 +13,40 @@ class DeyeWebUpdateSection(DeyeWebBaseSection):
     id1 = DeyeWebUtils.short(DeyeWebConstants.page_template.format(self.section.id))
     id2 = DeyeWebUtils.short(self.section.title)
 
-    style_id1 = self.style_manager.register_style(DeyeWebConstants.flex_center_style)
+    style_id1 = self.style_manager.register_style(DeyeWebConstants.item_td_style)
+    style_id2 = self.style_manager.register_style(
+      DeyeWebConstants.item_td_style_with_color.format(DeyeWebColor.green.color))
+    style_id3 = self.style_manager.register_style(DeyeWebConstants.flex_center_style)
+    cursor_style_id = self.style_manager.register_style(DeyeWebConstants.cursor_style)
 
     command = DeyeWebRemoteCommand.update_scripts.name
 
     on_click = f"""onclick="{command}('{id2}')" """
 
-    cursor_style_id = self.style_manager.register_style(DeyeWebConstants.cursor_style)
-
     return f"""
       {DeyeWebUtils.begin_comment(self)}
       <div id="{id1}" class="tabcontent">
-        <table class="{style_id1}">
-          <tr>
-            <td {on_click} class="{cursor_style_id}">
-              Update scripts
-            </td>
-          </tr>
-        </table>
-        <br>
-        <table class="{style_id1}">
-          <tr>
-            <td>
-              <div id="{id2}" class="{DeyeWebConstants.remote_data_name}" data-remote_field="{id2}"></div>
-            </td>
-          </tr>
-        </table>
-        <br><br>
-        <div class="counter {style_id1}">&nbsp;</div>
+        <center>
+          <table>
+            <tr>
+              <td {on_click} class="{style_id1} {style_id2} {cursor_style_id}">
+                Update Scripts
+              </td>
+            </tr>
+          </table>
+          <br>
+          <table class="{style_id3}">
+            <tr>
+              <td>
+                <center>
+                  <div id="{id2}" class="{DeyeWebConstants.remote_data_name}" data-remote_field="{id2}"></div>
+                </center>
+              </td>
+            </tr>
+          </table>
+          <br><br>
+          <div class="counter {style_id3}">&nbsp;</div>
+        </center>
       </div>
       {DeyeWebUtils.end_comment(self)}
     """.strip()

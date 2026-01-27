@@ -32,7 +32,7 @@ class DeyeWebSectionsHolder:
       DeyeWebGridConnectVoltageLowSection(registers),
       DeyeWebTodaySection(registers),
       DeyeWebTotalSection(registers),
-      DeyeWebForecastSection(),
+      DeyeWebForecastSection(registers),
       DeyeWebGridChargingStartSocSection(registers),
       DeyeWebTimeOfUseSocSection(registers),
       DeyeWebTimeOfUsePowerSection(registers),

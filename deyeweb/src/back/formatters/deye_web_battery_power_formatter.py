@@ -23,9 +23,7 @@ class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
     if registers.prefix == self.loggers.accumulated_registers_prefix:
       threshold *= self.loggers.count
 
-    battery_power = registers.battery_power_register.value
-
-    if abs(battery_power) >= threshold:
+    if abs(register.value) >= threshold:
       return DeyeWebColor.red
 
     return super().get_color(registers, register)
@@ -44,7 +42,7 @@ class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
     if registers.prefix == self.loggers.accumulated_registers_prefix:
       threshold *= self.loggers.count
 
-    if abs(battery_power) >= threshold:
+    if abs(register.value) >= threshold:
       percent = round(battery_current * 100 / max_battery_discharge_current)
       color1 = DeyeWebColor.red
       color2 = DeyeWebColor.light_red
@@ -69,9 +67,9 @@ class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
     percent = max(0, min(100, percent))
 
     mode_text = "(idle)"
-    if battery_power > 0:
+    if battery_current > 0.01:
       mode_text = "(discharging)"
-    elif battery_power < 0:
+    elif battery_current < 0.01:
       mode_text = "(charging)"
 
     width = round(DeyeWebConstants.item_width * 1.3)
