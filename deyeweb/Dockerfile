@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.4-apache
 
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
