@@ -15,7 +15,9 @@ class DeyeWebValueFormatter:
     registers = DeyeWebConstants.registers
     if isinstance(register.value, float):
       value = DeyeWebValueFormatter.get_corrected_value(register)
-      if register.suffix == registers.grid_voltage_register.suffix:
+      if register.name == registers.battery_current_register.name:
+        return DeyeWebValueFormatter.get_formatted_current_value(value, register.suffix)
+      elif register.suffix == registers.grid_voltage_register.suffix:
         return DeyeWebValueFormatter.get_formatted_voltage_value(value, register.suffix)
       elif register.suffix == registers.today_pv_production_cost_register.suffix:
         return DeyeWebValueFormatter.get_formatted_cost_value(value, register.suffix)
@@ -71,3 +73,9 @@ class DeyeWebValueFormatter:
 
     val = DeyeUtils.custom_round(value / 1000, 1)
     return FormattedValue(val, 'kW')
+
+  @staticmethod
+  def get_formatted_current_value(value: float, suffix: str) -> FormattedValue:
+    if abs(value) >= 5:
+      return FormattedValue(str(round(value)), suffix)
+    return FormattedValue(str(DeyeUtils.custom_round(value)), suffix)

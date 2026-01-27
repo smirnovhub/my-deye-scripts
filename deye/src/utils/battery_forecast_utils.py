@@ -27,6 +27,7 @@ class BatteryForecastData:
 
 class BatteryForecastUtils:
   forecast_lower_soc = 10
+
   @staticmethod
   def get_forecast_by_percent(
     battery_soc: int,
@@ -88,6 +89,10 @@ class BatteryForecastUtils:
       15: False,
       30: False,
       60: True,
+      120: True,
+      180: True,
+      240: True,
+      300: True,
     }
 
     for step, skip in steps.items():

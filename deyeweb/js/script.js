@@ -244,6 +244,10 @@ function openPage(pageName, buttonName, doScroll = false) {
     tabLinks[i].style.boxShadow = "";
   }
 
+  var temps = document.getElementsByClassName("temporary_data");
+  for (var i = 0; i < temps.length; i++)
+    temps[i].innerHTML = ""
+
   document.getElementById(pageName).style.display = "block";
 
   const target = document.getElementById(buttonName);

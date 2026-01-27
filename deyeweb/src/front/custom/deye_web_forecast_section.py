@@ -35,7 +35,7 @@ class DeyeWebForecastSection(DeyeWebBaseInfoSection):
         </tr>
       </table>
       <br>
-      <div id="{id}" class="{DeyeWebConstants.remote_data_name}" data-remote_field="{id}"></div>
+      <div id="{id}" class="{DeyeWebConstants.remote_data_name} {DeyeWebConstants.temporary_data_name}" data-remote_field="{id}"></div>
       {DeyeWebUtils.end_comment(self)}
     """.strip()
 

@@ -94,6 +94,18 @@ class DeyeWebUtils:
     return f"{crc:08x}"
 
   @staticmethod
+  def get_json_field(json_data: Any, field_name: str) -> str:
+    if field_name not in json_data:
+      raise KeyError(f"Missing '{field_name}' field in JSON")
+
+    value = json_data[field_name]
+
+    if not isinstance(value, str):
+      raise TypeError(f"Field '{field_name}' must be a string")
+
+    return value
+
+  @staticmethod
   def get_deye_class_objects_count() -> str:
     # Get all live objects
     all_objects = gc.get_objects()
