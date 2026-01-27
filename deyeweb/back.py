@@ -20,6 +20,7 @@ import_dirs(current_path, ['src', '../deye/src', '../common'])
 from deye_web_utils import DeyeWebUtils
 from deye_web_constants import DeyeWebConstants
 from deye_web_params_processor import DeyeWebParamsProcessor
+from deye_exceptions import DeyeKnownException
 
 #import logging
 #from deye_utils import DeyeUtils
@@ -39,10 +40,17 @@ try:
 
   processor = DeyeWebParamsProcessor()
   result = processor.get_params(json_data)
-except Exception as e:
+except DeyeKnownException as e:
   exception_str = DeyeWebUtils.get_tail(str(e).strip('"'), ':')
   result = {
     DeyeWebConstants.result_error_field: f'Error: {exception_str}',
+  }
+
+  if DeyeWebConstants.print_call_stack_on_exception:
+    result[DeyeWebConstants.result_callstack_field] = f'<pre>{traceback.format_exc()}</pre>'
+except Exception as e:
+  result = {
+    DeyeWebConstants.result_error_field: f'Error: {str(e)}',
   }
 
   if DeyeWebConstants.print_call_stack_on_exception:

@@ -39,7 +39,7 @@ class DeyeWebUpdateSection(DeyeWebBaseSection):
             <tr>
               <td>
                 <center>
-                  <div id="{id2}" class="{DeyeWebConstants.remote_data_name}" data-remote_field="{id2}"></div>
+                  <div id="{id2}" class="{DeyeWebConstants.remote_data_name} {DeyeWebConstants.temporary_data_name}" data-remote_field="{id2}"></div>
                 </center>
               </td>
             </tr>

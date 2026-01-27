@@ -61,6 +61,8 @@ div.scrollmenu a:hover {
 
 .remote_data_with_spinner {}
 
+.temporary_data {}
+
 .default_open {}
 
 @supports (-webkit-touch-callout: none) {

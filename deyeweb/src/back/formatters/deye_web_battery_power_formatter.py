@@ -67,9 +67,9 @@ class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
     percent = max(0, min(100, percent))
 
     mode_text = "(idle)"
-    if battery_current > 0.01:
+    if battery_power > 0:
       mode_text = "(discharging)"
-    elif battery_current < 0.01:
+    elif battery_power < 0:
       mode_text = "(charging)"
 
     width = round(DeyeWebConstants.item_width * 1.3)
