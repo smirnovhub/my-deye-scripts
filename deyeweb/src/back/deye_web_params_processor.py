@@ -3,6 +3,7 @@ import re
 from typing import Any, Dict
 
 from git_helper import GitHelper
+from deye_utils import DeyeUtils
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
 from deye_register import DeyeRegister
@@ -12,6 +13,8 @@ from deye_web_color import DeyeWebColor
 from deye_registers_holder import DeyeRegistersHolder
 from deye_web_constants import DeyeWebConstants
 from forecast_registers import ForecastRegisters
+from battery_forecast_utils import BatteryForecastUtils
+from battery_forecast_utils import BatteryForecastType
 from deye_web_colors_calculator import DeyeWebColorsCalculator
 from deye_web_formatters_config import DeyeWebFormattersConfig
 from deye_web_remote_command import DeyeWebRemoteCommand
@@ -45,9 +48,9 @@ class DeyeWebParamsProcessor:
     if command == DeyeWebRemoteCommand.read_registers:
       return self.read_registers()
     elif command == DeyeWebRemoteCommand.get_forecast_by_percent:
-      return self.get_forecast()
+      return self.get_forecast(command)
     elif command == DeyeWebRemoteCommand.get_forecast_by_time:
-      return self.get_forecast()
+      return self.get_forecast(command)
     elif command == DeyeWebRemoteCommand.update_scripts:
       return self.update_scripts()
     elif command == DeyeWebRemoteCommand.write_register:
@@ -68,7 +71,7 @@ class DeyeWebParamsProcessor:
 
     return value
 
-  def get_forecast(self) -> Dict[str, str]:
+  def get_forecast(self, command: DeyeWebRemoteCommand) -> Dict[str, str]:
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = self.loggers.loggers,
@@ -82,39 +85,89 @@ class DeyeWebParamsProcessor:
     finally:
       holder.disconnect()
 
-    result: Dict[str, str] = {}
+      if command == DeyeWebRemoteCommand.get_forecast_by_percent:
+        forecast = BatteryForecastUtils.get_forecast_by_percent(
+          battery_capacity = holder.master_registers.battery_capacity_register.value,
+          battery_soc = holder.master_registers.battery_soc_register.value,
+          battery_current = holder.accumulated_registers.battery_current_register.value,
+        )
+      else:
+        forecast = BatteryForecastUtils.get_forecast_by_time(
+          battery_capacity = holder.master_registers.battery_capacity_register.value,
+          battery_soc = holder.master_registers.battery_soc_register.value,
+          battery_current = holder.accumulated_registers.battery_current_register.value,
+        )
+
+      color = DeyeWebColor.green if forecast.type == BatteryForecastType.charge else DeyeWebColor.yellow
+
+      spacing = DeyeWebConstants.spacing_between_elements
+
+      style_id1 = self.style_manager.register_style(DeyeWebConstants.item_td_style)
+      style_id2 = self.style_manager.register_style(DeyeWebConstants.item_td_style_with_color.format(color.color))
+      style_id3 = self.style_manager.register_style(f"border-collapse: separate; border-spacing: {spacing}px;")
+
+      result = ''
+
+      result += f"""
+          <table class="{style_id3}">
+            <tr>
+              <td colspan="3" class="{style_id1} {style_id2}">
+        """
+
+      if forecast.type == BatteryForecastType.charge:
+        result += 'Charge forecast'
+      else:
+        result += 'Discharge forecast'
+
+      result += """
+              </td>
+            </tr>
+        """
+
+      for item in forecast.items:
+        soc_date_str = DeyeUtils.format_end_date(item.date)
+        date, time = [item.strip() for item in soc_date_str.split(",")]
+        result += f"""
+            <tr>
+              <td class="{style_id1} {style_id2}">{item.soc}%</td>
+              <td class="{style_id1} {style_id2}">{date}</td>
+              <td class="{style_id1} {style_id2}">{time}</td>
+            </tr>
+          """
+
+      result += '</table>'
+
+    result += self.style_manager.generate_css()
 
     id = DeyeWebUtils.short(DeyeWebSection.forecast.title)
 
-    result[id] = 'Battery forecast'
-
-    return result
+    return {id: result}
 
   def update_scripts(self) -> Dict[str, str]:
-    result: Dict[str, str] = {}
+    def get_result(result: str):
+      id = DeyeWebUtils.short(DeyeWebSection.update.title)
+      return {id: result + self.style_manager.generate_css()}
 
-    id = DeyeWebUtils.short(DeyeWebSection.update.title)
+    try:
+      current_branch_name = self.git_helper.get_current_branch_name()
 
-    current_branch_name = self.git_helper.get_current_branch_name()
+      if current_branch_name == 'HEAD':
+        return get_result('Unable to update: the repository is not currently on a branch')
 
-    if current_branch_name == 'HEAD':
-      result[id] = 'Unable to update: the repository is not currently on a branch'
-      return result
+      pull_result = self.git_helper.pull()
 
-    pull_result = self.git_helper.pull()
-
-    if 'up to date' in pull_result.lower():
-      last_commit = self.git_helper.get_last_commit_hash_and_comment()
-      result[id] = ("Already up to date. "
-                    f"You are currently on '{current_branch_name}':\n<b>{last_commit}</b>")
-      return result
+      if 'up to date' in pull_result.lower():
+        last_commit = self.git_helper.get_last_commit_hash_and_comment()
+        return get_result("Already up to date.<br>"
+                          f"You are currently on '{current_branch_name}':<br><b>{last_commit}</b>")
+    except Exception as e:
+      err = str(e).replace(': ', ':<br>')
+      return get_result(f'<p style="color: red;">{err}</p>')
 
     pattern = r'\d+ files? changed.*'
     matches = re.findall(pattern, pull_result)
 
-    result[id] = "\n".join(matches)
-
-    return result
+    return get_result("\n".join(matches))
 
   def read_registers(self) -> Dict[str, str]:
     # should be local to avoid issues with locks

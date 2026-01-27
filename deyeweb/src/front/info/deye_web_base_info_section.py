@@ -28,11 +28,14 @@ class DeyeWebBaseInfoSection(DeyeWebRegistersSection):
     return f"""
       {DeyeWebUtils.begin_comment(self)}
       <div id="{id}" class="tabcontent">
-        <table class="{style_id1}">
-          {result}
-        </table>
-        <br><br>
-        <div class="counter {style_id2}">&nbsp;</div>
+        <center>
+          <table class="{style_id1}">
+            {result}
+          </table>
+          {self.build_additional_data()}
+          <br><br>
+          <div class="counter {style_id2}">&nbsp;</div>
+        </center>
       </div>
       {DeyeWebUtils.end_comment(self)}
     """.strip()
@@ -102,3 +105,6 @@ class DeyeWebBaseInfoSection(DeyeWebRegistersSection):
       <div {on_click} id="{id}" class="{DeyeWebConstants.remote_data_with_spinner_name} {cursor_style_id}" data-remote_field="{id}"></div>
       {DeyeWebUtils.end_comment(self)}
     """.strip()
+
+  def build_additional_data(self) -> str:
+    return ''

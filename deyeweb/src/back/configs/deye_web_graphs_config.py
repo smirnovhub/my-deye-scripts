@@ -10,6 +10,7 @@ class DeyeWebGraphsConfig:
     registers = DeyeWebConstants.registers
 
     self.urls: Dict[str, str] = {
+      registers.battery_current_register.name: 'battery_current.png',
       registers.battery_power_register.name: 'battery_power.png',
       registers.battery_soc_register.name: 'battery_soc.png',
       registers.battery_temperature_register.name: 'battery_temperature.png',
