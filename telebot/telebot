@@ -12,6 +12,7 @@
 
 import os
 import sys
+import time
 
 from pathlib import Path
 
@@ -48,4 +49,5 @@ try:
   bot.infinity_polling()
 except Exception:
   send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} Telebot unexpectedly stopped working')
+  time.sleep(30)
   raise
