@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
