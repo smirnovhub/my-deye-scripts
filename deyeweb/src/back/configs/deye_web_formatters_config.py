@@ -25,7 +25,6 @@ class DeyeWebFormattersConfig:
       registers.battery_soh_register.name: DeyeWebBatterySocFormatter(98, 90),
       registers.battery_temperature_register.name: DeyeWebThresholdFormatter(35, 30, DeyeWebConstants.threshold_reversed_colors),
       registers.gen_power_register.name: DeyeWebPvPowerFormatter(500, 100),
-      registers.grid_charging_start_soc_register.name: DeyeWebThresholdFormatter(91 - 10, 81 - 10, DeyeWebConstants.threshold_reversed_colors, will_affect_tab_color = False),
       registers.grid_connect_voltage_low_register.name: DeyeWebThresholdFormatter(220, 220, DeyeWebConstants.threshold_reversed_colors),
       registers.grid_external_ct_power_register.name: DeyeWebGridPowerFormatter(3500, 1750),
       registers.grid_internal_ct_power_register.name: DeyeWebGridPowerFormatter(3500, 1750),

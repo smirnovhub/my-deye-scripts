@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: telebot/Dockerfile
+      args:
+        - BRANCH=master
     image: telebot
     container_name: telebot
     hostname: telebot
@@ -12,6 +14,8 @@ services:
     build:
       context: .
       dockerfile: deyeweb/Dockerfile
+      args:
+        - BRANCH=master
     image: deyeweb
     container_name: deyeweb
     hostname: deyeweb

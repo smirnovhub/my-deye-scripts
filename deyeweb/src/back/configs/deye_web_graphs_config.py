@@ -28,5 +28,8 @@ class DeyeWebGraphsConfig:
     }
 
   def get_url_for_register(self, register_name: str) -> str:
+    if not DeyeWebConstants.open_graphs_on_click:
+      return ''
+
     url = self.urls.get(register_name, '')
     return f'{self.base_path}/{url}' if url else ''

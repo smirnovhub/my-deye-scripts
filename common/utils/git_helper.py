@@ -283,4 +283,4 @@ class GitHelper:
 
       raise GitException(error_text)
 
-    raise GitException('git returned a non-zero exit code')
+    raise GitException(output)

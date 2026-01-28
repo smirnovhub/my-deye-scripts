@@ -11,19 +11,19 @@ class DeyeWebBaseInfoSection(DeyeWebRegistersSection):
   def __init__(self, section: DeyeWebSection, only_master: bool = False):
     super().__init__(section, only_master)
 
-  def build_registers_str(self, registers: List[DeyeRegister], on_click: str = '') -> str:
+  def build_registers_str(self, registers: List[DeyeRegister]) -> str:
     result = ''
     for register in registers:
-      result += self.build_register(register.description, register, on_click)
+      result += self.build_register(register.description, register)
     return result
 
-  def build_registers(self, registers: List[DeyeRegister], on_click: str = '') -> str:
+  def build_registers(self, registers: List[DeyeRegister]) -> str:
     id = DeyeWebUtils.short(DeyeWebConstants.page_template.format(self.section.id))
 
     style_id1 = self.style_manager.register_style(DeyeWebConstants.item_table_style)
     style_id2 = self.style_manager.register_style(DeyeWebConstants.flex_center_style)
 
-    result = self.build_registers_str(registers, on_click)
+    result = self.build_registers_str(registers)
 
     return f"""
       {DeyeWebUtils.begin_comment(self)}
