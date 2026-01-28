@@ -33,7 +33,7 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
         return get_result("Already up to date.<br>"
                           f"You are currently on '{current_branch_name}':<br><b>{last_commit}</b>")
     except Exception as e:
-      err = str(e).replace(': ', ':<br>')
+      err = str(e).replace(': ', ':<br>').replace('\n', '<br>')
       return get_result(f'<p style="color: red;">{err}</p>')
 
     pattern = r'\d+ files? changed.*'
