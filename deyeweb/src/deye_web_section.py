@@ -6,7 +6,6 @@ class DeyeWebSection(Enum):
   total = 'Total'
   settings = 'Settings'
   forecast = 'Forecast'
-  grid_charging_start_soc = 'Max Charge SOC'
   time_of_use_soc = 'Time Of Use SOC'
   grid_connect_voltage_low = 'Grid LowV'
   time_of_use_power = 'Time Of Use Power'

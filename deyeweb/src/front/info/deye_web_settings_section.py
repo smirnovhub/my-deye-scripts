@@ -16,7 +16,6 @@ class DeyeWebSettingsSection(DeyeWebBaseInfoSection):
     )
     self._registers: List[DeyeRegister] = [
       registers.grid_connect_voltage_low_register,
-      registers.grid_charging_start_soc_register,
       registers.time_of_use_soc_register,
       registers.time_of_use_power_register,
       registers.battery_max_charge_current_register,
