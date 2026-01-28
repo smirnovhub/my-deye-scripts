@@ -48,6 +48,8 @@ class DeyeWebConstants:
   result_read_styles_field = 'read_styles'
   result_write_styles_field = 'write_styles'
 
+  open_graphs_on_click = False
+
   add_html_comments = False
   user_short_html_ids = True
   clean_html_code = True
@@ -70,6 +72,7 @@ class DeyeWebConstants:
     'Battery Gen': 'Gen',
     'Battery BMS': '',
     'Internal CT ': '',
+    'Grid Charging Start SOC': 'Max Charge SOC',
   }
 
   register_suffix_replacement_rules: Dict[str, str] = {
@@ -88,4 +91,6 @@ class DeyeWebConstants:
     registers.time_of_use_power_register.name,
   ]
 
-  register_value_corrections: Dict[DeyeRegister, float] = {}
+  register_value_corrections: Dict[DeyeRegister, float] = {
+    registers.grid_charging_start_soc_register: 10,
+  }
