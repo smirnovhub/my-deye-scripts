@@ -31,6 +31,7 @@ class DeyeWebSectionsHolder:
       DeyeWebGridConnectVoltageLowSection(registers),
       DeyeWebTodaySection(registers),
       DeyeWebTotalSection(registers),
+      DeyeWebSettingsSection(registers),
       DeyeWebForecastSection(registers),
       DeyeWebTimeOfUseSocSection(registers),
       DeyeWebTimeOfUsePowerSection(registers),
@@ -52,7 +53,6 @@ class DeyeWebSectionsHolder:
       if isinstance(section, DeyeWebBaseSelectSection):
         self._writable_sections.append(section)
 
-    self._sections.insert(self._settings_menu_position, DeyeWebSettingsSection(self._writable_sections))
     self._used_registers = [reg.name for section in self._registers_sections for reg in section.registers]
     self._writable_registers = [reg.name for section in self._writable_sections for reg in section.registers]
 
