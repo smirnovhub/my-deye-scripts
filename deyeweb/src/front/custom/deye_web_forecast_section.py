@@ -15,7 +15,6 @@ class DeyeWebForecastSection(DeyeWebBaseInfoSection):
     super().__init__(DeyeWebSection.forecast)
     self._registers: List[DeyeRegister] = [
       registers.battery_soc_register,
-      registers.battery_capacity_register,
       registers.battery_current_register,
       registers.battery_power_register,
     ]
