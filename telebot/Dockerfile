@@ -3,6 +3,9 @@ FROM python:3.14-slim
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
 
+# Set remote branch name
+ARG BRANCH=master
+
 # Set username variable
 ARG USER_NAME=telebot
 
@@ -57,7 +60,7 @@ RUN pip install --no-cache-dir six requests
 WORKDIR $APP_DIR
 
 # Clone the project and initialize submodules
-RUN git clone https://github.com/smirnovhub/$REPO_NAME.git && \
+RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   cd $REPO_NAME && \
   git submodule update --init --recursive
 

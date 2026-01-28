@@ -3,6 +3,9 @@ FROM php:8.4-apache
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
 
+# Set remote branch name
+ARG BRANCH=master
+
 # Set application directory variable
 ARG APP_DIR=/var/www
 
@@ -48,7 +51,7 @@ RUN echo "alias ls='ls --color=auto'" >> /root/.bashrc
 WORKDIR $APP_DIR
 
 # Clone the project and initialize submodules
-RUN git clone https://github.com/smirnovhub/$REPO_NAME.git && \
+RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   cd $REPO_NAME && \
   git submodule update --init --recursive
 
