@@ -14,7 +14,6 @@ class DeyeWebSelectionsConfig:
       registers.battery_gen_charge_current_register.name: currents,
       registers.battery_grid_charge_current_register.name: currents,
       registers.battery_max_charge_current_register.name: currents,
-      registers.grid_charging_start_soc_register.name: [60, 65, 70, 75, 80, 85, 90, 93, 95, 97, 98, 100],
       registers.grid_connect_voltage_low_register.name: [210, 230],
       registers.grid_peak_shaving_power_register.name: [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000],
       registers.grid_reconnection_time_register.name: [60, 120, 240, 300, 420, 480, 600, 720, 900],
