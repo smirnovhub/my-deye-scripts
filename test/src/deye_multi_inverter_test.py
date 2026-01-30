@@ -29,7 +29,7 @@ import_dirs(
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from deye_test_helper import DeyeTestHelper
 from float_deye_register import FloatDeyeRegister
 from deye_register_average_type import DeyeRegisterAverageType
@@ -55,10 +55,10 @@ if not loggers.slaves:
   log.info("ERROR: you don't have slave loggers to run this test")
   sys.exit(1)
 
-servers: List[SolarmanServer] = []
+servers: List[SolarmanTestServer] = []
 
 for logger in loggers.loggers:
-  server = SolarmanServer(
+  server = SolarmanTestServer(
     name = logger.name,
     address = logger.address,
     serial = logger.serial,
