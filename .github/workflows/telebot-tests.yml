@@ -34,9 +34,9 @@ jobs:
       - name: Staggered start
         run: |
           # Wait to avoid simultaneous API requests or resource spikes
-          echo "[$(date)] Waiting ${{ matrix.delay }} seconds for Python ${{ matrix.python-version }}..."
+          echo "Waiting ${{ matrix.delay }} seconds for Python ${{ matrix.python-version }}..."
           sleep ${{ matrix.delay }}
-          echo "[$(date)] Waiting completed."
+          echo "Waiting completed."
 
       - name: Initialize and update submodules recursively
         run: git submodule update --init --recursive
