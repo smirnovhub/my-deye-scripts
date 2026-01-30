@@ -18,7 +18,9 @@ ENV TIMEZONE=Europe/Kyiv
 RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /etc/timezone
 
 # Install system dependencies: Python, pip, and other tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && \
+  apt-get upgrade -y && \
+  apt-get install -y --no-install-recommends \
 #  mc \
 #  openssl \
 #  iputils-ping \
@@ -27,6 +29,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 #  net-tools \
   git \
   locales && \
+  apt-get autoremove -y && \
+  apt-get clean -y && \
   rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install --upgrade pip
@@ -46,6 +50,9 @@ ENV LC_TIME=en_GB.UTF-8
 # Create symlink so python3 appears in /usr/bin
 RUN ln -s /usr/local/bin/python3 /usr/bin/python3 && \
   ln -s /usr/local/bin/pip3 /usr/bin/pip3
+
+# Remove apt to increase security
+RUN rm -rf /var/lib/apt/lists/* /usr/bin/apt* /usr/bin/dpkg* /var/lib/dpkg /var/lib/apt
 
 # Create user without password, with home directory
 RUN useradd -m -u 3333 -s /bin/bash $USER_NAME

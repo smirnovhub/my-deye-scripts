@@ -5,7 +5,7 @@ from datetime import datetime
 from deye_utils import DeyeUtils
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_users import TelebotTestUsers
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from telebot_constants import TelebotConstants
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
@@ -39,7 +39,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'inverter time sync test'
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     user = TelebotTestUsers().test_user1
 
     if not self.loggers.is_test_loggers:

@@ -4,7 +4,7 @@ from typing import List
 
 from telebot_test_users import TelebotTestUsers
 from deye_registers import DeyeRegisters
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 
@@ -50,7 +50,7 @@ class TelebotWritableRegistersTest5Module(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers test 5'
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -67,7 +67,7 @@ class TelebotWritableRegistersTest5Module(TelebotBaseTestModule):
 
     self.log.info('Seems all writable registers with out-of-range values processed correctly')
 
-  def test_registers(self, server: SolarmanServer, shift: float):
+  def test_registers(self, server: SolarmanTestServer, shift: float):
     for register in self.registers.all_registers:
       if not register.can_write:
         continue

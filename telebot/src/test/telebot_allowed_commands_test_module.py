@@ -2,7 +2,7 @@ import random
 
 from typing import List
 
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from telebot_base_test_module import TelebotBaseTestModule
 from deye_registers import DeyeRegisters
 from telebot_constants import TelebotConstants
@@ -39,7 +39,7 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'allowed commands test'
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 

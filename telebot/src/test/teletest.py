@@ -15,7 +15,7 @@ from slave_info_registers import SlaveInfoRegisters
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_test_helper import DeyeTestHelper
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from forecast_registers import ForecastRegisters
 from master_info_registers import MasterInfoRegisters
 from telebot_registers_test_module import TelebotRegistersTestModule
@@ -44,11 +44,11 @@ class TeleTest:
     if not self.loggers.is_test_loggers:
       raise ValueError('Your loggers are not test loggers')
 
-    servers: List[SolarmanServer] = []
+    servers: List[SolarmanTestServer] = []
 
     for logger in self.loggers.loggers:
       servers.append(
-        SolarmanServer(
+        SolarmanTestServer(
           name = logger.name,
           address = logger.address,
           serial = logger.serial,
@@ -80,7 +80,7 @@ class TeleTest:
                                     f'{type(module).__name__}{info}: {str(e)}')
       sys.exit(1)
 
-  def _clear_data(self, servers: List[SolarmanServer], log: logging.Logger):
+  def _clear_data(self, servers: List[SolarmanTestServer], log: logging.Logger):
     self.bot.clear_messages()
     for server in servers:
       server.clear_registers()

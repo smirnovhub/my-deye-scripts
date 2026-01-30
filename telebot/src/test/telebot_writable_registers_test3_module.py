@@ -3,7 +3,7 @@ from typing import List
 from telebot_test_users import TelebotTestUsers
 from deye_registers import DeyeRegisters
 from deye_base_enum import DeyeBaseEnum
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_test_helper import DeyeTestHelper
@@ -37,7 +37,7 @@ class TelebotWritableRegistersTest3Module(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers test 3'
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     user = TelebotTestUsers().test_user1
 
     registers = DeyeRegisters()

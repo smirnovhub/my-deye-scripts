@@ -48,7 +48,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
       self.bot.send_message(
         message.chat.id,
         'Already up to date. '
-        f"You are currently on '{branch_name}':\n<b>{last_commit}</b>",
+        f"You are currently on branch '{branch_name}':\n<b>{last_commit}</b>",
         parse_mode = "HTML",
       )
 

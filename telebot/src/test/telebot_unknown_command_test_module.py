@@ -4,7 +4,7 @@ import string
 from typing import List
 
 from telebot_test_users import TelebotTestUsers
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from deye_registers import DeyeRegisters
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
@@ -47,7 +47,7 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'unknown commands test'
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     user = TelebotTestUsers().test_user1
 
     if not self.loggers.is_test_loggers:
