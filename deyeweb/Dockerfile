@@ -1,7 +1,8 @@
-FROM php:8.4-apache
+FROM php:8.4-apache AS baseweb
 
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
+ENV REPO_NAME=${REPO_NAME}
 
 # Set remote branch name
 ARG BRANCH=master
@@ -15,11 +16,12 @@ ENV TIMEZONE=Europe/Kyiv
 RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /etc/timezone
 
 # Install system dependencies: Python, pip, and other tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && \
+  apt-get upgrade -y && \
+  apt-get install -y --no-install-recommends \
 #  mc \
 #  iputils-ping \
 #  traceroute \
-#  curl \
 #  net-tools \
   git \
   locales \
@@ -58,9 +60,6 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
 # Copy pre-configured configs to container
 COPY common/*.py $REPO_NAME/common/
 
-# Set proper permissions for Apache
-RUN chown -R www-data:www-data $APP_DIR/$REPO_NAME
-
 # Create symlink
 RUN rm -rf /var/www/html && \
   ln -s $REPO_NAME/deyeweb html
@@ -88,5 +87,41 @@ RUN sed -i 's|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/apache-self
 # Apache runs on ports 80 and 443
 EXPOSE 80 443
 
+# Remove installed packages to increase security
+RUN apt-get purge -y --auto-remove \
+  curl \
+  gcc \
+  make \
+  autoconf \
+  libc-dev \
+  pkg-config \
+  patch \
+  binutils && \
+  apt-get autoremove -y && \
+  apt-get clean -y && \
+  rm -rf /var/lib/apt/lists/* /usr/bin/apt* /usr/bin/dpkg* \
+  /var/lib/dpkg /var/lib/apt /usr/bin/top /usr/bin/ps
+
 # The base image already has "CMD [apache2-foreground]"
 # so we don't need to redefine it unless we have custom startup logic
+
+###############
+### deyeweb ###
+###############
+
+FROM baseweb AS deyeweb
+
+# Set proper permissions for Apache
+RUN chown -R www-data:www-data $REPO_NAME
+
+###############
+### demoweb ###
+###############
+
+FROM baseweb AS demoweb
+
+# Copy demo server configs to container
+COPY demoserver/src/common/*.py $REPO_NAME/common/
+
+# Set proper permissions for Apache
+RUN chown -R www-data:www-data $REPO_NAME

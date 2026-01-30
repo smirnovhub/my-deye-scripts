@@ -26,16 +26,7 @@
     "../deye/src/solarman/server",
     "../deye/src/utils",
     "src",
-    "src/back",
-    "src/back/configs",
-    "src/back/formatters",
-    "src/back/processors",
-    "src/back/registers",
-    "src/back/selections",
-    "src/front",
-    "src/front/custom",
-    "src/front/info",
-    "src/front/selections"
+    "src/common"
   ],
   "python.analysis.useImportHeuristic": true,
   "python.languageServer": "Pylance",

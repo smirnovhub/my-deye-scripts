@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.8
 
 import os
 import sys
@@ -95,6 +95,7 @@ def process(path: str, base_dirs: List[str]):
 process('.', ['common'])
 process('common', ['.'])
 process('deye', ['src', '../common'])
+process('demoserver', ['src', '../common', '../deye/src'])
 process('deyeweb', ['src', '../common', '../deye/src'])
 process('telebot', ['src', '../common', '../deye/src'])
 process('test', ['src', '../common', '../deye/src', '../telebot/src/test'])
