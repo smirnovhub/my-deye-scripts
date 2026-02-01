@@ -58,7 +58,7 @@ holder_kwargs = {
   'name': 'test',
   'socket_timeout': 1,
   'caching_time': 0,
-  'verbose': True,
+  'verbose': False,
 }
 
 # should be local to avoid issues with locks

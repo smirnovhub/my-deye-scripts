@@ -77,7 +77,6 @@ for register in registers.all_registers:
       sys.executable,
       '-u',
       os.path.join(base_path, 'deye/deye'),
-      '-v',
       f'-i',
       slave.name,
       f"--set-{register.name.replace('_', '-')}",
