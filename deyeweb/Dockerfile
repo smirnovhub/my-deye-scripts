@@ -13,7 +13,6 @@ ARG APP_DIR=/var/www
 # Set the correct time zone according to your actual location.
 # Otherwise, the local time will be incorrect!
 ENV TIMEZONE=Europe/Kyiv
-RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /etc/timezone
 
 # Install system dependencies: Python, pip, and other tools
 RUN apt-get update && \
@@ -29,6 +28,10 @@ RUN apt-get update && \
   python3 \
   python3-pip \
   python3-venv && \
+  apt-get autoremove -y && \
+  apt-get clean -y && \
+  ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
+  echo $TIMEZONE > /etc/timezone && \
   rm -rf /var/lib/apt/lists/*
 
 # Install required Python packages
@@ -99,8 +102,7 @@ RUN apt-get purge -y --auto-remove \
   binutils && \
   apt-get autoremove -y && \
   apt-get clean -y && \
-  rm -rf /var/lib/apt/lists/* /usr/bin/apt* /usr/bin/dpkg* \
-  /var/lib/dpkg /var/lib/apt /usr/bin/top /usr/bin/ps
+  rm -rf /var/lib/apt/lists/*
 
 # The base image already has "CMD [apache2-foreground]"
 # so we don't need to redefine it unless we have custom startup logic
