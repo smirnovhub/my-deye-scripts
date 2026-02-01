@@ -21,8 +21,9 @@ import_dirs(current_path, ['src', '../common'])
 from time import perf_counter
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
+from deye_base_locker import DeyeBaseLocker
 from deye_file_lock import DeyeFileLock
-from deye_file_locker import DeyeFileLocker
+from deye_empty_locker import DeyeEmptyLocker
 from deye_exceptions import DeyeKnownException
 from deye_register_processor import DeyeRegisterProcessor
 
@@ -43,6 +44,9 @@ for logger in loggers.loggers:
 
 inverters_str = ','.join(inverters_list)
 
+def create_locker(name: str, path: str, verbose: bool) -> DeyeBaseLocker:
+  return DeyeEmptyLocker()
+
 def int_range(min_value, max_value):
   def checker(x):
     x = int(x)
@@ -56,7 +60,10 @@ parser.add_argument('-v', '--verbose-output', action = 'store_true', help = 'ver
 parser.add_argument('-c', '--caching-time', type = int, default = 3, help = 'caching time for requests')
 parser.add_argument('-p', '--print-addresses', action = 'store_true', help = 'print register addresses')
 parser.add_argument('--connection-timeout', type = int_range(1, 60), default = 10, help = argparse.SUPPRESS)
-parser.add_argument('-i', '--inverter', help = f'specify inverter ({inverters_str})' if loggers.count > 1 else argparse.SUPPRESS, default = loggers.master.name)
+parser.add_argument('-i',
+                    '--inverter',
+                    help = f'specify inverter ({inverters_str})' if loggers.count > 1 else argparse.SUPPRESS,
+                    default = loggers.master.name)
 parser.add_argument('-a', '--get-all', action = 'store_true', help = 'get all parameters')
 parser.add_argument('-o',
                     '--only-accumulated',
@@ -110,7 +117,7 @@ try:
   # Initialize locker
   suffix = '_test' if loggers.is_test_loggers else ''
   lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name_template.format(suffix))
-  locker = DeyeFileLocker(os.path.basename(__file__) + suffix, lockfile, verbose = args.verbose_output == True)
+  locker = create_locker(os.path.basename(__file__) + suffix, lockfile, verbose = args.verbose_output)
 
   locker.acquire()
 

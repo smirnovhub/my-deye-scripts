@@ -12,6 +12,7 @@ from deye_exceptions import (
   DeyeConnectionErrorException,
   DeyeKnownException,
   DeyeNoSocketAvailableException,
+  DeyeOSErrorException,
   DeyeQueueIsEmptyException,
   DeyeUnknownException,
   DeyeValueException,
@@ -242,11 +243,21 @@ class DeyeUtils:
     except requests.exceptions.Timeout:
       return DeyeConnectionErrorException(f'{message}: Connection timed out')
     except requests.exceptions.ConnectionError as e:
-      match = re.search(r"\[Errno -?\d+\][^')]+", str(e))
-      text = match.group(0) if match else str(e)
+      text = DeyeUtils.get_exception_text(e)
       return DeyeConnectionErrorException(f'{message}: Connection error ({text})')
+    except OSError as e:
+      text = DeyeUtils.get_exception_text(e)
+      return DeyeOSErrorException(f'{message}: OS error ({text})')
     except Exception as e:
       return DeyeUnknownException(f'{message}: {str(e)}')
+
+  @staticmethod
+  def get_exception_text(exc: OSError) -> str:
+    if exc.errno and exc.strerror:
+      return f'[Error {exc.errno}] {exc.strerror}'
+
+    match = re.search(r"\[Errno -?\d+\][^')]+", str(exc))
+    return match.group(0) if match else str(exc)
 
   @staticmethod
   def is_tests_on() -> bool:
