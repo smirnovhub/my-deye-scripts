@@ -42,8 +42,12 @@ logger_lock: threading.Lock = threading.Lock()
 # Stop flag: A thread-safe way to manage the program's lifecycle
 shutdown_event = threading.Event()
 
+log_level = logging.INFO
+if config.LOG_LEVEL in logging._nameToLevel:
+  log_level = logging._nameToLevel[config.LOG_LEVEL]
+
 logging.basicConfig(
-  level = logging.INFO,
+  level = log_level,
   format = '%(asctime)s [%(levelname)s] %(message)s',
   datefmt = '%Y-%m-%d %H:%M:%S',
   handlers = [logging.StreamHandler(sys.stdout)],
@@ -66,20 +70,28 @@ def forward_data(
   source: socket.socket,
   destination: socket.socket,
   stop_event: threading.Event,
+  direction: str,
 ) -> None:
   """
   Bi-directional data forwarding between two sockets.
   """
   try:
     while not stop_event.is_set():
-      data = source.recv(1024)
-      if not data:
-        try:
-          destination.shutdown(socket.SHUT_WR)
-        except Exception:
-          pass
+      try:
+        data = source.recv(1024)
+        if not data:
+          try:
+            destination.shutdown(socket.SHUT_WR)
+          except Exception:
+            pass
+          break
+        destination.sendall(data)
+      except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+        logger.debug(f"[{direction}] Connection reset by peer")
         break
-      destination.sendall(data)
+      except socket.timeout:
+        logger.debug(f"[{direction}] Socket timeout")
+        break
   except Exception:
     pass
   finally:
@@ -94,7 +106,8 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
     return
 
   start_wait = time.time()
-  logger.info(f"Client {client_ip}:{client_port} is waiting for the lock...")
+  logger.info(f"Client {client_ip}:{client_port} wants connect "
+              f"to {config.LOGGER_HOST}:{config.LOGGER_PORT}...")
 
   with logger_lock:
     if shutdown_event.is_set():
@@ -118,7 +131,9 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       logger_sock.settimeout(config.DATA_TIMEOUT)
       client_sock.settimeout(config.DATA_TIMEOUT)
 
-      logger.info(f"Bridge established: {client_ip}:{client_port} <-> {config.LOGGER_HOST}:{config.LOGGER_PORT}")
+      logger_ip, logger_port = logger_sock.getpeername()
+
+      logger.info(f"Bridge established: {client_ip}:{client_port} <-> {logger_ip}:{logger_port}")
 
       stop_event = threading.Event()
 
@@ -127,14 +142,14 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       c2l = threading.Thread(
         target = forward_data,
         daemon = True,
-        args = (client_sock, logger_sock, stop_event),
+        args = (client_sock, logger_sock, stop_event, "CLIENT -> LOGGER"),
         name = "ClientToLoggerThread",
       )
 
       l2c = threading.Thread(
         target = forward_data,
         daemon = True,
-        args = (logger_sock, client_sock, stop_event),
+        args = (logger_sock, client_sock, stop_event, "LOGGER -> CLIENT"),
         name = "LoggerToClientThread",
       )
 
@@ -156,9 +171,9 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       stop_event.set()
 
     except socket.timeout:
-      logger.error(f"Connection to logger {config.LOGGER_HOST} timed out.")
+      logger.error(f"Connection to logger {config.LOGGER_HOST}:{config.LOGGER_PORT} timed out.")
     except ConnectionRefusedError:
-      logger.error(f"Logger {config.LOGGER_HOST} refused connection.")
+      logger.error(f"Logger {config.LOGGER_HOST}:{config.LOGGER_PORT} refused connection.")
     except Exception as e:
       logger.error(f"Unexpected error: {type(e).__name__}: {e}")
     finally:
@@ -167,7 +182,7 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
         logger_sock.close()
       client_sock.close()
 
-      session_duration = time.time() - session_start
+      session_duration = time.time() - session_start + wait_duration
       logger.info(f"Session finished (duration {session_duration:.2f}s). "
                   f"Lock released for {client_ip}:{client_port}.")
       logger.info('-----------------------------------------------------------------------')
@@ -213,12 +228,15 @@ def main() -> None:
   external_ip = get_proxy_external_ip(config.LOGGER_HOST, config.LOGGER_PORT)
   actual_ip = external_ip if external_ip else config.PROXY_HOST
 
+  log_level_name = logging._levelToName[log_level]
+
   logger.info(f"--- Solarman V5 Proxy started ---")
   logger.info(f"Target logger   : {config.LOGGER_HOST}:{config.LOGGER_PORT}")
   logger.info(f"Listening on    : {actual_ip}:{config.PROXY_PORT}")
   logger.info(f"Max connections : {config.MAX_CONCURRENT_CONNECTIONS}")
   logger.info(f"Connect timeout : {config.CONNECT_TIMEOUT}s")
   logger.info(f"Data timeout    : {config.DATA_TIMEOUT}s")
+  logger.info(f"Log level       : {log_level_name}")
   logger.info(f"---------------------------------")
 
   server.settimeout(1.0)

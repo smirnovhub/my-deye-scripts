@@ -67,6 +67,7 @@ services:
       - MAX_CONCURRENT_CONNECTIONS=10
       - CONNECT_TIMEOUT=5
       - DATA_TIMEOUT=10
+      - LOG_LEVEL=INFO
     image: deyeproxy
     container_name: deye_master_proxy
     hostname: deye_master_proxy
