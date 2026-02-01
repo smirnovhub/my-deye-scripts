@@ -99,8 +99,8 @@ class DeyeRegisterProcessor:
 
               print(f'{interactor.name}_{register.name}{addr_list} = {value}{suffix}')
           except Exception as e:
-            raise DeyeUtils.get_reraised_exception(e,
-                                         f'Error while reading register {register.name} from {interactor.name}') from e
+            raise DeyeUtils.get_reraised_exception(
+              e, f'Error while reading register {register.name} from {interactor.name}') from e
 
     if len(self.interactors) > 1:
       for register in self.get_registers_to_process(args):
@@ -149,10 +149,13 @@ class DeyeRegisterProcessor:
   def enqueue_registers(self, args: argparse.Namespace, loggers: List[DeyeLogger]):
     for logger in loggers:
       try:
-        interactor = DeyeModbusInteractor(logger = logger,
-                                          socket_timeout = args.connection_timeout,
-                                          caching_time = args.caching_time,
-                                          verbose = args.verbose_output == True)
+        interactor = DeyeModbusInteractor(
+          logger = logger,
+          socket_timeout = args.connection_timeout,
+          caching_time = args.caching_time,
+          verbose = args.verbose_output == True,
+          auto_reconnect = True,
+        )
         self.interactors.append(interactor)
         if interactor.is_master:
           self.master_interactor = interactor
