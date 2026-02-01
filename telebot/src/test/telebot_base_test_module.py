@@ -9,7 +9,7 @@ from deye_loggers import DeyeLoggers
 from telebot_user import TelebotUser
 from deye_register import DeyeRegister
 from testable_telebot import TestableTelebot
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from deye_exceptions import DeyeKnownException
 from telebot_fake_test_message import TelebotFakeTestMessage
 
@@ -25,11 +25,11 @@ class TelebotBaseTestModule:
   def description(self) -> str:
     raise NotImplementedError(f'{self.__class__.__name__}: description() is not implemented')
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     raise NotImplementedError(f'{self.__class__.__name__}: run_tests() is not implemented')
 
-  def get_master_server(self, servers: List[SolarmanServer]) -> SolarmanServer:
-    master_server: Optional[SolarmanServer] = None
+  def get_master_server(self, servers: List[SolarmanTestServer]) -> SolarmanTestServer:
+    master_server: Optional[SolarmanTestServer] = None
 
     for srv in servers:
       if srv.name == self.loggers.master.name:
@@ -137,7 +137,7 @@ class TelebotBaseTestModule:
 
     return result
 
-  def wait_for_server_changes(self, server: SolarmanServer, register: DeyeRegister):
+  def wait_for_server_changes(self, server: SolarmanTestServer, register: DeyeRegister):
     def check_server():
       if not server.is_registers_written(register.address, register.quantity):
         raise DeyeKnownException(f"Waiting for register '{register.name}' change on server side...")
@@ -179,9 +179,9 @@ class TelebotBaseTestModule:
 
     while total_retry_time < retry_timeout:
       try:
-        time.sleep(retry_delay_sec)
         return func(*args, **kwargs)
       except Exception as e:
+        time.sleep(retry_delay_sec)
         last_exception = e
         if total_retry_time - last_print_time > 1:
           last_print_time = total_retry_time

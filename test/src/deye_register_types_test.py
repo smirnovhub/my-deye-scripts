@@ -25,7 +25,7 @@ import_dirs(
 
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from deye_registers_holder import DeyeRegistersHolder
 
 DeyeUtils.turn_tests_on()
@@ -43,10 +43,10 @@ if not loggers.is_test_loggers:
   log.info('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
-servers: List[SolarmanServer] = []
+servers: List[SolarmanTestServer] = []
 
 for logger in loggers.loggers:
-  server = SolarmanServer(
+  server = SolarmanTestServer(
     name = logger.name,
     address = logger.address,
     serial = logger.serial,

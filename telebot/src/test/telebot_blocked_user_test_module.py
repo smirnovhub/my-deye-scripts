@@ -1,6 +1,6 @@
 from typing import List
 
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from telebot_base_test_module import TelebotBaseTestModule
 from telebot_menu_item import TelebotMenuItem
 from telebot_users import TelebotUsers
@@ -31,7 +31,7 @@ class TelebotBlockedUserTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'blocked user test'
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 

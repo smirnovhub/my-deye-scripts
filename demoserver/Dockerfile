@@ -6,8 +6,11 @@ ARG REPO_NAME=my-deye-scripts
 # Set remote branch name
 ARG BRANCH=master
 
+# Set port number to listen on
+ARG PORTS="5000 5001"
+
 # Set username variable
-ARG USER_NAME=telebot
+ARG USER_NAME=demoserver
 
 # Set application directory variable
 ARG APP_DIR=/home/$USER_NAME
@@ -72,10 +75,13 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   git submodule update --init --recursive
 
 # Copy pre-configured configs to container
-COPY --chown=$USER_NAME:$USER_NAME common/*.py $REPO_NAME/common/
+COPY demoserver/src/common/*.py $REPO_NAME/common/
 
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME
 
+# Expose server ports
+EXPOSE ${PORTS}
+
 # Starting the bot
-CMD ["python3", "telebot/telebot"]
+CMD ["python3", "demoserver/demoserver"]

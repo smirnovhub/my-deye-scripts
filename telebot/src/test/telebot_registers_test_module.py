@@ -3,7 +3,7 @@ from typing import Callable, List
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_users import TelebotTestUsers
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_registers import DeyeRegisters
@@ -31,7 +31,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return f"{self.command.command.format(self.name).replace('_', ' ')} test"
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -58,7 +58,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.send_button_click(user, command)
     self.call_with_retry(self._check_results, holder)
 
-  def _init_registers(self, servers: List[SolarmanServer]) -> DeyeRegistersHolder:
+  def _init_registers(self, servers: List[SolarmanTestServer]) -> DeyeRegistersHolder:
     for server in servers:
       server.clear_registers()
       server.clear_registers_status()

@@ -6,6 +6,9 @@ from deye_system_type import DeyeSystemType
 from deye_exceptions import DeyeNotImplementedException
 
 class DeyeBaseLoggers:
+  # 'demoserver' should match docker configuration
+  demo_server_name = 'demoserver'
+
   _instance = None
 
   def __new__(cls, *args, **kwargs):
@@ -37,6 +40,13 @@ class DeyeBaseLoggers:
   def is_test_loggers(self) -> bool:
     for logger in self.loggers:
       if logger.address != '127.0.0.1':
+        return False
+    return True
+
+  @property
+  def is_demo_loggers(self) -> bool:
+    for logger in self.loggers:
+      if logger.address != DeyeBaseLoggers.demo_server_name:
         return False
     return True
 

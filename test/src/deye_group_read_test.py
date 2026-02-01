@@ -28,7 +28,7 @@ import_dirs(
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from deye_test_helper import DeyeTestHelper
 from deye_test_helper import DeyeRegisterRandomValue
 from deye_register_average_type import DeyeRegisterAverageType
@@ -49,10 +49,10 @@ if not loggers.is_test_loggers:
   log.info('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
-servers: List[SolarmanServer] = []
+servers: List[SolarmanTestServer] = []
 
 for logger in loggers.loggers:
-  server = SolarmanServer(
+  server = SolarmanTestServer(
     name = logger.name,
     address = logger.address,
     serial = logger.serial,
@@ -67,7 +67,7 @@ registers_to_skip = [
   registers.time_of_use_register.name,
 ]
 
-def generate_random_register_values(server: SolarmanServer) -> Dict[str, Any]:
+def generate_random_register_values(server: SolarmanTestServer) -> Dict[str, Any]:
   random_values: Dict[str, Any] = {}
   randoms: List[DeyeRegisterRandomValue] = []
 
@@ -138,7 +138,7 @@ def run_command(cmds: List[str]) -> str:
     log.info('Retry count exceeded')
     sys.exit(1)
 
-def check_results(server: SolarmanServer, output: str, random_values: Dict[str, Any]):
+def check_results(server: SolarmanTestServer, output: str, random_values: Dict[str, Any]):
   for register in registers.all_registers:
     if register.name in registers_to_skip:
       log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")

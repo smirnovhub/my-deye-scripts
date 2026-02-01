@@ -1,10 +1,11 @@
+# See .env file for additional parameters like BRANCH, etc.
 services:
   telebot:
     build:
       context: .
       dockerfile: telebot/Dockerfile
       args:
-        - BRANCH=master
+        - BRANCH=${APP_BRANCH}
     image: telebot
     container_name: telebot
     hostname: telebot
@@ -14,12 +15,43 @@ services:
     build:
       context: .
       dockerfile: deyeweb/Dockerfile
+      target: deyeweb
       args:
-        - BRANCH=master
+        - BRANCH=${APP_BRANCH}
     image: deyeweb
     container_name: deyeweb
     hostname: deyeweb
     ports:
       - "80:80"
       - "443:443"
+    restart: unless-stopped
+
+  demoweb:
+    build:
+      context: .
+      dockerfile: deyeweb/Dockerfile
+      target: demoweb
+      args:
+        - BRANCH=${APP_BRANCH}
+    image: demoweb
+    container_name: demoweb
+    hostname: demoweb
+    ports:
+      - "8080:80"
+      - "4430:443"
+    restart: unless-stopped
+
+  demoserver:
+    build:
+      context: .
+      dockerfile: demoserver/Dockerfile
+      args:
+        - BRANCH=${APP_BRANCH}
+        - PORTS=5000 5001
+    image: demoserver
+    container_name: demoserver
+    hostname: demoserver
+    ports:
+      - "5000:5000"
+      - "5001:5001"
     restart: unless-stopped

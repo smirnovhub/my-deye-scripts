@@ -30,7 +30,7 @@ from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from deye_test_helper import DeyeRegisterRandomValue
 from deye_test_helper import DeyeTestHelper
 
@@ -52,7 +52,7 @@ if not loggers.is_test_loggers:
 
 logger = random.choice(loggers.loggers)
 
-server = SolarmanServer(
+server = SolarmanTestServer(
   name = logger.name,
   address = logger.address,
   serial = logger.serial,

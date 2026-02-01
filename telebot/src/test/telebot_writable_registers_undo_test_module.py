@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from telebot_test_users import TelebotTestUsers
 from deye_registers import DeyeRegisters
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from deye_base_enum import DeyeBaseEnum
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
@@ -34,7 +34,7 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers undo button test'
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 

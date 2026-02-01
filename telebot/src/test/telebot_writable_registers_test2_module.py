@@ -3,7 +3,7 @@ from typing import List
 from deye_register import DeyeRegister
 from telebot_test_users import TelebotTestUsers
 from deye_registers import DeyeRegisters
-from solarman_server import SolarmanServer
+from solarman_test_server import SolarmanTestServer
 from deye_base_enum import DeyeBaseEnum
 from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
@@ -35,7 +35,7 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers test 2'
 
-  def run_tests(self, servers: List[SolarmanServer]):
+  def run_tests(self, servers: List[SolarmanTestServer]):
     user = TelebotTestUsers().test_user1
 
     registers = DeyeRegisters()
@@ -104,7 +104,7 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
 
     self.log.info('Seems all writable registers processed correctly')
 
-  def _check_results(self, server: SolarmanServer, registers: List[DeyeRegister]):
+  def _check_results(self, server: SolarmanTestServer, registers: List[DeyeRegister]):
     for register in registers:
       if not server.is_registers_written(
           register.address,

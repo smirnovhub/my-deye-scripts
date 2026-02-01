@@ -1,0 +1,83 @@
+#!/usr/bin/python3 -u
+
+# The -u option in Python runs the interpreter in unbuffered mode.
+# That means:
+# stdout and stderr are written immediately (no buffering).
+# You don’t have to wait for the buffer to fill or for the program to
+# exit before print() outputs appear.
+# Equivalent to setting the environment variable PYTHONUNBUFFERED=1.
+# This is especially useful when running Python scripts under systemd,
+# Docker, or when piping output to journalctl, because you want log
+# messages from print() to show up in real time.
+
+import os
+import sys
+import logging
+import signal
+import threading
+
+from pathlib import Path
+
+current_path = Path(__file__).parent.resolve()
+modules_path = (current_path / '../modules').resolve()
+
+os.chdir(current_path)
+sys.path.append(str(modules_path))
+
+from common_modules import import_dirs
+
+import_dirs(current_path, ['src', '../deye/src', '../common'])
+
+from deye_utils import DeyeUtils
+from deye_loggers import DeyeLoggers
+from solarman_demo_server import SolarmanDemoServer
+
+logging.basicConfig(
+  level = logging.INFO,
+  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  datefmt = DeyeUtils.time_format_str,
+)
+
+log = logging.getLogger()
+loggers = DeyeLoggers()
+
+if not loggers.is_demo_loggers:
+  log.info('ERROR: your loggers are not demo loggers.')
+  sys.exit(1)
+
+for logger in loggers.loggers:
+  server = SolarmanDemoServer(
+    name = logger.name,
+    address = '0.0.0.0',
+    serial = logger.serial,
+    port = logger.port,
+  )
+
+# Stop flag: A thread-safe way to manage the program's lifecycle
+stop_event = threading.Event()
+
+def handle_exit(sig, frame):
+  """
+  Signal handler function.
+  Triggered when Docker sends SIGTERM or when you press Ctrl+C (SIGINT).
+  """
+  log.info(f"Received signal {sig}. Shutting down gracefully...")
+  # This wakes up the .wait() method in the loop below immediately
+  stop_event.set()
+
+# Register the handlers for termination signals
+# SIGTERM is sent by 'docker stop'
+signal.signal(signal.SIGTERM, handle_exit)
+# SIGINT is sent by Ctrl+C
+signal.signal(signal.SIGINT, handle_exit)
+
+log.info("Server started. Waiting for termination signal...")
+
+# Main loop: instead of a 'while True', we check the stop_event status
+while not stop_event.is_set():
+  # wait(1) works like sleep(1), but it is "interruptible".
+  # If stop_event.set() is called, this line finishes instantly
+  # without waiting for the full second to pass.
+  stop_event.wait(1)
+
+log.info("Server stopped.")
