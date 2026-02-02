@@ -75,6 +75,7 @@ def forward_data(
   """
   Bi-directional data forwarding between two sockets.
   """
+  total_bytes = 0
   try:
     while not stop_event.is_set():
       try:
@@ -86,16 +87,18 @@ def forward_data(
             pass
           break
         destination.sendall(data)
+        total_bytes += len(data)
       except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
-        logger.debug(f"[{direction}] Connection reset by peer")
+        logger.error(f"{direction} connection reset by peer")
         break
       except socket.timeout:
-        logger.debug(f"[{direction}] Socket timeout")
+        logger.error(f"{direction} socket timeout")
         break
   except Exception:
     pass
   finally:
     stop_event.set()
+    logger.info(f"{direction} bytes sent: {total_bytes}")
 
 def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) -> None:
   """
@@ -106,7 +109,7 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
     return
 
   start_wait = time.time()
-  logger.info(f"Client {client_ip}:{client_port} wants connect "
+  logger.info(f"{client_ip}:{client_port} Client wants connect "
               f"to {config.LOGGER_HOST}:{config.LOGGER_PORT}...")
 
   with logger_lock:
@@ -118,7 +121,7 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
     wait_duration = time.time() - start_wait
     session_start = time.time()
 
-    logger.info(f"Lock acquired for {client_ip}:{client_port} "
+    logger.info(f"{client_ip}:{client_port} Lock acquired "
                 f"(waited {wait_duration:.2f}s). Connecting to logger...")
 
     try:
@@ -133,7 +136,8 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
 
       logger_ip, logger_port = logger_sock.getpeername()
 
-      logger.info(f"Bridge established: {client_ip}:{client_port} <-> {logger_ip}:{logger_port}")
+      logger.info(f"{client_ip}:{client_port} Bridge established: "
+                  f"{client_ip}:{client_port} <-> {logger_ip}:{logger_port}")
 
       stop_event = threading.Event()
 
@@ -142,14 +146,14 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       c2l = threading.Thread(
         target = forward_data,
         daemon = True,
-        args = (client_sock, logger_sock, stop_event, "CLIENT -> LOGGER"),
+        args = (client_sock, logger_sock, stop_event, f"{client_ip}:{client_port} CLIENT -> LOGGER"),
         name = "ClientToLoggerThread",
       )
 
       l2c = threading.Thread(
         target = forward_data,
         daemon = True,
-        args = (logger_sock, client_sock, stop_event, "LOGGER -> CLIENT"),
+        args = (logger_sock, client_sock, stop_event, f"{client_ip}:{client_port} LOGGER -> CLIENT"),
         name = "LoggerToClientThread",
       )
 
@@ -165,26 +169,27 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
 
         elapsed_time += wait_interval
         if elapsed_time >= config.DATA_TIMEOUT:
-          logger.warning(f"Session timed out after {config.DATA_TIMEOUT}s for {client_ip}:{client_port}")
+          logger.warning(f"{client_ip}:{client_port} Session timed out after {config.DATA_TIMEOUT}s")
           break
 
       stop_event.set()
 
     except socket.timeout:
-      logger.error(f"Connection to logger {config.LOGGER_HOST}:{config.LOGGER_PORT} timed out.")
+      logger.error(f"{client_ip}:{client_port} Connection to logger timed out")
     except ConnectionRefusedError:
-      logger.error(f"Logger {config.LOGGER_HOST}:{config.LOGGER_PORT} refused connection.")
+      logger.error(f"{client_ip}:{client_port} Logger refused connection")
     except Exception as e:
-      logger.error(f"Unexpected error: {type(e).__name__}: {e}")
+      logger.error(f"{client_ip}:{client_port} Unexpected error: {type(e).__name__}: {e}")
     finally:
       # Cleanup: ensure both sockets are closed and lock is released
       if logger_sock:
         logger_sock.close()
+
       client_sock.close()
 
       session_duration = time.time() - session_start + wait_duration
-      logger.info(f"Session finished (duration {session_duration:.2f}s). "
-                  f"Lock released for {client_ip}:{client_port}.")
+      logger.info(f"{client_ip}:{client_port} Session finished "
+                  f"(duration {session_duration:.2f}s). Lock released")
       logger.info('-----------------------------------------------------------------------')
 
 def handle_exit(sig, frame):
@@ -214,7 +219,7 @@ def main() -> None:
   try:
     server.bind((config.PROXY_HOST, config.PROXY_PORT))
   except Exception as e:
-    logger.error(f"Failed to bind port {config.PROXY_PORT}: {e}")
+    logger.error(f"Failed to bind port {config.PROXY_PORT} on {config.PROXY_HOST}: {e}")
     server.close()
     sys.exit(1)
 
