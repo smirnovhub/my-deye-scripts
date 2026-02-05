@@ -5,7 +5,7 @@ from deye_web_base_section import DeyeWebBaseSection
 from deye_web_base_select_section import DeyeWebBaseSelectSection
 from deye_web_bms_section import DeyeWebBmsSection
 from custom.deye_web_forecast_section import DeyeWebForecastSection
-from deye_web_update_section import DeyeWebUpdateSection
+from deye_web_service_section import DeyeWebServiceSection
 from deye_web_constants import DeyeWebConstants
 from deye_web_registers_section import DeyeWebRegistersSection
 from deye_web_info_section import DeyeWebInfoSection
@@ -41,7 +41,7 @@ class DeyeWebSectionsHolder:
       DeyeWebGridPeakShavingPowerSection(registers),
       DeyeWebGridReconnectionTimeSection(registers),
       DeyeWebBmsSection(registers),
-      DeyeWebUpdateSection(),
+      DeyeWebServiceSection(),
     ]
 
     self._registers_sections: List[DeyeWebRegistersSection] = []

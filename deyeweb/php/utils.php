@@ -27,7 +27,6 @@ function startSession(int $days = 7): void
  * under the "session_id" key, and returns the resulting structure as a JSON string.
  *
  * @param string $json  Current payload as JSON string.
- *
  * @return string  JSON-encoded payload containing the input parameters and session ID.
  */
 function prepareJsonPayload(string $json): string
@@ -89,10 +88,68 @@ function readPipeWithTimeout($pipe, int $timeout_sec = 7): string
   return $response;
 }
 
+/**
+ * Generates the base site URL including protocol, host, and the current directory path.
+ * 
+ * @return string The absolute base URL with a trailing slash.
+ */
+function getSiteName(): string
+{
+  $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+  $host = $_SERVER['HTTP_HOST'];
+  $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+  $directory = trim(dirname($path), '/\\.');
+
+  return $protocol . $host . '/' . ($directory ? $directory . '/' : '');
+}
+
+/**
+ * Reads a file, encodes its content to Base64, and formats it according to RFC 2045.
+ * 
+ * @param string $filename The full path to the file to be processed.
+ * @return string|bool The Base64 encoded string split into chunks, or false on failure.
+ */
+function getFileAsBase64Mime(string $filename)
+{
+  // Check if the file exists and is readable
+  if (!file_exists($filename) || !is_readable($filename)) {
+    return false;
+  }
+
+  // Read the binary content of the file
+  $data = file_get_contents($filename);
+  if ($data === false) {
+    return false;
+  }
+
+  // Encode to Base64
+  $base64 = base64_encode($data);
+
+  // Split into 76-character chunks with CRLF for RFC 2045 compliance
+  return chunk_split($base64, 76, "\n");
+}
+
+/**
+ * Generates a pseudo-random UUID v4 string based on a unique identifier.
+ * 
+ * @return string A formatted uppercase UUID (e.g., 550E8400-E29B-41D4-A716-446655440000).
+ */
+function getFakeUuid(): string
+{
+  // Generates a random-like UUID v4
+  return strtoupper(vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(md5(uniqid()), 4)));
+}
+
+/**
+ * Wraps a plain text error message into a JSON-encoded string.
+ *
+ * @param string $message The error message to be included in the response.
+ * @return string A JSON string containing the error key (e.g., {"error":"message"}).
+ */
 function getErrorMessage(string $message): string
 {
   $errorResponse = [
-    'error'  => $message
+    'error' => $message
   ];
   return json_encode($errorResponse);
 }
