@@ -7,7 +7,7 @@ from deye_web_utils import DeyeWebUtils
 
 class DeyeWebServiceSection(DeyeWebBaseSection):
   def __init__(self):
-    super().__init__(DeyeWebSection.serice)
+    super().__init__(DeyeWebSection.service)
 
   def build_tab_content(self) -> str:
     id1 = DeyeWebUtils.short(DeyeWebConstants.page_template.format(self.section.id))

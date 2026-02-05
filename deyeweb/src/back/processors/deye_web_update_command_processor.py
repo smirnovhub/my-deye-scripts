@@ -17,7 +17,7 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
     json_data: Any,
   ) -> Dict[str, str]:
     def get_result(result: str) -> Dict[str, str]:
-      id = DeyeWebUtils.short(DeyeWebSection.serice.title)
+      id = DeyeWebUtils.short(DeyeWebSection.service.title)
       return {id: result + self.style_manager.generate_css()}
 
     try:

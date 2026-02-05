@@ -15,7 +15,7 @@ class DeyeWebSection(Enum):
   grid_reconnection_time = 'Grid Reconnection'
   grid_peak_shaving_power = 'Grid Peak Shaving'
   bms = 'BMS'
-  serice = 'Service'
+  service = 'Service'
 
   _title: str
   _id: str
