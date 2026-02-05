@@ -25,6 +25,7 @@ Usage:
 """
 import sys
 import time
+import errno
 import logging
 import socket
 import signal
@@ -48,7 +49,7 @@ if config.LOG_LEVEL in logging._nameToLevel:
 
 logging.basicConfig(
   level = log_level,
-  format = '%(asctime)s [%(levelname)s] %(message)s',
+  format = '%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s',
   datefmt = '%Y-%m-%d %H:%M:%S',
   handlers = [logging.StreamHandler(sys.stdout)],
 )
@@ -92,8 +93,7 @@ def forward_data(
         logger.error(f"{direction} connection reset by peer")
         break
       except socket.timeout:
-        logger.error(f"{direction} socket timeout")
-        break
+        continue
   except Exception:
     pass
   finally:
@@ -131,8 +131,8 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       logger_sock.connect((config.LOGGER_HOST, config.LOGGER_PORT))
 
       # Set operational timeouts for data phase
-      logger_sock.settimeout(config.DATA_TIMEOUT)
-      client_sock.settimeout(config.DATA_TIMEOUT)
+      logger_sock.settimeout(1)
+      client_sock.settimeout(1)
 
       logger_ip, logger_port = logger_sock.getpeername()
 
@@ -146,14 +146,14 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       c2l = threading.Thread(
         target = forward_data,
         daemon = True,
-        args = (client_sock, logger_sock, stop_event, f"{client_ip}:{client_port} CLIENT -> LOGGER"),
+        args = (client_sock, logger_sock, stop_event, f"{client_ip}:{client_port} Client -> Logger"),
         name = "ClientToLoggerThread",
       )
 
       l2c = threading.Thread(
         target = forward_data,
         daemon = True,
-        args = (logger_sock, client_sock, stop_event, f"{client_ip}:{client_port} LOGGER -> CLIENT"),
+        args = (logger_sock, client_sock, stop_event, f"{client_ip}:{client_port} Logger -> Client"),
         name = "LoggerToClientThread",
       )
 
@@ -169,7 +169,24 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
 
         elapsed_time += wait_interval
         if elapsed_time >= config.DATA_TIMEOUT:
-          logger.warning(f"{client_ip}:{client_port} Session timed out after {config.DATA_TIMEOUT}s")
+          logger.error(f"{client_ip}:{client_port} Session timed out after {config.DATA_TIMEOUT}s")
+
+          stop_event.set()
+
+          try:
+            if logger_sock:
+              logger_sock.shutdown(socket.SHUT_RDWR)
+          except Exception:
+            pass
+
+          try:
+            client_sock.shutdown(socket.SHUT_RDWR)
+          except Exception:
+            pass
+
+          c2l.join(timeout = 1.5)
+          l2c.join(timeout = 1.5)
+
           break
 
       stop_event.set()
@@ -179,13 +196,18 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
     except ConnectionRefusedError:
       logger.error(f"{client_ip}:{client_port} Logger refused connection")
     except Exception as e:
-      logger.error(f"{client_ip}:{client_port} Unexpected error: {type(e).__name__}: {e}")
+      if e.errno == errno.EHOSTUNREACH:
+        logger.error(f"{client_ip}:{client_port} No route to host")
+      else:
+        logger.error(f"{client_ip}:{client_port} Unexpected error: {type(e).__name__}: {e}")
     finally:
       # Cleanup: ensure both sockets are closed and lock is released
       if logger_sock:
         logger_sock.close()
 
       client_sock.close()
+
+      time.sleep(0.015)
 
       session_duration = time.time() - session_start + wait_duration
       logger.info(f"{client_ip}:{client_port} Session finished "
