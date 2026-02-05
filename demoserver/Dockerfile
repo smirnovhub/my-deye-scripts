@@ -26,9 +26,9 @@ RUN apt-get update && \
   git \
   apt-get autoremove -y && \
   apt-get clean -y && \
+  rm -rf /var/lib/apt/lists/* && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
-  echo $TIMEZONE > /etc/timezone && \
-  rm -rf /var/lib/apt/lists/*
+  echo $TIMEZONE > /etc/timezone
 
 # Create user without password, with home directory
 RUN useradd -m -u 5555 -s /usr/sbin/nologin $USER_NAME

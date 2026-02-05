@@ -26,13 +26,21 @@ RUN apt-get update && \
   locales \
   openssl \
   python3 \
-  python3-pip \
-  python3-venv && \
+  python3-pip && \
+  apt-get purge -y --auto-remove \
+  g++ \
+  gcc \
+  make \
+  autoconf \
+  libc-dev \
+  pkg-config \
+  patch \
+  binutils && \
   apt-get autoremove -y && \
   apt-get clean -y && \
+  rm -rf /var/lib/apt/lists/* && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
-  echo $TIMEZONE > /etc/timezone && \
-  rm -rf /var/lib/apt/lists/*
+  echo $TIMEZONE > /etc/timezone
 
 # Install required Python packages
 RUN pip install --no-cache-dir six requests --break-system-packages
@@ -89,20 +97,6 @@ RUN sed -i 's|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/apache-self
 
 # Apache runs on ports 80 and 443
 EXPOSE 80 443
-
-# Remove installed packages to increase security
-RUN apt-get purge -y --auto-remove \
-  curl \
-  gcc \
-  make \
-  autoconf \
-  libc-dev \
-  pkg-config \
-  patch \
-  binutils && \
-  apt-get autoremove -y && \
-  apt-get clean -y && \
-  rm -rf /var/lib/apt/lists/*
 
 # The base image already has "CMD [apache2-foreground]"
 # so we don't need to redefine it unless we have custom startup logic

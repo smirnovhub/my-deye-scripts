@@ -30,9 +30,9 @@ RUN apt-get update && \
   locales && \
   apt-get autoremove -y && \
   apt-get clean -y && \
+  rm -rf /var/lib/apt/lists/* && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
-  echo $TIMEZONE > /etc/timezone && \
-  rm -rf /var/lib/apt/lists/*
+  echo $TIMEZONE > /etc/timezone
 
 # Generate locales
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
