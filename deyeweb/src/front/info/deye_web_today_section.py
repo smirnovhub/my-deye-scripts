@@ -17,4 +17,6 @@ class DeyeWebTodaySection(DeyeWebBaseInfoSection):
       registers.today_battery_charged_energy_register,
       registers.today_battery_discharged_energy_register,
       registers.today_pv_production_cost_register,
+      registers.today_gen_energy_cost_register,
+      registers.today_grid_purchased_energy_cost_register,
     ]

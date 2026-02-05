@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from deye_web_utils import DeyeWebUtils
 from deye_web_color import DeyeWebColor
+from deye_web_used_registers import DeyeWebUsedRegisters
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_registers_holder import DeyeRegistersHolder
 from deye_web_constants import DeyeWebConstants
@@ -20,9 +21,11 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
   ) -> Dict[str, str]:
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
-      loggers = self.loggers.loggers,
       name = 'deyeweb',
+      loggers = self.loggers.loggers,
       socket_timeout = 5,
+      auto_reconnect = True,
+      register_creator = lambda prefix: DeyeWebUsedRegisters(prefix),
     )
 
     try:
