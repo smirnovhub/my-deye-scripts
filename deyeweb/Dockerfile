@@ -72,7 +72,7 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
 COPY common/*.py $REPO_NAME/common/
 
 # Copy icons to the server root
-RUN cp $REPO_NAME/icons/* ./
+RUN cp $REPO_NAME/deyeweb/icons/* $REPO_NAME/deyeweb/
 
 # Create symlink
 RUN rm -rf /var/www/html && \
