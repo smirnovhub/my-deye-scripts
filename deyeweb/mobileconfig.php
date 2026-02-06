@@ -18,8 +18,8 @@
 
 // File names
 $config_file_name = 'deyeweb.mobileconfig';
-$config_template_file_name = 'ios/deyeweb.mobileconfig.template';
-$icon_file_name = 'ios/deyeweb_icon.png';
+$config_template_file_name = 'icons/deyeweb.mobileconfig.template';
+$icon_file_name = 'icons/deyeweb_icon.png';
 
 ob_start();
 
