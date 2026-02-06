@@ -21,6 +21,19 @@ function startSession(int $days = 7): void
 }
 
 /**
+ * Saves session data and closes the session to release the file lock.
+ * This allows other concurrent AJAX requests to proceed while the
+ * current script performs long-running operations (e.g., executing Python).
+ * Note: Session data can still be read after this call, but not modified.
+ *
+ * @return void
+ */
+function closeSession(): void
+{
+  session_write_close();
+}
+
+/**
  * Build a JSON-encoded payload with the current PHP session ID included.
  *
  * This function takes json parameter as string, adds the current PHP session ID

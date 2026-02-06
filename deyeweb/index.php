@@ -1,14 +1,16 @@
 <?php
 
 require_once(__DIR__ . '/php/utils.php');
+
 startSession();
+closeSession();
 
 ?>
 <!DOCTYPE html>
 <html>
 
 <head>
-  <title>Deye Parameters</title>
+  <title>Deye Web</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <link href="css/style.css" rel="stylesheet" type="text/css">
   <link href="css/spinner.css" rel="stylesheet" type="text/css">

@@ -7,6 +7,12 @@ require_once(__DIR__ . '/php/utils.php');
 
 startSession();
 
+// Prepare JSON payload
+$json = file_get_contents('php://input');
+$payload = prepareJsonPayload($json);
+
+closeSession();
+
 // Open Python process
 $process = proc_open(
   __DIR__ . '/back.py',
@@ -24,10 +30,6 @@ if (!is_resource($process)) {
   echo getErrorMessage('Error: failed to start python process');
   exit;
 }
-
-// Prepare JSON payload
-$json = file_get_contents('php://input');
-$payload = prepareJsonPayload($json);
 
 // Send JSON payload to Python
 fwrite($pipes[0], $payload);
