@@ -96,7 +96,7 @@ class DeyeWebUtils:
   @staticmethod
   def get_json_field(json_data: Any, field_name: str) -> str:
     if field_name not in json_data:
-      raise KeyError(f"Missing '{field_name}' field in JSON")
+      raise ValueError(f"Missing '{field_name}' field in JSON")
 
     value = json_data[field_name]
 

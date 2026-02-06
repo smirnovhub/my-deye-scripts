@@ -34,24 +34,56 @@ function closeSession(): void
 }
 
 /**
- * Build a JSON-encoded payload with the current PHP session ID included.
+ * Processes and validates the incoming JSON payload.
  *
- * This function takes json parameter as string, adds the current PHP session ID
- * under the "session_id" key, and returns the resulting structure as a JSON string.
+ * Ensures the input is a valid JSON string, checks for structural 
+ * integrity, and verifies that the required business-level data 
+ * is present before further processing.
  *
- * @param string $json  Current payload as JSON string.
- * @return string  JSON-encoded payload containing the input parameters and session ID.
+ * @param string $json
+ * @return array
  */
-function prepareJsonPayload(string $json): string
+function parseAndValidateJson(string $json): array
 {
-  $payloadArray = json_decode($json, true);
-
-  if (!is_array($payloadArray)) {
-    $payloadArray = [];
+  if (empty(trim($json))) {
+    throw new Exception('Error: JSON request is empty');
   }
 
-  $payloadArray['session_id'] = session_id();
-  return json_encode($payloadArray);
+  try {
+    $jsonArray = json_decode($json, true, 5);
+  } catch (\Throwable $e) {
+    throw new Exception('Error: JSON decode error: ' . $e->getMessage());
+  }
+
+  if (json_last_error() !== JSON_ERROR_NONE) {
+    $errorMessage = json_last_error_msg();
+    throw new Exception('Error: JSON decode error: ' . $errorMessage);
+  }
+
+  if (!is_array($jsonArray)) {
+    throw new Exception('Error: JSON request should be array');
+  }
+
+  if (!isset($jsonArray['command'])) {
+    throw new Exception("Error: Missing 'command' field in JSON");
+  }
+
+  return $jsonArray;
+}
+
+/**
+ * Prepares the array for transmission by injecting session metadata.
+ *
+ * Enriches the provided data with the current session identifier 
+ * and converts the final structure into a JSON-formatted string.
+ *
+ * @param array $jsonArray
+ * @return string
+ */
+function prepareJsonPayload(array $jsonArray): string
+{
+  $jsonArray['session_id'] = session_id();
+  return json_encode($jsonArray);
 }
 
 /**
@@ -161,8 +193,8 @@ function getFakeUuid(): string
  */
 function getErrorMessage(string $message): string
 {
-  $errorResponse = [
+  $response = [
     'error' => $message
   ];
-  return json_encode($errorResponse);
+  return json_encode($response);
 }
