@@ -35,13 +35,11 @@ RUN apt-get update && \
   apt-get clean -y && \
   rm -rf /var/lib/apt/lists/* && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
-  echo $TIMEZONE > /etc/timezone
+  echo $TIMEZONE > /etc/timezone && \
+  echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Install required Python packages
 RUN pip install --no-cache-dir six requests --break-system-packages
-
-# Add colors to ls command
-RUN echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Set working directory
 WORKDIR $APP_DIR
