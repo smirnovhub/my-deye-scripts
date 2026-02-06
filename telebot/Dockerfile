@@ -20,31 +20,12 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
-#  mc \
-#  openssl \
-#  iputils-ping \
-#  traceroute \
-#  curl \
-#  net-tools \
   git \
-  locales && \
   apt-get autoremove -y && \
   apt-get clean -y && \
   rm -rf /var/lib/apt/lists/* && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
   echo $TIMEZONE > /etc/timezone
-
-# Generate locales
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-  echo "en_GB.UTF-8 UTF-8" >> /etc/locale.gen && \
-  locale-gen
-
-# Set locales
-ENV TERM=xterm
-ENV EDITOR=mcedit
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:en
-ENV LC_TIME=en_GB.UTF-8
 
 # Create user without password, with home directory
 RUN useradd -m -u 3333 -s /usr/sbin/nologin $USER_NAME

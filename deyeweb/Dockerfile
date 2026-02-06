@@ -18,12 +18,7 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
-#  mc \
-#  iputils-ping \
-#  traceroute \
-#  net-tools \
   git \
-  locales \
   openssl \
   python3 \
   python3-pip && \
@@ -44,18 +39,6 @@ RUN apt-get update && \
 
 # Install required Python packages
 RUN pip install --no-cache-dir six requests --break-system-packages
-
-# Generate locales
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-  echo "en_GB.UTF-8 UTF-8" >> /etc/locale.gen && \
-  locale-gen
-
-# Set locales
-ENV TERM=xterm
-ENV EDITOR=mcedit
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:en
-ENV LC_TIME=en_GB.UTF-8
 
 # Add colors to ls command
 RUN echo "alias ls='ls --color=auto'" >> /root/.bashrc
