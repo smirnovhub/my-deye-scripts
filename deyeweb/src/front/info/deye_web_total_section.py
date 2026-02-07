@@ -17,4 +17,6 @@ class DeyeWebTotalSection(DeyeWebBaseInfoSection):
       registers.total_battery_charged_energy_register,
       registers.total_battery_discharged_energy_register,
       registers.total_pv_production_cost_register,
+      registers.total_gen_energy_cost_register,
+      registers.total_grid_purchased_energy_cost_register,
     ]

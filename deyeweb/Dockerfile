@@ -13,41 +13,33 @@ ARG APP_DIR=/var/www
 # Set the correct time zone according to your actual location.
 # Otherwise, the local time will be incorrect!
 ENV TIMEZONE=Europe/Kyiv
-RUN ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && echo $TIMEZONE > /etc/timezone
 
 # Install system dependencies: Python, pip, and other tools
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
-#  mc \
-#  iputils-ping \
-#  traceroute \
-#  net-tools \
   git \
-  locales \
   openssl \
   python3 \
-  python3-pip \
-  python3-venv && \
-  rm -rf /var/lib/apt/lists/*
+  python3-pip && \
+  apt-get purge -y --auto-remove \
+  g++ \
+  gcc \
+  make \
+  autoconf \
+  libc-dev \
+  pkg-config \
+  patch \
+  binutils && \
+  apt-get autoremove -y && \
+  apt-get clean -y && \
+  rm -rf /var/lib/apt/lists/* && \
+  ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
+  echo $TIMEZONE > /etc/timezone && \
+  echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Install required Python packages
 RUN pip install --no-cache-dir six requests --break-system-packages
-
-# Generate locales
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-  echo "en_GB.UTF-8 UTF-8" >> /etc/locale.gen && \
-  locale-gen
-
-# Set locales
-ENV TERM=xterm
-ENV EDITOR=mcedit
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:en
-ENV LC_TIME=en_GB.UTF-8
-
-# Add colors to ls command
-RUN echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Set working directory
 WORKDIR $APP_DIR
@@ -59,6 +51,9 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
 
 # Copy pre-configured configs to container
 COPY common/*.py $REPO_NAME/common/
+
+# Copy icons to the server root
+RUN cp $REPO_NAME/deyeweb/icons/* $REPO_NAME/deyeweb/
 
 # Create symlink
 RUN rm -rf /var/www/html && \
@@ -86,21 +81,6 @@ RUN sed -i 's|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/apache-self
 
 # Apache runs on ports 80 and 443
 EXPOSE 80 443
-
-# Remove installed packages to increase security
-RUN apt-get purge -y --auto-remove \
-  curl \
-  gcc \
-  make \
-  autoconf \
-  libc-dev \
-  pkg-config \
-  patch \
-  binutils && \
-  apt-get autoremove -y && \
-  apt-get clean -y && \
-  rm -rf /var/lib/apt/lists/* /usr/bin/apt* /usr/bin/dpkg* \
-  /var/lib/dpkg /var/lib/apt /usr/bin/top /usr/bin/ps
 
 # The base image already has "CMD [apache2-foreground]"
 # so we don't need to redefine it unless we have custom startup logic

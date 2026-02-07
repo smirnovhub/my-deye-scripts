@@ -8,7 +8,7 @@ from battery_forecast_utils import BatteryForecastType
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_registers_holder import DeyeRegistersHolder
 from deye_web_constants import DeyeWebConstants
-from forecast_registers import ForecastRegisters
+from deye_web_forecast_registers import DeyeWebForecastRegisters
 from battery_forecast_utils import BatteryForecastUtils
 from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
@@ -26,10 +26,11 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
   ) -> Dict[str, str]:
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
-      loggers = self.loggers.loggers,
       name = 'deyeweb',
+      loggers = self.loggers.loggers,
       socket_timeout = 5,
-      register_creator = lambda prefix: ForecastRegisters(prefix),
+      auto_reconnect = True,
+      register_creator = lambda prefix: DeyeWebForecastRegisters(prefix),
     )
 
     try:

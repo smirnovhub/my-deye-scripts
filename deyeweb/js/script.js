@@ -112,6 +112,10 @@ function resetSecondsTimer() {
 }
 
 function updateAllFields(result) {
+  if (!result) {
+    return;
+  }
+
   document.getElementById('error_field').innerHTML = '';
   document.getElementById('callstack_field').innerHTML = '';
 
@@ -149,11 +153,14 @@ function update() {
       },
 
       function (result, errors) {
-        if (!writing) {
-          updateAllFields(result);
-          resetSecondsTimer();
+        try {
+          if (!writing) {
+            updateAllFields(result);
+            resetSecondsTimer();
+          }
+        } finally {
+          updating = false;
         }
-        updating = false;
       },
       true
     );
@@ -176,8 +183,12 @@ function sendCommand(command, field_id) {
       },
 
       function (result, errors) {
-        updateAllFields(result);
-        processing = false;
+        try {
+          updateAllFields(result);
+          resetSecondsTimer();
+        } finally {
+          processing = false;
+        }
       },
       true
     );
@@ -216,10 +227,13 @@ function write_register(field_id, content_field_id, register_name, register_valu
       },
 
       function (result, errors) {
-        updateAllFields(result);
-        resetSecondsTimer();
-        startUpdateTimer();
-        writing = false;
+        try {
+          updateAllFields(result);
+          resetSecondsTimer();
+          startUpdateTimer();
+        } finally {
+          writing = false;
+        }
       },
       true
     );

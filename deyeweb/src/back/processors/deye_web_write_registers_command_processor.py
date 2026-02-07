@@ -3,7 +3,7 @@ from typing import Any, Dict
 from deye_web_utils import DeyeWebUtils
 from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
-from custom_single_registers import CustomSingleRegisters
+from deye_web_custom_single_registers import DeyeWebCustomSingleRegisters
 from deye_web_colors_calculator import DeyeWebColorsCalculator
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_registers_holder import DeyeRegistersHolder
@@ -31,9 +31,10 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       name = 'deyeweb',
-      socket_timeout = 5,
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(
+      socket_timeout = 5,
+      auto_reconnect = True,
+      register_creator = lambda prefix: DeyeWebCustomSingleRegisters(
         register,
         prefix,
       ),

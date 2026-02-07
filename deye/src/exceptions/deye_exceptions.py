@@ -50,6 +50,10 @@ class DeyeConnectionErrorException(DeyeKnownException):
   """Raised when connection error"""
   pass
 
+class DeyeOSErrorException(DeyeKnownException):
+  """Raised when some OS error"""
+  pass
+
 class DeyeQueueIsEmptyException(DeyeKnownException):
   """
   Raised when Queue.get() fails because the queue is empty

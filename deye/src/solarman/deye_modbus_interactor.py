@@ -55,15 +55,18 @@ class DeyeModbusInteractor:
       print(f'register groups to read from {self.logger.name}:')
       print(test)
 
-    for group in groups:
-      start = min(group)
-      count = max(group) - start + 1
+    try:
+      for group in groups:
+        start = min(group)
+        count = max(group) - start + 1
 
-      data = self.solarman.read_holding_registers(register_addr = start, quantity = count)
+        data = self.solarman.read_holding_registers(register_addr = start, quantity = count)
 
-      for idx, value in enumerate(data):
-        if (idx + start) in group:
-          self.registers_queue[idx + start] = value
+        for idx, value in enumerate(data):
+          if (idx + start) in group:
+            self.registers_queue[idx + start] = value
+    finally:
+      self.solarman.disconnect()
 
   def read_register(self, register_addr: int, quantity: int) -> List[int]:
     result = []
@@ -75,7 +78,11 @@ class DeyeModbusInteractor:
     return result
 
   def write_register(self, register_addr: int, values: List[int]) -> int:
-    return self.solarman.write_multiple_holding_registers(register_addr, values)
+    try:
+      return self.solarman.write_multiple_holding_registers(register_addr, values)
+    finally:
+      self.solarman.disconnect()
 
+  # Deprecated
   def disconnect(self) -> None:
-    self.solarman.disconnect()
+    pass

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.webClip.managed</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.my.webclip.web.deye</string>
+            <key>PayloadUUID</key>
+            <string>RANDOM_UUID_1</string>
+            <key>PayloadDisplayName</key>
+            <string>Web Clip</string>
+            <key>URL</key><string>TARGET_URL</string>
+            <key>Label</key><string>Deye Web</string>
+            <key>IsRemovable</key><false/>
+            <key>Icon</key>
+                <data>
+ICON_BASE64_DATA
+                </data>
+            <key>Precomposed</key><true/>
+        </dict>
+    </array>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadIdentifier</key>
+    <string>com.my.profile.webclip.web.deye</string>
+    <key>PayloadUUID</key>
+    <string>RANDOM_UUID_2</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadDisplayName</key>
+    <string>Deye Web</string>
+</dict>
+</plist>

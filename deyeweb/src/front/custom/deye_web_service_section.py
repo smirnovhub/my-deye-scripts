@@ -5,9 +5,9 @@ from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
 
-class DeyeWebUpdateSection(DeyeWebBaseSection):
+class DeyeWebServiceSection(DeyeWebBaseSection):
   def __init__(self):
-    super().__init__(DeyeWebSection.update)
+    super().__init__(DeyeWebSection.service)
 
   def build_tab_content(self) -> str:
     id1 = DeyeWebUtils.short(DeyeWebConstants.page_template.format(self.section.id))
@@ -21,16 +21,22 @@ class DeyeWebUpdateSection(DeyeWebBaseSection):
 
     command = DeyeWebRemoteCommand.update_scripts.name
 
-    on_click = f"""onclick="{command}('{id2}')" """
-
     return f"""
       {DeyeWebUtils.begin_comment(self)}
       <div id="{id1}" class="tabcontent">
         <center>
           <table>
             <tr>
-              <td {on_click} class="{style_id1} {style_id2} {cursor_style_id}">
+              <td onclick="{command}('{id2}');" class="{style_id1} {style_id2} {cursor_style_id}">
                 Update Scripts
+              </td>
+            </tr>
+          </table>
+          <br>
+          <table>
+            <tr>
+              <td onclick="window.location.href='mobileconfig.php';" class="{style_id1} {style_id2} {cursor_style_id}">
+                Install iOS Profile
               </td>
             </tr>
           </table>

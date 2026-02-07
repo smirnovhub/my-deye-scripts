@@ -1,49 +1,71 @@
 <?php
 
-// Required for Ajax requests to be parsed as JSON by browser
-header('Content-Type: application/json; charset=utf-8');
+ob_start();
 
 require_once(__DIR__ . '/php/utils.php');
 
 startSession();
 
-// Open Python process
-$process = proc_open(
-  __DIR__ . '/back.py',
-  [
-    0 => ['pipe', 'r'], // stdin
-    1 => ['pipe', 'w'], // stdout
-    2 => ['pipe', 'w']  // stderr
-  ],
-  $pipes
-);
-
-// Check if process failed to start
-if (!is_resource($process)) {
-  // Output error and terminate script
-  echo getErrorMessage('Error: failed to start python process');
-  exit;
-}
-
-// Prepare JSON payload
-$json = file_get_contents('php://input');
-$payload = prepareJsonPayload($json);
-
-// Send JSON payload to Python
-fwrite($pipes[0], $payload);
-fclose($pipes[0]);
-
 try {
-  // Read JSON response from Python
-  echo readPipeWithTimeout($pipes[1], 7);
-} catch (TimeoutException $e) {
-  proc_terminate($process);
-  echo getErrorMessage('Timeout: python process did not respond in time');
+  // Prepare JSON payload
+  $json = file_get_contents('php://input');
+  $jsonArray = parseAndValidateJson($json);
+  $payload = prepareJsonPayload($jsonArray);
+
+  closeSession();
+
+  // Open Python process
+  $process = proc_open(
+    __DIR__ . '/back.py 2>&1',
+    [
+      0 => ['pipe', 'r'], // stdin
+      1 => ['pipe', 'w'], // stdout
+    ],
+    $pipes
+  );
+
+  if (!is_resource($process)) {
+    echo getErrorMessage('Error: failed to start python process');
+  } else {
+    // Send JSON payload to Python
+    fwrite($pipes[0], $payload);
+    fclose($pipes[0]);
+
+    try {
+      // Read response from Python
+      echo readPipeWithTimeout($pipes[1], 7);
+    } catch (TimeoutException $e) {
+      proc_terminate($process);
+      echo getErrorMessage('Timeout: python process did not respond in time');
+    } catch (Exception $e) {
+      proc_terminate($process);
+      echo getErrorMessage('Unexpected PHP error: ' . $e->getMessage());
+    } finally {
+      fclose($pipes[1]);
+      proc_close($process);
+    }
+  }
 } catch (Exception $e) {
-  proc_terminate($process);
-  echo getErrorMessage('Unexpected PHP error: ' . $e->getMessage());
+  ob_clean();
+  echo getErrorMessage($e->getMessage());
 } finally {
-  fclose($pipes[1]);
-  fclose($pipes[2]);
-  proc_close($process);
+  closeSession();
 }
+
+$rawOutput = ob_get_clean();
+$finalOutput = $rawOutput;
+
+if (strlen($rawOutput) > 1024) {
+  $supportsGzip = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false;
+  if ($supportsGzip && function_exists('gzencode')) {
+    $finalOutput = gzencode($rawOutput);
+    header('Content-Encoding: gzip');
+  }
+}
+
+// Required for Ajax requests to be parsed as JSON by browser
+header('Content-Type: application/json; charset=utf-8');
+header('Content-Length: ' . strlen($finalOutput));
+header('Vary: Accept-Encoding');
+
+echo $finalOutput;

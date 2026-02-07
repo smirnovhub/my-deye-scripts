@@ -7,6 +7,7 @@ from typing import IO, Any, Optional
 
 from deye_utils import DeyeUtils
 from deye_file_lock import DeyeFileLock
+from deye_base_locker import DeyeBaseLocker
 
 from lock_exceptions import (
   DeyeLockTimeoutException,
@@ -14,7 +15,7 @@ from lock_exceptions import (
   DeyeLockNotHeldException,
 )
 
-class DeyeFileLocker:
+class DeyeFileLocker(DeyeBaseLocker):
   """
   Handles exclusive file locking with optional logging and file trimming.
 

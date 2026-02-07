@@ -55,3 +55,22 @@ services:
       - "5000:5000"
       - "5001:5001"
     restart: unless-stopped
+
+  deye_master_proxy:
+    build:
+      context: .
+      dockerfile: deyeproxy/Dockerfile
+    environment:
+      - LOGGER_HOST=192.168.1.101
+      - LOGGER_PORT=8899
+      - PROXY_PORT=8899
+      - MAX_CONCURRENT_CONNECTIONS=10
+      - CONNECT_TIMEOUT=5
+      - DATA_TIMEOUT=10
+      - LOG_LEVEL=INFO
+    image: deyeproxy
+    container_name: deye_master_proxy
+    hostname: deye_master_proxy
+    ports:
+      - "8899:8899"
+    restart: unless-stopped

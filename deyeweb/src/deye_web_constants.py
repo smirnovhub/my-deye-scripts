@@ -66,12 +66,13 @@ class DeyeWebConstants:
     'Total': '',
     'Inverter': '',
     'External': '',
-    'Energy': '',
+    ' Energy': '',
     'Battery Max': 'Max',
     'Battery Grid': 'Grid',
     'Battery Gen': 'Gen',
     'Battery BMS': '',
     'Internal CT ': '',
+    'Gen Cost': 'Gen Energy Cost',
   }
 
   register_suffix_replacement_rules: Dict[str, str] = {

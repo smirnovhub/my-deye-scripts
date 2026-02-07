@@ -75,7 +75,6 @@ for register in registers.all_registers:
     sys.executable,
     '-u',
     os.path.join(base_path, 'deye/deye'),
-    '-v',
     f"--set-{register.name.replace('_', '-')}",
     f'{value}',
   ]
@@ -104,7 +103,6 @@ for register in registers.all_registers:
     sys.executable,
     '-u',
     os.path.join(base_path, 'deye/deye'),
-    '-v',
     '-c 0',
     f"--get-{register.name.replace('_', '-')}",
   ]
@@ -128,7 +126,7 @@ for register in registers.all_registers:
     sys.exit(1)
 
   reg_name = f'{logger.name}_{register.name}'
-  pattern = rf"^{reg_name}\s+=\s+(.+)$"
+  pattern = rf"^{reg_name}\s+=\s+(.+?){register.suffix}"
 
   write_match = re.search(pattern, write_output, re.MULTILINE)
   if write_match:
@@ -136,9 +134,9 @@ for register in registers.all_registers:
     log.info(f"Write passed for register '{register.name}' and value '{value}'")
 
     if f'{reg_name} = {value}' in read_output:
-      log.info(f"Read passed for register '{register.name}' and value '{value}'")
+      log.info(f"Read passed for register '{reg_name}' and value '{value}'")
     else:
-      log.info(f"Read failed for register '{register.name}' and value '{value}'")
+      log.info(f"Read failed for register '{reg_name}' and value '{value}'")
       sys.exit(1)
   else:
     log.info(f"Write failed for '{register.name}'")

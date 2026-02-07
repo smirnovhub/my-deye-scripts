@@ -11,10 +11,10 @@ from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from raising_thread import RaisingThread
 from deye_file_lock import DeyeFileLock
-from deye_file_locker import DeyeFileLocker
+from deye_base_locker import DeyeBaseLocker
+from deye_empty_locker import DeyeEmptyLocker
 from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
-from lock_exceptions import DeyeLockAlreadyAcquiredException
 from deye_exceptions import DeyeNoSocketAvailableException
 from deye_exceptions import DeyeQueueIsEmptyException
 
@@ -33,11 +33,10 @@ class DeyeRegistersHolder:
     self._all_loggers = DeyeLoggers()
 
     # Initialize locker
-    verbose = kwargs.get('verbose', False)
-    name = kwargs.get('name', os.path.basename(__file__))
+    self.verbose = kwargs.get('verbose', False)
+    self.name = kwargs.get('name', os.path.basename(__file__))
     suffix = '_test' if self._all_loggers.is_test_loggers else ''
-    lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name_template.format(suffix))
-    self.locker = DeyeFileLocker(name, lockfile, verbose = verbose)
+    self.lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name_template.format(suffix))
 
     for logger in self._loggers:
       interactor = DeyeModbusInteractor(logger = logger, **kwargs)
@@ -70,23 +69,27 @@ class DeyeRegistersHolder:
   def accumulated_registers(self) -> DeyeRegisters:
     return self._registers[self._all_loggers.accumulated_registers_prefix]
 
+  def create_locker(self) -> DeyeBaseLocker:
+    return DeyeEmptyLocker()
+
   def read_registers(self) -> None:
     def log_retry(attempt, total_attempts, exception):
       self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
 
-    if DeyeUtils.is_tests_on():
-      retry_timeout = DeyeUtils.get_test_retry_timeout()
-      self._read_registers_with_retry_internal(retry_timeout = retry_timeout, on_retry = log_retry)
-    else:
-      self._read_registers_internal()
+    locker = self.create_locker()
+    locker.acquire()
+
+    try:
+      if DeyeUtils.is_tests_on():
+        retry_timeout = DeyeUtils.get_test_retry_timeout()
+        self._read_registers_with_retry_internal(retry_timeout = retry_timeout, on_retry = log_retry)
+      else:
+        self._read_registers_internal()
+    finally:
+      locker.release()
 
   def _read_registers_internal(self) -> None:
-    try:
-      self.locker.acquire()
-    except DeyeLockAlreadyAcquiredException:
-      pass
-
     tasks: List[RaisingThread] = []
 
     for interactor in self._interactors:
@@ -154,23 +157,24 @@ class DeyeRegistersHolder:
       self.log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
 
-    if DeyeUtils.is_tests_on():
-      retry_timeout = DeyeUtils.get_test_retry_timeout()
-      return self._write_register_with_retry_internal(
-        register,
-        value,
-        retry_timeout = retry_timeout,
-        on_retry = log_retry,
-      )
-    else:
-      return self._write_register_internal(register, value)
+    locker = self.create_locker()
+    locker.acquire()
+
+    try:
+      if DeyeUtils.is_tests_on():
+        retry_timeout = DeyeUtils.get_test_retry_timeout()
+        return self._write_register_with_retry_internal(
+          register,
+          value,
+          retry_timeout = retry_timeout,
+          on_retry = log_retry,
+        )
+      else:
+        return self._write_register_internal(register, value)
+    finally:
+      locker.release()
 
   def _write_register_internal(self, register: DeyeRegister, value) -> Any:
-    try:
-      self.locker.acquire()
-    except DeyeLockAlreadyAcquiredException:
-      pass
-
     if self._master_interactor == None:
       raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
 
@@ -206,21 +210,6 @@ class DeyeRegistersHolder:
       if last_exception is not None:
         raise last_exception
 
+  # Deprecated
   def disconnect(self) -> None:
-    last_exception = None
-    try:
-      for interactor in self._interactors:
-        try:
-          interactor.disconnect()
-        except Exception as e:
-          try:
-            raise DeyeUtils.get_reraised_exception(
-              e, f'{type(self).__name__}: error while disconnecting from inverter {interactor.name}') from e
-          except Exception as handled:
-            # remember last exception
-            last_exception = handled
-    finally:
-      self.locker.release()
-
-    if last_exception:
-      raise last_exception
+    pass
