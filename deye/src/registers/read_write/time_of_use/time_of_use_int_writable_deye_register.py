@@ -15,7 +15,16 @@ class TimeOfUseIntWritableDeyeRegister(IntWritableDeyeRegister):
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
-    super().__init__(address, min_value, max_value, name, description, suffix, avg, 6)
+    super().__init__(
+      address = address,
+      min_value = min_value,
+      max_value = max_value,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+      quantity = 6,
+    )
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     data = interactor.read_register(self.address, self.quantity)

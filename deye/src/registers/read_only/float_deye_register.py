@@ -1,4 +1,6 @@
-from typing import Any
+from typing import Any, Optional
+
+from datetime import timedelta
 
 from deye_register import DeyeRegister
 from base_deye_register import BaseDeyeRegister
@@ -13,9 +15,18 @@ class FloatDeyeRegister(BaseDeyeRegister):
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
+    caching_time: Optional[timedelta] = None,
     quantity: int = 1,
   ):
-    super().__init__(address, quantity, name, description, suffix, avg)
+    super().__init__(
+      address = address,
+      quantity = quantity,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+      caching_time = caching_time,
+    )
     self._value = 0.0
     self._scale = 10
 

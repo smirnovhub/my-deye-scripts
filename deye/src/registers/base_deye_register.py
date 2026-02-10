@@ -1,7 +1,7 @@
 import math
-from typing import Any, List, Union
 
-from datetime import datetime
+from typing import Any, List, Optional, Union
+from datetime import datetime, timedelta
 
 from deye_utils import DeyeUtils
 from deye_base_enum import DeyeBaseEnum
@@ -19,6 +19,7 @@ class BaseDeyeRegister(DeyeRegister):
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
+    caching_time: Optional[timedelta] = None,
   ):
     self._address = address
     self._quantity = quantity
@@ -30,11 +31,12 @@ class BaseDeyeRegister(DeyeRegister):
     self._value: Union[int, float, str, datetime, DeyeBaseEnum] = 0
     self._min_value: Union[int, float] = 0
     self._max_value: Union[int, float] = 0
+    self._caching_time = caching_time
     self._loggers = DeyeLoggers()
 
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     if interactor.is_master or self._avg != DeyeRegisterAverageType.only_master:
-      interactor.enqueue_register(self.address, self.quantity)
+      interactor.enqueue_register(self.address, self.quantity, self.caching_time)
 
   def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     if len(interactors) == 1:
@@ -147,3 +149,7 @@ class BaseDeyeRegister(DeyeRegister):
   @property
   def max_value(self) -> float:
     return self._max_value
+
+  @property
+  def caching_time(self) -> Optional[timedelta]:
+    return self._caching_time

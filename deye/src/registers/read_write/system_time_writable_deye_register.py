@@ -1,7 +1,8 @@
 import re
 
-from typing import Any
-from datetime import datetime
+from typing import Any, Optional
+
+from datetime import datetime, timedelta
 
 from deye_utils import DeyeUtils
 from base_deye_register import BaseDeyeRegister
@@ -16,8 +17,17 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
+    caching_time: Optional[timedelta] = None,
   ):
-    super().__init__(address, 3, name, description, suffix, avg)
+    super().__init__(
+      address = address,
+      quantity = 3,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+      caching_time = caching_time,
+    )
     self._value = datetime(1970, 1, 1)
 
   @property

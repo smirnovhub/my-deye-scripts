@@ -13,7 +13,13 @@ class TemperatureDeyeRegister(FloatDeyeRegister):
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
-    super().__init__(address, name, description, suffix, avg)
+    super().__init__(
+      address = address,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+    )
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     data = interactor.read_register(self.address, self.quantity)

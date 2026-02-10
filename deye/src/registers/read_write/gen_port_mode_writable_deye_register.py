@@ -14,7 +14,13 @@ class GenPortModeWritableDeyeRegister(IntDeyeRegister):
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
-    super().__init__(address, name, description, suffix, avg)
+    super().__init__(
+      address = address,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+    )
     self._register_type = DeyeGenPortMode
     self._value = self._register_type.unknown
 

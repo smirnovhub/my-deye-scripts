@@ -4,8 +4,21 @@ from base_deye_register import BaseDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 
 class TestDeyeRegister(BaseDeyeRegister):
-  def __init__(self, address: int, quantity: int, name: str, description: str, suffix: str):
-    super().__init__(address, quantity, name, description, suffix)
+  def __init__(
+    self,
+    address: int,
+    quantity: int,
+    name: str,
+    description: str,
+    suffix: str,
+  ):
+    super().__init__(
+      address = address,
+      quantity = quantity,
+      name = name,
+      description = description,
+      suffix = suffix,
+    )
     self._value = 0
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:

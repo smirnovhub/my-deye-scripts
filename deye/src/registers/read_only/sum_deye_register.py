@@ -14,7 +14,14 @@ class SumDeyeRegister(BaseDeyeRegister):
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
-    super().__init__(0, 0, name, description, suffix, avg)
+    super().__init__(
+      address = 0,
+      quantity = 0,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+    )
     self._value = 0.0
     self._registers = registers
 

@@ -16,7 +16,14 @@ class IntWritableDeyeRegister(IntDeyeRegister):
     avg = DeyeRegisterAverageType.none,
     quantity: int = 1,
   ):
-    super().__init__(address, name, description, suffix, avg, quantity)
+    super().__init__(
+      address = address,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+      quantity = quantity,
+    )
     self._min_value = min_value
     self._max_value = max_value
 

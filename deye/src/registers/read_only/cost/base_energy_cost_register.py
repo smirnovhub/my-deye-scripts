@@ -15,7 +15,14 @@ class BaseEnergyCostRegister(FloatDeyeRegister):
     description: str,
     avg = DeyeRegisterAverageType.none,
   ):
-    super().__init__(0, name, description, DeyeEnergyCost().currency_code, avg, 0)
+    super().__init__(
+      address = 0,
+      name = name,
+      description = description,
+      suffix = DeyeEnergyCost().currency_code,
+      avg = avg,
+      quantity = 0,
+    )
     self._energy_register = energy_register
     self._energy_costs = energy_costs
     self._scale = 100
