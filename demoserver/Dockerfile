@@ -48,7 +48,7 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   git submodule update --init --recursive
 
 # Copy pre-configured configs to container
-COPY demoserver/src/common/*.py $REPO_NAME/common/
+COPY --chown=$USER_NAME:$USER_NAME demoserver/src/common/*.py $REPO_NAME/common/
 
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME
@@ -60,4 +60,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE ${PORTS}
 
 # Starting the bot
-CMD ["python3", "demoserver/demoserver"]
+CMD ["python3", "demoserver/demoserver.py"]
