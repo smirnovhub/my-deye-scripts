@@ -52,7 +52,10 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomSingleRegisters(self.register, prefix),
-      **TelebotDeyeHelper.holder_kwargs,
+      **dict(
+        TelebotDeyeHelper.holder_kwargs,
+        caching_time = 15,
+      ),
     )
 
     try:
@@ -86,7 +89,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         f'<b>Are you sure to sync inverter time?</b>',
         self.on_user_confirmation,
       )
-    elif diff_seconds > TelebotConstants.inverter_system_time_does_not_need_sync_threshold_sec:
+    elif diff_seconds > TelebotConstants.inverter_system_time_need_sync_difference_sec:
       self.on_user_confirmation(message.chat.id, True)
     else:
       self.bot.send_message(
