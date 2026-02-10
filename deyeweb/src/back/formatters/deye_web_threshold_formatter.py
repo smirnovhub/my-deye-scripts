@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
@@ -15,8 +15,12 @@ class DeyeWebThresholdFormatter(DeyeWebBaseFormatter):
     threshold2: float,
     colors: List[DeyeWebColor],
     will_affect_tab_color: bool = True,
+    used_registers: Optional[List[str]] = None,
   ):
-    super().__init__(will_affect_tab_color)
+    super().__init__(
+      will_affect_tab_color = will_affect_tab_color,
+      used_registers = used_registers,
+    )
     self.threshold1 = threshold1
     self.threshold2 = threshold2
     self.colors = colors

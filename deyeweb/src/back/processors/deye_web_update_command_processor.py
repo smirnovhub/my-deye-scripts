@@ -2,6 +2,7 @@ import re
 
 from typing import Any, Dict
 
+from deye_web_constants import DeyeWebConstants
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
 from deye_web_remote_command import DeyeWebRemoteCommand
@@ -16,9 +17,16 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
     command: DeyeWebRemoteCommand,
     json_data: Any,
   ) -> Dict[str, str]:
-    def get_result(result: str) -> Dict[str, str]:
+    def get_result(text: str) -> Dict[str, str]:
+      result: Dict[str, str] = {}
+
       id = DeyeWebUtils.short(DeyeWebSection.service.title)
-      return {id: result + self.style_manager.generate_css()}
+      result[id] = text
+
+      style_id = DeyeWebConstants.styles_template.format(command.name)
+      result[style_id] = self.style_manager.generate_css()
+
+      return result
 
     try:
       current_branch_name = self.git_helper.get_current_branch_name()

@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
@@ -11,11 +13,17 @@ class DeyeWebBaseFormatter:
   def __init__(
     self,
     will_affect_tab_color: bool = True,
+    used_registers: Optional[List[str]] = None,
   ):
     self.loggers = DeyeWebConstants.loggers
     self.graphs_config = DeyeWebGraphsConfig()
     self.style_manager = DeyeWebStyleManager()
     self.will_affect_tab_color = will_affect_tab_color
+    self._used_registers: List[str] = used_registers if used_registers else []
+
+  @property
+  def used_registers(self) -> List[str]:
+    return self._used_registers
 
   def get_formatted_value(self, register: DeyeRegister) -> str:
     if register.name in DeyeWebConstants.registers_without_formatting:

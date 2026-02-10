@@ -8,6 +8,7 @@ from battery_forecast_utils import BatteryForecastType
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_registers_holder import DeyeRegistersHolder
 from deye_web_constants import DeyeWebConstants
+from deye_register_average_type import DeyeRegisterAverageType
 from deye_web_forecast_registers import DeyeWebForecastRegisters
 from battery_forecast_utils import BatteryForecastUtils
 from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
@@ -38,6 +39,27 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
     finally:
       holder.disconnect()
 
+    result: Dict[str, str] = {}
+    colors: Dict[str, DeyeWebColor] = {}
+
+    for inverter, registers in holder.all_registers.items():
+      for register in registers.all_registers:
+        if register.name not in self.sections_holder.used_registers:
+          continue
+
+        if register.avg_type == DeyeRegisterAverageType.only_master and inverter != self.loggers.master.name:
+          continue
+
+        if not register.can_accumulate and inverter == self.loggers.accumulated_registers_prefix:
+          continue
+
+        reg_id = DeyeWebUtils.short(f'{inverter}_{register.name}')
+        result[reg_id] = DeyeWebUtils.clean(self.make_register_value(
+          registers,
+          register,
+          colors,
+        ))
+
     spacing = DeyeWebConstants.spacing_between_elements
 
     id = DeyeWebUtils.short(DeyeWebSection.forecast.title)
@@ -60,7 +82,7 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
           battery_current = holder.accumulated_registers.battery_current_register.value,
         )
     except Exception as e:
-      result = f"""
+      result_str = f"""
           <table class="{style_id3}">
             <tr>
               <td class="{style_id1} {style_id2}">
@@ -69,25 +91,30 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
             </tr>
           </tdble>
         """
-      return {id: result}
+      result[id] = result_str
+
+      style_id = DeyeWebConstants.styles_template.format(command.name)
+      result[style_id] = self.style_manager.generate_css()
+
+      return result
 
     color = DeyeWebColor.green if forecast.type == BatteryForecastType.charge else DeyeWebColor.yellow
     style_id4 = self.style_manager.register_style(DeyeWebConstants.item_td_style_with_color.format(color.color))
 
-    result = ''
+    result_str = ''
 
-    result += f"""
+    result_str += f"""
         <table class="{style_id3}">
           <tr>
             <td colspan="3" class="{style_id2} {style_id4}">
       """
 
     if forecast.type == BatteryForecastType.charge:
-      result += 'Charge forecast'
+      result_str += 'Charge forecast'
     else:
-      result += 'Discharge forecast'
+      result_str += 'Discharge forecast'
 
-    result += """
+    result_str += """
           </td>
         </tr>
       """
@@ -95,7 +122,7 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
     for item in forecast.items:
       soc_date_str = DeyeUtils.format_end_date(item.date)
       date, time = [item.strip() for item in soc_date_str.split(",")]
-      result += f"""
+      result_str += f"""
           <tr>
             <td class="{style_id2} {style_id4}">{item.soc}%</td>
             <td class="{style_id2} {style_id4}">{date}</td>
@@ -103,7 +130,12 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
           </tr>
         """
 
-    result += '</table>'
-    result += self.style_manager.generate_css()
+    result_str += '</table>'
+    result_str += self.style_manager.generate_css()
 
-    return {id: result}
+    result[id] = result_str
+
+    style_id = DeyeWebConstants.styles_template.format(command.name)
+    result[style_id] = self.style_manager.generate_css()
+
+    return result

@@ -88,7 +88,7 @@ class DeyeWebBaseSelectionBuilder:
 
       on_click = ''
       if not disabled and not equal(value, val):
-        on_click = f"""onclick="{command}('{register_field_id}', '{field_id}', '{register.name}', '{val - correction}')" """
+        on_click = f"""onclick="{command}('{register_field_id}', '{field_id}', '{register.name}', '{val - correction}');" """
 
       style_id4 = self.style_manager.register_style(DeyeWebConstants.item_td_style)
       style_id5 = self.style_manager.register_style(DeyeWebConstants.item_td_style_with_color.format(val_color.color))

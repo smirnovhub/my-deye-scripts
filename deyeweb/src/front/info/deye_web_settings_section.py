@@ -47,4 +47,4 @@ class DeyeWebSettingsSection(DeyeWebBaseInfoSection):
   def format_click_string(self, section_id: str) -> str:
     tab_id = DeyeWebUtils.short(DeyeWebConstants.tab_template.format(section_id))
     page_id = DeyeWebUtils.short(DeyeWebConstants.page_template.format(section_id))
-    return f"openPage('{page_id}', '{tab_id}', true)"
+    return f"openPage('{page_id}', '{tab_id}', true);"

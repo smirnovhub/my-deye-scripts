@@ -22,6 +22,7 @@ from deye_web_constants import DeyeWebConstants
 from deye_web_base_section import DeyeWebBaseSection
 from deye_web_sections_holder import DeyeWebSectionsHolder
 from deye_web_style_manager import DeyeWebStyleManager
+from deye_web_remote_command import DeyeWebRemoteCommand
 
 def build_tab_header(sections: List[DeyeWebBaseSection]):
   menu = ''
@@ -81,13 +82,15 @@ try:
 except Exception as e:
   print(f'{str(e)}\n{traceback.format_exc()}')
 
+for command in DeyeWebRemoteCommand:
+  style_id = DeyeWebConstants.styles_template.format(command.name)
+  print(f"""
+      <div class="remote_data" id="{style_id}"
+        data-remote_field="{style_id}">
+      </div>
+    """)
+
 print(f"""
-  <div class="remote_data" id="read_styles_field"
-    data-remote_field="{DeyeWebConstants.result_read_styles_field}">
-  </div>
-  <div class="remote_data" id="write_styles_field"
-    data-remote_field="{DeyeWebConstants.result_write_styles_field}">
-  </div>
   <div class="remote_data" id="callstack_field"
     data-remote_field="{DeyeWebConstants.result_callstack_field}">
   </div>

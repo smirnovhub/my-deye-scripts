@@ -5,16 +5,34 @@ var secondsTimer = null;
 var updating = false;
 var processing = false;
 var writing = false;
+const lastButtonName = 'last_button'
 
 function onLoad() {
-  // Get all elements with the class "default_open"
-  var defaultTabs = document.getElementsByClassName("default_open");
+  let defaultTabs = [];
+
+  const lastButtonId = sessionStorage.getItem(lastButtonName);
+
+  if (!isEmpty(lastButtonId)) {
+    const el = document.getElementById(lastButtonId);
+    if (el) {
+      defaultTabs = [el];
+    }
+  }
+
+  if (defaultTabs.length === 0) {
+    defaultTabs = Array.from(document.getElementsByClassName("default_open"));
+  }
 
   // If at least one element exists, click the first one
   if (defaultTabs.length > 0) {
     const target = defaultTabs[0]
+
+    if (target.id) {
+      sessionStorage.setItem(lastButtonName, target.id);
+    }
+
     target.click(); // simulate click on the first default tab
-    target.scrollIntoView({ behavior: "smooth", inline: "center" });
+    target.scrollIntoView({ behavior: "auto", inline: "center" });
   }
 
   var spinners = document.getElementsByClassName("remote_data_with_spinner");
@@ -25,16 +43,70 @@ function onLoad() {
   startUpdateTimer();
 
   const menu = document.getElementById("menu");
-  const btnLeft = document.getElementById("scroll-left");
-  const btnRight = document.getElementById("scroll-right");
+  const scrollLeftBtn = document.getElementById("scroll-left");
+  const scrollRightBtn = document.getElementById("scroll-right");
 
-  btnLeft.addEventListener("click", () => {
-    menu.scrollTo({ left: 0, behavior: "smooth" });
+  function updateScrollButtons() {
+    // Check if the content is wider than the visible area
+    const hasScroll = menu.scrollWidth > menu.clientWidth;
+    if (hasScroll) {
+      // Show both buttons if scrolling is possible at all
+      scrollLeftBtn.style.opacity = "1";
+      scrollLeftBtn.style.pointerEvents = "auto";
+      scrollRightBtn.style.opacity = "1";
+      scrollRightBtn.style.pointerEvents = "auto";
+    } else {
+      // Hide both buttons if everything fits on the screen
+      scrollLeftBtn.style.opacity = "0";
+      scrollLeftBtn.style.pointerEvents = "none";
+      scrollRightBtn.style.opacity = "0";
+      scrollRightBtn.style.pointerEvents = "none";
+    }
+  }
+
+  scrollLeftBtn.addEventListener("click", () => {
+    smoothScrollTo(menu, 0, 500);
   });
 
-  btnRight.addEventListener("click", () => {
-    menu.scrollTo({ left: menu.scrollWidth, behavior: "smooth" });
+  scrollRightBtn.addEventListener("click", () => {
+    const maxScroll = menu.scrollWidth - menu.clientWidth;
+    smoothScrollTo(menu, maxScroll, 500);
   });
+
+  window.addEventListener("resize", updateScrollButtons);
+
+  updateScrollButtons();
+
+  window.scrollTo(0, 0);
+}
+
+/**
+ * Smoothly scrolls an element to a specific horizontal position with custom duration.
+ * @param {HTMLElement} element - The container to scroll.
+ * @param {number} targetLeft - The target scrollLeft position.
+ * @param {number} duration - Animation duration in milliseconds.
+ */
+function smoothScrollTo(element, targetLeft, duration) {
+  const startLeft = element.scrollLeft;
+  const change = targetLeft - startLeft;
+  const startTime = performance.now();
+
+  function animate(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const easing = progress < 0.5
+      ? 4 * progress * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+    element.scrollLeft = startLeft + change * easing;
+
+    if (elapsed < duration) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  requestAnimationFrame(animate);
 }
 
 function interpolateColor(color1, color2, percent) {
@@ -269,9 +341,12 @@ function openPage(pageName, buttonName, doScroll = false) {
 
   if (doScroll) {
     target.scrollIntoView({ behavior: "smooth", inline: "center" });
+  } else {
+    target.scrollIntoView({ behavior: "smooth", inline: "nearest" });
   }
 
   window.scrollTo(0, 0);
+  sessionStorage.setItem(lastButtonName, buttonName);
 }
 
 function isEmpty(value) {

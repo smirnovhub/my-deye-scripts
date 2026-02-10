@@ -72,6 +72,7 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
 
     colors_calculator.save_colors(colors)
 
-    result[DeyeWebConstants.result_write_styles_field] = self.style_manager.generate_css()
+    style_id = DeyeWebConstants.styles_template.format(command.name)
+    result[style_id] = self.style_manager.generate_css()
 
     return result

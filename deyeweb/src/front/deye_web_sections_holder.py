@@ -1,6 +1,7 @@
 from typing import List
 
 from simple_singleton import singleton
+from deye_web_formatters_config import DeyeWebFormattersConfig
 from deye_web_base_section import DeyeWebBaseSection
 from deye_web_base_select_section import DeyeWebBaseSelectSection
 from deye_web_bms_section import DeyeWebBmsSection
@@ -25,6 +26,7 @@ from deye_web_grid_connect_voltage_low_section import DeyeWebGridConnectVoltageL
 class DeyeWebSectionsHolder:
   def __init__(self):
     self._settings_menu_position = 4
+    formatters_config = DeyeWebFormattersConfig()
     registers = DeyeWebConstants.registers
     self._sections: List[DeyeWebBaseSection] = [
       DeyeWebInfoSection(registers),
@@ -53,7 +55,21 @@ class DeyeWebSectionsHolder:
       if isinstance(section, DeyeWebBaseSelectSection):
         self._writable_sections.append(section)
 
-    self._used_registers = [reg.name for section in self._registers_sections for reg in section.registers]
+    # Use a set to automatically handle duplicates during collection
+    unique_registers = set()
+
+    for section in self._registers_sections:
+      for reg in section.registers:
+        # Add the register itself
+        unique_registers.add(reg.name)
+        # Find a formatter for this specific register
+        formatter = formatters_config.get_formatter_for_register(reg.name)
+        # Add all auxiliary registers required by this formatter
+        unique_registers.update(formatter.used_registers)
+
+    # Convert the final set back to a list
+    self._used_registers = list(unique_registers)
+
     self._writable_registers = [reg.name for section in self._writable_sections for reg in section.registers]
 
   @property

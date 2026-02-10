@@ -11,6 +11,7 @@ from deye_web_constants import DeyeWebConstants
 
 class DeyeWebUtils:
   _id_stack: List[int] = []
+  SPACES_REGEXP = re.compile(r'\s{2,}')
 
   @staticmethod
   def _generate_id() -> int:
@@ -59,14 +60,15 @@ class DeyeWebUtils:
 
   @staticmethod
   def short(string: str) -> str:
+    str = string.lower()
     if DeyeWebConstants.user_short_html_ids:
-      return DeyeWebUtils.get_shortened_string(string)
-    return string
+      return DeyeWebUtils.get_shortened_string(str)
+    return str
 
   @staticmethod
   def clean(string: str) -> str:
     if DeyeWebConstants.clean_html_code:
-      string = re.sub(r'\s{2,}', ' ', string)
+      string = DeyeWebUtils.SPACES_REGEXP.sub(' ', string)
       string = string.replace('> ', '>')
       string = string.replace(' <', '<')
     elif DeyeWebConstants.add_html_comments:

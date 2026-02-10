@@ -22,7 +22,7 @@ class DeyeWebFormattersConfig:
       registers.battery_power_register.name: DeyeWebBatteryPowerFormatter(3000, 1500),
       registers.battery_current_register.name: DeyeWebBatteryPowerFormatter(60, 30),
       registers.battery_soc_register.name: DeyeWebBatterySocFormatter(50, 30),
-      registers.battery_soh_register.name: DeyeWebBatterySocFormatter(98, 90),
+      registers.battery_soh_register.name: DeyeWebThresholdFormatter(98, 98, DeyeWebConstants.threshold_colors, will_affect_tab_color = False),
       registers.battery_temperature_register.name: DeyeWebThresholdFormatter(35, 30, DeyeWebConstants.threshold_reversed_colors),
       registers.gen_power_register.name: DeyeWebPvPowerFormatter(500, 100),
       registers.grid_connect_voltage_low_register.name: DeyeWebThresholdFormatter(220, 220, DeyeWebConstants.threshold_reversed_colors),
@@ -38,7 +38,7 @@ class DeyeWebFormattersConfig:
       registers.pv1_power_register.name: DeyeWebPvPowerFormatter(250, 50),
       registers.pv2_power_register.name: DeyeWebPvPowerFormatter(250, 50),
       registers.pv_total_power_register.name: DeyeWebPvPowerFormatter(500, 100),
-      registers.time_of_use_soc_register.name: DeyeWebThresholdFormatter(35, 25, DeyeWebConstants.threshold_colors),
+      registers.time_of_use_soc_register.name: DeyeWebThresholdFormatter(35, 25, DeyeWebConstants.threshold_colors, will_affect_tab_color = False),
     }
 
   def get_formatter_for_register(self, register_name: str) -> DeyeWebBaseFormatter:
