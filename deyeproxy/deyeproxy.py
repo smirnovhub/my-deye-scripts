@@ -1,8 +1,11 @@
 """
-Solarman V5 TCP Proxy Server
+Deye TCP Proxy Server
+
+Author: Dmitry Smirnov 
+https://github.com/smirnovhub
 
 This module provides a thread-safe, exclusive-access proxy for communicating with 
-Solarman V5 data loggers (found in Deye, Sunsynk, and Victron inverters). 
+Solarman V5 data loggers (found in Deye, Sunsynk, and other inverters). 
 
 The proxy solves the "single-connection" limitation of the hardware by queuing 
 multiple client requests and ensuring only one session is active at a time 
@@ -118,8 +121,9 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       return
 
     logger_sock: Optional[socket.socket] = None
-    wait_duration = time.time() - start_wait
+
     session_start = time.time()
+    wait_duration = session_start - start_wait
 
     logger.info(f"{client_ip}:{client_port} Lock acquired "
                 f"(waited {wait_duration:.2f}s). Connecting to logger...")
@@ -257,14 +261,14 @@ def main() -> None:
 
   log_level_name = logging._levelToName[log_level]
 
-  logger.info(f"--- Solarman V5 Proxy started ---")
+  logger.info(f"------- Deye Proxy started -------")
   logger.info(f"Target logger   : {config.LOGGER_HOST}:{config.LOGGER_PORT}")
   logger.info(f"Listening on    : {actual_ip}:{config.PROXY_PORT}")
   logger.info(f"Max connections : {config.MAX_CONCURRENT_CONNECTIONS}")
   logger.info(f"Connect timeout : {config.CONNECT_TIMEOUT}s")
   logger.info(f"Data timeout    : {config.DATA_TIMEOUT}s")
   logger.info(f"Log level       : {log_level_name}")
-  logger.info(f"---------------------------------")
+  logger.info(f"----------------------------------")
 
   server.settimeout(1.0)
 
