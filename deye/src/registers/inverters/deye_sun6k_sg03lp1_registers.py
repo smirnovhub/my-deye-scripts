@@ -1,5 +1,6 @@
-from datetime import timedelta
 from typing import List, Dict
+
+from datetime import timedelta
 
 from deye_base_registers import DeyeBaseRegisters
 from deye_energy_cost import DeyeEnergyCost
