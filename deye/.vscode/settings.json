@@ -23,6 +23,7 @@
     "src/registers/read_write/time_of_use",
     "src/registers/read_write/time_of_use/data",
     "src/solarman",
+    "src/solarman/cache",
     "src/solarman/server",
     "src/utils"
   ],

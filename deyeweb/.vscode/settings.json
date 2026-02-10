@@ -23,6 +23,7 @@
     "../deye/src/registers/read_write/time_of_use",
     "../deye/src/registers/read_write/time_of_use/data",
     "../deye/src/solarman",
+    "../deye/src/solarman/cache",
     "../deye/src/solarman/server",
     "../deye/src/utils",
     "src",
