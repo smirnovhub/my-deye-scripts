@@ -220,6 +220,25 @@ function getCacheFileContentWithLock(string $fileName): string
 }
 
 /**
+ * Determines if a file is older than the specified maximum age.
+ * * Returns true if the file does not exist or if the time elapsed since 
+ * its last modification exceeds $maxFileAge seconds.
+ *
+ * @param string $fileName   The path to the file to check.
+ * @param int    $maxFileAge The maximum allowed age of the file in seconds.
+ * @return bool              True if update is needed, false otherwise.
+ */
+function needUpdateCache(string $fileName, int $maxFileAge): bool
+{
+  if (!file_exists($fileName)) {
+    return true;
+  }
+
+  clearstatcache(true, $fileName);
+  return (time() - filemtime($fileName)) > $maxFileAge;
+}
+
+/**
  * Generates the base site URL including protocol, host, and the current directory path.
  * 
  * @return string The absolute base URL with a trailing slash.

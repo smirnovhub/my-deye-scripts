@@ -82,6 +82,9 @@ flush();
 // Background execution starts here
 // The browser sees "Content-Length" and "Connection: close", so it stops waiting.
 if ($isCached) {
-  executeCommandAndUpdateCacheWithLock($cacheFile, $command, false);
+  $isNeedUpdateCache = needUpdateCache($cacheFile, 3600);
+  if ($isNeedUpdateCache) {
+    executeCommandAndUpdateCacheWithLock($cacheFile, $command, false);
+  }
 }
 ?>
