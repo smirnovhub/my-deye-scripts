@@ -37,13 +37,13 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
 
       pull_result = self.git_helper.pull()
 
-      self.clear_cache(DeyeWebConstants.front_cache_file_name)
-
       if 'up to date' in pull_result.lower():
         last_commit = self.git_helper.get_last_commit_hash_and_comment()
         return get_result("Already up to date.<br>"
                           f"You are currently on branch '{current_branch_name}':<br>"
                           f"<b>{last_commit}</b>")
+
+      self.clear_cache(DeyeWebConstants.front_cache_file_name)
     except Exception as e:
       err = str(e).replace(': ', ':<br>').replace('\n', '<br>')
       return get_result(f'<p style="color: red;">{err}</p>')
