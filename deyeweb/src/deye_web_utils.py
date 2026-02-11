@@ -7,6 +7,7 @@ import inspect
 from typing import Any, List
 from collections import Counter
 
+from deye_file_lock import DeyeFileLock
 from deye_web_constants import DeyeWebConstants
 
 class DeyeWebUtils:
@@ -145,3 +146,30 @@ class DeyeWebUtils:
 
     # Return the substring after the last separator
     return string[pos + 1:]
+
+  @staticmethod
+  def file_truncate(filename: str) -> None:
+    """
+    Safely clears the contents of a file using an exclusive system lock.
+
+    This method opens the file in 'a+' mode to ensure it exists, acquires 
+    an exclusive lock to prevent race conditions during concurrent access, 
+    and then truncates the file size to zero.
+
+    Args:
+        filename (str): The absolute or relative path to the file to be truncated.
+
+    Raises:
+        OSError: If the file cannot be opened or locking fails.
+    """
+    # Open in "a+" to handle existence and locking in one go
+    with open(filename, "a+", encoding = "utf-8") as f:
+      try:
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
+
+        # Truncate content
+        f.seek(0)
+        f.truncate(0)
+        f.flush()
+      finally:
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)

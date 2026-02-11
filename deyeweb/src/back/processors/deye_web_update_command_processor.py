@@ -7,7 +7,6 @@ from typing import Any, Dict
 from deye_web_constants import DeyeWebConstants
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
-from deye_file_lock import DeyeFileLock
 from deye_web_remote_command import DeyeWebRemoteCommand
 from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
@@ -45,9 +44,8 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
                           f"You are currently on branch '{current_branch_name}':<br>"
                           f"<b>{last_commit}</b>")
 
-      temp_dir = tempfile.gettempdir()
-      cache_file_path = os.path.join(temp_dir, DeyeWebConstants.front_cache_file_name)
-      self.clear_cache(cache_file_path)
+      cache_file_path = os.path.join(tempfile.gettempdir(), DeyeWebConstants.front_cache_file_name)
+      DeyeWebUtils.file_truncate(cache_file_path)
     except Exception as e:
       err = str(e).replace(': ', ':<br>').replace('\n', '<br>')
       return get_result(f'<p style="color: red;">{err}</p>')
@@ -56,18 +54,3 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
     matches = re.findall(pattern, pull_result)
 
     return get_result("\n".join(matches))
-
-  def clear_cache(self, cache_filename: str) -> None:
-    # Open in "a+" to handle existence, reading, and locking in one go
-    with open(cache_filename, "a+", encoding = "utf-8") as f:
-      try:
-        # Acquire exclusive lock
-        DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
-
-        # Read and parse existing content
-        f.seek(0)
-        f.truncate(0)
-        f.flush()
-      finally:
-        # Release lock
-        DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
