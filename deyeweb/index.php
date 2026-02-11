@@ -1,4 +1,8 @@
 <?php
+
+// Start buffering the entire HTML output
+ob_start();
+
 require_once(__DIR__ . '/php/utils.php');
 
 // When renaming, don't forget to also change in deye_web_constants.py
@@ -8,8 +12,11 @@ $command = __DIR__ . '/front.py 2>&1';
 startSession();
 closeSession();
 
-// Start buffering the entire HTML output
-ob_start();
+$content = getCacheFileContentWithLock($cacheFile);
+if ($content == '') {
+  $content = executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
+}
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -26,13 +33,7 @@ ob_start();
   <script src="js/JsHttpRequest.js"></script>
 
   <?php
-  $content = getCacheFileContentWithLock($cacheFile);
-  if ($content != '') {
-    echo $content;
-  } else {
-    // Direct execution if no cache exists
-    echo executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
-  }
+  echo $content;
   ?>
 
 </body>
