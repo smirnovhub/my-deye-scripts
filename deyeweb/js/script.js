@@ -283,8 +283,17 @@ function update_scripts(field_id) {
   sendCommand('update_scripts', field_id);
 }
 
-function write_register(field_id, content_field_id, register_name, register_value) {
+function write_register(field_id,
+  content_field_id,
+  register_name,
+  register_value,
+  need_confirmation = false,
+) {
   if (writing) {
+    return;
+  }
+
+  if (need_confirmation && !confirm('Are you sure?')) {
     return;
   }
 

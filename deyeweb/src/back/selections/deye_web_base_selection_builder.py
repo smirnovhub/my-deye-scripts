@@ -11,7 +11,8 @@ from deye_web_selections_config import DeyeWebSelectionsConfig
 from deye_registers_holder import DeyeRegistersHolder
 
 class DeyeWebBaseSelectionBuilder:
-  def __init__(self):
+  def __init__(self, confirm = False):
+    self.confirm = confirm
     self.loggers = DeyeWebConstants.loggers
     self.selections_config = DeyeWebSelectionsConfig()
     self.formatters_config = DeyeWebFormattersConfig()
@@ -85,10 +86,11 @@ class DeyeWebBaseSelectionBuilder:
         DeyeWebConstants.selection_content_field_template.format(registers.prefix, register.name))
       field_id = DeyeWebUtils.short(f'{register.name}_{cnt}')
       command = DeyeWebRemoteCommand.write_register.name
+      confirm = str(self.confirm).lower()
 
       on_click = ''
       if not disabled and not equal(value, val):
-        on_click = f"""onclick="{command}('{register_field_id}', '{field_id}', '{register.name}', '{val - correction}');" """
+        on_click = f"""onclick="{command}('{register_field_id}', '{field_id}', '{register.name}', '{val - correction}', {confirm});" """
 
       style_id4 = self.style_manager.register_style(DeyeWebConstants.item_td_style)
       style_id5 = self.style_manager.register_style(DeyeWebConstants.item_td_style_with_color.format(val_color.color))
