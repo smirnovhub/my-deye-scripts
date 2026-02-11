@@ -5,6 +5,7 @@ from typing import Any, Dict
 from deye_web_constants import DeyeWebConstants
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
+from deye_file_lock import DeyeFileLock
 from deye_web_remote_command import DeyeWebRemoteCommand
 from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
@@ -48,4 +49,21 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
     pattern = r'\d+ files? changed.*'
     matches = re.findall(pattern, pull_result)
 
+    self.clear_cache(DeyeWebConstants.front_cache_file_name)
+
     return get_result("\n".join(matches))
+
+  def clear_cache(self, cache_filename: str) -> None:
+    # Open in "a+" to handle existence, reading, and locking in one go
+    with open(cache_filename, "a+", encoding = "utf-8") as f:
+      try:
+        # Acquire exclusive lock
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
+
+        # Read and parse existing content
+        f.seek(0)
+        f.truncate(0)
+        f.flush()
+      finally:
+        # Release lock
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
