@@ -7,6 +7,10 @@ var processing = false;
 var writing = false;
 const lastButtonName = 'last_button'
 
+document.addEventListener('DOMContentLoaded', () => {
+  onLoad();
+});
+
 function onLoad() {
   let defaultTabs = [];
 

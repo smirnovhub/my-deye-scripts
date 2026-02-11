@@ -33,7 +33,7 @@ if (trim($content) == '') {
   <link href="css/spinner.css" rel="stylesheet" type="text/css">
 </head>
 
-<body style="background-color: #ffffff;" onload="onLoad()">
+<body style="background-color: #ffffff;">
   <script src="js/script.js"></script>
   <script src="js/JsHttpRequest.js"></script>
 
