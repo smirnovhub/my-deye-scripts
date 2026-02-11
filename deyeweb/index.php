@@ -13,7 +13,7 @@ startSession();
 closeSession();
 
 $content = getCacheFileContentWithLock($cacheFile);
-if ($content == '') {
+if (trim($content) == '') {
   $content = executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
 }
 

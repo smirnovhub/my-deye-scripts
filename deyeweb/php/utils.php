@@ -162,7 +162,7 @@ function executeCommandAndUpdateCacheWithLock(string $fileName, string $command,
     if (flock($fp, $flags)) {
       try {
         $output = (string)shell_exec($command);
-        if ($output != '') {
+        if (trim($output) != '') {
           ftruncate($fp, 0);
           rewind($fp);
           fwrite($fp, $output);
