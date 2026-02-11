@@ -14,8 +14,11 @@ $command = __DIR__ . '/front.py 2>&1';
 startSession();
 closeSession();
 
+$isCached = true;
+
 $content = getCacheFileContentWithLock($cacheFile);
 if (trim($content) == '') {
+  $isCached = false;
   $content = executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
 }
 
