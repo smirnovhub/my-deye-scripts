@@ -1,11 +1,12 @@
+const pageUpdateInterval = 7500;
+const lastButtonName = 'last_button';
+
 var totalSeconds = 0;
-var pageUpdateInterval = 7500;
 var updateTimer = null;
 var secondsTimer = null;
 var updating = false;
 var processing = false;
 var writing = false;
-const lastButtonName = 'last_button'
 
 document.addEventListener('DOMContentLoaded', () => {
   onLoad();
@@ -29,7 +30,7 @@ function onLoad() {
 
   // If at least one element exists, click the first one
   if (defaultTabs.length > 0) {
-    const target = defaultTabs[0]
+    const target = defaultTabs[0];
 
     if (target.id) {
       sessionStorage.setItem(lastButtonName, target.id);
@@ -39,8 +40,8 @@ function onLoad() {
     target.scrollIntoView({ behavior: "auto", inline: "center" });
   }
 
-  var spinners = document.getElementsByClassName("remote_data_with_spinner");
-  for (var i = 0; i < spinners.length; i++)
+  const spinners = document.getElementsByClassName("remote_data_with_spinner");
+  for (let i = 0; i < spinners.length; i++)
     addSpinner(spinners[i].id);
 
   update();
@@ -99,9 +100,9 @@ function smoothScrollTo(element, targetLeft, duration) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
 
-    const easing = progress < 0.5
-      ? 4 * progress * progress * progress
-      : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+    const easing = progress < 0.5 ?
+      4 * progress * progress * progress :
+      1 - Math.pow(-2 * progress + 2, 3) / 2;
 
     element.scrollLeft = startLeft + change * easing;
 
@@ -136,8 +137,8 @@ function setGrayscale(grayscale) {
   document.body.style.filter = "grayscale(" + grayscale + ")";
   document.body.style.background = interpolateColor('#ffffff', '#dddddd', grayscale);
 
-  var menus = document.getElementsByClassName("scrollmenu");
-  for (var i = 0; i < menus.length; i++)
+  const menus = document.getElementsByClassName("scrollmenu");
+  for (let i = 0; i < menus.length; i++)
     menus[i].style.background = interpolateColor('#ffffff', '#dddddd', grayscale);
 }
 
@@ -145,7 +146,7 @@ function updateTime() {
   totalSeconds++;
 
   var grayscale = 0;
-  var totalMilliseconds = totalSeconds * 1000;
+  const totalMilliseconds = totalSeconds * 1000;
 
   if (totalMilliseconds > pageUpdateInterval) {
     grayscale = (totalMilliseconds - pageUpdateInterval) / pageUpdateInterval;
@@ -155,8 +156,8 @@ function updateTime() {
 
   setGrayscale(grayscale);
 
-  var counters = document.getElementsByClassName("counter");
-  for (var i = 0; i < counters.length; i++)
+  const counters = document.getElementsByClassName("counter");
+  for (let i = 0; i < counters.length; i++)
     counters[i].innerHTML = `Last update: ${totalSeconds} seconds ago`;
 }
 
@@ -175,8 +176,8 @@ function startUpdateTimer() {
 function resetSecondsTimer() {
   totalSeconds = 0;
 
-  var counters = document.getElementsByClassName("counter");
-  for (var i = 0; i < counters.length; i++)
+  const counters = document.getElementsByClassName("counter");
+  for (let i = 0; i < counters.length; i++)
     counters[i].innerHTML = `Last update: ${totalSeconds} seconds ago`;
 
   setGrayscale(0);
@@ -271,15 +272,15 @@ function sendCommand(command, field_id) {
 }
 
 function get_forecast_by_percent(field_id) {
-  sendCommand('get_forecast_by_percent', field_id)
+  sendCommand('get_forecast_by_percent', field_id);
 }
 
 function get_forecast_by_time(field_id) {
-  sendCommand('get_forecast_by_time', field_id)
+  sendCommand('get_forecast_by_time', field_id);
 }
 
 function update_scripts(field_id) {
-  sendCommand('update_scripts', field_id)
+  sendCommand('update_scripts', field_id);
 }
 
 function write_register(field_id, content_field_id, register_name, register_value) {
@@ -316,27 +317,27 @@ function write_register(field_id, content_field_id, register_name, register_valu
 }
 
 function addSpinner(field_id) {
-  var spinnerHTML = '<div class="spinner"></div>';
-  var matches = document.querySelectorAll(`[id="${field_id}"]`);
-  for (var i = 0; i < matches.length; i++) {
+  const spinnerHTML = '<div class="spinner"></div>';
+  const matches = document.querySelectorAll(`[id="${field_id}"]`);
+  for (let i = 0; i < matches.length; i++) {
     matches[i].innerHTML = spinnerHTML;
   }
 }
 
 function openPage(pageName, buttonName, doScroll = false) {
-  var tabContent = document.getElementsByClassName("tabcontent");
-  for (var i = 0; i < tabContent.length; i++) {
+  const tabContent = document.getElementsByClassName("tabcontent");
+  for (let i = 0; i < tabContent.length; i++) {
     tabContent[i].style.display = "none";
   }
 
-  var tabLinks = document.getElementsByClassName("tablink");
-  for (var i = 0; i < tabLinks.length; i++) {
+  const tabLinks = document.getElementsByClassName("tablink");
+  for (let i = 0; i < tabLinks.length; i++) {
     tabLinks[i].style.boxShadow = "";
   }
 
-  var temps = document.getElementsByClassName("temporary_data");
-  for (var i = 0; i < temps.length; i++)
-    temps[i].innerHTML = ""
+  const temps = document.getElementsByClassName("temporary_data");
+  for (let i = 0; i < temps.length; i++)
+    temps[i].innerHTML = "";
 
   document.getElementById(pageName).style.display = "block";
 
