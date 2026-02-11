@@ -1,6 +1,6 @@
 <?php
 
-// Start buffering the entire HTML output
+// Start buffering the entire script output
 ob_start();
 
 require_once(__DIR__ . '/php/utils.php');
