@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__ . '/php/utils.php');
 
+// When renaming, don't forget to also change in deye_web_constants.py
 $cacheFile = '/tmp/deyeweb_cache.txt';
 $command = __DIR__ . '/front.py 2>&1';
 

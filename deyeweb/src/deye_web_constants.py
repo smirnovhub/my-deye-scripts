@@ -19,6 +19,7 @@ class DeyeWebConstants:
   remote_data_with_spinner_name = 'remote_data_with_spinner'
   temporary_data_name = 'temporary_data'
 
+  # When renaming, don't forget to also change in index.php
   front_cache_file_name = '/tmp/deyeweb_cache.txt'
 
   grid_low_voltage_change_max_grid_power = 150
