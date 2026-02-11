@@ -134,6 +134,52 @@ function readPipeWithTimeout($pipe, int $timeout_sec = 7): string
 }
 
 /**
+ * Executes a shell command and updates the cache file using file locking.
+ *
+ * @param string $fileName The absolute path to the cache file.
+ * @param string $command  The shell command to execute.
+ * @param bool   $blocking Whether to wait for the lock or exit immediately if busy.
+ * @return string The output of the executed command, or an empty string on failure 
+ * or if the lock was not acquired in non-blocking mode.
+ */
+function executeCommandAndUpdateCacheWithLock(string $fileName, string $command, bool $blocking): string
+{
+  // 'c+' mode: Opens for reading/writing. 
+  // Creates file if it doesn't exist. Does not truncate.
+  $fp = fopen($fileName, "c+");
+  if (!$fp) {
+    return '';
+  }
+
+  $output = '';
+  $flags = LOCK_EX;
+
+  if (!$blocking) {
+    $flags |= LOCK_NB;
+  }
+
+  try {
+    if (flock($fp, $flags)) {
+      try {
+        $output = (string)shell_exec($command);
+        if ($output != '') {
+          ftruncate($fp, 0);
+          rewind($fp);
+          fwrite($fp, $output);
+          fflush($fp);
+        }
+      } finally {
+        flock($fp, LOCK_UN);
+      }
+    }
+  } finally {
+    fclose($fp);
+  }
+
+  return $output;
+}
+
+/**
  * Generates the base site URL including protocol, host, and the current directory path.
  * 
  * @return string The absolute base URL with a trailing slash.

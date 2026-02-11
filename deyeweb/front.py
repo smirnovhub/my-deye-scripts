@@ -70,11 +70,12 @@ try:
 
   style_id = style_manager.register_style("background-color: red; color: white; text-align: center;")
 
-  print(f"""
+  print(
+    DeyeWebUtils.clean(f"""
       <div class="remote_data {style_id}" id="error_field"
         data-remote_field="{DeyeWebConstants.result_error_field}">
       </div>
-    """)
+    """))
 
   build_tab_content(sections_holder.sections, style_manager)
 
@@ -84,17 +85,19 @@ except Exception as e:
 
 for command in DeyeWebRemoteCommand:
   style_id = DeyeWebConstants.styles_template.format(command.name)
-  print(f"""
+  print(
+    DeyeWebUtils.clean(f"""
       <div class="remote_data" id="{style_id}"
         data-remote_field="{style_id}">
       </div>
-    """)
+    """))
 
-print(f"""
+print(
+  DeyeWebUtils.clean(f"""
   <div class="remote_data" id="callstack_field"
     data-remote_field="{DeyeWebConstants.result_callstack_field}">
   </div>
-""")
+"""))
 
 #from deye_web_utils import DeyeWebUtils
 #with open("/tmp/front_classes_count.txt", "w", encoding = "utf-8") as f:

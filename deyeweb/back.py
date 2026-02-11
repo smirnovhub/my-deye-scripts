@@ -33,28 +33,33 @@ from deye_exceptions import DeyeKnownException
 #  datefmt = DeyeUtils.time_format_str,
 #)
 
+def send_error_and_exit(message: str, callstack: str = '') -> None:
+  result = {
+    DeyeWebConstants.result_error_field: f'Error: {message}',
+  }
+
+  if callstack and DeyeWebConstants.print_call_stack_on_exception:
+    result[DeyeWebConstants.result_callstack_field] = f'<pre>{callstack}</pre>'
+
+  print(json.dumps(result))
+  sys.exit(1)
+
 try:
   # Read json from php
   raw = sys.stdin.read()
+
+  if not raw:
+    send_error_and_exit('JSON request is empty')
+
   json_data = json.loads(raw)
 
   processor = DeyeWebParamsProcessor()
   result = processor.get_params(json_data)
 except DeyeKnownException as e:
   exception_str = DeyeWebUtils.get_tail(str(e).strip('"'), ':')
-  result = {
-    DeyeWebConstants.result_error_field: f'Error: {exception_str}',
-  }
-
-  if DeyeWebConstants.print_call_stack_on_exception:
-    result[DeyeWebConstants.result_callstack_field] = f'<pre>{traceback.format_exc()}</pre>'
-except Exception as e:
-  result = {
-    DeyeWebConstants.result_error_field: f'Error: {str(e)}',
-  }
-
-  if DeyeWebConstants.print_call_stack_on_exception:
-    result[DeyeWebConstants.result_callstack_field] = f'<pre>{traceback.format_exc()}</pre>'
+  send_error_and_exit(exception_str, traceback.format_exc())
+except Exception as ee:
+  send_error_and_exit(str(ee), traceback.format_exc())
 
 # Convert result to JSON string
 json_str = json.dumps(result)

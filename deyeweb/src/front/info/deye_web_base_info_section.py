@@ -98,11 +98,11 @@ class DeyeWebBaseInfoSection(DeyeWebRegistersSection):
     id = DeyeWebUtils.short(f"{prefix}_{register.name}")
     on_click = f'onclick="{on_click}"' if on_click else ''
     cursor_style = DeyeWebConstants.cursor_style if on_click else ''
-    cursor_style_id = self.style_manager.register_style(cursor_style)
+    cursor_style_id = f' {self.style_manager.register_style(cursor_style)}'.rstrip()
 
     return f"""
       {DeyeWebUtils.begin_comment(self)}
-      <div {on_click} id="{id}" class="{DeyeWebConstants.remote_data_with_spinner_name} {cursor_style_id}" data-remote_field="{id}"></div>
+      <div {on_click} id="{id}" class="{DeyeWebConstants.remote_data_with_spinner_name}{cursor_style_id}" data-remote_field="{id}"></div>
       {DeyeWebUtils.end_comment(self)}
     """.strip()
 
