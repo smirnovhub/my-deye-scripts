@@ -1,4 +1,6 @@
+import os
 import re
+import tempfile
 
 from typing import Any, Dict
 
@@ -43,7 +45,9 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
                           f"You are currently on branch '{current_branch_name}':<br>"
                           f"<b>{last_commit}</b>")
 
-      self.clear_cache(DeyeWebConstants.front_cache_file_name)
+      temp_dir = tempfile.gettempdir()
+      cache_file_path = os.path.join(temp_dir, DeyeWebConstants.front_cache_file_name)
+      self.clear_cache(cache_file_path)
     except Exception as e:
       err = str(e).replace(': ', ':<br>').replace('\n', '<br>')
       return get_result(f'<p style="color: red;">{err}</p>')

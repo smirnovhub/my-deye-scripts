@@ -5,8 +5,10 @@ ob_start();
 
 require_once(__DIR__ . '/php/utils.php');
 
+$tempDir = sys_get_temp_dir();
+
 // When renaming, don't forget to also change in deye_web_constants.py
-$cacheFile = '/tmp/deyeweb_cache.txt';
+$cacheFile = $tempDir . DIRECTORY_SEPARATOR . 'deyeweb_cache.txt';
 $command = __DIR__ . '/front.py 2>&1';
 
 startSession();
