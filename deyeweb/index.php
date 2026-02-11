@@ -8,8 +8,6 @@ $command = __DIR__ . '/front.py 2>&1';
 startSession();
 closeSession();
 
-$isCached = file_exists($cacheFile);
-
 // Start buffering the entire HTML output
 ob_start();
 ?>
@@ -28,9 +26,9 @@ ob_start();
   <script src="js/JsHttpRequest.js"></script>
 
   <?php
-  if ($isCached) {
-    $output = file_get_contents($cacheFile);
-    echo $output;
+  $content = getCacheFileContentWithLock($cacheFile);
+  if ($content != '') {
+    echo $content;
   } else {
     // Direct execution if no cache exists
     echo executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);

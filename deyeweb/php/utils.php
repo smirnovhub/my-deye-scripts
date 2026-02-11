@@ -180,6 +180,46 @@ function executeCommandAndUpdateCacheWithLock(string $fileName, string $command,
 }
 
 /**
+ * Safely reads the contents of a cache file using a shared lock.
+ *
+ * @param string $fileName The absolute path to the cache file.
+ * @return string The file contents, or an empty string if the file 
+ * does not exist, is empty, or cannot be locked.
+ */
+function getCacheFileContentWithLock(string $fileName): string
+{
+  $isExists = file_exists($fileName);
+  if (!$isExists) {
+    return '';
+  }
+
+  $fp = fopen($fileName, "r");
+  if (!$fp) {
+    return '';
+  }
+
+  try {
+    // Use shared lock (LOCK_SH) for reading
+    if (flock($fp, LOCK_SH)) {
+      try {
+        // Clear stat cache to get actual file size
+        clearstatcache(true, $fileName);
+        $size = filesize($fileName);
+        if ($size > 0) {
+          return (string)fread($fp, $size);
+        }
+      } finally {
+        flock($fp, LOCK_UN);
+      }
+    }
+  } finally {
+    fclose($fp);
+  }
+
+  return '';
+}
+
+/**
  * Generates the base site URL including protocol, host, and the current directory path.
  * 
  * @return string The absolute base URL with a trailing slash.
