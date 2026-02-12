@@ -25,6 +25,22 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
     command: DeyeWebRemoteCommand,
     json_data: Any,
   ) -> Dict[str, str]:
+    section_id = DeyeWebUtils.short(DeyeWebSection.forecast.title)
+    try:
+      return self._get_command_result_internal(
+        section_id,
+        command,
+        json_data,
+      )
+    except Exception as e:
+      return {section_id: f'<p style="color: red;"><b>Error: {e}</b></p>'}
+
+  def _get_command_result_internal(
+    self,
+    section_id: str,
+    command: DeyeWebRemoteCommand,
+    json_data: Any,
+  ) -> Dict[str, str]:
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       name = 'deyeweb',
@@ -62,7 +78,6 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
 
     spacing = DeyeWebConstants.spacing_between_elements
 
-    id = DeyeWebUtils.short(DeyeWebSection.forecast.title)
     style_id1 = self.style_manager.register_style(
       DeyeWebConstants.item_td_style_with_color.format(DeyeWebColor.gray.color))
     style_id2 = self.style_manager.register_style(DeyeWebConstants.item_td_style)
@@ -91,7 +106,7 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
             </tr>
           </tdble>
         """
-      result[id] = result_str
+      result[section_id] = result_str
 
       style_id = DeyeWebConstants.styles_template.format(command.name)
       result[style_id] = self.style_manager.generate_css()
@@ -131,9 +146,8 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
         """
 
     result_str += '</table>'
-    result_str += self.style_manager.generate_css()
 
-    result[id] = result_str
+    result[section_id] = result_str
 
     style_id = DeyeWebConstants.styles_template.format(command.name)
     result[style_id] = self.style_manager.generate_css()

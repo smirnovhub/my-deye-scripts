@@ -1,27 +1,29 @@
 const JsHttpRequest = {
-  query: async function (url, data, callback) {
-    try {
-      const response = await fetch(url, {
+  /**
+   * Sends an asynchronous POST request with JSON data.
+   * @param {string} url - The URL to send the request to.
+   * @param {Object} data - The data to be stringified and sent in the request body.
+   * @returns {Promise<Object>} A promise that resolves to the parsed JSON response.
+   * @throws {Error} Throws an error if the HTTP response is not OK or if JSON parsing fails.
+   */
+  query: async function (url, data) {
+    const response = await fetch(
+      url,
+      {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        credentials: 'include',
-        body: JSON.stringify(data)
-      });
-
-      const text = await response.text();
-      let js = null;
-      try {
-        // Try to parse JSON from the server response
-        js = JSON.parse(text);
-      } catch (e) {
-        console.error("Server did not return valid JSON", text);
+        body: JSON.stringify(data),
+        credentials: 'include'
       }
+    );
 
-      callback(js, text);
-    } catch (error) {
-      console.error("Fetch error: ", error);
+    if (!response.ok) {
+      throw new Error(`HTTP request returned error code ${response.status}`);
     }
+
+    const text = await response.text();
+    return JSON.parse(text);
   }
 };

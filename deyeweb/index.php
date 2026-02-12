@@ -11,13 +11,30 @@ $tempDir = sys_get_temp_dir();
 $cacheFile = $tempDir . DIRECTORY_SEPARATOR . 'deyeweb_cache.txt';
 $command = __DIR__ . '/front.py 2>&1';
 
+$minimumTimeForCacheResetSec = 60;
+$timeForCacheUpdateSec = 5 * 60 * 60;
+
 startSession();
 closeSession();
 
+$content = '';
 $isCached = true;
 
-$content = getCacheFileContentWithLock($cacheFile);
-if (trim($content) == '') {
+$isNeedResetCache = isCacheClearRequested();
+if ($isNeedResetCache) {
+  $isNeedUpdateCache = needUpdateCache($cacheFile, $minimumTimeForCacheResetSec);
+  if ($isNeedUpdateCache) {
+    $isCached = false;
+    $content = executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
+  }
+}
+
+if ($content == '') {
+  $isCached = true;
+  $content = getCacheFileContentWithLock($cacheFile);
+}
+
+if ($content == '') {
   $isCached = false;
   $content = executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
 }
@@ -82,7 +99,7 @@ flush();
 // Background execution starts here
 // The browser sees "Content-Length" and "Connection: close", so it stops waiting.
 if ($isCached) {
-  $isNeedUpdateCache = needUpdateCache($cacheFile, 3600);
+  $isNeedUpdateCache = needUpdateCache($cacheFile, $timeForCacheUpdateSec);
   if ($isNeedUpdateCache) {
     executeCommandAndUpdateCacheWithLock($cacheFile, $command, false);
   }

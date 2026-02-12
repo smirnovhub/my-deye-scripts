@@ -161,8 +161,8 @@ function executeCommandAndUpdateCacheWithLock(string $fileName, string $command,
   try {
     if (flock($fp, $flags)) {
       try {
-        $output = (string)shell_exec($command);
-        if (trim($output) != '') {
+        $output = trim((string)shell_exec($command));
+        if ($output != '') {
           ftruncate($fp, 0);
           rewind($fp);
           fwrite($fp, $output);
@@ -206,7 +206,7 @@ function getCacheFileContentWithLock(string $fileName): string
         clearstatcache(true, $fileName);
         $size = filesize($fileName);
         if ($size > 0) {
-          return (string)fread($fp, $size);
+          return trim((string)fread($fp, $size));
         }
       } finally {
         flock($fp, LOCK_UN);
@@ -217,6 +217,25 @@ function getCacheFileContentWithLock(string $fileName): string
   }
 
   return '';
+}
+
+/**
+ * Detects if the client requested a cache bypass (hard refresh).
+ *
+ * This checks for standard HTTP headers (Cache-Control and Pragma) 
+ * typically sent when a user presses Ctrl+F5 or Cmd+Shift+R.
+ *
+ * @return bool True if "no-cache" header is present, false otherwise.
+ */
+function isCacheClearRequested(): bool
+{
+  $cacheControl = $_SERVER['HTTP_CACHE_CONTROL'] ?? '';
+  $pragma = $_SERVER['HTTP_PRAGMA'] ?? '';
+
+  $hasNoCache = stripos($cacheControl, 'no-cache') !== false;
+  $hasPragma = stripos($pragma, 'no-cache') !== false;
+
+  return $hasNoCache || $hasPragma;
 }
 
 /**

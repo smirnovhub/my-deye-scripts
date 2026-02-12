@@ -215,75 +215,34 @@ function updateAllFields(result) {
   }
 }
 
-function update() {
+async function update() {
   if (updating || processing || writing) {
     return;
   }
 
   updating = true;
 
-  JsHttpRequest.query
-    (
+  try {
+    const result = await JsHttpRequest.query(
       'back.php',
       {
         'command': 'read_registers'
-      },
-
-      function (result, errors) {
-        try {
-          if (!writing) {
-            updateAllFields(result);
-            resetSecondsTimer();
-          }
-        } finally {
-          updating = false;
-        }
-      },
-      true
+      }
     );
-}
 
-function sendCommand(command, field_id) {
-  if (processing || writing) {
-    return;
+    if (!writing) {
+      updateAllFields(result);
+      resetSecondsTimer();
+    }
+  } catch (error) {
+    console.error("update() failed:", error);
+  } finally {
+    updating = false;
   }
-
-  processing = true;
-
-  addSpinner(field_id);
-
-  JsHttpRequest.query
-    (
-      'back.php',
-      {
-        'command': command
-      },
-
-      function (result, errors) {
-        try {
-          updateAllFields(result);
-          resetSecondsTimer();
-        } finally {
-          processing = false;
-        }
-      },
-      true
-    );
 }
 
-function get_forecast_by_percent(field_id) {
-  sendCommand('get_forecast_by_percent', field_id);
-}
-
-function get_forecast_by_time(field_id) {
-  sendCommand('get_forecast_by_time', field_id);
-}
-
-function update_scripts(field_id) {
-  sendCommand('update_scripts', field_id);
-}
-
-function write_register(field_id,
+async function write_register(
+  field_id,
   content_field_id,
   register_name,
   register_value,
@@ -303,26 +262,62 @@ function write_register(field_id,
   addSpinner(field_id);
   addSpinner(content_field_id);
 
-  JsHttpRequest.query
-    (
+  try {
+    const result = await JsHttpRequest.query(
       'back.php',
       {
         'command': 'write_register',
         'register_name': register_name,
         'register_value': register_value,
-      },
-
-      function (result, errors) {
-        try {
-          updateAllFields(result);
-          resetSecondsTimer();
-          startUpdateTimer();
-        } finally {
-          writing = false;
-        }
-      },
-      true
+      }
     );
+
+    updateAllFields(result);
+    resetSecondsTimer();
+    startUpdateTimer();
+  } catch (error) {
+    console.error("write_register() failed:", error);
+  } finally {
+    writing = false;
+  }
+}
+
+async function sendCommand(command, field_id) {
+  if (processing || writing) {
+    return;
+  }
+
+  processing = true;
+  addSpinner(field_id);
+
+  try {
+    const result = await JsHttpRequest.query(
+      'back.php',
+      {
+        'command': command
+      }
+    );
+
+    updateAllFields(result);
+    resetSecondsTimer();
+  } catch (error) {
+    console.error("sendCommand() failed:", error);
+  } finally {
+    processing = false;
+  }
+}
+
+function get_forecast_by_percent(field_id) {
+  sendCommand('get_forecast_by_percent', field_id);
+}
+
+function get_forecast_by_time(field_id) {
+  sendCommand('get_forecast_by_time', field_id);
+}
+
+async function update_scripts(field_id) {
+  await sendCommand('update_scripts', field_id);
+  await forceRefreshWithNoCache()
 }
 
 function addSpinner(field_id) {
@@ -369,4 +364,19 @@ function isEmpty(value) {
 
 function openInNewTab(url) {
   window.open(url, '_blank').focus();
+}
+
+async function forceRefreshWithNoCache() {
+  try {
+    await fetch(window.location.href, {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      cache: 'no-store'
+    });
+  } catch (error) {
+    console.error("forceRefreshWithNoCache() failed:", error);
+  }
 }
