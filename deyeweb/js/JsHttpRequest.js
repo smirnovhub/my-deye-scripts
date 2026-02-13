@@ -20,10 +20,15 @@ const JsHttpRequest = {
     );
 
     if (!response.ok) {
-      throw new Error(`HTTP request returned error code ${response.status}`);
+      throw new Error(`Server returned error code ${response.status}`);
     }
 
     const text = await response.text();
+
+    if (!text || text.trim().length === 0) {
+      throw new Error('Server returned empty response');
+    }
+
     return JSON.parse(text);
   }
 };
