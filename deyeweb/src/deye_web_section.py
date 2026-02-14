@@ -17,9 +17,6 @@ class DeyeWebSection(Enum):
   bms = 'BMS'
   service = 'Service'
 
-  _title: str
-  _id: str
-
   @property
   def title(self) -> str:
     return self._title
