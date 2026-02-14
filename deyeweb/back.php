@@ -37,7 +37,7 @@ try {
 
     try {
       // Read response from Python
-      echo readPipeWithTimeout($pipes[1], 7);
+      echo readPipeWithTimeout($pipes[1], PYTHON_PIPE_READ_TIMEOUT_SEC);
     } catch (TimeoutException $e) {
       proc_terminate($process);
       echo getErrorMessage('Timeout: python process did not respond in time');
@@ -59,7 +59,7 @@ try {
 $rawOutput = ob_get_clean();
 $finalOutput = $rawOutput;
 
-if (strlen($rawOutput) > 1024) {
+if (strlen($rawOutput) > GZIP_ENCODING_THRESHOLD) {
   $supportsGzip = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false;
   if ($supportsGzip && function_exists('gzencode')) {
     $finalOutput = gzencode($rawOutput);

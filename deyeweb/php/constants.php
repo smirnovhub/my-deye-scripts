@@ -1,3 +1,7 @@
 <?php
 
 define('PYTHON_CMD', 'python3 -u');
+define('PYTHON_PIPE_READ_TIMEOUT_SEC', 7);
+define('MINIMUM_TIME_FOR_CACHE_RESET_SEC', 5 * 60);
+define('TIME_FOR_CACHE_UPDATE_SEC', 12 * 60 * 60);
+define('GZIP_ENCODING_THRESHOLD', 1024);

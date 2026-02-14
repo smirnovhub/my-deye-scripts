@@ -12,9 +12,6 @@ $tempDir = sys_get_temp_dir();
 $cacheFile = $tempDir . DIRECTORY_SEPARATOR . 'deyeweb_cache.txt';
 $command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . '/front.py') . ' 2>&1';
 
-$minimumTimeForCacheResetSec = 5 * 60;
-$timeForCacheUpdateSec = 12 * 60 * 60;
-
 startSession();
 closeSession();
 
@@ -23,7 +20,7 @@ $isCached = true;
 
 $isNeedResetCache = isCacheClearRequested();
 if ($isNeedResetCache) {
-  $isNeedUpdateCache = needUpdateCache($cacheFile, $minimumTimeForCacheResetSec);
+  $isNeedUpdateCache = needUpdateCache($cacheFile, MINIMUM_TIME_FOR_CACHE_RESET_SEC);
   if ($isNeedUpdateCache) {
     $isCached = false;
     $content = executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
@@ -68,7 +65,7 @@ if ($content == '') {
 $rawOutput = ob_get_clean();
 $finalOutput = $rawOutput;
 
-if (strlen($rawOutput) > 1024) {
+if (strlen($rawOutput) > GZIP_ENCODING_THRESHOLD) {
   $supportsGzip = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false;
   if ($supportsGzip && function_exists('gzencode')) {
     $finalOutput = gzencode($rawOutput);
@@ -100,9 +97,10 @@ flush();
 // Background execution starts here
 // The browser sees "Content-Length" and "Connection: close", so it stops waiting.
 if ($isCached) {
-  $isNeedUpdateCache = needUpdateCache($cacheFile, $timeForCacheUpdateSec);
+  $isNeedUpdateCache = needUpdateCache($cacheFile, TIME_FOR_CACHE_UPDATE_SEC);
   if ($isNeedUpdateCache) {
     executeCommandAndUpdateCacheWithLock($cacheFile, $command, false);
   }
 }
+
 ?>
