@@ -9,8 +9,8 @@ require_once(__DIR__ . '/php/utils.php');
 $tempDir = sys_get_temp_dir();
 
 // When renaming, don't forget to also change in deye_web_constants.py
-$cacheFile = $tempDir . DIRECTORY_SEPARATOR . 'deyeweb_cache.txt';
-$command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . DIRECTORY_SEPARATOR . 'front.py') . ' 2>&1';
+$cacheFile = $tempDir . '/deyeweb_cache.txt';
+$command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . '/front.py') . ' 2>&1';
 
 startSession();
 closeSession();
