@@ -1,5 +1,7 @@
 <?php
 
+require_once(__DIR__ . '/constants.php');
+
 class TimeoutException extends RuntimeException {}
 
 /**
@@ -217,6 +219,31 @@ function getCacheFileContentWithLock(string $fileName): string
   }
 
   return '';
+}
+
+/**
+ * Determines whether the output can be gzip encoded.
+ *
+ * Checks if gzip compression is supported and can be applied to the raw output.
+ *
+ * @param string $str The raw output string to be checked for gzip encoding capability.
+ *
+ * @return bool True if gzip encoding is possible, false otherwise.
+ */
+function canGzipStr(string $str): bool
+{
+  if (strlen($str) < GZIP_ENCODING_THRESHOLD) {
+    return false;
+  }
+
+  $isGzipSupported = isset($_SERVER['HTTP_ACCEPT_ENCODING']) &&
+    strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false;
+
+  if ($isGzipSupported && function_exists('gzencode')) {
+    return true;
+  }
+
+  return false;
 }
 
 /**

@@ -65,12 +65,9 @@ if ($content == '') {
 $rawOutput = ob_get_clean();
 $finalOutput = $rawOutput;
 
-if (strlen($rawOutput) > GZIP_ENCODING_THRESHOLD) {
-  $supportsGzip = isset($_SERVER['HTTP_ACCEPT_ENCODING']) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false;
-  if ($supportsGzip && function_exists('gzencode')) {
-    $finalOutput = gzencode($rawOutput);
-    header('Content-Encoding: gzip');
-  }
+if (canGzipStr($rawOutput)) {
+  $finalOutput = gzencode($rawOutput);
+  header('Content-Encoding: gzip');
 }
 
 // Set time limit for script execution
