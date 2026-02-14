@@ -11,8 +11,8 @@ $tempDir = sys_get_temp_dir();
 $cacheFile = $tempDir . DIRECTORY_SEPARATOR . 'deyeweb_cache.txt';
 $command = __DIR__ . '/front.py 2>&1';
 
-$minimumTimeForCacheResetSec = 60;
-$timeForCacheUpdateSec = 5 * 60 * 60;
+$minimumTimeForCacheResetSec = 5 * 60;
+$timeForCacheUpdateSec = 12 * 60 * 60;
 
 startSession();
 closeSession();
