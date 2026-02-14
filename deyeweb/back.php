@@ -16,7 +16,7 @@ try {
 
   closeSession();
 
-  $command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . '/back.py') . ' 2>&1';
+  $command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . DIRECTORY_SEPARATOR . 'back.py') . ' 2>&1';
 
   // Open Python process
   $process = proc_open(

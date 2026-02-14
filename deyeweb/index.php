@@ -10,7 +10,7 @@ $tempDir = sys_get_temp_dir();
 
 // When renaming, don't forget to also change in deye_web_constants.py
 $cacheFile = $tempDir . DIRECTORY_SEPARATOR . 'deyeweb_cache.txt';
-$command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . '/front.py') . ' 2>&1';
+$command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . DIRECTORY_SEPARATOR . 'front.py') . ' 2>&1';
 
 startSession();
 closeSession();
@@ -71,7 +71,7 @@ if (canGzipStr($rawOutput)) {
 }
 
 // Set time limit for script execution
-set_time_limit(15);
+set_time_limit(FRONT_CACHE_UPDATE_EXECUTION_TIMEOUT_SEC);
 
 // Keep script running after user disconnects
 ignore_user_abort(true);
