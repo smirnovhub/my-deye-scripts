@@ -1,5 +1,3 @@
-#!/usr/bin/python3 -u
-
 import os
 import sys
 import json

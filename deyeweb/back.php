@@ -3,6 +3,7 @@
 // Start buffering the entire script output
 ob_start();
 
+require_once(__DIR__ . '/php/constants.php');
 require_once(__DIR__ . '/php/utils.php');
 
 startSession();
@@ -15,9 +16,11 @@ try {
 
   closeSession();
 
+  $command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . '/back.py') . ' 2>&1';
+
   // Open Python process
   $process = proc_open(
-    __DIR__ . '/back.py 2>&1',
+    $command,
     [
       0 => ['pipe', 'r'], // stdin
       1 => ['pipe', 'w'], // stdout
