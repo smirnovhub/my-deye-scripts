@@ -20,7 +20,7 @@ $isCached = true;
 
 $isNeedResetCache = isCacheClearRequested();
 if ($isNeedResetCache) {
-  $isNeedUpdateCache = needUpdateCache($cacheFile, MINIMUM_TIME_FOR_CACHE_RESET_SEC);
+  $isNeedUpdateCache = needUpdateCache($cacheFile, MINIMUM_TIME_FOR_FRONT_CACHE_RESET_SEC);
   if ($isNeedUpdateCache) {
     $isCached = false;
     $content = executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
@@ -97,7 +97,7 @@ flush();
 // Background execution starts here
 // The browser sees "Content-Length" and "Connection: close", so it stops waiting.
 if ($isCached) {
-  $isNeedUpdateCache = needUpdateCache($cacheFile, TIME_FOR_CACHE_UPDATE_SEC);
+  $isNeedUpdateCache = needUpdateCache($cacheFile, TIME_FOR_FRONT_CACHE_UPDATE_SEC);
   if ($isNeedUpdateCache) {
     executeCommandAndUpdateCacheWithLock($cacheFile, $command, false);
   }
