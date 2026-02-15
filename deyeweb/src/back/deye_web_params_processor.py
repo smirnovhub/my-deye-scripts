@@ -6,7 +6,8 @@ from deye_web_remote_command import DeyeWebRemoteCommand
 from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 from processors.deye_web_forecast_command_processor import DeyeWebForecastCommandProcessor
 from processors.deye_web_read_registers_command_processor import DeyeWebReadRegistersCommandProcessor
-from processors.deye_web_update_command_processor import DeyeWebUpdateCommandProcessor
+from deye_web_update_scripts_command_processor import DeyeWebUpdateScriptsCommandProcessor
+from deye_web_install_ios_profile_command_processor import DeyeWebInstallIosProfileCommandProcessor
 from processors.deye_web_write_registers_command_processor import DeyeWebWriteRegistersCommandProcessor
 
 class DeyeWebParamsProcessor:
@@ -15,7 +16,8 @@ class DeyeWebParamsProcessor:
       DeyeWebReadRegistersCommandProcessor(),
       DeyeWebWriteRegistersCommandProcessor(),
       DeyeWebForecastCommandProcessor(),
-      DeyeWebUpdateCommandProcessor(),
+      DeyeWebUpdateScriptsCommandProcessor(),
+      DeyeWebInstallIosProfileCommandProcessor(),
     ]
 
   def get_params(self, json_data: Any) -> Dict[str, str]:

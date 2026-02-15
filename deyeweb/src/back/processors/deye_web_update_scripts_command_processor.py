@@ -10,7 +10,7 @@ from deye_web_utils import DeyeWebUtils
 from deye_web_remote_command import DeyeWebRemoteCommand
 from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
-class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
+class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
     super().__init__([DeyeWebRemoteCommand.update_scripts])
 

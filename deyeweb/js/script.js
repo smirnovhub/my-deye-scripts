@@ -317,14 +317,6 @@ async function sendCommand(command, field_id) {
   }
 }
 
-function get_forecast_by_percent(field_id) {
-  sendCommand('get_forecast_by_percent', field_id);
-}
-
-function get_forecast_by_time(field_id) {
-  sendCommand('get_forecast_by_time', field_id);
-}
-
 async function update_scripts(field_id) {
   await sendCommand('update_scripts', field_id);
   await forceRefreshWithNoCache()
