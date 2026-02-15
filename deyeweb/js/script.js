@@ -114,6 +114,13 @@ function smoothScrollTo(element, targetLeft, duration) {
   requestAnimationFrame(animate);
 }
 
+/**
+ * Interpolates between two hex colors based on a percentage value.
+ * @param {string} color1 - The first hex color (e.g., "#FF0000")
+ * @param {string} color2 - The second hex color (e.g., "#0000FF")
+ * @param {number} percent - The interpolation percentage (0 to 1, will be clamped)
+ * @returns {string} The interpolated hex color
+ */
 function interpolateColor(color1, color2, percent) {
   // Convert the hex colors to RGB values
   const rgb1 = parseInt(color1.slice(1), 16);
@@ -361,14 +368,34 @@ function openPage(pageName, buttonName, doScroll = false) {
   sessionStorage.setItem(lastButtonName, buttonName);
 }
 
+/**
+ * Checks if a value is empty.
+ * @param {*} value - The value to check.
+ * @returns {boolean} True if the value is null, undefined, or an empty string (after trimming), false otherwise.
+ */
 function isEmpty(value) {
   return (value == null || (typeof value === "string" && value.trim().length === 0));
 }
 
+/**
+ * Opens a URL in a new browser tab and focuses on it.
+ * @param {string} url - The URL to open in a new tab
+ * @returns {void}
+ */
 function openInNewTab(url) {
   window.open(url, '_blank').focus();
 }
 
+/**
+ * Forces a refresh of the current page by fetching it with cache-busting headers.
+ * This function performs a GET request to the current URL with cache control headers
+ * to ensure the server returns fresh content rather than cached content.
+ * 
+ * @async
+ * @function forceRefreshWithNoCache
+ * @returns {Promise<void>} A promise that resolves when the fetch completes
+ * @throws {Error} Logs errors to console if the fetch operation fails
+ */
 async function forceRefreshWithNoCache() {
   try {
     await fetch(window.location.href, {

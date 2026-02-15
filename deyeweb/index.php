@@ -6,10 +6,8 @@ ob_start();
 require_once(__DIR__ . '/php/constants.php');
 require_once(__DIR__ . '/php/utils.php');
 
-$tempDir = sys_get_temp_dir();
-
 // When renaming, don't forget to also change in deye_web_constants.py
-$cacheFile = $tempDir . '/deyeweb_cache.txt';
+$cacheFileName = sys_get_temp_dir() . '/deyeweb_cache.txt';
 $command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . '/front.py') . ' 2>&1';
 
 startSession();
@@ -20,21 +18,21 @@ $isCached = true;
 
 $isNeedResetCache = isCacheClearRequested();
 if ($isNeedResetCache) {
-  $isNeedUpdateCache = needUpdateCache($cacheFile, MINIMUM_TIME_FOR_FRONT_CACHE_RESET_SEC);
+  $isNeedUpdateCache = needUpdateCache($cacheFileName, FRONT_CACHE_MINIMUM_TIME_FOR_RESET_SEC);
   if ($isNeedUpdateCache) {
     $isCached = false;
-    $content = executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
+    $content = executeCommandAndUpdateCacheWithLock($cacheFileName, $command, true);
   }
 }
 
 if ($content == '') {
   $isCached = true;
-  $content = getCacheFileContentWithLock($cacheFile);
+  $content = getCacheFileContentWithLock($cacheFileName);
 }
 
 if ($content == '') {
   $isCached = false;
-  $content = executeCommandAndUpdateCacheWithLock($cacheFile, $command, true);
+  $content = executeCommandAndUpdateCacheWithLock($cacheFileName, $command, true);
 }
 
 ?>
@@ -94,9 +92,9 @@ flush();
 // Background execution starts here
 // The browser sees "Content-Length" and "Connection: close", so it stops waiting.
 if ($isCached) {
-  $isNeedUpdateCache = needUpdateCache($cacheFile, TIME_FOR_FRONT_CACHE_UPDATE_SEC);
+  $isNeedUpdateCache = needUpdateCache($cacheFileName, FRONT_CACHE_UPDATE_TIME_SEC);
   if ($isNeedUpdateCache) {
-    executeCommandAndUpdateCacheWithLock($cacheFile, $command, false);
+    executeCommandAndUpdateCacheWithLock($cacheFileName, $command, false);
   }
 }
 

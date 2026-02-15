@@ -18,8 +18,8 @@
 
 // File names
 $config_file_name = 'deyeweb.mobileconfig';
-$config_template_file_name = 'icons/deyeweb.mobileconfig.template';
-$icon_file_name = 'icons/deyeweb_icon.png';
+$config_template_file_name = 'icons/ios/deyeweb.mobileconfig.template';
+$icon_file_path = 'icons/ios';
 
 ob_start();
 
@@ -49,6 +49,17 @@ function error(string $message)
 if (!file_exists($config_template_file_name)) {
   error("Error: template file not found.");
 }
+
+$icon_name = trim($_GET['icon'] ?? '');
+if (empty($icon_name)) {
+  error("Error: icon name is empty.");
+}
+
+if (!preg_match('/^[a-zA-Z0-9_-]+$/', $icon_name)) {
+  error("Error: wrong icon name.");
+}
+
+$icon_file_name = $icon_file_path . '/' . $icon_name . '.png';
 
 // Check if icon exists
 if (!file_exists($icon_file_name)) {
