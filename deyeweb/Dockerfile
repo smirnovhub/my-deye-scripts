@@ -74,10 +74,14 @@ RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
 # Enable the default SSL configuration of Apache
 RUN a2ensite default-ssl
 
-# (Optional) Point Apache to our new certificates 
+# Point Apache to our new certificates 
 # By default, default-ssl uses snakeoil certs, let's point to ours:
 RUN sed -i 's|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/apache-selfsigned.crt|' /etc/apache2/sites-available/default-ssl.conf && \
   sed -i 's|SSLCertificateKeyFile.*|SSLCertificateKeyFile /etc/ssl/private/apache-selfsigned.key|' /etc/apache2/sites-available/default-ssl.conf
+
+# Comment out the Alias /icons/ directive inside the alias module configuration
+# This frees up the /icons/ path for our own application
+RUN sed -i 's|^Alias /icons/|#Alias /icons/|' /etc/apache2/mods-available/alias.conf
 
 # Apache runs on ports 80 and 443
 EXPOSE 80 443
