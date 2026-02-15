@@ -66,6 +66,8 @@ class DeyeWebServiceSection(DeyeWebBaseSection):
     # Start the table tag with some basic styling
     html = f'<table>'
 
+    icon_counter = 0
+
     # Iterate through the list in chunks (rows)
     for i in range(0, len(names), columns_count):
       html += '<tr>'
@@ -74,10 +76,16 @@ class DeyeWebServiceSection(DeyeWebBaseSection):
       row_items = names[i:i + columns_count]
 
       for item in row_items:
+        icon_counter += 1
+
+        onerror = (f"this.style.display='inline-block'; "
+                   f"this.parentNode.innerHTML='<span style=\\'font-size: 25px; "
+                   f"font-weight: bold;\\'>icon_{icon_counter:02d}</span>';")
+
         html += f"""
             <td class="{style_id1}">
               <a href="mobileconfig.php?icon={item}">
-                <img class="{style_id2}" src="icons/ios/{item}.png" alt="iOS Icon">
+                <img class="{style_id2}" src="icons/ios/{item}.png" onerror="{onerror}">
               </a>
             </td>
           """
