@@ -40,9 +40,10 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
 
       if 'up to date' in pull_result.lower():
         last_commit = self.git_helper.get_last_commit_hash_and_comment()
-        return get_result("Already up to date.<br>"
+        return get_result('<p style="color: green;">'
+                          "Already up to date.<br>"
                           f"You are currently on branch '{current_branch_name}':<br>"
-                          f"<b>{last_commit}</b>")
+                          f"<b>{last_commit}</b></p>")
 
       cache_file_path = os.path.join(tempfile.gettempdir(), DeyeWebConstants.front_cache_file_name)
       DeyeWebUtils.file_truncate(cache_file_path)
