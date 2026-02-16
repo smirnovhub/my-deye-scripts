@@ -45,7 +45,7 @@ class DeyeWebForecastSection(DeyeWebBaseInfoSection):
       DeyeWebConstants.item_td_style_with_color.format(DeyeWebColor.green.color))
     cursor_style_id = self.style_manager.register_style(DeyeWebConstants.cursor_style)
 
-    on_click = f"sendCommand('{command.name}', '{id}');"
+    on_click = DeyeWebUtils.get_remote_command(command, id)
 
     return f"""
         <td onclick="{on_click}" class="{style_id1} {style_id2} {cursor_style_id}">

@@ -86,6 +86,13 @@ function onLoad() {
 }
 
 /**
+ * Creates a promise that resolves after a specified delay.
+ * @param {number} ms - The delay in milliseconds
+ * @returns {Promise<void>} A promise that resolves after the specified delay
+ */
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
  * Smoothly scrolls an element to a specific horizontal position with custom duration.
  * @param {HTMLElement} element - The container to scroll.
  * @param {number} targetLeft - The target scrollLeft position.
@@ -308,6 +315,14 @@ async function sendCommand(command, field_id) {
     );
 
     updateAllFields(result);
+
+    // Reload current page if python sent 'need_reload' field:
+    // result['need_reload'] = 'true'
+    if (result && (result.need_reload === true || result.need_reload === 'true')) {
+      await delay(1500);
+      sessionStorage.removeItem(lastButtonName);
+      location.reload();
+    }
   } catch (error) {
     console.error(`${command} failed:`, error);
     document.getElementById('error_field').innerHTML = `${command} failed: ${error}`;
@@ -315,11 +330,6 @@ async function sendCommand(command, field_id) {
     processing = false;
     resetSecondsTimer();
   }
-}
-
-async function update_scripts(field_id) {
-  await sendCommand('update_scripts', field_id);
-  await forceRefreshWithNoCache()
 }
 
 function addSpinner(field_id) {
@@ -376,29 +386,4 @@ function isEmpty(value) {
  */
 function openInNewTab(url) {
   window.open(url, '_blank').focus();
-}
-
-/**
- * Forces a refresh of the current page by fetching it with cache-busting headers.
- * This function performs a GET request to the current URL with cache control headers
- * to ensure the server returns fresh content rather than cached content.
- * 
- * @async
- * @function forceRefreshWithNoCache
- * @returns {Promise<void>} A promise that resolves when the fetch completes
- * @throws {Error} Logs errors to console if the fetch operation fails
- */
-async function forceRefreshWithNoCache() {
-  try {
-    await fetch(window.location.href, {
-      method: 'GET',
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      },
-      cache: 'no-store'
-    });
-  } catch (error) {
-    console.error("forceRefreshWithNoCache() failed:", error);
-  }
 }

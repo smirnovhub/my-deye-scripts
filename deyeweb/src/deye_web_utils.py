@@ -9,6 +9,7 @@ from collections import Counter
 
 from deye_file_lock import DeyeFileLock
 from deye_web_constants import DeyeWebConstants
+from deye_web_remote_command import DeyeWebRemoteCommand
 
 class DeyeWebUtils:
   _id_stack: List[int] = []
@@ -173,3 +174,18 @@ class DeyeWebUtils:
         f.flush()
       finally:
         DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
+
+  @staticmethod
+  def get_remote_command(command: DeyeWebRemoteCommand, id: str) -> str:
+    """
+    Generate a JavaScript function call string to send a remote command.
+    
+    Args:
+      command (DeyeWebRemoteCommand): The remote command to send.
+      id (str): The identifier of the target html field.
+    
+    Returns:
+      str: A formatted JavaScript string that calls sendCommand with the command name and id.
+         Format: "sendCommand('<command_name>', '<id>');"
+    """
+    return f"sendCommand('{command.name}', '{id}');"

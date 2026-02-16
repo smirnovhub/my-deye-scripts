@@ -5,5 +5,6 @@ class DeyeWebRemoteCommand(Enum):
   write_register = auto()
   get_forecast_by_percent = auto()
   get_forecast_by_time = auto()
+  reset_cache = auto()
   update_scripts = auto()
   install_ios_profile = auto()

@@ -53,4 +53,7 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
     pattern = r'\d+ files? changed.*'
     matches = re.findall(pattern, pull_result)
 
-    return get_result("\n".join(matches))
+    result = get_result("\n".join(matches))
+    result['need_reload'] = 'true'
+
+    return result

@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 from deye_web_utils import DeyeWebUtils
 from deye_web_constants import DeyeWebConstants
 from deye_web_remote_command import DeyeWebRemoteCommand
+from deye_web_reset_cache_command_processor import DeyeWebResetCacheCommandProcessor
 from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 from processors.deye_web_forecast_command_processor import DeyeWebForecastCommandProcessor
 from processors.deye_web_read_registers_command_processor import DeyeWebReadRegistersCommandProcessor
@@ -16,6 +17,7 @@ class DeyeWebParamsProcessor:
       DeyeWebReadRegistersCommandProcessor(),
       DeyeWebWriteRegistersCommandProcessor(),
       DeyeWebForecastCommandProcessor(),
+      DeyeWebResetCacheCommandProcessor(),
       DeyeWebUpdateScriptsCommandProcessor(),
       DeyeWebInstallIosProfileCommandProcessor(),
     ]
