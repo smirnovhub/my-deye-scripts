@@ -6,12 +6,12 @@ class DeyeRegisterCacheData:
     self,
     address: int,
     quantity: int,
-    cache_time: int,
+    caching_time: int,
     values: Optional[List[int]] = None,
   ):
     self._address = address
     self._quantity = quantity
-    self._cache_time = cache_time
+    self._caching_time = caching_time
     self._values = values if values else [0] * quantity
 
     if self._quantity != len(self._values):
@@ -27,8 +27,8 @@ class DeyeRegisterCacheData:
     return self._quantity
 
   @property
-  def cache_time(self) -> int:
-    return self._cache_time
+  def caching_time(self) -> int:
+    return self._caching_time
 
   @property
   def values(self) -> List[int]:

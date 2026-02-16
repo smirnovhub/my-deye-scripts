@@ -54,7 +54,7 @@ class DeyeModbusInteractor:
     self.registers[address] = DeyeRegisterCacheData(
       address = address,
       quantity = quantity,
-      cache_time = cache_time,
+      caching_time = cache_time,
     )
 
   def process_enqueued_registers(self) -> None:
@@ -70,8 +70,8 @@ class DeyeModbusInteractor:
     cached_registers = self.cache_manager.get_cached_registers(self.registers)
 
     if self.verbose:
-      registers_cache_time = {addr: reg.cache_time for addr, reg in self.registers.items()}
-      print(f'{self.name} registers cache times: {registers_cache_time}')
+      registers_caching_time = {addr: reg.caching_time for addr, reg in self.registers.items()}
+      print(f'{self.name} registers cache times: {registers_caching_time}')
       cached_data_map = {addr: reg.values for addr, reg in cached_registers.items()}
       print(f'{self.name} cached registers: {cached_data_map}')
 
@@ -138,7 +138,7 @@ class DeyeModbusInteractor:
           results[reg.address] = DeyeRegisterCacheData(
             address = reg.address,
             quantity = reg.quantity,
-            cache_time = reg.cache_time,
+            caching_time = reg.caching_time,
             values = data[offset:offset + reg.quantity],
           )
     finally:
@@ -160,7 +160,7 @@ class DeyeModbusInteractor:
     updated_register = DeyeRegisterCacheData(
       address = address,
       quantity = len(values),
-      cache_time = self.default_caching_time,
+      caching_time = self.default_caching_time,
       values = values,
     )
 

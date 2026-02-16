@@ -78,11 +78,11 @@ class DeyeRegistersCacheManager:
           if addr_str in cached_registry:
             entry = cached_registry[addr_str]
             # Check if the cached data is still valid
-            if (current_time - entry.get("time", 0)) <= reg.cache_time:
+            if (current_time - entry.get("time", 0)) <= reg.caching_time:
               results[addr] = DeyeRegisterCacheData(
                 address = reg.address,
                 quantity = reg.quantity,
-                cache_time = reg.cache_time,
+                caching_time = reg.caching_time,
                 values = entry.get("data", []),
               )
       except Exception as e:
