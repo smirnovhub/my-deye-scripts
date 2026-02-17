@@ -2,13 +2,13 @@ from typing import Dict, List, Optional
 
 from datetime import timedelta
 
-from deye_file_lock import DeyeFileLock
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_modbus_solarman import DeyeModbusSolarman
 from deye_register_cache_data import DeyeRegisterCacheData
-from deye_registers_cache_manager import DeyeRegistersCacheManager
-from deye_utils import DeyeUtils
+from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
+from deye_registers_local_cache_manager import DeyeRegistersLocalCacheManager
+from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
 
 class DeyeModbusInteractor:
   def __init__(self, logger: DeyeLogger, **kwargs):
@@ -20,15 +20,18 @@ class DeyeModbusInteractor:
     self.default_caching_time = max(0, int(kwargs.get('caching_time', 3)))
     self.max_register_count = 120
 
-    # Ensure cache directory exists
-    DeyeUtils.ensure_dir_exists(DeyeFileLock.lock_path, mode = 0o777)
-
     # Initialize cache manager
-    self.cache_manager = DeyeRegistersCacheManager(
-      self.logger.name,
-      DeyeFileLock.lock_path,
-      verbose = self.verbose,
-    )
+    if self.loggers.cache_server_endpoint:
+      self.cache_manager: DeyeRegistersBaseCacheManager = DeyeRegistersRemoteCacheManager(
+        name = self.logger.name,
+        cache_server_endpoint = self.loggers.cache_server_endpoint,
+        verbose = self.verbose,
+      )
+    else:
+      self.cache_manager: DeyeRegistersBaseCacheManager = DeyeRegistersLocalCacheManager(
+        name = self.logger.name,
+        verbose = self.verbose,
+      )
 
   @property
   def name(self) -> str:
@@ -173,6 +176,9 @@ class DeyeModbusInteractor:
 
     return result
 
-  # Deprecated
+  def reset_cache(self) -> None:
+    self.cache_manager.reset_cache()
+
   def disconnect(self) -> None:
     self.clear_registers_queue()
+    self.cache_manager.close()

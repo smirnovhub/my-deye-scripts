@@ -210,6 +210,23 @@ class DeyeRegistersHolder:
       if last_exception is not None:
         raise last_exception
 
-  # Deprecated
+  def reset_cache(self) -> None:
+    for interactor in self._interactors:
+      interactor.reset_cache()
+
   def disconnect(self) -> None:
-    pass
+    last_exception = None
+
+    for interactor in self._interactors:
+      try:
+        interactor.disconnect()
+      except Exception as e:
+        try:
+          raise DeyeUtils.get_reraised_exception(
+            e, f'{type(self).__name__}: error while disconnecting from inverter {interactor.name}') from e
+        except Exception as handled:
+          # remember last exception
+          last_exception = handled
+
+    if last_exception:
+      raise last_exception

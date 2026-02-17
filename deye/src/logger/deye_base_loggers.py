@@ -29,6 +29,10 @@ class DeyeBaseLoggers:
     raise DeyeNotImplementedException('slaves')
 
   @property
+  def cache_server_endpoint(self) -> str:
+    raise DeyeNotImplementedException('cache_server_endpoint')
+
+  @property
   def loggers(self) -> List[DeyeLogger]:
     return [self.master] + self.slaves
 

@@ -2,6 +2,7 @@ from typing import List, Dict
 
 from datetime import timedelta
 
+from deye_loggers import DeyeLoggers
 from deye_base_registers import DeyeBaseRegisters
 from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
@@ -46,7 +47,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     self._battery_restart_soc_register = IntWritableDeyeRegister(218, 5, 60, 'battery_restart_soc', 'Battery Restart SOC', '%', avg = DeyeRegisterAverageType.only_master)
     self._battery_shutdown_soc_register = IntWritableDeyeRegister(217, 5, 60, 'battery_shutdown_soc', 'Battery Shutdown SOC', '%', avg = DeyeRegisterAverageType.only_master)
     self._battery_soc_register = IntDeyeRegister(184, 'battery_soc', 'Battery SOC', '%', avg = DeyeRegisterAverageType.only_master)
-    self._battery_soh_register = IntDeyeRegister(10006, 'battery_soh', 'Battery SOH', '%', avg = DeyeRegisterAverageType.only_master, caching_time = timedelta(hours = 3))
+    self._battery_soh_register = IntDeyeRegister(10006, 'battery_soh', 'Battery SOH', '%', avg = DeyeRegisterAverageType.only_master, caching_time = timedelta(hours = 6))
     self._battery_temperature_register = TemperatureDeyeRegister(182, 'battery_temperature', 'Battery Temperature', 'deg', avg = DeyeRegisterAverageType.only_master)
     self._battery_voltage_register = FloatDeyeRegister(183, 'battery_voltage', 'Battery Voltage', 'V', avg = DeyeRegisterAverageType.average).with_scale(100)
     self._ct_ratio_register = IntWritableDeyeRegister(327, 200, 2000, 'ct_ratio', 'CT Ratio', '', avg = DeyeRegisterAverageType.only_master)
@@ -220,6 +221,15 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       self._test1_register,
       self._test2_register,
     ]
+
+    loggers = DeyeLoggers()
+    if loggers.cache_server_endpoint:
+      for register in self._all_registers:
+        if register.can_write and register.name != self.inverter_system_time_register.name:
+          # Very long caching time for writable registers to minimize requests to loggers.
+          # All devices should use the same caching server, so if one device updates the register,
+          # other devices will get the updated value from cache
+          register.set_caching_time(timedelta(hours = 3))
 
   @property
   def prefix(self) -> str:

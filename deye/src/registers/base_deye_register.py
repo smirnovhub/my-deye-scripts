@@ -153,3 +153,6 @@ class BaseDeyeRegister(DeyeRegister):
   @property
   def caching_time(self) -> Optional[timedelta]:
     return self._caching_time
+
+  def set_caching_time(self, caching_time: timedelta) -> None:
+    self._caching_time = caching_time
