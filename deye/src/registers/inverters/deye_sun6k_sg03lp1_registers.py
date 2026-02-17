@@ -71,7 +71,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     self._gen_power_register = SignedIntDeyeRegister(166, 'gen_power', 'Gen Power', 'W', avg = DeyeRegisterAverageType.accumulate)
     self._inverter_ac_temperature_register = TemperatureDeyeRegister(91, 'inverter_ac_temperature', 'Inverter AC Temperature', 'deg', avg = DeyeRegisterAverageType.average)
     self._inverter_dc_temperature_register = TemperatureDeyeRegister(90, 'inverter_dc_temperature', 'Inverter DC Temperature', 'deg', avg = DeyeRegisterAverageType.average)
-    self._inverter_system_time_register = SystemTimeWritableDeyeRegister(22, 'inverter_system_time', 'Inverter System Time', '', caching_time = timedelta(minutes = 1))
+    self._inverter_system_time_register = SystemTimeWritableDeyeRegister(22, 'inverter_system_time', 'Inverter System Time', '', caching_time = timedelta(seconds = 50))
     self._load_frequency_register = FloatDeyeRegister(192, 'load_frequency', 'Load Frequency', 'Hz', avg = DeyeRegisterAverageType.average).with_scale(100)
     self._load_power_register = IntDeyeRegister(178, 'load_power', 'Load Power', 'W', avg = DeyeRegisterAverageType.accumulate)
     self._load_voltage_register = FloatDeyeRegister(157, 'load_voltage', 'Load Voltage', 'V', avg = DeyeRegisterAverageType.average)
