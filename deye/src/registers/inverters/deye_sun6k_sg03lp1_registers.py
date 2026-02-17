@@ -31,6 +31,7 @@ from system_work_mode_writable_deye_register import SystemWorkModeWritableDeyeRe
 class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
+    loggers = DeyeLoggers()
     energy_cost = DeyeEnergyCost()
     self._ac_couple_frz_high_register = FloatWritableDeyeRegister(329, 50.5, 52, 'ac_couple_frz_high', 'AC Couple Frz High', 'Hz', avg = DeyeRegisterAverageType.only_master).with_scale(100)
     self._backup_delay_register = IntWritableDeyeRegister(311, 0, 30000, 'backup_delay', 'Backup Delay', 'ms', avg = DeyeRegisterAverageType.only_master)
@@ -222,7 +223,6 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       self._test2_register,
     ]
 
-    loggers = DeyeLoggers()
     if loggers.cache_server_endpoint:
       for register in self._all_registers:
         if register.can_write and register.name != self.inverter_system_time_register.name:
