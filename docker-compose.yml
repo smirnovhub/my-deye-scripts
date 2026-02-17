@@ -56,7 +56,7 @@ services:
       - "5001:5001"
     restart: unless-stopped
 
-  deye_master_proxy:
+  deyeproxy:
     build:
       context: .
       dockerfile: deyeproxy/Dockerfile
@@ -69,8 +69,8 @@ services:
       - DATA_TIMEOUT=10
       - LOG_LEVEL=INFO
     image: deyeproxy
-    container_name: deye_master_proxy
-    hostname: deye_master_proxy
+    container_name: deyeproxy
+    hostname: deyeproxy
     ports:
       - "8899:8899"
     restart: unless-stopped
