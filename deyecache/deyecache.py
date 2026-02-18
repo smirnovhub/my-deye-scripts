@@ -1,11 +1,13 @@
 import json
 import asyncio
 import sys
+import time
 import uvicorn
 
 from typing import Dict, Any
-from fastapi import FastAPI, HTTPException
+from datetime import datetime
 
+from fastapi import FastAPI, HTTPException, Request
 from src.deyecache_config import DeyeCacheConfig
 
 app = FastAPI()
@@ -19,10 +21,7 @@ locks: Dict[str, asyncio.Lock] = {}
 # Global lock to protect access to the locks dictionary
 locks_lock = asyncio.Lock()
 
-def deep_merge(
-  source: Dict[str, Any],
-  update: Dict[str, Any],
-) -> Dict[str, Any]:
+def deep_merge(source: Dict[str, Any], update: Dict[str, Any]) -> None:
   """
   Recursively merges 'update' into 'source'.
   """
@@ -33,7 +32,6 @@ def deep_merge(
     else:
       # Otherwise, just overwrite or add the value
       source[key] = value
-  return source
 
 async def get_lock(key: str) -> asyncio.Lock:
   """
@@ -56,19 +54,26 @@ async def get_cache(key: str):
   return cache_storage.get(key, {})
 
 @app.post("/cache/{key}")
-async def update_cache(key: str, json_data: Dict[str, Any]):
+async def update_cache(key: str, json_data: Dict[str, Any], request: Request):
   """
   Updates the cache using a recursive deep merge.
   Works with any nested JSON structure.
   """
   lock = await get_lock(key)
   async with lock:
+    header = {
+      "last_update_ts": int(time.time()),
+      "last_update_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+      "last_update_by": request.client.host if request.client else "unknown",
+    }
+
     if key not in cache_storage:
       # Initialize with empty dict if it's a new entry
-      cache_storage[key] = {}
+      cache_storage[key] = header.copy()
 
     # Perform the recursive merge
     deep_merge(cache_storage[key], json_data)
+    cache_storage[key].update(header)
 
   return {"status": "success"}
 
