@@ -256,7 +256,7 @@ class DeyeUtils:
     if exc.errno and exc.strerror:
       return f'[Error {exc.errno}] {exc.strerror}'
 
-    match = re.search(r"\[Errno -?\d+\][^')]+", str(exc))
+    match = re.search(r"\[(?:Errno|WinError)\s+-?\d+\][^')]+", str(exc))
     return match.group(0) if match else str(exc)
 
   @staticmethod
