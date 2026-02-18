@@ -1,6 +1,9 @@
 FROM python:3.14-slim
 
 ENV SERVER_PORT=80
+ENV MAX_KEYS_COUNT=32
+ENV MAX_JSON_SIZE=32768
+ENV MAX_JSON_STORAGE_SIZE=262144
 
 # Set username variable
 ARG USER_NAME=deyecache
@@ -44,4 +47,8 @@ EXPOSE $SERVER_PORT
 # Set working directory
 WORKDIR $APP_DIR/deyecache
 
-CMD uvicorn deyecache:app --host 0.0.0.0 --port ${SERVER_PORT} --log-config log_config.json --no-use-colors
+CMD uvicorn deyecache:app \
+  --host 0.0.0.0 \
+  --port ${SERVER_PORT} \
+  --log-config log_config.json \
+  --no-use-colors
