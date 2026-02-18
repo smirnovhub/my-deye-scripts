@@ -8,6 +8,7 @@ from deye_web_constants import DeyeWebConstants
 from deye_web_style_manager import DeyeWebStyleManager
 from deye_web_graphs_config import DeyeWebGraphsConfig
 from deye_web_value_formatter import DeyeWebValueFormatter
+from deye_registers_holder import DeyeRegistersHolder
 
 class DeyeWebBaseFormatter:
   def __init__(
@@ -60,7 +61,13 @@ class DeyeWebBaseFormatter:
     url = self.graphs_config.get_url_for_register(register.name)
     return DeyeWebConstants.cursor_style if url else ''
 
-  def format_register(self, registers: DeyeRegisters, register: DeyeRegister) -> str:
+  def format_register(
+    self,
+    inverter: str,
+    holder: DeyeRegistersHolder,
+    register: DeyeRegister,
+  ) -> str:
+    registers = holder.all_registers[inverter]
     value = self.get_formatted_value(register)
     color = self.get_color(registers, register)
 

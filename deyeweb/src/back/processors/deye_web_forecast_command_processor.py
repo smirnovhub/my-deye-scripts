@@ -71,11 +71,13 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
           continue
 
         reg_id = DeyeWebUtils.short(f'{inverter}_{register.name}')
-        result[reg_id] = DeyeWebUtils.clean(self.make_register_value(
-          registers,
-          register,
-          colors,
-        ))
+        result[reg_id] = DeyeWebUtils.clean(
+          self.make_register_value(
+            inverter = inverter,
+            holder = holder,
+            register = register,
+            colors = colors,
+          ))
 
     spacing = DeyeWebConstants.spacing_between_elements
 

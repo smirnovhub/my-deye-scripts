@@ -54,11 +54,13 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     colors = colors_calculator.load_colors()
 
     id = DeyeWebUtils.short(f'{self.loggers.master.name}_{register.name}')
-    result[id] = DeyeWebUtils.clean(self.make_register_value(
-      holder.master_registers,
-      register,
-      new_colors,
-    ))
+    result[id] = DeyeWebUtils.clean(
+      self.make_register_value(
+        inverter = self.loggers.master.name,
+        holder = holder,
+        register = register,
+        colors = new_colors,
+      ))
 
     builder = self.selections_builder_config.get_selection_builder_for_register(register.name)
     selections = builder.build_selections(holder, register)

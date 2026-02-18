@@ -52,11 +52,13 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
           continue
 
         id = DeyeWebUtils.short(f'{inverter}_{register.name}')
-        result[id] = DeyeWebUtils.clean(self.make_register_value(
-          registers,
-          register,
-          colors,
-        ))
+        result[id] = DeyeWebUtils.clean(
+          self.make_register_value(
+            inverter = inverter,
+            holder = holder,
+            register = register,
+            colors = colors,
+          ))
 
     registers = holder.master_registers
     for register in registers.all_registers:

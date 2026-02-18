@@ -1,14 +1,20 @@
 from deye_grid_state import DeyeGridState
 from deye_register import DeyeRegister
-from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
 from deye_web_utils import DeyeWebUtils
+from deye_registers_holder import DeyeRegistersHolder
 from deye_web_base_formatter import DeyeWebBaseFormatter
 
 class DeyeWebGridStateFormatter(DeyeWebBaseFormatter):
-  def format_register(self, registers: DeyeRegisters, register: DeyeRegister) -> str:
+  def format_register(
+    self,
+    inverter: str,
+    holder: DeyeRegistersHolder,
+    register: DeyeRegister,
+  ) -> str:
     value = self.get_formatted_value(register)
+    registers = holder.all_registers[inverter]
     grid_state = registers.grid_state_register.value
     color = DeyeWebColor.green if grid_state == DeyeGridState.on_grid else DeyeWebColor.red
 

@@ -6,6 +6,7 @@ from deye_web_color import DeyeWebColor
 from deye_web_utils import DeyeWebUtils
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_web_constants import DeyeWebConstants
+from deye_registers_holder import DeyeRegistersHolder
 from deye_web_base_formatter import DeyeWebBaseFormatter
 
 class DeyeWebThresholdFormatter(DeyeWebBaseFormatter):
@@ -48,10 +49,20 @@ class DeyeWebThresholdFormatter(DeyeWebBaseFormatter):
     else:
       return self.colors[2]
 
-  def format_register(self, registers: DeyeRegisters, register: DeyeRegister) -> str:
+  def format_register(
+    self,
+    inverter: str,
+    holder: DeyeRegistersHolder,
+    register: DeyeRegister,
+  ) -> str:
     if not isinstance(register.value, float) and not isinstance(register.value, int):
-      return super().format_register(registers, register)
+      return super().format_register(
+        inverter = inverter,
+        holder = holder,
+        register = register,
+      )
 
+    registers = holder.all_registers[inverter]
     color = self.get_color(registers, register)
     value = self.get_formatted_value(register)
 

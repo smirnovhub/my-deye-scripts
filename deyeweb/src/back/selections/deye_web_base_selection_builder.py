@@ -47,6 +47,12 @@ class DeyeWebBaseSelectionBuilder:
     style_id2 = self.style_manager.register_style("text-align: center;")
     style_id3 = self.style_manager.register_style("display: inline-table; width: auto; margin: 0;")
 
+    formatted_value = formatter.format_register(
+      inverter = self.loggers.master.name,
+      holder = holder,
+      register = register,
+    )
+
     result = f"""
       {DeyeWebUtils.begin_comment(self)}
       <div class="{style_id0}">
@@ -56,7 +62,7 @@ class DeyeWebBaseSelectionBuilder:
             <table class="{style_id3}">
               <tr>
                 <td>
-                  {formatter.format_register(holder.master_registers, register)}
+                  {formatted_value}
                 </td>
               </tr>
             </table>

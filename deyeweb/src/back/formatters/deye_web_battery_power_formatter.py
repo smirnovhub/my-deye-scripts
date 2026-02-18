@@ -3,6 +3,7 @@ from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
 from deye_web_utils import DeyeWebUtils
+from deye_registers_holder import DeyeRegistersHolder
 from deye_web_threshold_formatter import DeyeWebThresholdFormatter
 
 class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
@@ -36,14 +37,21 @@ class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
 
     return super().get_color(registers, register)
 
-  def format_register(self, registers: DeyeRegisters, register: DeyeRegister) -> str:
+  def format_register(
+    self,
+    inverter: str,
+    holder: DeyeRegistersHolder,
+    register: DeyeRegister,
+  ) -> str:
     value = self.get_formatted_value(register)
 
+    max_battery_power = holder.master_registers.time_of_use_power_register.value
+    max_battery_charge_current = holder.master_registers.battery_max_charge_current_register.value
+    max_battery_discharge_current = holder.master_registers.battery_max_discharge_current_register.value
+
+    registers = holder.all_registers[inverter]
     battery_power = registers.battery_power_register.value
     battery_current = registers.battery_current_register.value
-    max_battery_power = registers.time_of_use_power_register.value
-    max_battery_charge_current = registers.battery_max_charge_current_register.value
-    max_battery_discharge_current = registers.battery_max_discharge_current_register.value
 
     threshold = self.threshold1
 
