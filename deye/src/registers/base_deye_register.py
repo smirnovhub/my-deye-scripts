@@ -35,12 +35,18 @@ class BaseDeyeRegister(DeyeRegister):
     self._loggers = DeyeLoggers()
 
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
-    if interactor.is_master or self._avg != DeyeRegisterAverageType.only_master:
+    if interactor.is_master or (self._avg != DeyeRegisterAverageType.only_master
+                                and self._avg != DeyeRegisterAverageType.fake_accumulate):
       interactor.enqueue_register(self.address, self.quantity, self.caching_time)
 
   def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     if len(interactors) == 1:
       self._value = self.read_from_master_interactor(interactors)
+      return self._value
+
+    if self._avg == DeyeRegisterAverageType.fake_accumulate:
+      self._value = self.read_from_master_interactor(interactors)
+      self._value *= len(interactors)
       return self._value
 
     if self._avg == DeyeRegisterAverageType.accumulate:
