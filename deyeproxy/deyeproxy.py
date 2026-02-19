@@ -165,7 +165,7 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       l2c.start()
 
       wait_interval = 1.0
-      elapsed_time = 0
+      elapsed_time = 0.0
 
       while not stop_event.is_set() and not shutdown_event.is_set():
         if stop_event.wait(timeout = wait_interval):
@@ -199,11 +199,13 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       logger.error(f"{client_ip}:{client_port} Connection to logger timed out")
     except ConnectionRefusedError:
       logger.error(f"{client_ip}:{client_port} Logger refused connection")
-    except Exception as e:
+    except OSError as e:
       if e.errno == errno.EHOSTUNREACH:
         logger.error(f"{client_ip}:{client_port} No route to host")
       else:
         logger.error(f"{client_ip}:{client_port} Unexpected error: {type(e).__name__}: {e}")
+    except Exception as ee:
+      logger.error(f"{client_ip}:{client_port} Unexpected error: {type(ee).__name__}: {ee}")
     finally:
       # Cleanup: ensure both sockets are closed and lock is released
       if logger_sock:
