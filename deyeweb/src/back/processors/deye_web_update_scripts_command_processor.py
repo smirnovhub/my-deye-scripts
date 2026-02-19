@@ -50,6 +50,7 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
       DeyeWebUtils.file_truncate(cache_file_path)
 
       holder = DeyeRegistersHolder(name = 'deyeweb', loggers = self.loggers.loggers)
+
       try:
         holder.reset_cache()
       finally:

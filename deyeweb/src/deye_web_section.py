@@ -17,6 +17,10 @@ class DeyeWebSection(Enum):
   bms = 'BMS'
   service = 'Service'
 
+  # Needed to pass mypy checks
+  _title: str
+  _id: str
+
   @property
   def title(self) -> str:
     return self._title

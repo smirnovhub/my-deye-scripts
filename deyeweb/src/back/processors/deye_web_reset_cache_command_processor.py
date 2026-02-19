@@ -24,18 +24,22 @@ class DeyeWebResetCacheCommandProcessor(DeyeWebBaseCommandProcessor):
     cache_file_path = os.path.join(tempfile.gettempdir(), DeyeWebConstants.front_cache_file_name)
     DeyeWebUtils.file_truncate(cache_file_path)
 
-    holder = DeyeRegistersHolder(name = 'deyeweb', loggers = self.loggers.loggers)
-    try:
-      holder.reset_cache()
-    finally:
-      holder.disconnect()
-
     id = DeyeWebUtils.short(DeyeWebSection.service.title)
     result[id] = 'Cache has been reset. The page will now refresh to apply the changes.'
 
+    result['need_reload'] = 'true'
+
+    holder = DeyeRegistersHolder(name = 'deyeweb', loggers = self.loggers.loggers)
+
+    try:
+      holder.reset_cache()
+    except Exception as e:
+      result[id] = f'<p style="color: red;">{str(e)}</p>'
+      result['need_reload'] = 'false'
+    finally:
+      holder.disconnect()
+
     style_id = DeyeWebConstants.styles_template.format(command.name)
     result[style_id] = self.style_manager.generate_css()
-
-    result['need_reload'] = 'true'
 
     return result
