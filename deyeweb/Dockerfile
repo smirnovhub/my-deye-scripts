@@ -109,3 +109,73 @@ COPY demoserver/src/common/*.py $REPO_NAME/common/
 
 # Set proper permissions for Apache
 RUN chown -R www-data:www-data $REPO_NAME
+
+########№№№#######
+### backserver ###
+##########№№№#####
+
+FROM python:3.14-slim AS backserver
+
+ENV SERVER_PORT=80
+
+# Set remote repository name
+ARG REPO_NAME=my-deye-scripts
+
+# Set remote branch name
+ARG BRANCH=master
+
+# Set username variable
+ARG USER_NAME=backserver
+
+# Set application directory variable
+ARG APP_DIR=/home/$USER_NAME
+
+# Set the correct time zone according to your actual location.
+# Otherwise, the local time will be incorrect!
+ENV TIMEZONE=Europe/Kyiv
+
+# Install system dependencies: Python, pip, and other tools
+RUN apt-get update && \
+  apt-get upgrade -y && \
+  apt-get install -y --no-install-recommends \
+  git && \
+  apt-get autoremove -y && \
+  apt-get clean -y && \
+  rm -rf /var/lib/apt/lists/* && \
+  ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
+  echo $TIMEZONE > /etc/timezone
+
+# Install required Python packages
+RUN pip install --no-cache-dir --break-system-packages six requests fastapi uvicorn
+
+# Create user without password, with home directory
+RUN useradd -m -u 5757 -s /usr/sbin/nologin $USER_NAME
+
+# Switch to non-root user
+USER $USER_NAME
+
+# Set working directory
+WORKDIR $APP_DIR
+
+# Clone the project and initialize submodules
+RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
+  cd $REPO_NAME && \
+  git submodule update --init --recursive
+
+# Copy pre-configured configs to container
+COPY --chown=$USER_NAME:$USER_NAME common/*.py $REPO_NAME/common/
+
+# Expose proxy port
+EXPOSE $SERVER_PORT
+
+# Set working directory
+WORKDIR $APP_DIR/$REPO_NAME/deyeweb
+
+# Adding 'exec' allows signals to be passed directly to Uvicorn
+CMD exec uvicorn backserver:app \
+  --host 0.0.0.0 \
+  --port ${SERVER_PORT} \
+  --log-config src/backserver/log_config.json \
+  --no-proxy-headers \
+  --forwarded-allow-ips="" \
+  --no-use-colors
