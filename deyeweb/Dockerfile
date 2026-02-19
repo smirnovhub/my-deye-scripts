@@ -110,11 +110,11 @@ COPY demoserver/src/common/*.py $REPO_NAME/common/
 # Set proper permissions for Apache
 RUN chown -R www-data:www-data $REPO_NAME
 
-########№№№#######
-### backserver ###
-##########№№№#####
+######################
+### deyebackserver ###
+######################
 
-FROM python:3.14-slim AS backserver
+FROM python:3.14-slim AS deyebackserver
 
 ENV SERVER_PORT=80
 
