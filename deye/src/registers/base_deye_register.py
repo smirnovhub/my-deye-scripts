@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from deye_utils import DeyeUtils
 from deye_base_enum import DeyeBaseEnum
+from deye_exceptions import DeyeValueException
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
@@ -45,8 +46,18 @@ class BaseDeyeRegister(DeyeRegister):
       return self._value
 
     if self._avg == DeyeRegisterAverageType.fake_accumulate:
-      self._value = self.read_from_master_interactor(interactors)
-      self._value *= len(interactors)
+      value = self.read_from_master_interactor(interactors)
+
+      # Check if the value is a number before multiplication
+      if isinstance(value, (int, float)):
+        value *= len(interactors)
+      else:
+        # Handle the error if the type is unexpected
+        class_name = self.__class__.__name__
+        raise DeyeValueException(f"{class_name}: you can use {self._avg.name} only for "
+                                 f"numeric registers, but got {type(value).__name__}")
+
+      self._value = value
       return self._value
 
     if self._avg == DeyeRegisterAverageType.accumulate:
