@@ -268,6 +268,19 @@ class DeyeUtils:
     os.environ['TEST_RUN'] = 'true'
 
   @staticmethod
+  def is_remote_cache_on() -> bool:
+    return os.getenv('REMOTE_CACHE', '').strip().lower() == 'true'
+
+  @staticmethod
+  def turn_remote_cache_on(server: str):
+    os.environ['REMOTE_CACHE'] = 'true'
+    os.environ['REMOTE_CACHE_SERVER'] = server
+
+  @staticmethod
+  def get_remote_cache_server() -> str:
+    return os.getenv('REMOTE_CACHE_SERVER', '')
+
+  @staticmethod
   def get_test_retry_timeout() -> int:
     from deye_loggers import DeyeLoggers
     loggers = DeyeLoggers()

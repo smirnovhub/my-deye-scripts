@@ -223,7 +223,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       self._test2_register,
     ]
 
-    if loggers.cache_server_endpoint:
+    if loggers.remote_cache_server:
       for register in self._all_registers:
         if register.can_write and register.name != self.inverter_system_time_register.name:
           # Very long caching time for writable registers to minimize requests to loggers.

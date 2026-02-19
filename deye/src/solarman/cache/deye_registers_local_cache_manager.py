@@ -15,7 +15,7 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
   def __init__(self, name: str, verbose = False):
     super().__init__(name, verbose)
     cache_path = DeyeFileLock.lock_path
-    self._cache_filename = os.path.join(cache_path, f"registers-{self.name}.json")
+    self._cache_filename = os.path.join(cache_path, f"registers-{self._name}.json")
     self._active_file: Optional[IO[Any]] = None
 
     # Ensure cache directory exists
@@ -23,8 +23,8 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
     # Ensure cache file exists
     DeyeUtils.ensure_file_exists(self._cache_filename, mode = 0o666)
 
-    if self.verbose:
-      print(f"{self.name} {self.__class__.__name__} initialized")
+    if self._verbose:
+      print(f"{self._name} {self.__class__.__name__} initialized")
 
   @contextmanager
   def _shared_lock_context(self):
@@ -96,3 +96,14 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
 
     # Flush to physical storage
     f.flush()
+
+  def _is_cache_available(self) -> bool:
+    """
+    Check if the cache is available.
+
+    This method verifies whether the cache is currently available for use.
+
+    Returns:
+      bool: True if cache is available for use or False if not available
+    """
+    return True

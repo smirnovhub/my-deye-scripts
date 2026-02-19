@@ -21,14 +21,15 @@ class DeyeModbusInteractor:
     self.max_register_count = 120
 
     # Initialize cache manager
-    if self.loggers.cache_server_endpoint:
-      self.cache_manager: DeyeRegistersBaseCacheManager = DeyeRegistersRemoteCacheManager(
+    self.cache_manager: DeyeRegistersBaseCacheManager
+    if self.loggers.remote_cache_server:
+      self.cache_manager = DeyeRegistersRemoteCacheManager(
         name = self.logger.name,
-        cache_server_endpoint = self.loggers.cache_server_endpoint,
+        remote_cache_server = self.loggers.remote_cache_server,
         verbose = self.verbose,
       )
     else:
-      self.cache_manager: DeyeRegistersBaseCacheManager = DeyeRegistersLocalCacheManager(
+      self.cache_manager = DeyeRegistersLocalCacheManager(
         name = self.logger.name,
         verbose = self.verbose,
       )

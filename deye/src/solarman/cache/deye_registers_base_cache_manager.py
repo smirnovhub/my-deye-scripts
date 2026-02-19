@@ -1,3 +1,4 @@
+import re
 import json
 import time
 
@@ -14,14 +15,18 @@ from deye_register_cache_data import DeyeRegisterCacheData
 # ------------------------------------
 class DeyeRegistersBaseCacheManager(ABC):
   def __init__(self, name: str, verbose = False):
-    self.name = name
-    self.verbose = verbose
+    self._name = re.sub(r'[^a-zA-Z0-9_-]+', '-', name).strip('-')
+    self._verbose = verbose
+    self._cache_available = False
 
   def get_cached_registers(
     self,
     registers_to_check: Dict[int, DeyeRegisterCacheData],
   ) -> Dict[int, DeyeRegisterCacheData]:
-    if self.verbose:
+    if not self._cache_available:
+      self._cache_available = self._is_cache_available()
+
+    if self._verbose:
       start_time = time.perf_counter()
 
     results: Dict[int, DeyeRegisterCacheData] = {}
@@ -37,13 +42,14 @@ class DeyeRegistersBaseCacheManager(ABC):
       try:
         cache_content = json.loads(content)
       except (json.JSONDecodeError, ValueError) as e:
-        raise DeyeCacheException(f"{self.name}: cache json parse error after get: {e}") from e
+        raise DeyeCacheException(f"{self._name}: cache json parse error after get: {e}") from e
 
       current_time = int(time.time())
       cached_registry = cache_content.get("registers", {})
 
       # Iterate through the registers we are interested in
       for addr, reg in registers_to_check.items():
+        self._check_address_match(addr, reg.address)
         addr_str = str(addr)
         if addr_str in cached_registry:
           entry = cached_registry[addr_str]
@@ -58,13 +64,13 @@ class DeyeRegistersBaseCacheManager(ABC):
     except DeyeKnownException:
       raise
     except Exception as ee:
-      raise DeyeCacheException(f"{self.name}: cache read error: {ee}") from ee
+      raise DeyeCacheException(f"{self._name}: cache read error: {ee}") from ee
 
-    if self.verbose:
+    if self._verbose:
       end_time = time.perf_counter()
       duration_ms = (end_time - start_time) * 1000
-      if self.verbose:
-        print(f"{self.name} cache read took {duration_ms:.3f} ms")
+      if self._verbose:
+        print(f"{self._name} cache read took {duration_ms:.3f} ms")
 
     return results
 
@@ -75,13 +81,16 @@ class DeyeRegistersBaseCacheManager(ABC):
     if not registers_to_save:
       return
 
-    if self.verbose:
+    if not self._cache_available:
+      self._cache_available = self._is_cache_available()
+
+    if self._verbose:
       start_time = time.perf_counter()
 
-    with self._exclusive_lock_context():
-      try:
+    try:
+      with self._exclusive_lock_context():
         cache_content: Dict[str, Any] = {
-          "inverter": self.name,
+          "inverter": self._name,
           "registers": {},
         }
 
@@ -90,12 +99,13 @@ class DeyeRegistersBaseCacheManager(ABC):
           try:
             cache_content = json.loads(content)
           except (json.JSONDecodeError, ValueError) as e:
-            raise DeyeCacheException(f"{self.name}: cache json parse error after read: {e}") from e
+            raise DeyeCacheException(f"{self._name}: cache json parse error after read: {e}") from e
 
         current_time = int(time.time())
 
         # Now iterating over dictionary items
         for addr, reg in registers_to_save.items():
+          self._check_address_match(addr, reg.address)
           # Store using the address as a string key for JSON compatibility
           cache_content["registers"][str(addr)] = {
             "time": current_time,
@@ -108,25 +118,56 @@ class DeyeRegistersBaseCacheManager(ABC):
         )
 
         self._save_json(json_string)
-      except DeyeKnownException:
-        raise
-      except Exception as ee:
-        raise DeyeCacheException(f"{self.name}: cache write error: {ee}") from ee
+    except DeyeKnownException:
+      raise
+    except Exception as ee:
+      raise DeyeCacheException(f"{self._name}: cache write error: {ee}") from ee
 
-    if self.verbose:
+    if self._verbose:
       end_time = time.perf_counter()
       duration_ms = (end_time - start_time) * 1000
-      if self.verbose:
-        print(f"{self.name} cache save took {duration_ms:.3f} ms")
+      if self._verbose:
+        print(f"{self._name} cache save took {duration_ms:.3f} ms")
 
   def reset_cache(self) -> None:
-    with self._exclusive_lock_context():
-      try:
+    if not self._cache_available:
+      self._cache_available = self._is_cache_available()
+
+    try:
+      with self._exclusive_lock_context():
         self._reset()
-      except DeyeKnownException:
-        raise
-      except Exception as ee:
-        raise DeyeCacheException(f"{self.name}: cache reset error: {ee}") from ee
+    except DeyeKnownException:
+      raise
+    except Exception as ee:
+      raise DeyeCacheException(f"{self._name}: cache reset error: {ee}") from ee
+
+  def _check_address_match(self, key: int, address: int) -> None:
+    """
+    Validates that the dictionary key matches the register address.
+
+    Args:
+      key: The dictionary key to validate.
+      address: The register address to compare against.
+
+    Raises:
+      DeyeCacheException: If the key does not match the address, with a message
+        indicating the mismatch between the dictionary key and register address.
+    """
+    if key != address:
+      raise DeyeCacheException(f"{self._name}: register address mismatch - "
+                               f"dictionary key is {key}, but register address is {address}")
+
+  @abstractmethod
+  def _is_cache_available(self) -> bool:
+    """
+    Check if the cache is available.
+
+    This method verifies whether the cache is currently available for use.
+
+    Returns:
+      bool: True if cache is available for use or False if not available
+    """
+    pass
 
   @contextmanager
   def _shared_lock_context(self):

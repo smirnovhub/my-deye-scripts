@@ -1,7 +1,11 @@
 import json
 import requests
 
+from http import HTTPStatus
+from urllib.parse import urljoin, urlparse
+
 from deye_utils import DeyeUtils
+from deye_exceptions import DeyeCacheException
 from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
 
 # ---------------------------------------------------------------
@@ -11,18 +15,19 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
   def __init__(
     self,
     name: str,
-    cache_server_endpoint: str,
+    remote_cache_server: str,
     verbose = False,
   ):
     super().__init__(name, verbose)
-    self._cache_server_endpoint = cache_server_endpoint
+    self._remote_cache_server = remote_cache_server
     # Added inverter name to the endpoint path to match FastAPI routes
-    self._inverter_cache_endpoint = f"{cache_server_endpoint}/{name}"
+    self._inverter_cache_endpoint = urljoin(remote_cache_server, f"/cache/{self._name}")
+
     # Create a persistent session for connection pooling
     self._session = requests.Session()
 
-    if self.verbose:
-      print(f"{self.name} {self.__class__.__name__} initialized")
+    if self._verbose:
+      print(f"{self._name} {self.__class__.__name__} initialized")
 
   def _get_json(self) -> str:
     """
@@ -32,13 +37,18 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     try:
       # Reusing the connection via self._session
       response = self._session.get(self._inverter_cache_endpoint, timeout = 5)
+
+      # Treat 404 as an empty result (key is missing in the cache)
+      if response.status_code == HTTPStatus.NOT_FOUND:
+        return "{}"
+
       response.raise_for_status()
 
       # FastAPI returns a dict, we convert it back to string to satisfy base class
       return response.text
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(
-        e, f"{self.name}: error reading "
+        e, f"{self._name}: error reading "
         f"remote cache from {self._inverter_cache_endpoint}") from e
 
   def _read_json(self) -> str:
@@ -62,7 +72,7 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
       response.raise_for_status()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(
-        e, f"{self.name}: error writing remote cache "
+        e, f"{self._name}: error writing remote cache "
         f"to {self._inverter_cache_endpoint}") from e
 
   def _reset(self) -> None:
@@ -71,11 +81,32 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
       response = requests.delete(self._inverter_cache_endpoint, timeout = 5)
 
       # Check if the status code is 2xx
-      response.raise_for_status()
+      if response.status_code != HTTPStatus.NOT_FOUND:
+        response.raise_for_status()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(
-        e, f"{self.name}: error writing remote cache "
-        f"to {self._inverter_cache_endpoint}") from e
+        e, f"{self._name}: error resetting remote cache "
+        f"for {self._inverter_cache_endpoint}") from e
+
+  def _is_cache_available(self) -> bool:
+    """
+    Check if the remote cache server is available by sending a ping request.
+
+    Returns:
+      bool: True if cache is available for use
+
+    Raises:
+      DeyeCacheException: If the cache is not available.
+    """
+    try:
+      ping_endpoint = urljoin(self._remote_cache_server, "/ping")
+      response = self._session.get(ping_endpoint, timeout = 3)
+      response.raise_for_status()
+      return True
+    except Exception as e:
+      url = urlparse(self._remote_cache_server)
+      raise DeyeCacheException(f"{self._name}: remote cache server "
+                               f"{url.hostname} seems to be down") from e
 
   def close(self):
     """Properly close the session when done."""

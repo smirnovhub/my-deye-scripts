@@ -1,5 +1,7 @@
 from typing import List, Optional
 
+from deye_exceptions import DeyeCacheException
+
 class DeyeRegisterCacheData:
   """Container for register data and its caching metadata."""
   def __init__(
@@ -15,8 +17,8 @@ class DeyeRegisterCacheData:
     self._values = values if values else [0] * quantity
 
     if self._quantity != len(self._values):
-      raise ValueError(f"Quantity mismatch for register {address}: "
-                       f"expected {self._quantity}, but got {len(self._values)} values.")
+      raise DeyeCacheException(f"Quantity mismatch for register {address}: "
+                               f"expected {self._quantity}, but got {len(self._values)} values.")
 
   @property
   def address(self) -> int:
