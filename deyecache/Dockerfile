@@ -47,8 +47,11 @@ EXPOSE $SERVER_PORT
 # Set working directory
 WORKDIR $APP_DIR/deyecache
 
-CMD uvicorn deyecache:app \
+# Adding 'exec' allows signals to be passed directly to Uvicorn
+CMD exec uvicorn deyecache:app \
   --host 0.0.0.0 \
   --port ${SERVER_PORT} \
   --log-config log_config.json \
+  --no-proxy-headers \
+  --forwarded-allow-ips="" \
   --no-use-colors

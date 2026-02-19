@@ -15,6 +15,11 @@ from src.deyecache_config import DeyeCacheConfig
 # Define the lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+  """
+  Manage the lifespan of the FastAPI application.
+
+  This function handles startup and shutdown events for the Deye Cache service.
+  """
   logger = logging.getLogger("uvicorn.default")
 
   # This code runs on startup
@@ -28,7 +33,12 @@ async def lifespan(app: FastAPI):
   # This code runs on shutdown
   logger.info("DeyeCache service is shutting down...")
 
-app = FastAPI(lifespan = lifespan)
+app = FastAPI(
+  lifespan = lifespan,
+  docs_url = "/",
+  # This setting hides the "Schemas" section at the bottom
+  swagger_ui_parameters = {"defaultModelsExpandDepth": -1})
+
 config = DeyeCacheConfig()
 
 # In-memory storage for any JSON data
@@ -53,7 +63,17 @@ def deep_merge(source: Dict[str, Any], update: Dict[str, Any]) -> None:
 
 async def get_lock(key: str) -> asyncio.Lock:
   """
-  Ensures thread-safe access to the locks dictionary itself.
+  Asynchronously retrieves or creates a lock for a given key.
+
+  This function manages a dictionary of asyncio locks, ensuring thread-safe access
+  to lock creation and retrieval. If a lock for the specified key doesn't exist,
+  it creates a new one before returning it.
+
+  Args:
+    key (str): The identifier for the lock.
+
+  Returns:
+    asyncio.Lock: The lock object associated with the given key.
   """
   async with locks_lock:
     if key not in locks:
@@ -62,32 +82,55 @@ async def get_lock(key: str) -> asyncio.Lock:
 
 @app.get("/ping")
 def ping():
+  """
+  Health check endpoint that verifies the service is running
+  """
   return {"status": "success"}
 
 @app.get("/cache/{key}")
-async def get_cache(key: str):
+async def get_cache_by_key(key: str):
   """
-  Returns the full cached data for the specified key.
+  Returns cached data for the specified key
   """
-  return cache_storage.get(key, {})
+  data = cache_storage.get(key)
+  if data is None:
+    # Return 404 if the key was not found in the cache
+    raise HTTPException(status_code = 404, detail = f"Key not found")
+
+  return data
 
 @app.post("/cache/{key}")
-async def update_cache(key: str, json_data: Dict[str, Any], request: Request):
+async def update_cache_by_key(key: str, json_data: Dict[str, Any], request: Request):
   """
-  Updates the cache using a recursive deep merge.
-  Works with any nested JSON structure.
+  Updates the cache data for the specified key using a recursive deep merge.
+  Works with any nested JSON structure
   """
-  # Check for maximum number of keys limit
-  if key not in cache_storage and len(cache_storage) >= config.MAX_KEYS_COUNT:
-    raise HTTPException(status_code = 403, detail = "Maximum number of cache keys exceeded")
+  # Check for maximum JSON size limit by checking Content-Length header
+  content_length = request.headers.get("Content-Length")
+  if content_length:
+    if not content_length.isdigit():
+      raise HTTPException(status_code = 400, detail = "Invalid Content-Length header")
+    if int(content_length) > config.MAX_JSON_SIZE:
+      raise HTTPException(status_code = 413, detail = "JSON body size exceeded")
 
   # Check for maximum JSON size limit
   # Get raw body to calculate actual byte size accurately
   body = await request.body()
   if len(body) > config.MAX_JSON_SIZE:
-    raise HTTPException(status_code = 413, detail = "JSON body size exceeds limit")
+    raise HTTPException(status_code = 413, detail = "JSON body size exceeded")
 
-  lock = await get_lock(key)
+  async with locks_lock:
+    is_new_key = key not in cache_storage
+    if is_new_key and len(cache_storage) >= config.MAX_KEYS_COUNT:
+      raise HTTPException(status_code = 403, detail = "Maximum number of cache keys exceeded")
+
+    # Can't use get_lock() here, because we need to
+    # check keys and get new lock inssde locks_lock
+    if key not in locks:
+      locks[key] = asyncio.Lock()
+
+    lock = locks[key]
+
   async with lock:
     header = {
       "last_update_ts": int(time.time()),
@@ -95,49 +138,72 @@ async def update_cache(key: str, json_data: Dict[str, Any], request: Request):
       "last_update_by": request.client.host if request.client else "unknown",
     }
 
-    # Prepare a temporary copy to validate final size before applying changes
-    current_data = cache_storage.get(key, {}).copy()
+    current_data = cache_storage.get(key)
     if not current_data:
       current_data = header.copy()
 
-    # Perform a trial merge
+    current_data_json_str = json.dumps(current_data).encode("utf-8")
+    if len(current_data_json_str) > config.MAX_JSON_STORAGE_SIZE:
+      raise HTTPException(status_code = 413, detail = f"JSON storage size exceeded")
+
+    # Perform the recursive merge
     deep_merge(current_data, json_data)
     current_data.update(header)
 
-    # Validate total stored size for this specific key
-    # Convert back to JSON string to measure actual data size accurately
-    final_json_str = json.dumps(current_data)
-    if len(final_json_str) > config.MAX_JSON_STORAGE_SIZE:
-      raise HTTPException(status_code = 413, detail = f"JSON storage size exceeded")
-
-    # If all checks pass, update the real storage
     cache_storage[key] = current_data
 
   return {"status": "success"}
 
 @app.delete("/cache/{key}")
-async def reset_cache_item(key: str):
+async def reset_cache_by_key(key: str):
   """
-  Clears the cache for a specific key using a lock.
+  Clears the cache data for the specific key
   """
-  lock = await get_lock(key)
-  async with lock:
-    if key in cache_storage:
-      # Clear data for this specific resource
-      del cache_storage[key]
-      return {"status": "success"}
-    else:
+  async with locks_lock:
+    if key not in cache_storage:
       raise HTTPException(status_code = 404, detail = "Key not found")
+
+    # Getting key lock inside locks_lock
+    lock = locks[key]
+
+  async with lock:
+    del cache_storage[key]
+    return {"status": "success"}
 
 @app.delete("/cache")
 async def reset_all_cache():
   """
-  Global reset: clears all data and all locks.
+  Clears all cached data for all keys
   """
   async with locks_lock:
     cache_storage.clear()
-    locks.clear()
   return {"status": "success"}
+
+@app.get("/stat")
+async def get_cache_stat():
+  """
+  Get cache statistics
+  """
+  total_bytes = 0
+
+  for data in cache_storage.values():
+    # Calculate raw JSON size in bytes
+    entry_json = json.dumps(data).encode("utf-8")
+    total_bytes += len(entry_json)
+
+  # Max possible size if every key reached its limit
+  max_possible_bytes = config.MAX_KEYS_COUNT * config.MAX_JSON_STORAGE_SIZE
+
+  return {
+    "keys_used": len(cache_storage),
+    "keys_limit": config.MAX_KEYS_COUNT,
+    "bytes_used": total_bytes,
+    "bytes_limit": max_possible_bytes,
+    "usage_percent": {
+      "keys": round((len(cache_storage) / config.MAX_KEYS_COUNT) * 100),
+      "memory": round((total_bytes / max_possible_bytes) * 100),
+    },
+  }
 
 if __name__ == "__main__":
   config.print_usage()
@@ -155,5 +221,7 @@ if __name__ == "__main__":
     host = config.SERVER_HOST,
     port = config.SERVER_PORT,
     log_config = log_config,
+    proxy_headers = False,
+    forwarded_allow_ips = None,
     use_colors = False,
   )
