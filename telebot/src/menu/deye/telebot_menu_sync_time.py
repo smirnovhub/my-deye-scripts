@@ -52,10 +52,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomSingleRegisters(self.register, prefix),
-      **dict(
-        TelebotDeyeHelper.holder_kwargs,
-        caching_time = 15,
-      ),
+      **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
