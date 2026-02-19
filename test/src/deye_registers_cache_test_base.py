@@ -5,26 +5,7 @@ import random
 import logging
 import subprocess
 
-from pathlib import Path
 from typing import List
-
-base_path = '../..'
-current_path = Path(__file__).parent.resolve()
-modules_path = (current_path / base_path / 'modules').resolve()
-
-os.chdir(current_path)
-sys.path.append(str(modules_path))
-
-from common_modules import import_dirs
-
-import_dirs(
-  current_path,
-  [
-    'src',
-    os.path.join(base_path, 'deye/src'),
-    os.path.join(base_path, 'common'),
-  ],
-)
 
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
@@ -34,7 +15,7 @@ from solarman_test_server import SolarmanTestServer
 from deye_test_helper import DeyeRegisterRandomValue
 from deye_test_helper import DeyeTestHelper
 
-DeyeUtils.turn_tests_on()
+base_path = '../..'
 
 logging.basicConfig(
   level = logging.INFO,
@@ -132,75 +113,76 @@ def read_and_check(
     log.info(f"Register value {expected_value} not found for '{register.name}'")
     sys.exit(1)
 
-# ---- MAIN TEST LOGIC ----
-randoms: List[DeyeRegisterRandomValue] = []
+def main_test_logic():
+  # ---- MAIN TEST LOGIC ----
+  randoms: List[DeyeRegisterRandomValue] = []
 
-for register in registers.all_registers:
-  log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
+  for register in registers.all_registers:
+    log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
 
-  random_value = DeyeTestHelper.get_random_by_register_type(register, randoms)
-  if random_value is None:
-    log.info(f"Register '{register.name}' is skipped")
-    continue
+    random_value = DeyeTestHelper.get_random_by_register_type(register, randoms)
+    if random_value is None:
+      log.info(f"Register '{register.name}' is skipped")
+      continue
 
-  randoms.append(random_value)
+    randoms.append(random_value)
 
-  suffix = f' {register.suffix}'.rstrip()
-  log.info(f"Generated random value for register '{register.name}' is {random_value.value}{suffix}...")
+    suffix = f' {register.suffix}'.rstrip()
+    log.info(f"Generated random value for register '{register.name}' is {random_value.value}{suffix}...")
 
-  server.clear_registers_status()
-  if random_value.register.address > 0:
-    server.set_register_values(random_value.register.addresses, random_value.values)
+    server.clear_registers_status()
+    if random_value.register.address > 0:
+      server.set_register_values(random_value.register.addresses, random_value.values)
 
-register = registers.load_power_register
+  register = registers.load_power_register
 
-# 1. First read (no cache yet)
-value1 = 12345
-read_and_check(
-  register = register,
-  cache_time = 0,
-  expected_value = value1,
-  should_read_server = True,
-)
+  # 1. First read (no cache yet)
+  value1 = 12345
+  read_and_check(
+    register = register,
+    cache_time = 0,
+    expected_value = value1,
+    should_read_server = True,
+  )
 
-# 2. Second read (from cache)
-read_and_check(
-  register = register,
-  cache_time = 5,
-  expected_value = value1,
-  should_read_server = False,
-  delay_before = 1,
-)
+  # 2. Second read (from cache)
+  read_and_check(
+    register = register,
+    cache_time = 5,
+    expected_value = value1,
+    should_read_server = False,
+    delay_before = 1,
+  )
 
-# 3. Third read (still from cache)
-read_and_check(
-  register = register,
-  cache_time = 5,
-  expected_value = value1,
-  should_read_server = False,
-  delay_before = 1,
-)
+  # 3. Third read (still from cache)
+  read_and_check(
+    register = register,
+    cache_time = 5,
+    expected_value = value1,
+    should_read_server = False,
+    delay_before = 1,
+  )
 
-# 4. Cache expires → should read new value from server
-log.info('Waiting for cache expiration...')
+  # 4. Cache expires → should read new value from server
+  log.info('Waiting for cache expiration...')
 
-time.sleep(5)
+  time.sleep(5)
 
-value3 = 45678
-read_and_check(
-  register = register,
-  cache_time = 3,
-  expected_value = value3,
-  should_read_server = True,
-)
+  value3 = 45678
+  read_and_check(
+    register = register,
+    cache_time = 3,
+    expected_value = value3,
+    should_read_server = True,
+  )
 
-# 5. Next read (from cache again)
-read_and_check(
-  register = register,
-  cache_time = 10,
-  expected_value = value3,
-  should_read_server = False,
-  delay_before = 1,
-)
+  # 5. Next read (from cache again)
+  read_and_check(
+    register = register,
+    cache_time = 10,
+    expected_value = value3,
+    should_read_server = False,
+    delay_before = 1,
+  )
 
-log.info('Cache logic works properly. Test is ok')
+  log.info('Cache logic works properly. Test is ok')

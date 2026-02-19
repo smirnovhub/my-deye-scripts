@@ -144,7 +144,8 @@ def check_results(server: SolarmanTestServer, output: str, random_values: Dict[s
       log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
       continue
 
-    if register.avg_type == DeyeRegisterAverageType.only_master and server.name != loggers.master.name:
+    if (register.avg_type == DeyeRegisterAverageType.only_master
+        or register.avg_type == DeyeRegisterAverageType.fake_accumulate) and server.name != loggers.master.name:
       log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
       continue
 

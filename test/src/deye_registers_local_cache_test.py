@@ -1,0 +1,46 @@
+import os
+import sys
+import logging
+
+from pathlib import Path
+
+base_path = '../..'
+current_path = Path(__file__).parent.resolve()
+modules_path = (current_path / base_path / 'modules').resolve()
+
+os.chdir(current_path)
+sys.path.append(str(modules_path))
+
+from common_modules import import_dirs
+
+import_dirs(
+  current_path,
+  [
+    'src',
+    os.path.join(base_path, 'deye/src'),
+    os.path.join(base_path, 'common'),
+  ],
+)
+
+from deye_utils import DeyeUtils
+from deye_loggers import DeyeLoggers
+
+DeyeUtils.turn_tests_on()
+
+from deye_registers_cache_test_base import main_test_logic
+
+logging.basicConfig(
+  level = logging.INFO,
+  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  datefmt = DeyeUtils.time_format_str,
+)
+
+log = logging.getLogger()
+loggers = DeyeLoggers()
+
+if not loggers.is_test_loggers:
+  log.info('ERROR: your loggers are not test loggers')
+  sys.exit(1)
+
+if __name__ == '__main__':
+  main_test_logic()

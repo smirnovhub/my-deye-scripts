@@ -69,7 +69,11 @@ def run_tests(dirs: List[str]):
 
 dirs = [
   'common',
+  'demoserver',
   'deye',
+  'deyecache',
+  'deyeproxy',
+   'deyeweb',
   'telebot',
   'test',
 ]
