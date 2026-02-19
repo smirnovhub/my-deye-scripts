@@ -33,6 +33,7 @@
     "src/back/processors",
     "src/back/registers",
     "src/back/selections",
+    "src/backserver",
     "src/front",
     "src/front/custom",
     "src/front/info",
