@@ -18,6 +18,8 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     command: DeyeWebRemoteCommand,
     json_data: Any,
   ) -> Dict[str, str]:
+    # Will throw is there is no session id
+    session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
     register_name = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_register_name_field)
     register_value = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_register_value_field)
 
@@ -48,9 +50,7 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     result: Dict[str, str] = {}
     new_colors: Dict[str, DeyeWebColor] = {}
 
-    session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
     colors_calculator = DeyeWebColorsCalculator(self.sections_holder, session_id)
-
     colors = colors_calculator.load_colors()
 
     id = DeyeWebUtils.short(f'{self.loggers.master.name}_{register.name}')

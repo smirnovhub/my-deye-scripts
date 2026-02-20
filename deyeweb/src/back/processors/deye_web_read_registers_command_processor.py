@@ -19,6 +19,9 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     command: DeyeWebRemoteCommand,
     json_data: Any,
   ) -> Dict[str, str]:
+    # Will throw is there is no session id
+    session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
+
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       name = 'deyeweb',
@@ -69,7 +72,6 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
       selections = builder.build_selections(holder, register)
       result.update(selections)
 
-    session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
     colors_calculator = DeyeWebColorsCalculator(self.sections_holder, session_id)
 
     selection_colors = colors_calculator.get_sections_colors(colors)
