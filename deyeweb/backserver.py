@@ -76,6 +76,7 @@ def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
   return result
 
 @app.get("/back")
+@app.get("/back/")
 async def handle_front(request: Request):
   try:
     html = front_content_builder.get_front_html()
@@ -85,6 +86,7 @@ async def handle_front(request: Request):
     return HTMLResponse(content = html, status_code = 500)
 
 @app.post("/back")
+@app.post("/back/")
 async def handle_back(json_data: Dict[str, Any], request: Request):
   """
   Asynchronously handle backend requests
