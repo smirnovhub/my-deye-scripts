@@ -185,7 +185,8 @@ WORKDIR $APP_DIR/$REPO_NAME/deyeweb
 CMD exec uvicorn backserver:app \
   --host 0.0.0.0 \
   --port ${SERVER_PORT} \
-  --log-config src/backserver/log_config.json \
+  --timeout-keep-alive 15 \
   --no-proxy-headers \
   --forwarded-allow-ips="" \
+  --log-config src/backserver/log_config.json \
   --no-use-colors

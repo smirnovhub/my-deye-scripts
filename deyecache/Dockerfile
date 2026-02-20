@@ -51,7 +51,8 @@ WORKDIR $APP_DIR/deyecache
 CMD exec uvicorn deyecache:app \
   --host 0.0.0.0 \
   --port ${SERVER_PORT} \
-  --log-config log_config.json \
+  --timeout-keep-alive 15 \
   --no-proxy-headers \
   --forwarded-allow-ips="" \
+  --log-config log_config.json \
   --no-use-colors

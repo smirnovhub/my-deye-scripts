@@ -105,8 +105,9 @@ if __name__ == "__main__":
     app,
     host = config.SERVER_HOST,
     port = config.SERVER_PORT,
-    log_config = log_config,
+    timeout_keep_alive = 15,
     proxy_headers = False,
     forwarded_allow_ips = None,
+    log_config = log_config,
     use_colors = False,
   )
