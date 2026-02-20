@@ -10,6 +10,7 @@ from typing import Dict, Any
 
 from pathlib import Path
 from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
@@ -26,8 +27,9 @@ import_dirs(current_path, ['src', '../deye/src', '../common'])
 from backserver_config import BackServerConfig
 from deye_web_utils import DeyeWebUtils
 from deye_web_constants import DeyeWebConstants
-from deye_web_params_processor import DeyeWebParamsProcessor
 from deye_exceptions import DeyeKnownException
+from deye_web_params_processor import DeyeWebParamsProcessor
+from deye_web_front_content_builder import DeyeWebFrontContentBuilder
 
 # Define the lifespan context manager
 @asynccontextmanager
@@ -61,6 +63,7 @@ app.add_middleware(GZipMiddleware, minimum_size = 1024)
 lock = asyncio.Lock()
 config = BackServerConfig()
 processor = DeyeWebParamsProcessor()
+front_content_builder = DeyeWebFrontContentBuilder()
 
 def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
   result = {
@@ -71,6 +74,15 @@ def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
     result[DeyeWebConstants.result_callstack_field] = f'<pre>{callstack}</pre>'
 
   return result
+
+@app.get("/back")
+async def handle_front(request: Request):
+  try:
+    html = front_content_builder.get_front_html()
+    return HTMLResponse(content = html, status_code = 200)
+  except Exception as e:
+    html = f"<pre>{str(e)}\n{traceback.format_exc()}</pre>"
+    return HTMLResponse(content = html, status_code = 500)
 
 @app.post("/back")
 async def handle_back(json_data: Dict[str, Any], request: Request):

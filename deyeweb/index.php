@@ -35,30 +35,8 @@ if ($content == '') {
   $content = executeCommandAndUpdateCacheWithLock($cacheFileName, $command, true);
 }
 
-?>
-<!DOCTYPE html>
-<html>
+echo $content;
 
-<head>
-  <title>Deye Web</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <link href="css/style.css" rel="stylesheet" type="text/css">
-  <link href="css/spinner.css" rel="stylesheet" type="text/css">
-</head>
-
-<body style="background-color: #ffffff;">
-  <script src="js/script.js"></script>
-  <script src="js/JsHttpRequest.js"></script>
-
-  <?php
-  echo $content;
-  ?>
-
-</body>
-
-</html>
-
-<?php
 // Finalize the output buffer
 $rawOutput = ob_get_clean();
 $finalOutput = $rawOutput;
@@ -97,5 +75,3 @@ if ($isCached) {
     executeCommandAndUpdateCacheWithLock($cacheFileName, $command, false);
   }
 }
-
-?>

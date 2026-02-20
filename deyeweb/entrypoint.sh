@@ -14,20 +14,14 @@ case "${USE_APACHE_BACK_SERVER_PROXY}" in
         ;;
 esac
 
-CONFIG_PATH="/var/www/html/js/script.js"
-
-# Perform the replacement if the file exists
-if [ -f "$CONFIG_PATH" ]; then
-    # Replace the variable value using the environment variable.
-    # We use the variable directly from ENV.
-    # Use sed to find the variable and replace its value:
-    # [[:space:]]* matches zero or more spaces around the '=' sign
-    # [^;]* matches everything between '=' and ';' (the old value)
-    sed -i "s/use_apache_proxy_back_endpoint[[:space:]]*=[[:space:]]*[^;]*/use_apache_proxy_back_endpoint = ${USE_APACHE_BACK_SERVER_PROXY}/" "$CONFIG_PATH"
-    echo "Successfully updated $CONFIG_PATH"
+if [ "$USE_APACHE_BACK_SERVER_PROXY" = "true" ]; then
+    echo "Enabling Apache proxy configuration..."
+    # Create a symlink from conf-available to conf-enabled
+    a2enconf apache-proxy-settings
 else
-    echo "Error: $CONFIG_PATH not found!"
-    exit 1
+    echo "Disabling Apache proxy configuration..."
+    # Ensure it's disabled if the container was restarted with different ENV
+    a2disconf -f apache-proxy-settings || true
 fi
 
 # Execute the main container process

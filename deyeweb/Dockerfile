@@ -92,9 +92,6 @@ RUN sed -i 's|^Alias /icons/|#Alias /icons/|' /etc/apache2/mods-available/alias.
 # Copy proxy configuration
 COPY deyeweb/src/backserver/apache-proxy-settings.conf /etc/apache2/conf-available/apache-proxy-settings.conf
 
-# Enable the proxy configuration
-RUN a2enconf apache-proxy-settings
-
 # Copy and prepare the entrypoint script
 COPY deyeweb/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
