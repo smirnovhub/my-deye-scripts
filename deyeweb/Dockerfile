@@ -5,6 +5,8 @@ ARG REPO_NAME=my-deye-scripts
 ENV REPO_NAME=${REPO_NAME}
 # Set a default value for the backend URL (if backend used)
 ENV BACK_SERVER_URL=http://172.17.17.27/back
+# If true we will use apache proxy instead of regular php backend
+ENV USE_APACHE_BACK_SERVER_PROXY=false
 
 # Set remote branch name
 ARG BRANCH=master
@@ -93,11 +95,18 @@ COPY deyeweb/src/backserver/apache-proxy-settings.conf /etc/apache2/conf-availab
 # Enable the proxy configuration
 RUN a2enconf apache-proxy-settings
 
+# Copy and prepare the entrypoint script
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Apache runs on ports 80 and 443
 EXPOSE 80 443
 
-# The base image already has "CMD [apache2-foreground]"
-# so we don't need to redefine it unless we have custom startup logic
+# Use the script as entrypoint
+ENTRYPOINT ["entrypoint.sh"]
+
+# Re-declare the default command for php-apache images
+CMD ["apache2-foreground"]
 
 ###############
 ### deyeweb ###

@@ -1,3 +1,7 @@
+// Flag to determine whether to use Apache proxy for backend endpoint
+// IF RENAME, DO NOT FORGET TO CHANGE entrypoint.sh ACCORDINGLY!
+const use_apache_proxy_back_endpoint = false;
+
 const pageUpdateInterval = 7500;
 const lastButtonName = 'last_button';
 
@@ -83,6 +87,10 @@ function onLoad() {
   updateScrollButtons();
 
   window.scrollTo(0, 0);
+}
+
+function get_back_endpoint() {
+  return use_apache_proxy_back_endpoint ? 'back' : 'back.php';
 }
 
 /**
@@ -238,7 +246,7 @@ async function update() {
 
   try {
     const result = await JsHttpRequest.query(
-      'back.php',
+      get_back_endpoint(),
       {
         'command': 'read_registers'
       }
@@ -279,7 +287,7 @@ async function write_register(
 
   try {
     const result = await JsHttpRequest.query(
-      'back.php',
+      get_back_endpoint(),
       {
         'command': 'write_register',
         'register_name': register_name,
@@ -308,7 +316,7 @@ async function sendCommand(command, field_id) {
 
   try {
     const result = await JsHttpRequest.query(
-      'back.php',
+      get_back_endpoint(),
       {
         'command': command
       }
