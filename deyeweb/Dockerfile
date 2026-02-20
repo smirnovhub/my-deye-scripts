@@ -3,6 +3,8 @@ FROM php:8.4-apache AS baseweb
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
 ENV REPO_NAME=${REPO_NAME}
+# Set a default value for the backend URL (if backend used)
+ENV BACK_SERVER_URL=http://172.17.17.27/back
 
 # Set remote branch name
 ARG BRANCH=master
@@ -62,7 +64,9 @@ RUN rm -rf /var/www/html && \
 # Enable Apache rewrite module (common for PHP apps)
 RUN a2enmod rewrite && \
   a2enmod ssl && \
-  a2enmod headers
+  a2enmod headers && \
+  a2enmod proxy && \
+  a2enmod proxy_http
 
 # Generate a self-signed certificate
 # -nodes means "no DES" (don't encrypt the private key with a password)
@@ -82,6 +86,12 @@ RUN sed -i 's|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/apache-self
 # Comment out the Alias /icons/ directive inside the alias module configuration
 # This frees up the /icons/ path for our own application
 RUN sed -i 's|^Alias /icons/|#Alias /icons/|' /etc/apache2/mods-available/alias.conf
+
+# Copy proxy configuration
+COPY deyeweb/src/backserver/apache-proxy-settings.conf /etc/apache2/conf-available/apache-proxy-settings.conf
+
+# Enable the proxy configuration
+RUN a2enconf apache-proxy-settings
 
 # Apache runs on ports 80 and 443
 EXPOSE 80 443
