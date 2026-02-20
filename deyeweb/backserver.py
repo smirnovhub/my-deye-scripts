@@ -11,6 +11,7 @@ from typing import Dict, Any
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 current_path = Path(__file__).parent.resolve()
@@ -55,6 +56,8 @@ app = FastAPI(
   docs_url = "/",
   # This setting hides the "Schemas" section at the bottom
   swagger_ui_parameters = {"defaultModelsExpandDepth": -1})
+
+app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
 lock = asyncio.Lock()
 config = BackServerConfig()

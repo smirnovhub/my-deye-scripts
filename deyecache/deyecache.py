@@ -10,6 +10,7 @@ from datetime import datetime
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.gzip import GZipMiddleware
 from src.deyecache_config import DeyeCacheConfig
 
 # Define the lifespan context manager
@@ -38,6 +39,8 @@ app = FastAPI(
   docs_url = "/",
   # This setting hides the "Schemas" section at the bottom
   swagger_ui_parameters = {"defaultModelsExpandDepth": -1})
+
+app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
 config = DeyeCacheConfig()
 
