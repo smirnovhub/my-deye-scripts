@@ -1,4 +1,5 @@
 import json
+import atexit
 import requests
 
 from http import HTTPStatus
@@ -12,6 +13,10 @@ from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
 # Class for caching register data remotely on JSON caching server
 # ---------------------------------------------------------------
 class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
+  # Create a persistent session for connection pooling
+  _session = requests.Session()
+  _atexit_registered = False
+
   def __init__(
     self,
     name: str,
@@ -23,8 +28,9 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     # Added inverter name to the endpoint path to match FastAPI routes
     self._inverter_cache_endpoint = urljoin(remote_cache_server, f"/cache/{self._name}")
 
-    # Create a persistent session for connection pooling
-    self._session = requests.Session()
+    if not type(self)._atexit_registered:
+      atexit.register(self._close_session)
+      type(self)._atexit_registered = True
 
     if self._verbose:
       print(f"{self._name} {self.__class__.__name__} initialized")
@@ -36,7 +42,7 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     """
     try:
       # Reusing the connection via self._session
-      response = self._session.get(self._inverter_cache_endpoint, timeout = 5)
+      response = type(self)._session.get(self._inverter_cache_endpoint, timeout = 5)
 
       # Treat 404 as an empty result (key is missing in the cache)
       if response.status_code == HTTPStatus.NOT_FOUND:
@@ -68,7 +74,7 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
       data = json.loads(json_string)
 
       # Send as JSON. requests will automatically set Content-Type: application/json
-      response = self._session.post(self._inverter_cache_endpoint, json = data, timeout = 5)
+      response = type(self)._session.post(self._inverter_cache_endpoint, json = data, timeout = 5)
       response.raise_for_status()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(
@@ -78,7 +84,7 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
   def _reset(self) -> None:
     try:
       # Clear all cached data for all inverters
-      response = requests.delete(self._inverter_cache_endpoint, timeout = 5)
+      response = type(self)._session.delete(self._inverter_cache_endpoint, timeout = 5)
 
       # Check if the status code is 2xx
       if response.status_code != HTTPStatus.NOT_FOUND:
@@ -100,7 +106,7 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     """
     try:
       ping_endpoint = urljoin(self._remote_cache_server, "/ping")
-      response = self._session.get(ping_endpoint, timeout = 3)
+      response = type(self)._session.get(ping_endpoint, timeout = 3)
       response.raise_for_status()
       return True
     except Exception as e:
@@ -108,6 +114,9 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
       raise DeyeCacheException(f"{self._name}: remote cache server "
                                f"{url.hostname} seems to be down") from e
 
-  def close(self):
+  def _close_session(self):
     """Properly close the session when done."""
-    self._session.close()
+    type(self)._session.close()
+
+    if self._verbose:
+      print(f"{self._name} {self.__class__.__name__} session closed")
