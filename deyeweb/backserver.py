@@ -9,7 +9,7 @@ import uvicorn
 from typing import Dict, Any
 
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
@@ -71,8 +71,15 @@ def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
   return result
 
 @app.post("/back")
-async def back(json_data: Dict[str, Any]):
+async def handle_back(json_data: Dict[str, Any], request: Request):
+  """
+  Asynchronously handle backend requests
+  """
   try:
+    session_id = request.cookies.get("PHPSESSID")
+    if session_id:
+      json_data['session_id'] = session_id
+
     async with lock:
       return processor.get_params(json_data)
   except DeyeKnownException as e:
