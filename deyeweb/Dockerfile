@@ -96,7 +96,7 @@ COPY deyeweb/src/backserver/apache-proxy-settings.conf /etc/apache2/conf-availab
 RUN a2enconf apache-proxy-settings
 
 # Copy and prepare the entrypoint script
-COPY entrypoint.sh /usr/local/bin/
+COPY deyeweb/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Apache runs on ports 80 and 443
