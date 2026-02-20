@@ -476,7 +476,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
     """
     # 1. Key with spaces and symbols
     # Requests will automatically URL-encode this to 'key%20with%20%24ymbols'
-    special_key = "key with $ymbols"
+    special_key = "key with $symbols"
     payload = {"data": "test"}
 
     resp_post = self.session.post(f"{CACHE_URL}/{special_key}", json = payload)
