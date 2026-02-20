@@ -14,7 +14,7 @@ case "${USE_APACHE_BACK_SERVER_PROXY}" in
         ;;
 esac
 
-SCRIPT_PATH="/var/www/html/js/script.js"
+CONFIG_PATH="/var/www/html/js/script.js"
 
 # Perform the replacement if the file exists
 if [ -f "$CONFIG_PATH" ]; then
