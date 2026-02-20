@@ -10,7 +10,6 @@ from typing import Dict, Any
 
 from pathlib import Path
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
@@ -86,12 +85,14 @@ async def handle_back(json_data: Dict[str, Any], request: Request):
     async with lock:
       return processor.get_params(json_data)
   except DeyeKnownException as e:
+    # A successful response with code 200 should be returned,
+    # because the client should process it in the normal way
     exception_str = DeyeWebUtils.get_tail(str(e).strip('"'), ':')
-    result = get_error_result(exception_str, traceback.format_exc())
-    return JSONResponse(status_code = 500, content = result)
+    return get_error_result(exception_str, traceback.format_exc())
   except Exception as ee:
-    result = get_error_result(str(ee), traceback.format_exc())
-    return JSONResponse(status_code = 500, content = result)
+    # A successful response with code 200 should be returned,
+    # because the client should process it in the normal way
+    return get_error_result(str(ee), traceback.format_exc())
 
 if __name__ == "__main__":
   config.print_usage()
