@@ -6,15 +6,11 @@ ob_start();
 require_once(__DIR__ . '/php/constants.php');
 require_once(__DIR__ . '/php/utils.php');
 
-startSession();
-
 try {
   // Prepare JSON payload
   $json = file_get_contents('php://input');
   $jsonArray = parseAndValidateJson($json);
   $payload = prepareJsonPayload($jsonArray);
-
-  closeSession();
 
   $command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . '/back.py') . ' 2>&1';
 
@@ -52,8 +48,6 @@ try {
 } catch (Exception $e) {
   ob_clean();
   echo getErrorMessage($e->getMessage());
-} finally {
-  closeSession();
 }
 
 $rawOutput = ob_get_clean();

@@ -10,9 +10,6 @@ require_once(__DIR__ . '/php/utils.php');
 $cacheFileName = sys_get_temp_dir() . '/deyeweb_cache.txt';
 $command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . '/front.py') . ' 2>&1';
 
-startSession();
-closeSession();
-
 $content = '';
 $isCached = true;
 

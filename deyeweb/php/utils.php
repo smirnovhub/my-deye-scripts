@@ -5,37 +5,6 @@ require_once(__DIR__ . '/constants.php');
 class TimeoutException extends RuntimeException {}
 
 /**
- * Starts a PHP session with a custom lifetime.
- *
- * @param int $days Number of days for the session to live.
- */
-function startSession(int $days = 7): void
-{
-  // convert days to seconds
-  $lifetime = $days * 24 * 60 * 60;
-
-  // Set session lifetime
-  ini_set('session.gc_maxlifetime', $lifetime);
-  ini_set('session.cookie_lifetime', $lifetime);
-
-  // Start the session
-  session_start();
-}
-
-/**
- * Saves session data and closes the session to release the file lock.
- * This allows other concurrent AJAX requests to proceed while the
- * current script performs long-running operations (e.g., executing Python).
- * Note: Session data can still be read after this call, but not modified.
- *
- * @return void
- */
-function closeSession(): void
-{
-  session_write_close();
-}
-
-/**
  * Processes and validates the incoming JSON payload.
  *
  * Ensures the input is a valid JSON string, checks for structural 
@@ -334,6 +303,21 @@ function getFakeUuid(): string
 {
   // Generates a random-like UUID v4
   return strtoupper(vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(md5(uniqid()), 4)));
+}
+
+/**
+ * Generates a random hexadecimal string of a specified length.
+ * * @param int $length The desired length of the resulting string.
+ * @return string A random hex string.
+ */
+function getRandomString(int $length = 8): string
+{
+  // Each byte becomes 2 hex characters, so we need half as many bytes
+  // We use ceil() to ensure we have enough bytes for odd lengths
+  $bytes = random_bytes(ceil($length / 2));
+
+  // Convert to hex and trim to the exact requested length
+  return substr(bin2hex($bytes), 0, $length);
 }
 
 /**

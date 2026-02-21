@@ -85,6 +85,30 @@ function onLoad() {
   window.scrollTo(0, 0);
 }
 
+function getSessionId() {
+  var sessionId = localStorage.getItem('session_id');
+  if (!sessionId) {
+    sessionId = generateSessionId();
+    localStorage.setItem('session_id', sessionId);
+  }
+  return sessionId;
+}
+
+/**
+ * Generates a random session ID (hex string)
+ * @param {number} size - Number of bytes (16 bytes = 32 hex chars)
+ * @returns {string} - Randomly generated string
+ */
+function generateSessionId(size = 16) {
+  const uint8 = new Uint8Array(size);
+  window.crypto.getRandomValues(uint8);
+
+  // Convert bytes to hex string
+  return Array.from(uint8)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 /**
  * Creates a promise that resolves after a specified delay.
  * @param {number} ms - The delay in milliseconds
@@ -240,7 +264,8 @@ async function update() {
     const result = await JsHttpRequest.query(
       'back.php',
       {
-        'command': 'read_registers'
+        'command': 'read_registers',
+        'session_id': getSessionId(),
       }
     );
 
@@ -284,6 +309,7 @@ async function write_register(
         'command': 'write_register',
         'register_name': register_name,
         'register_value': register_value,
+        'session_id': getSessionId(),
       }
     );
 
@@ -310,7 +336,8 @@ async function sendCommand(command, field_id) {
     const result = await JsHttpRequest.query(
       'back.php',
       {
-        'command': command
+        'command': command,
+        'session_id': getSessionId(),
       }
     );
 
