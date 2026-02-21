@@ -1,16 +1,5 @@
 # See .env file for additional parameters like BRANCH, etc.
 services:
-  telebot:
-    build:
-      context: .
-      dockerfile: telebot/Dockerfile
-      args:
-        - BRANCH=${APP_BRANCH}
-    image: telebot
-    container_name: telebot
-    hostname: telebot
-    restart: unless-stopped
-
   deyeweb:
     build:
       context: .
@@ -27,6 +16,68 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    restart: unless-stopped
+
+  deyebackserver:
+    build:
+      context: .
+      dockerfile: deyeweb/Dockerfile
+      target: deyebackserver
+      args:
+        - BRANCH=${APP_BRANCH}
+    environment:
+      - SERVER_PORT=80
+    image: deyebackserver
+    container_name: deyebackserver
+    hostname: deyebackserver
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  telebot:
+    build:
+      context: .
+      dockerfile: telebot/Dockerfile
+      args:
+        - BRANCH=${APP_BRANCH}
+    image: telebot
+    container_name: telebot
+    hostname: telebot
+    restart: unless-stopped
+
+  deyecache:
+    build:
+      context: .
+      dockerfile: deyecache/Dockerfile
+    environment:
+      - SERVER_PORT=80
+      - MAX_KEYS_COUNT=32
+      - MAX_JSON_SIZE=32768
+      - MAX_JSON_STORAGE_SIZE=262144
+    image: deyecache
+    container_name: deyecache
+    hostname: deyecache
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  deyeproxy:
+    build:
+      context: .
+      dockerfile: deyeproxy/Dockerfile
+    environment:
+      - LOGGER_HOST=192.168.1.101
+      - LOGGER_PORT=8899
+      - PROXY_PORT=8899
+      - MAX_CONCURRENT_CONNECTIONS=10
+      - CONNECT_TIMEOUT=5
+      - DATA_TIMEOUT=10
+      - LOG_LEVEL=INFO
+    image: deyeproxy
+    container_name: deyeproxy
+    hostname: deyeproxy
+    ports:
+      - "8899:8899"
     restart: unless-stopped
 
   demoweb:
@@ -60,55 +111,4 @@ services:
     ports:
       - "5000:5000"
       - "5001:5001"
-    restart: unless-stopped
-
-  deyeproxy:
-    build:
-      context: .
-      dockerfile: deyeproxy/Dockerfile
-    environment:
-      - LOGGER_HOST=192.168.1.101
-      - LOGGER_PORT=8899
-      - PROXY_PORT=8899
-      - MAX_CONCURRENT_CONNECTIONS=10
-      - CONNECT_TIMEOUT=5
-      - DATA_TIMEOUT=10
-      - LOG_LEVEL=INFO
-    image: deyeproxy
-    container_name: deyeproxy
-    hostname: deyeproxy
-    ports:
-      - "8899:8899"
-    restart: unless-stopped
-
-  deyecache:
-    build:
-      context: .
-      dockerfile: deyecache/Dockerfile
-    environment:
-      - SERVER_PORT=80
-      - MAX_KEYS_COUNT=32
-      - MAX_JSON_SIZE=32768
-      - MAX_JSON_STORAGE_SIZE=262144
-    image: deyecache
-    container_name: deyecache
-    hostname: deyecache
-    ports:
-      - "80:80"
-    restart: unless-stopped
-
-  deyebackserver:
-    build:
-      context: .
-      dockerfile: deyeweb/Dockerfile
-      target: deyebackserver
-      args:
-        - BRANCH=${APP_BRANCH}
-    environment:
-      - SERVER_PORT=80
-    image: deyebackserver
-    container_name: deyebackserver
-    hostname: deyebackserver
-    ports:
-      - "80:80"
     restart: unless-stopped
