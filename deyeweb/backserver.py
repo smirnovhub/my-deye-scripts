@@ -9,7 +9,7 @@ import uvicorn
 from typing import Dict, Any
 
 from pathlib import Path
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
@@ -62,8 +62,8 @@ app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
 lock = asyncio.Lock()
 config = BackServerConfig()
-processor = DeyeWebParamsProcessor()
 front_content_builder = DeyeWebFrontContentBuilder()
+back_processor = DeyeWebParamsProcessor()
 
 def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
   result = {
@@ -75,9 +75,12 @@ def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
 
   return result
 
-@app.get("/back")
-@app.get("/back/")
-async def handle_front(request: Request):
+@app.get("/front")
+@app.get("/front/")
+async def handle_front():
+  """
+  Handle frontend requests
+  """
   try:
     html = front_content_builder.get_front_html()
     return HTMLResponse(content = html, status_code = 200)
@@ -87,17 +90,13 @@ async def handle_front(request: Request):
 
 @app.post("/back")
 @app.post("/back/")
-async def handle_back(json_data: Dict[str, Any], request: Request):
+async def handle_back(json_data: Dict[str, Any]):
   """
-  Asynchronously handle backend requests
+  Handle backend requests
   """
   try:
-    session_id = request.cookies.get("PHPSESSID")
-    if session_id:
-      json_data['session_id'] = session_id
-
     async with lock:
-      return processor.get_params(json_data)
+      return back_processor.get_params(json_data)
   except DeyeKnownException as e:
     # A successful response with code 200 should be returned,
     # because the client should process it in the normal way

@@ -4,9 +4,9 @@ FROM php:8.4-apache AS baseweb
 ARG REPO_NAME=my-deye-scripts
 ENV REPO_NAME=${REPO_NAME}
 # Set a default value for the backend URL (if backend used)
-ENV BACK_SERVER_URL=http://172.17.17.27/back
+ENV BACK_SERVER_URL=http://172.17.17.27
 # If true we will use apache proxy instead of regular php backend
-ENV USE_APACHE_BACK_SERVER_PROXY=false
+ENV USE_BACK_SERVER=false
 
 # Set remote branch name
 ARG BRANCH=master

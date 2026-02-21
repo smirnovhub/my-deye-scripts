@@ -3,18 +3,18 @@
 set -e
 
 # Validate that the variable is strictly "true" or "false"
-case "${USE_APACHE_BACK_SERVER_PROXY}" in
+case "${USE_BACK_SERVER}" in
     "true"|"false")
-        echo "USE_APACHE_BACK_SERVER_PROXY is set to ${USE_APACHE_BACK_SERVER_PROXY}"
+        echo "USE_BACK_SERVER is set to ${USE_BACK_SERVER}"
         ;;
     *)
-        echo "Error: USE_APACHE_BACK_SERVER_PROXY must be exactly 'true' or 'false' (case-sensitive)."
-        echo "Current value: '${USE_APACHE_BACK_SERVER_PROXY}'"
+        echo "Error: USE_BACK_SERVER must be exactly 'true' or 'false' (case-sensitive)."
+        echo "Current value: '${USE_BACK_SERVER}'"
         exit 1
         ;;
 esac
 
-if [ "$USE_APACHE_BACK_SERVER_PROXY" = "true" ]; then
+if [ "$USE_BACK_SERVER" = "true" ]; then
     echo "Enabling Apache proxy configuration..."
     # Create a symlink from conf-available to conf-enabled
     a2enconf apache-proxy-settings

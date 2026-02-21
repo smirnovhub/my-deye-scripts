@@ -19,8 +19,8 @@ services:
       args:
         - BRANCH=${APP_BRANCH}
     environment:
-      - BACK_SERVER_URL=http://172.17.17.27/back
-      - USE_APACHE_BACK_SERVER_PROXY=false
+      - BACK_SERVER_URL=http://172.17.17.27
+      - USE_BACK_SERVER=false
     image: deyeweb
     container_name: deyeweb
     hostname: deyeweb
@@ -37,8 +37,8 @@ services:
       args:
         - BRANCH=${APP_BRANCH}
     environment:
-      - BACK_SERVER_URL=http://172.17.17.27/back
-      - USE_APACHE_BACK_SERVER_PROXY=false
+      - BACK_SERVER_URL=http://172.17.17.27
+      - USE_BACK_SERVER=false
     image: demoweb
     container_name: demoweb
     hostname: demoweb
