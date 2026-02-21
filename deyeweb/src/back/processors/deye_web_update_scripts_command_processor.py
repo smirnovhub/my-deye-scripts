@@ -68,7 +68,6 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
     text += '<br>Update completed. Please wait for page refresh to apply the changes...'
 
     result = get_result(text)
-
     result['need_reload'] = 'true'
 
     return result
