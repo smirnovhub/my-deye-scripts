@@ -64,7 +64,11 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
     pattern = r'\d+ files? changed.*'
     matches = re.findall(pattern, pull_result)
 
-    result = get_result("\n".join(matches))
+    text = "\n".join(matches)
+    text += '<br>Update completed. Please wait for page refresh to apply the changes...'
+
+    result = get_result(text)
+
     result['need_reload'] = 'true'
 
     return result
