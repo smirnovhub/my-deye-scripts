@@ -63,7 +63,7 @@ dependency_provider = DeyeWebDependencyProvider()
 @app.get("/front")
 async def handle_front_requests():
   builder = dependency_provider.front_builder
-  if builder is not None:
+  if builder:
     try:
       html = builder.get_front_html()
       return HTMLResponse(content = html, status_code = 200)
@@ -84,7 +84,7 @@ async def handle_front_requests():
 @app.post("/back")
 async def handle_back_requests(json_data: Dict[str, Any]):
   processor = dependency_provider.back_params_processor
-  if processor is None:
+  if not processor:
     return get_error_result("Params processor module not available")
 
   try:
@@ -107,7 +107,7 @@ async def handle_back_requests(json_data: Dict[str, Any]):
 
 def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
   constants = dependency_provider.constants
-  if constants is None:
+  if not constants:
     return {"error": f"Error: {message} (constants module not available)"}
 
   result = {

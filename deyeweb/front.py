@@ -21,7 +21,7 @@ dependency_provider = DeyeWebDependencyProvider()
 builder = dependency_provider.front_builder
 
 builder = dependency_provider.front_builder
-if builder is not None:
+if builder:
   try:
     html = builder.get_front_html()
     print(html)

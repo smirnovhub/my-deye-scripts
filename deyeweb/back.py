@@ -32,17 +32,17 @@ dependency_provider = DeyeWebDependencyProvider()
 
 def send_error_and_exit(message: str, callstack: str = '') -> None:
   constants = dependency_provider.constants
-  if constants is None:
-    result = {
-      "error": f"Error: {message} (constants module not available)",
-    }
-  else:
+  if constants:
     result = {
       constants.result_error_field: f'Error: {message}',
     }
 
     if callstack and constants.print_call_stack_on_exception:
       result[constants.result_callstack_field] = f'<pre>{callstack}</pre>'
+  else:
+    result = {
+      "error": f"Error: {message} (constants module not available)",
+    }
 
   print(json.dumps(result))
   sys.exit(1)
@@ -60,11 +60,12 @@ try:
 
   # Lazy load back params processor
   params_processor = dependency_provider.back_params_processor
-  if params_processor is None:
+  if params_processor:
+    result = params_processor.get_params(json_data)
+  else:
     all_errors = dependency_provider.get_all_errors()
     error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items())
     send_error_and_exit(f"Params processor module not available: {error_text}")
-  result = params_processor.get_params(json_data)
 except Exception as e:
   known_exception_class = dependency_provider.known_exception
   utils_class = dependency_provider.utils
