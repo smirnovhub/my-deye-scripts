@@ -55,6 +55,8 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
         holder.reset_cache()
       finally:
         holder.disconnect()
+
+      DeyeWebUtils.shutdown_with_delay()
     except Exception as e:
       err = str(e).replace(': ', ':<br>').replace('\n', '<br>')
       return get_result(f'<p style="color: red;">{err}</p>')

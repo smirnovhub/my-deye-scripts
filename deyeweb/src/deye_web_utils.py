@@ -1,5 +1,9 @@
 import gc
+import os
 import re
+import signal
+import threading
+import time
 import zlib
 import random
 import inspect
@@ -189,3 +193,22 @@ class DeyeWebUtils:
          Format: "sendCommand('<command_name>', '<id>');"
     """
     return f"sendCommand('{command.name}', '{id}');"
+
+  @staticmethod
+  def shutdown_with_delay(delay: int = 1) -> None:
+    """
+    Schedules a process termination after a specified delay.
+    
+    This method starts a background daemon thread that waits for 'delay' 
+    seconds and then sends a SIGTERM signal to the current process. 
+    It is typically used to allow a server to send a final confirmation 
+    response to a client before shutting down.
+
+    Args:
+        delay (int): Time in seconds to wait before termination.
+    """
+    def delayed_kill():
+      time.sleep(delay)
+      os.kill(os.getpid(), signal.SIGTERM)
+
+    threading.Thread(target = delayed_kill, daemon = True).start()
