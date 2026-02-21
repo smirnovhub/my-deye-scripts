@@ -15,10 +15,7 @@ from common_modules import import_dirs
 
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
-from deye_web_utils import DeyeWebUtils
-from deye_web_constants import DeyeWebConstants
-from deye_web_params_processor import DeyeWebParamsProcessor
-from deye_exceptions import DeyeKnownException
+from deye_web_dependency_provider import DeyeWebDependencyProvider
 
 #import logging
 #from deye_utils import DeyeUtils
@@ -31,16 +28,26 @@ from deye_exceptions import DeyeKnownException
 #  datefmt = DeyeUtils.time_format_str,
 #)
 
-def send_error_and_exit(message: str, callstack: str = '') -> None:
-  result = {
-    DeyeWebConstants.result_error_field: f'Error: {message}',
-  }
+dependency_provider = DeyeWebDependencyProvider()
 
-  if callstack and DeyeWebConstants.print_call_stack_on_exception:
-    result[DeyeWebConstants.result_callstack_field] = f'<pre>{callstack}</pre>'
+def send_error_and_exit(message: str, callstack: str = '') -> None:
+  constants = dependency_provider.constants
+  if constants is None:
+    result = {
+      "error": f"Error: {message} (constants module not available)",
+    }
+  else:
+    result = {
+      constants.result_error_field: f'Error: {message}',
+    }
+
+    if callstack and constants.print_call_stack_on_exception:
+      result[constants.result_callstack_field] = f'<pre>{callstack}</pre>'
 
   print(json.dumps(result))
   sys.exit(1)
+
+dependency_provider = DeyeWebDependencyProvider()
 
 try:
   # Read json from php
@@ -51,13 +58,24 @@ try:
 
   json_data = json.loads(raw)
 
-  processor = DeyeWebParamsProcessor()
-  result = processor.get_params(json_data)
-except DeyeKnownException as e:
-  exception_str = DeyeWebUtils.get_tail(str(e).strip('"'), ':')
-  send_error_and_exit(exception_str, traceback.format_exc())
-except Exception as ee:
-  send_error_and_exit(str(ee), traceback.format_exc())
+  # Lazy load back params processor
+  params_processor = dependency_provider.back_params_processor
+  if params_processor is None:
+    all_errors = dependency_provider.get_all_errors()
+    error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items())
+    send_error_and_exit(f"Params processor module not available: {error_text}")
+  result = params_processor.get_params(json_data)
+except Exception as e:
+  known_exception_class = dependency_provider.known_exception
+  utils_class = dependency_provider.utils
+
+  # Handle known exception safely (without crashing if class not loaded)
+  if known_exception_class and isinstance(known_exception_class, type) and isinstance(
+      e, known_exception_class) and utils_class:
+    exception_str = utils_class.get_tail(str(e).strip('"'), ':')
+    send_error_and_exit(exception_str, traceback.format_exc())
+  else:
+    send_error_and_exit(str(e), traceback.format_exc())
 
 # Convert result to JSON string
 json_str = json.dumps(result)

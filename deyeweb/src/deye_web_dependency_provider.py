@@ -10,7 +10,7 @@ if TYPE_CHECKING:
   from deye_web_utils import DeyeWebUtils
   from deye_exceptions import DeyeKnownException
 
-class BackserverDependencyProvider:
+class DeyeWebDependencyProvider:
   """
   Lazy loader for dependencies that may fail to import at runtime.
   Thread-safe and stores import/initialization errors.
@@ -118,15 +118,17 @@ class BackserverDependencyProvider:
         self._known_exception_error = f"{str(e)}\n{traceback.format_exc()}"
         return None
 
-  def get_all_errors(self) -> Dict[str, Optional[str]]:
+  def get_all_errors(self) -> Dict[str, str]:
     """
     Return a dictionary of all import/initialization errors.
     Keys are dependency names, values are error messages or fallback.
     """
-    return {
+    errors = {
       "front_builder": self._front_builder_error,
       "params_processor": self._back_params_processor_error,
       "constants": self._constants_error,
       "utils": self._utils_error,
       "known_exception": self._known_exception_error,
     }
+
+    return {name: err for name, err in errors.items() if err is not None}

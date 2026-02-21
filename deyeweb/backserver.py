@@ -25,7 +25,7 @@ from common_modules import import_dirs
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 from backserver_config import BackServerConfig
-from backserver_dependency_provider import BackserverDependencyProvider
+from deye_web_dependency_provider import DeyeWebDependencyProvider
 
 # Define the lifespan context manager
 @asynccontextmanager
@@ -58,27 +58,28 @@ app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
 lock = asyncio.Lock()
 config = BackServerConfig()
-dependency_provider = BackserverDependencyProvider()
+dependency_provider = DeyeWebDependencyProvider()
 
 @app.get("/front")
 async def handle_front_requests():
   builder = dependency_provider.front_builder
-  if builder is None:
-    # Get all errors as a formatted string
-    all_errors = dependency_provider.get_all_errors()
-    error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items() if err is not None)
-    return HTMLResponse(
-      content = f"<h1>Frontend Error</h1><pre>{error_text}</pre>",
-      status_code = 500,
-    )
-  try:
-    html = builder.get_front_html()
-    return HTMLResponse(content = html, status_code = 200)
-  except Exception as e:
-    return HTMLResponse(
-      content = f"<h1>Frontend Error</h1><pre>{str(e)}\n{traceback.format_exc()}</pre>",
-      status_code = 500,
-    )
+  if builder is not None:
+    try:
+      html = builder.get_front_html()
+      return HTMLResponse(content = html, status_code = 200)
+    except Exception as e:
+      return HTMLResponse(
+        content = f"<h1>Frontend Error</h1><pre>{str(e)}\n{traceback.format_exc()}</pre>",
+        status_code = 500,
+      )
+
+  # Get all errors as a formatted string
+  all_errors = dependency_provider.get_all_errors()
+  error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items())
+  return HTMLResponse(
+    content = f"<h1>Frontend Error</h1><pre>{error_text}</pre>",
+    status_code = 500,
+  )
 
 @app.post("/back")
 async def handle_back_requests(json_data: Dict[str, Any]):
@@ -90,14 +91,15 @@ async def handle_back_requests(json_data: Dict[str, Any]):
     async with lock:
       return processor.get_params(json_data)
   except Exception as e:
-    known_exc = dependency_provider.known_exception
-    utils = dependency_provider.utils
+    known_exception_class = dependency_provider.known_exception
+    utils_class = dependency_provider.utils
 
-    if known_exc and isinstance(known_exc, type) and isinstance(e, known_exc):
+    if known_exception_class and isinstance(known_exception_class, type) and isinstance(
+        e, known_exception_class) and utils_class:
       # Handle deye known exceptions
       exception_str = str(e)
-      if utils:
-        exception_str = utils.get_tail(exception_str.strip('"'), ':')
+      if utils_class:
+        exception_str = utils_class.get_tail(exception_str.strip('"'), ':')
       return get_error_result(exception_str, traceback.format_exc())
     else:
       # Handle all other exceptions
@@ -112,8 +114,8 @@ def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
     constants.result_error_field: f'Error: {message}',
   }
 
-  if callstack and getattr(constants, "print_call_stack_on_exception", False):
-    result[getattr(constants, "result_callstack_field", "callstack")] = f'<pre>{callstack}</pre>'
+  if callstack and constants.print_call_stack_on_exception:
+    result[constants.result_callstack_field] = f'<pre>{callstack}</pre>'
 
   return result
 

@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 
 from pathlib import Path
 
@@ -13,12 +14,24 @@ from common_modules import import_dirs
 
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
-from deye_web_front_content_builder import DeyeWebFrontContentBuilder
+from deye_web_dependency_provider import DeyeWebDependencyProvider
 
-front_content_builder = DeyeWebFrontContentBuilder()
-content = front_content_builder.get_front_html()
+dependency_provider = DeyeWebDependencyProvider()
 
-print(content)
+builder = dependency_provider.front_builder
+
+builder = dependency_provider.front_builder
+if builder is not None:
+  try:
+    html = builder.get_front_html()
+    print(html)
+  except Exception as e:
+    print(f"<h1>Frontend Error</h1><pre>{str(e)}\n{traceback.format_exc()}</pre>")
+else:
+  # Get all errors as a formatted string
+  all_errors = dependency_provider.get_all_errors()
+  error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items())
+  print(f"<h1>Frontend Error</h1><pre>{error_text}</pre>")
 
 #from deye_web_utils import DeyeWebUtils
 #with open("/tmp/front_classes_count.txt", "w", encoding = "utf-8") as f:
