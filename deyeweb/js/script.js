@@ -346,7 +346,7 @@ async function sendCommand(command, field_id) {
     // Reload current page if python sent 'need_reload' field:
     // result['need_reload'] = 'true'
     if (result && (result.need_reload === true || result.need_reload === 'true')) {
-      await delay(1500);
+      await delay(7000);
       sessionStorage.removeItem(lastButtonName);
       location.reload();
     }
