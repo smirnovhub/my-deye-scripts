@@ -346,8 +346,9 @@ async function sendCommand(command, field_id) {
     // Reload current page if python sent 'need_reload' field:
     // result['need_reload'] = 'true'
     if (result && (result.need_reload === true || result.need_reload === 'true')) {
-      await delay(7000);
       sessionStorage.removeItem(lastButtonName);
+      await delay(5000);
+      await waitUntilPageIsReachable(window.location.href, 15000);
       location.reload();
     }
   } catch (error) {
@@ -413,4 +414,47 @@ function isEmpty(value) {
  */
 function openInNewTab(url) {
   window.open(url, '_blank').focus();
+}
+
+/**
+ * Polls a given URL until it returns a 2xx status or the timeout is reached.
+ * @param {string} url - The URL to check for availability.
+ * @param {number} - Total maximum time to poll in milliseconds.
+ * @returns {Promise<void>} - Resolves when the page is reachable or the time expires.
+ */
+async function waitUntilPageIsReachable(url, waitTime) {
+  const startTime = Date.now();
+  const interval = 1500;
+  const timeoutMs = 500;
+
+  console.log(`Starting polling for: ${url}`);
+
+  while ((Date.now() - startTime) < waitTime) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        console.log(`Success: Received status ${response.status}`);
+        break;
+      } else {
+        console.log(`Received status ${response.status}. Retrying...`);
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.warn(`Request timed out after ${timeoutMs}ms`);
+      } else {
+        console.error('Network error or server unreachable. Retrying...', error);
+      }
+    }
+
+    await delay(interval);
+  }
 }
