@@ -25,11 +25,7 @@ from common_modules import import_dirs
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 from backserver_config import BackServerConfig
-from deye_web_utils import DeyeWebUtils
-from deye_web_constants import DeyeWebConstants
-from deye_exceptions import DeyeKnownException
-from deye_web_params_processor import DeyeWebParamsProcessor
-from deye_web_front_content_builder import DeyeWebFrontContentBuilder
+from backserver_dependency_provider import BackserverDependencyProvider
 
 # Define the lifespan context manager
 @asynccontextmanager
@@ -62,48 +58,64 @@ app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
 lock = asyncio.Lock()
 config = BackServerConfig()
-front_content_builder = DeyeWebFrontContentBuilder()
-back_processor = DeyeWebParamsProcessor()
-
-def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
-  result = {
-    DeyeWebConstants.result_error_field: f'Error: {message}',
-  }
-
-  if callstack and DeyeWebConstants.print_call_stack_on_exception:
-    result[DeyeWebConstants.result_callstack_field] = f'<pre>{callstack}</pre>'
-
-  return result
+dependency_provider = BackserverDependencyProvider()
 
 @app.get("/front")
-async def handle_front():
-  """
-  Handle frontend requests
-  """
+async def handle_front_requests():
+  builder = dependency_provider.front_builder
+  if builder is None:
+    # Get all errors as a formatted string
+    all_errors = dependency_provider.get_all_errors()
+    error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items() if err is not None)
+    return HTMLResponse(
+      content = f"<h1>Frontend Error</h1><pre>{error_text}</pre>",
+      status_code = 500,
+    )
   try:
-    html = front_content_builder.get_front_html()
+    html = builder.get_front_html()
     return HTMLResponse(content = html, status_code = 200)
   except Exception as e:
-    html = f"<pre>{str(e)}\n{traceback.format_exc()}</pre>"
-    return HTMLResponse(content = html, status_code = 500)
+    return HTMLResponse(
+      content = f"<h1>Frontend Error</h1><pre>{str(e)}\n{traceback.format_exc()}</pre>",
+      status_code = 500,
+    )
 
 @app.post("/back")
-async def handle_back(json_data: Dict[str, Any]):
-  """
-  Handle backend requests
-  """
+async def handle_back_requests(json_data: Dict[str, Any]):
+  processor = dependency_provider.back_params_processor
+  if processor is None:
+    return get_error_result("Params processor module not available")
+
   try:
     async with lock:
-      return back_processor.get_params(json_data)
-  except DeyeKnownException as e:
-    # A successful response with code 200 should be returned,
-    # because the client should process it in the normal way
-    exception_str = DeyeWebUtils.get_tail(str(e).strip('"'), ':')
-    return get_error_result(exception_str, traceback.format_exc())
-  except Exception as ee:
-    # A successful response with code 200 should be returned,
-    # because the client should process it in the normal way
-    return get_error_result(str(ee), traceback.format_exc())
+      return processor.get_params(json_data)
+  except Exception as e:
+    known_exc = dependency_provider.known_exception
+    utils = dependency_provider.utils
+
+    if known_exc and isinstance(known_exc, type) and isinstance(e, known_exc):
+      # Handle deye known exceptions
+      exception_str = str(e)
+      if utils:
+        exception_str = utils.get_tail(exception_str.strip('"'), ':')
+      return get_error_result(exception_str, traceback.format_exc())
+    else:
+      # Handle all other exceptions
+      return get_error_result(str(e), traceback.format_exc())
+
+def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
+  constants = dependency_provider.constants
+  if constants is None:
+    return {"error": f"Error: {message} (constants module not available)"}
+
+  result = {
+    constants.result_error_field: f'Error: {message}',
+  }
+
+  if callstack and getattr(constants, "print_call_stack_on_exception", False):
+    result[getattr(constants, "result_callstack_field", "callstack")] = f'<pre>{callstack}</pre>'
+
+  return result
 
 if __name__ == "__main__":
   config.print_usage()

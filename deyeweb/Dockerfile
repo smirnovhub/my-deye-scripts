@@ -102,7 +102,7 @@ EXPOSE 80 443
 # Use the script as entrypoint
 ENTRYPOINT ["entrypoint.sh"]
 
-# Re-declare the default command for php-apache images
+# Redeclare the default command for php-apache images
 CMD ["apache2-foreground"]
 
 ###############
