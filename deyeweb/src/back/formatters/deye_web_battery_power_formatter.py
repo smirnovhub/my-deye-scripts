@@ -45,18 +45,21 @@ class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
   ) -> str:
     value = self.get_formatted_value(register)
 
-    max_battery_power = holder.master_registers.time_of_use_power_register.value
-    max_battery_charge_current = holder.master_registers.battery_max_charge_current_register.value
-    max_battery_discharge_current = holder.master_registers.battery_max_discharge_current_register.value
-
-    registers = holder.all_registers[inverter]
-    battery_power = registers.battery_power_register.value
-    battery_current = registers.battery_current_register.value
-
     threshold = self.threshold1
+    registers = holder.all_registers[inverter]
 
     if registers.prefix == self.loggers.accumulated_registers_prefix:
       threshold *= self.loggers.count
+      settings_registers = holder.accumulated_registers
+    else:
+      settings_registers = holder.master_registers
+
+    max_battery_power = settings_registers.time_of_use_power_register.value
+    max_battery_charge_current = settings_registers.battery_max_charge_current_register.value
+    max_battery_discharge_current = settings_registers.battery_max_discharge_current_register.value
+
+    battery_power = registers.battery_power_register.value
+    battery_current = registers.battery_current_register.value
 
     if abs(register.value) >= threshold:
       percent = round(battery_current * 100 / max_battery_discharge_current)
