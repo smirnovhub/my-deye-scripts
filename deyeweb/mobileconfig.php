@@ -69,11 +69,14 @@ if (!file_exists($icon_file_name)) {
 // Read template content and icon
 $content = file_get_contents($config_template_file_name);
 $icon = getFileAsBase64Mime($icon_file_name);
+$siteName = getSiteName();
 
 // Replace placeholders
-$content = str_replace('TARGET_URL', getSiteName(), $content);
+$content = str_replace('TARGET_URL', $siteName, $content);
+$content = str_replace('PAYLOAD_ID', getRandomString(), $content);
 $content = str_replace('RANDOM_UUID_1', getFakeUuid(), $content);
 $content = str_replace('RANDOM_UUID_2', getFakeUuid(), $content);
+$content = str_replace('PAYLOAD_DISPLAY_NAME', 'Deye Web (' . $siteName . ')', $content);
 $content = str_replace('ICON_BASE64_DATA', trim($icon), $content);
 
 // Output result

@@ -10,7 +10,7 @@
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>PayloadIdentifier</key>
-            <string>com.my.webclip.web.deye</string>
+            <string>com.my.webclip.web.deye.PAYLOAD_ID</string>
             <key>PayloadUUID</key>
             <string>RANDOM_UUID_1</string>
             <key>PayloadDisplayName</key>
@@ -28,12 +28,12 @@ ICON_BASE64_DATA
     <key>PayloadType</key>
     <string>Configuration</string>
     <key>PayloadIdentifier</key>
-    <string>com.my.profile.webclip.web.deye</string>
+    <string>com.my.profile.webclip.web.deye.PAYLOAD_ID</string>
     <key>PayloadUUID</key>
     <string>RANDOM_UUID_2</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
     <key>PayloadDisplayName</key>
-    <string>Deye Web</string>
+    <string>PAYLOAD_DISPLAY_NAME</string>
 </dict>
 </plist>
