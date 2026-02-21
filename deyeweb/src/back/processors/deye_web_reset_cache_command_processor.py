@@ -25,7 +25,7 @@ class DeyeWebResetCacheCommandProcessor(DeyeWebBaseCommandProcessor):
     DeyeWebUtils.file_truncate(cache_file_path)
 
     id = DeyeWebUtils.short(DeyeWebSection.service.title)
-    result[id] = 'Cache has been reset. The page will now refresh to apply the changes.'
+    result[id] = 'Cache has been reset. Please wait for page refresh to apply the changes...'
 
     result['need_reload'] = 'true'
 
