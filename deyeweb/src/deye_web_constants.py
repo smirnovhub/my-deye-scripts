@@ -50,7 +50,7 @@ class DeyeWebConstants:
   result_error_field = 'error'
   result_callstack_field = 'callstack'
 
-  open_graphs_on_click = False
+  graphs_base_url = ''
 
   add_html_comments = False
   user_short_html_ids = True
