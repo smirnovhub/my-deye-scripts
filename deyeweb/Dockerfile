@@ -96,6 +96,9 @@ COPY deyeweb/src/backserver/apache-proxy-settings.conf /etc/apache2/conf-availab
 COPY deyeweb/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Set proper permissions for Apache
+RUN chown -R www-data:www-data $REPO_NAME
+
 # Apache runs on ports 80 and 443
 EXPOSE 80 443
 
@@ -111,9 +114,6 @@ CMD ["apache2-foreground"]
 
 FROM baseweb AS deyeweb
 
-# Set proper permissions for Apache
-RUN chown -R www-data:www-data $REPO_NAME
-
 ###############
 ### demoweb ###
 ###############
@@ -122,9 +122,6 @@ FROM baseweb AS demoweb
 
 # Copy demo server configs to container
 COPY demoserver/src/common/*.py $REPO_NAME/common/
-
-# Set proper permissions for Apache
-RUN chown -R www-data:www-data $REPO_NAME
 
 ######################
 ### deyebackserver ###
