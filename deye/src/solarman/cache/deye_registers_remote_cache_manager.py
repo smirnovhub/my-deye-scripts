@@ -20,13 +20,19 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
   def __init__(
     self,
     name: str,
+    serial: int,
     remote_cache_server: str,
     verbose = False,
   ):
-    super().__init__(name, verbose)
+    super().__init__(
+      name = name,
+      serial = serial,
+      verbose = verbose,
+    )
+
     self._remote_cache_server = remote_cache_server
     # Added inverter name to the endpoint path to match FastAPI routes
-    self._inverter_cache_endpoint = urljoin(remote_cache_server, f"/cache/{self._name}")
+    self._inverter_cache_endpoint = urljoin(remote_cache_server, f"/cache/{self._name}-{self._serial}")
 
     if not type(self)._atexit_registered:
       atexit.register(self._close_session)
@@ -34,6 +40,7 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
 
     if self._verbose:
       print(f"{self._name} {self.__class__.__name__} initialized")
+      print(f"Remote cache endpoint: {self._inverter_cache_endpoint}")
 
   def _get_json(self) -> str:
     """

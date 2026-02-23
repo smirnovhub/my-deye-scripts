@@ -15,8 +15,14 @@ from deye_register_cache_data import DeyeRegisterCacheData
 # Base class for caching register data
 # ------------------------------------
 class DeyeRegistersBaseCacheManager(ABC):
-  def __init__(self, name: str, verbose = False):
-    self._name = re.sub(r'[^a-zA-Z0-9_-]+', '-', name).strip('-')
+  def __init__(
+    self,
+    name: str,
+    serial: int,
+    verbose = False,
+  ):
+    self._name = re.sub(r'[^a-zA-Z0-9-]+', '-', name).strip('-')
+    self._serial = serial
     self._verbose = verbose
     self._cache_available = False
 
@@ -101,6 +107,7 @@ class DeyeRegistersBaseCacheManager(ABC):
       with self._exclusive_lock_context():
         cache_content: Dict[str, Any] = {
           "inverter": self._name,
+          "serial": self._serial,
           "registers": {},
         }
 

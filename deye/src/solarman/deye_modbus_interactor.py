@@ -25,12 +25,14 @@ class DeyeModbusInteractor:
     if self.loggers.remote_cache_server:
       self.cache_manager = DeyeRegistersRemoteCacheManager(
         name = self.logger.name,
+        serial = self.logger.serial,
         remote_cache_server = self.loggers.remote_cache_server,
         verbose = self.verbose,
       )
     else:
       self.cache_manager = DeyeRegistersLocalCacheManager(
         name = self.logger.name,
+        serial = self.logger.serial,
         verbose = self.verbose,
       )
 

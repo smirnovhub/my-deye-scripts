@@ -12,10 +12,20 @@ from lock_exceptions import DeyeLockNotHeldException
 # Class for caching register data locally in JSON files
 # -----------------------------------------------------
 class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
-  def __init__(self, name: str, verbose = False):
-    super().__init__(name, verbose)
+  def __init__(
+    self,
+    name: str,
+    serial: int,
+    verbose = False,
+  ):
+    super().__init__(
+      name = name,
+      serial = serial,
+      verbose = verbose,
+    )
+
     cache_path = DeyeFileLock.lock_path
-    self._cache_filename = os.path.join(cache_path, f"registers-{self._name}.json")
+    self._cache_filename = os.path.join(cache_path, f"registers-cache-{self._name}-{self._serial}.json")
     self._active_file: Optional[IO[Any]] = None
 
     # Ensure cache directory exists
@@ -25,6 +35,7 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
 
     if self._verbose:
       print(f"{self._name} {self.__class__.__name__} initialized")
+      print(f"Local cache file name: {self._cache_filename}")
 
   @contextmanager
   def _shared_lock_context(self):
