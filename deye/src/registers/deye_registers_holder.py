@@ -5,6 +5,7 @@ import logging
 from typing import Any, Callable, Dict, List, Optional
 
 from deye_utils import DeyeUtils
+from env_utils import EnvUtils
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
@@ -81,7 +82,7 @@ class DeyeRegistersHolder:
     locker.acquire()
 
     try:
-      if DeyeUtils.is_tests_on():
+      if EnvUtils.is_tests_on():
         retry_timeout = DeyeUtils.get_test_retry_timeout()
         self._read_registers_with_retry_internal(retry_timeout = retry_timeout, on_retry = log_retry)
       else:
@@ -161,7 +162,7 @@ class DeyeRegistersHolder:
     locker.acquire()
 
     try:
-      if DeyeUtils.is_tests_on():
+      if EnvUtils.is_tests_on():
         retry_timeout = DeyeUtils.get_test_retry_timeout()
         return self._write_register_with_retry_internal(
           register,

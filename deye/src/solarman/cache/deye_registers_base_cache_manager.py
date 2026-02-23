@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 
+from deye_utils import DeyeUtils
 from deye_exceptions import DeyeCacheException, DeyeKnownException
 from deye_register_cache_data import DeyeRegisterCacheData
 
@@ -53,14 +54,23 @@ class DeyeRegistersBaseCacheManager(ABC):
         addr_str = str(addr)
         if addr_str in cached_registry:
           entry = cached_registry[addr_str]
-          # Check if the cached data is still valid
-          if (current_time - entry.get("time", 0)) <= reg.caching_time:
-            results[addr] = DeyeRegisterCacheData(
-              address = reg.address,
-              quantity = reg.quantity,
-              caching_time = reg.caching_time,
-              values = entry.get("data", []),
-            )
+          cached_time = entry.get("time", 0)
+
+          # Check if the cached data is still valid by time duration
+          if (current_time - cached_time) > reg.caching_time:
+            continue
+
+          # Check if midnight was crossed since the last cache update
+          # Cache becomes invalid if a new day has started
+          if not DeyeUtils.is_same_day(cached_time, current_time):
+            continue
+
+          results[addr] = DeyeRegisterCacheData(
+            address = reg.address,
+            quantity = reg.quantity,
+            caching_time = reg.caching_time,
+            values = entry.get("data", []),
+          )
     except DeyeKnownException:
       raise
     except Exception as ee:

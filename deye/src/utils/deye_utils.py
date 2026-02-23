@@ -2,9 +2,12 @@ import os
 import re
 import queue
 import struct
+import sys
 import requests
 
-from typing import Union, List
+from pathlib import Path
+from typing import Optional, Union, List
+
 from datetime import datetime, timedelta
 from pysolarmanv5 import NoSocketAvailableError
 
@@ -17,6 +20,8 @@ from deye_exceptions import (
   DeyeUnknownException,
   DeyeValueException,
 )
+
+from env_utils import EnvUtils
 
 class DeyeUtils:
   time_format_str = '%Y-%m-%d %H:%M:%S'
@@ -260,27 +265,6 @@ class DeyeUtils:
     return match.group(0) if match else str(exc)
 
   @staticmethod
-  def is_tests_on() -> bool:
-    return os.getenv('TEST_RUN', '').strip().lower() == 'true'
-
-  @staticmethod
-  def turn_tests_on():
-    os.environ['TEST_RUN'] = 'true'
-
-  @staticmethod
-  def is_remote_cache_on() -> bool:
-    return os.getenv('REMOTE_CACHE', '').strip().lower() == 'true'
-
-  @staticmethod
-  def turn_remote_cache_on(server: str):
-    os.environ['REMOTE_CACHE'] = 'true'
-    os.environ['REMOTE_CACHE_SERVER'] = server
-
-  @staticmethod
-  def get_remote_cache_server() -> str:
-    return os.getenv('REMOTE_CACHE_SERVER', '')
-
-  @staticmethod
   def get_test_retry_timeout() -> int:
     from deye_loggers import DeyeLoggers
     loggers = DeyeLoggers()
@@ -288,4 +272,38 @@ class DeyeUtils:
 
   @staticmethod
   def get_current_time() -> datetime:
-    return datetime(2017, 7, 25, 15, 33, 14) if DeyeUtils.is_tests_on() else datetime.now()
+    return datetime(2017, 7, 25, 15, 33, 14) if EnvUtils.is_tests_on() else datetime.now()
+
+  @staticmethod
+  def is_same_day(ts1: float, ts2: float) -> bool:
+    """
+    Check if two Unix timestamps belong to the same calendar day in the system timezone.
+
+    Args:
+        ts1 (float): The first Unix timestamp in seconds.
+        ts2 (float): The second Unix timestamp in seconds.
+
+    Returns:
+        bool: True if both timestamps represent the same year, month, and day; 
+              False otherwise.
+    """
+    # Convert Unix timestamps to local datetime objects using system timezone
+    dt1 = datetime.fromtimestamp(ts1)
+    dt2 = datetime.fromtimestamp(ts2)
+
+    # Compare only the date component (year, month, day)
+    return dt1.date() == dt2.date()
+
+  @staticmethod
+  def find_file_in_sys_path(filename: str) -> Optional[str]:
+    """
+    Searches for a file across all directories in sys.path.
+    Returns the absolute path as a string if found, otherwise returns None.
+    """
+    for path_str in sys.path:
+      potential_path = Path(path_str) / filename
+      if potential_path.is_file():
+        # Convert Path object to absolute string path
+        return str(potential_path.resolve())
+
+    return None
