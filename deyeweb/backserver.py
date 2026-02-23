@@ -52,7 +52,8 @@ app = FastAPI(
   lifespan = lifespan,
   docs_url = "/",
   # This setting hides the "Schemas" section at the bottom
-  swagger_ui_parameters = {"defaultModelsExpandDepth": -1})
+  swagger_ui_parameters = {"defaultModelsExpandDepth": -1},
+)
 
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
@@ -60,7 +61,7 @@ lock = asyncio.Lock()
 config = BackServerConfig()
 dependency_provider = DeyeWebDependencyProvider()
 
-@app.get("/front")
+@app.get("/front", tags = ["Frontend Operations"])
 async def handle_front_requests():
   builder = dependency_provider.front_builder
   if builder:
@@ -81,7 +82,7 @@ async def handle_front_requests():
     status_code = 500,
   )
 
-@app.post("/back")
+@app.post("/back", tags = ["Backend Operations"])
 async def handle_back_requests(json_data: Dict[str, Any]):
   processor = dependency_provider.back_params_processor
   if not processor:
