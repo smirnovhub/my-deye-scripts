@@ -28,14 +28,15 @@ import_dirs(
 )
 
 from deyecache import app
+from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 
 cache_server_host = '127.0.0.1'
 cache_server_port = 5000
 
-DeyeUtils.turn_tests_on()
-DeyeUtils.turn_remote_cache_on(f'http://{cache_server_host}:{cache_server_port}/cache')
+EnvUtils.turn_tests_on()
+EnvUtils.turn_remote_cache_on(f'http://{cache_server_host}:{cache_server_port}/cache')
 
 from deye_registers_cache_test_base import main_test_logic
 

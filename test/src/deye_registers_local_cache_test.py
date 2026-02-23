@@ -22,10 +22,11 @@ import_dirs(
   ],
 )
 
+from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 
-DeyeUtils.turn_tests_on()
+EnvUtils.turn_tests_on()
 
 from deye_registers_cache_test_base import main_test_logic
 

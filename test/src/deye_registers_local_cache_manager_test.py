@@ -20,6 +20,7 @@ from common_modules import import_dirs
 import_dirs(
   current_path,
   [
+    os.path.join(base_path, 'common'),
     os.path.join(base_path, 'deye/src'),
   ],
 )

@@ -25,6 +25,7 @@ import_dirs(
   ],
 )
 
+from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
@@ -33,7 +34,7 @@ from deye_test_helper import DeyeTestHelper
 from deye_test_helper import DeyeRegisterRandomValue
 from deye_register_average_type import DeyeRegisterAverageType
 
-DeyeUtils.turn_tests_on()
+EnvUtils.turn_tests_on()
 
 logging.basicConfig(
   level = logging.INFO,
