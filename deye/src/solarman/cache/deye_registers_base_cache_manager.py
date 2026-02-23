@@ -22,7 +22,7 @@ class DeyeRegistersBaseCacheManager(ABC):
     verbose = False,
   ):
     self._name = re.sub(r'[^a-zA-Z0-9-]+', '-', name).strip('-')
-    self._serial = serial
+    self._serial = abs(serial)
     self._verbose = verbose
     self._cache_available = False
 
