@@ -29,13 +29,13 @@ import_dirs(current_path, ['src', '../deye/src', '../common'])
 import telebot
 
 from mytelebot import MyTelebot
-from deye_utils import DeyeUtils
+from env_utils import EnvUtils
 from common_utils import CommonUtils
 from testable_telebot import TestableTelebot
 from telebot_credentials import TelebotCredentials
 from telebot_send_message import send_private_telegram_message
 
-if DeyeUtils.is_tests_on():
+if EnvUtils.is_tests_on():
   token = os.getenv('BOT_API_TEST_TOKEN', '')
   bot = TestableTelebot(token)
   mybot = MyTelebot(bot)

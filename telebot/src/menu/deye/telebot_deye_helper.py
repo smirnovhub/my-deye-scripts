@@ -3,7 +3,7 @@ import telebot
 
 from typing import Dict, List, Optional, Set, Union
 
-from deye_utils import DeyeUtils
+from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
@@ -21,7 +21,7 @@ class TelebotDeyeHelper:
     'auto_reconnect': True,
   }
 
-  if DeyeUtils.is_tests_on():
+  if EnvUtils.is_tests_on():
     holder_kwargs = {
       'name': 'teletest',
       'socket_timeout': 1,
