@@ -38,7 +38,8 @@ app = FastAPI(
   lifespan = lifespan,
   docs_url = "/",
   # This setting hides the "Schemas" section at the bottom
-  swagger_ui_parameters = {"defaultModelsExpandDepth": -1})
+  swagger_ui_parameters = {"defaultModelsExpandDepth": -1},
+)
 
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
@@ -83,14 +84,14 @@ async def get_lock(key: str) -> asyncio.Lock:
       locks[key] = asyncio.Lock()
     return locks[key]
 
-@app.get("/ping")
+@app.get("/ping", tags = ["Server Health Operations"])
 def ping():
   """
   Health check endpoint that verifies the service is running
   """
   return {"status": "success"}
 
-@app.get("/cache/{key}")
+@app.get("/cache/{key}", tags = ["Cache Read Operations"])
 async def get_cache_by_key(key: str):
   """
   Returns cached data for the specified key
@@ -102,7 +103,7 @@ async def get_cache_by_key(key: str):
 
   return data
 
-@app.post("/cache/{key}")
+@app.post("/cache/{key}", tags = ["Cache Update Operations"])
 async def update_cache_by_key(key: str, json_data: Dict[str, Any], request: Request):
   """
   Updates the cache data for the specified key using a recursive deep merge.
@@ -157,10 +158,10 @@ async def update_cache_by_key(key: str, json_data: Dict[str, Any], request: Requ
 
   return {"status": "success"}
 
-@app.delete("/cache/{key}")
-async def reset_cache_by_key(key: str):
+@app.delete("/cache/{key}", tags = ["Cache Remove Operations"])
+async def remove_cache_by_key(key: str):
   """
-  Clears the cache data for the specific key
+  Remove the cache data for the specific key
   """
   async with locks_lock:
     if key not in cache_storage:
@@ -173,16 +174,16 @@ async def reset_cache_by_key(key: str):
     del cache_storage[key]
     return {"status": "success"}
 
-@app.delete("/cache")
-async def reset_all_cache():
+@app.delete("/cache", tags = ["Cache Remove Operations"])
+async def remove_all_cache():
   """
-  Clears all cached data for all keys
+  Remove all cached data for all keys
   """
   async with locks_lock:
     cache_storage.clear()
   return {"status": "success"}
 
-@app.get("/stat")
+@app.get("/stat", tags = ["Cache Statistics Operations"])
 async def get_cache_stat():
   """
   Get cache statistics
