@@ -36,7 +36,7 @@ from telebot_credentials import TelebotCredentials
 from telebot_send_message import send_private_telegram_message
 
 if EnvUtils.is_tests_on():
-  token = os.getenv('BOT_API_TEST_TOKEN', '')
+  token = EnvUtils.get_telegram_bot_api_test_token()
   bot = TestableTelebot(token)
   mybot = MyTelebot(bot)
   mybot.run_tests()
