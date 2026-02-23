@@ -16,6 +16,10 @@ class EnvUtils:
     return os.getenv('REMOTE_CACHE_SERVER', '').strip()
 
   @staticmethod
+  def get_telegram_bot_api_test_token() -> str:
+    return os.getenv('BOT_API_TEST_TOKEN', '').strip()
+
+  @staticmethod
   def is_tests_on() -> bool:
     value = os.getenv('IS_TEST_RUN', '').strip().lower()
     return value in ('true', 'yes')
