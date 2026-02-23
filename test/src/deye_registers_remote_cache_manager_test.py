@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import socket
 import sys
 import requests
@@ -36,12 +37,17 @@ from deye_exceptions import DeyeCacheException
 from deye_register_cache_data import DeyeRegisterCacheData
 from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
 
+def get_safe_file_name(string: str) -> str:
+  return re.sub(r'[^a-zA-Z0-9-]+', '-', string).strip('-')
+
 cache_server_host = '127.0.0.1'
 cache_server_port = 5000
 
 BASE_URL = f"http://{cache_server_host}:{cache_server_port}"
 CACHE_URL = f"{BASE_URL}/cache"
-test_inverter_name = "test_inverter"
+
+test_inverter_name = get_safe_file_name("test_inverter")
+test_inverter_serial = 1234567
 
 log = logging.getLogger()
 
@@ -99,7 +105,7 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
 
   def setUp(self):
     # The base endpoint for the cache server
-    self.cache_manager = DeyeRegistersRemoteCacheManager(test_inverter_name, CACHE_URL)
+    self.cache_manager = DeyeRegistersRemoteCacheManager(test_inverter_name, test_inverter_serial, CACHE_URL)
 
     # This will now fail the test suite immediately if the server is down
     # as reset_cache() will raise an exception.
@@ -120,7 +126,7 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     """
     LOGIC: Verify that the manager correctly appends the inverter name to the URL.
     """
-    expected_url = f"{CACHE_URL}/{test_inverter_name}"
+    expected_url = f"{CACHE_URL}/{test_inverter_name}-{test_inverter_serial}"
     self.assertEqual(self.cache_manager._inverter_cache_endpoint, expected_url)
 
   def test_remote_save_and_retrieve_integrity(self):
@@ -144,7 +150,7 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     rather than a crash, returning an empty dictionary.
     """
     # Manager for an inverter that definitely has no data yet
-    ghost_manager = DeyeRegistersRemoteCacheManager("UnknownInverter", CACHE_URL)
+    ghost_manager = DeyeRegistersRemoteCacheManager("UnknownInverter", 6263423454, CACHE_URL)
 
     # Should not raise exception, should return empty dict
     results = ghost_manager.get_cached_registers(self.reg_100_json)
@@ -218,7 +224,7 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     ROBUSTNESS: Verify that if the server disappears, we get an DeyeCacheException.
     """
     # Point to a completely invalid address
-    manager = DeyeRegistersRemoteCacheManager(test_inverter_name, "http://127.0.0.1:1")
+    manager = DeyeRegistersRemoteCacheManager(test_inverter_name, test_inverter_serial, "http://127.0.0.1:1")
     with self.assertRaises(DeyeCacheException):
       manager.get_cached_registers(self.reg_100_json)
       manager.close()
@@ -228,7 +234,7 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     ROBUSTNESS: Verify that if the cache server's host is unknown, we get an DeyeCacheException.
     """
     # Point to a completely invalid address
-    manager = DeyeRegistersRemoteCacheManager(test_inverter_name, "http://some.unknown.host")
+    manager = DeyeRegistersRemoteCacheManager(test_inverter_name, test_inverter_serial, "http://some.unknown.host")
     with self.assertRaises(DeyeCacheException):
       manager.get_cached_registers(self.reg_100_json)
       manager.close()

@@ -34,6 +34,9 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
   temp_dir: tempfile.TemporaryDirectory
   cache_manager: DeyeRegistersLocalCacheManager
 
+  def get_safe_file_name(self, string: str) -> str:
+    return re.sub(r'[^a-zA-Z0-9-]+', '-', string).strip('-')
+
   def setUp(self):
     # 1. Create a truly isolated temporary directory for this test run
     self.temp_dir = tempfile.TemporaryDirectory()
@@ -44,10 +47,13 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     self.patcher.start()
 
     self.name = "test_inverter"
-    self.cache_manager = DeyeRegistersLocalCacheManager(self.name, verbose = False)
+    self.serial = 1234567
+    self.cache_manager = DeyeRegistersLocalCacheManager(self.name, self.serial, verbose = False)
+
+    safe_name = self.get_safe_file_name(self.name)
 
     # Path to the file created by the manager
-    self.expected_file_path = os.path.join(self.temp_dir.name, f"registers-{self.name}.json")
+    self.expected_file_path = os.path.join(self.temp_dir.name, f"registers-cache-{safe_name}-{self.serial}.json")
 
     # Sample register for base logic testing
     self.reg_100 = DeyeRegisterCacheData(
@@ -220,8 +226,8 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     """
     CONCURRENCY: Two managers updating different registers in the same file.
     """
-    manager1 = DeyeRegistersLocalCacheManager(self.name)
-    manager2 = DeyeRegistersLocalCacheManager(self.name)
+    manager1 = DeyeRegistersLocalCacheManager(self.name, self.serial)
+    manager2 = DeyeRegistersLocalCacheManager(self.name, self.serial)
 
     # Use same file for both
     manager1._cache_filename = self.expected_file_path
@@ -242,9 +248,9 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     (Actually, your code uses os.path.join, so it might create a file there).
     """
     dangerous_name = "../traversal_test"
-    dm = DeyeRegistersLocalCacheManager(dangerous_name)
+    dm = DeyeRegistersLocalCacheManager(dangerous_name, self.serial)
     # Check if the filename is properly constructed or escaped
-    safe_name = re.sub(r'[^a-zA-Z0-9_-]+', '-', dangerous_name).strip('-')
+    safe_name = self.get_safe_file_name(dangerous_name)
     self.assertIn(safe_name, dm._cache_filename)
 
 if __name__ == "__main__":
