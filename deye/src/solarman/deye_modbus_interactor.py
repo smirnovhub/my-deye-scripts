@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
@@ -73,7 +73,16 @@ class DeyeModbusInteractor:
       self.cache_manager.save_to_cache(self.registers)
       return
 
-    cached_registers = self.cache_manager.get_cached_registers(self.registers)
+    now = datetime.now()
+
+    cached_registers: Dict[int, DeyeRegisterCacheData] = []
+
+    # Reset cache during the first 5 minutes of the day
+    if now.hour == 0 and now.minute < 5:
+      print(f'{self.name} resetting cache because midnight')
+      self.cache_manager.reset_cache()
+    else:
+      cached_registers = self.cache_manager.get_cached_registers(self.registers)
 
     if self.verbose:
       registers_caching_time = {addr: reg.caching_time for addr, reg in self.registers.items()}
