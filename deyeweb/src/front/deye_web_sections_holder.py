@@ -21,6 +21,7 @@ from deye_web_grid_charge_current_section import DeyeWebGridChargeCurrentSection
 from deye_web_max_charge_current_section import DeyeWebMaxChargeCurrentSection
 from deye_web_grid_reconnection_time_section import DeyeWebGridReconnectionTimeSection
 from deye_web_grid_connect_voltage_low_section import DeyeWebGridConnectVoltageLowSection
+from deye_web_grid_charging_start_soc_section import DeyeWebGridChargingStartSocSection
 
 @singleton
 class DeyeWebSectionsHolder:
@@ -35,6 +36,7 @@ class DeyeWebSectionsHolder:
       DeyeWebTotalSection(registers),
       DeyeWebSettingsSection(registers),
       DeyeWebForecastSection(registers),
+      DeyeWebGridChargingStartSocSection(registers),
       DeyeWebTimeOfUseSocSection(registers),
       DeyeWebTimeOfUsePowerSection(registers),
       DeyeWebMaxChargeCurrentSection(registers),
