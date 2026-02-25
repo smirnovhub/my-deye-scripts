@@ -17,11 +17,13 @@ class DeyeWebBaseSection:
     if self.section == DeyeWebConstants.default_open_tab:
       default_open = f' {DeyeWebConstants.default_open_tab_id}'.rstrip()
 
+    title = DeyeWebConstants.section_title_corrections.get(self.section)
+
     return f"""
       {DeyeWebUtils.begin_comment(self)}
       <a class="tablink{default_open}" id="{tab_id}" data-remote_color="{color_id}"
         href="#" onclick="openPage('{page_id}', '{tab_id}'); return false;">
-        {self.section.title}
+        {title if title else self.section.title}
       </a>
       {DeyeWebUtils.end_comment(self)}
     """.strip()

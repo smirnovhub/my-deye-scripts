@@ -75,11 +75,7 @@ class DeyeWebBaseSelectionBuilder:
       return abs(val1 - val2) < 0.0001
 
     cnt = 0
-    correction: float = 0
-
-    for reg, corr in DeyeWebConstants.register_value_corrections.items():
-      if reg.name == register.name:
-        correction = corr
+    correction = DeyeWebConstants.register_value_corrections.get(register.name, 0.0)
 
     registers = holder.master_registers
     value = register.value + correction

@@ -38,11 +38,8 @@ class DeyeWebValueFormatter:
     if not isinstance(register.value, float) and not isinstance(register.value, int):
       raise ValueError(f"Type of register value '{register.name}' should be float or int")
 
-    for reg, correction in DeyeWebConstants.register_value_corrections.items():
-      if reg.name == register.name:
-        return register.value + correction
-
-    return register.value
+    correction = DeyeWebConstants.register_value_corrections.get(register.name, 0.0)
+    return register.value + correction
 
   @staticmethod
   def get_formatted_voltage_value(value: float, suffix: str) -> FormattedValue:
