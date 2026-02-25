@@ -50,5 +50,8 @@ COPY --chown=$USER_NAME:$USER_NAME common/*.py $REPO_NAME/common/
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME
 
+# Use unbuffered output to see logs in docker logs
+ENV PYTHONUNBUFFERED=1
+
 # Starting the bot
 CMD ["python3", "telebot/telebot"]
