@@ -14,6 +14,7 @@ import os
 import sys
 import time
 import html
+import signal
 import traceback
 
 from pathlib import Path
@@ -40,6 +41,28 @@ def escape_html(text: str) -> str:
   # This replaces &, <, and > with &amp;, &lt;, and &gt;
   return html.escape(text)
 
+def graceful_shutdown(signum, frame):
+  # Log signal receipt
+  print(f"Caught signal {signum}, sending last message...")
+
+  try:
+    # Send a final message synchronously
+    send_private_telegram_message(f"{CommonUtils.large_yellow_circle_emoji} "
+                                  f"Telebot is going down...")
+  except Exception as e:
+    # Log error if message fails
+    print(f"Failed to send goodbye message: {e}")
+
+  # Stop the polling loop
+  bot.stop_polling()
+
+  # Exit the process
+  sys.exit(0)
+
+# Register for both manual interrupt and system termination
+signal.signal(signal.SIGINT, graceful_shutdown)
+signal.signal(signal.SIGTERM, graceful_shutdown)
+
 try:
   from mytelebot import MyTelebot
   from env_utils import EnvUtils
@@ -53,7 +76,7 @@ try:
     mybot.run_tests()
     sys.exit(0)
   
-  send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Starting telebot...')
+  send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')
   bot = telebot.TeleBot(TelebotCredentials.BOT_API_TOKEN)
   mybot = MyTelebot(bot)
   bot.infinity_polling()
