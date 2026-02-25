@@ -1,3 +1,5 @@
+import threading
+
 from typing import List, Optional
 
 from deye_logger import DeyeLogger
@@ -6,20 +8,24 @@ from deye_exceptions import DeyeNotImplementedException
 
 class DeyeBaseLoggers:
   _instance = None
+  _lock = threading.Lock()
 
   def __new__(cls, *args, **kwargs):
     if cls._instance is None:
-      from env_utils import EnvUtils
-      if EnvUtils.is_tests_on():
-        from deye_test_loggers import DeyeTestLoggers
-        cls._instance = super().__new__(DeyeTestLoggers) # type: ignore
-        if EnvUtils.is_remote_cache_on():
-          cls._instance._remote_cache_server = EnvUtils.get_remote_cache_server() # type: ignore
-        else:
-          cls._instance._remote_cache_server = '' # type: ignore
-      else:
-        cls._instance = super().__new__(cls) # type: ignore
-        cls._instance._remote_cache_server = '' # type: ignore
+      with cls._lock:
+        # Double-check inside the lock
+        if cls._instance is None:
+          from env_utils import EnvUtils
+          if EnvUtils.is_tests_on():
+            from deye_test_loggers import DeyeTestLoggers
+            cls._instance = super().__new__(DeyeTestLoggers) # type: ignore
+            if EnvUtils.is_remote_cache_on():
+              cls._instance._remote_cache_server = EnvUtils.get_remote_cache_server() # type: ignore
+            else:
+              cls._instance._remote_cache_server = '' # type: ignore
+          else:
+            cls._instance = super().__new__(cls) # type: ignore
+            cls._instance._remote_cache_server = '' # type: ignore
     return cls._instance
 
   @property
