@@ -6,7 +6,7 @@ import sys
 import requests
 
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Dict, Optional, Union, List
 
 from datetime import datetime, timedelta
 from pysolarmanv5 import NoSocketAvailableError
@@ -307,3 +307,19 @@ class DeyeUtils:
         return str(potential_path.resolve())
 
     return None
+
+  @staticmethod
+  def get_hard_limited_current(battery_soc: int, max_current: int) -> int:
+    # SOC threshold -> max allowed charge current
+    soc_charge_limits: Dict[int, int] = {
+      100: 0,
+      99: 3,
+      98: 5,
+      97: 10,
+    }
+
+    for soc, limit in sorted(soc_charge_limits.items(), reverse = True):
+      if battery_soc >= soc:
+        return limit
+
+    return max_current
