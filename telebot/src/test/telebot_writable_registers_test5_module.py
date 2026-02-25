@@ -93,14 +93,14 @@ class TelebotWritableRegistersTest5Module(TelebotBaseTestModule):
 
       self.send_text(self.user, str(val))
 
-      self.wait_for_text_regex(f'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')
+      self.wait_for_text_regex(rf'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')
 
       command = f'/{register.name} {val}'
 
       self.log.info(f"Sending command '{command}'")
       self.send_text(self.user, command)
 
-      self.wait_for_text_regex(f'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')
+      self.wait_for_text_regex(rf'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')
 
       if server.is_something_written():
         self.error(f"Register '{register.name}' should not be written with out of range value")
