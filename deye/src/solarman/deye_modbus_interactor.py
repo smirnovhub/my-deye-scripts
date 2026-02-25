@@ -75,7 +75,7 @@ class DeyeModbusInteractor:
 
     now = datetime.now()
 
-    cached_registers: Dict[int, DeyeRegisterCacheData] = []
+    cached_registers: Dict[int, DeyeRegisterCacheData] = {}
 
     # Reset cache during the first 5 minutes of the day
     if now.hour == 0 and now.minute < 5:
