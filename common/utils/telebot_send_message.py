@@ -20,7 +20,7 @@ def send_private_telegram_message(message: str) -> None:
       if response.status_code != requests.codes.ok:
         print(f"Failed to send private telegram message: {response.text}")
   except:
-    print(f'Failed to send private telegram messag to {TelebotCredentials.PRIVATE_CHAT_ID}')
+    print(f'Failed to send private telegram message to {TelebotCredentials.PRIVATE_CHAT_ID}')
 
 def send_public_telegram_message(message: str) -> None:
   try:
@@ -36,7 +36,7 @@ def send_public_telegram_message(message: str) -> None:
       if response.status_code != requests.codes.ok:
         print(f"Failed to send public telegram message: {response.text}")
   except:
-    print(f'Failed to send public telegram messag to {TelebotCredentials.PUBLIC_CHAT_ID}')
+    print(f'Failed to send public telegram message to {TelebotCredentials.PUBLIC_CHAT_ID}')
 
 def is_bot_token_correct(token: str) -> bool:
   pattern = re.compile(r"^\d+:.+$")
