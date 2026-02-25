@@ -12,6 +12,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 current_path = Path(__file__).parent.resolve()
@@ -57,9 +58,11 @@ app = FastAPI(
 
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
-lock = asyncio.Lock()
 config = BackServerConfig()
 dependency_provider = DeyeWebDependencyProvider()
+
+# Better to define the executor outside to reuse threads
+executor = ThreadPoolExecutor(max_workers = 15)
 
 @app.get("/front", tags = ["Frontend Operations"])
 async def handle_front_requests():
@@ -89,8 +92,11 @@ async def handle_back_requests(json_data: Dict[str, Any]):
     return get_error_result("Params processor module not available")
 
   try:
-    async with lock:
-      return processor.get_params(json_data)
+    loop = asyncio.get_running_loop()
+    return await asyncio.wait_for(
+      loop.run_in_executor(executor, processor.get_params, json_data),
+      timeout = config.BACK_EXECUTION_TIMEOUT,
+    )
   except Exception as e:
     known_exception_class = dependency_provider.known_exception
     utils_class = dependency_provider.utils
