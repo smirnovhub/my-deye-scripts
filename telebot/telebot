@@ -30,19 +30,19 @@ import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 import telebot
 
+# Should be first in imports list to make possible
+# to send error messages if some import fails
+from common_utils import CommonUtils
+from telebot_send_message import send_private_telegram_message
+
 # Simple and safe way for HTML parse_mode
 def escape_html(text: str) -> str:
   # This replaces &, <, and > with &amp;, &lt;, and &gt;
   return html.escape(text)
 
 try:
-  # Should be first in imports list to make possible
-  # to send error messages if some import fails
-  from telebot_send_message import send_private_telegram_message
-
   from mytelebot import MyTelebot
   from env_utils import EnvUtils
-  from common_utils import CommonUtils
   from testable_telebot import TestableTelebot
   from telebot_credentials import TelebotCredentials
   
