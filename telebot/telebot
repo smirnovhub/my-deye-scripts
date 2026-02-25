@@ -30,6 +30,11 @@ import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 import telebot
 
+# Simple and safe way for HTML parse_mode
+def escape_html(text: str) -> str:
+  # This replaces &, <, and > with &amp;, &lt;, and &gt;
+  return html.escape(text)
+
 try:
   from mytelebot import MyTelebot
   from env_utils import EnvUtils
@@ -44,11 +49,6 @@ try:
     mybot = MyTelebot(bot)
     mybot.run_tests()
     sys.exit(0)
-  
-  # Simple and safe way for HTML parse_mode
-  def escape_html(text: str) -> str:
-    # This replaces &, <, and > with &amp;, &lt;, and &gt;
-    return html.escape(text)
   
   send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Starting telebot...')
   bot = telebot.TeleBot(TelebotCredentials.BOT_API_TOKEN)
