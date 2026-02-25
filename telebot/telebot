@@ -30,26 +30,26 @@ import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 import telebot
 
-from mytelebot import MyTelebot
-from env_utils import EnvUtils
-from common_utils import CommonUtils
-from testable_telebot import TestableTelebot
-from telebot_credentials import TelebotCredentials
-from telebot_send_message import send_private_telegram_message
-
-if EnvUtils.is_tests_on():
-  token = EnvUtils.get_telegram_bot_api_test_token()
-  bot = TestableTelebot(token)
-  mybot = MyTelebot(bot)
-  mybot.run_tests()
-  sys.exit(0)
-
-# Simple and safe way for HTML parse_mode
-def escape_html(text: str) -> str:
-  # This replaces &, <, and > with &amp;, &lt;, and &gt;
-  return html.escape(text)
-
 try:
+  from mytelebot import MyTelebot
+  from env_utils import EnvUtils
+  from common_utils import CommonUtils
+  from testable_telebot import TestableTelebot
+  from telebot_credentials import TelebotCredentials
+  from telebot_send_message import send_private_telegram_message
+  
+  if EnvUtils.is_tests_on():
+    token = EnvUtils.get_telegram_bot_api_test_token()
+    bot = TestableTelebot(token)
+    mybot = MyTelebot(bot)
+    mybot.run_tests()
+    sys.exit(0)
+  
+  # Simple and safe way for HTML parse_mode
+  def escape_html(text: str) -> str:
+    # This replaces &, <, and > with &amp;, &lt;, and &gt;
+    return html.escape(text)
+  
   send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Starting telebot...')
   bot = telebot.TeleBot(TelebotCredentials.BOT_API_TOKEN)
   mybot = MyTelebot(bot)
@@ -57,7 +57,7 @@ try:
 except Exception as e:
   stack_trace = escape_html(traceback.format_exc()[-2048:])
   send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
-                                f"Telebot unexpectedly stopped working:<br>"
+                                f"Telebot unexpectedly stopped working:\n"
                                 f"<code>{stack_trace}</code>")
   time.sleep(30)
   raise
