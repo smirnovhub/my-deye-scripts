@@ -52,7 +52,7 @@ class MyTelebot:
     self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
     self.update_checker = TelebotLocalUpdateChecker()
-    self.logger = logger,
+    self.logger = logger
 
     DeyeUtils.ensure_dir_exists(TelebotConstants.data_dir)
 
