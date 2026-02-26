@@ -37,6 +37,7 @@ USER $USER_NAME
 # Set working directory
 WORKDIR $APP_DIR
 
+COPY --chown=$USER_NAME:$USER_NAME common/utils/ ./common/utils
 COPY --chown=$USER_NAME:$USER_NAME deyeproxy/ ./deyeproxy/
 
 # Set working directory
