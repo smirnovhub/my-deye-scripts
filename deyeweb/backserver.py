@@ -70,6 +70,13 @@ async def lifespan_handler(app: FastAPI):
   # This code runs on shutdown
   logger.info("Deye BackServer is shutting down...")
 
+  for handler in logging.getLogger().handlers:
+    handler.flush()
+    handler.close()
+
+  sys.stdout.flush()
+  sys.stderr.flush()
+
 app = FastAPI(
   lifespan = lifespan_handler,
   docs_url = "/",
