@@ -96,13 +96,13 @@ try:
   if EnvUtils.is_tests_on():
     token = EnvUtils.get_telegram_bot_api_test_token()
     bot = TestableTelebot(token)
-    mybot = MyTelebot(bot)
+    mybot = MyTelebot(bot, logger)
     mybot.run_tests()
     sys.exit(0)
   
   send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')
   bot = telebot.TeleBot(TelebotCredentials.BOT_API_TOKEN)
-  mybot = MyTelebot(bot)
+  mybot = MyTelebot(bot, logger)
   bot.infinity_polling()
 except Exception as e:
   stack_trace = escape_html(traceback.format_exc()[-2048:])

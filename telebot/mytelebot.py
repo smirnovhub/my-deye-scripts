@@ -42,13 +42,17 @@ from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonH
 from telebot_send_message import send_private_telegram_message
 
 class MyTelebot:
-  def __init__(self, bot: telebot.TeleBot):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    logger: logging.Logger,
+  ):
     self.bot = bot
     self.users = TelebotUsers()
     self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
     self.update_checker = TelebotLocalUpdateChecker()
-    self.logger = logging.getLogger()
+    self.logger = logger,
 
     DeyeUtils.ensure_dir_exists(TelebotConstants.data_dir)
 
@@ -56,7 +60,7 @@ class MyTelebot:
       commands = bot.get_my_commands(scope = scope)
       self.logger.info(f"{label} commands:")
       for cmd in commands:
-        self.logger.info(f"  /{cmd.command} – {cmd.description}")
+        self.logger.info(f"  /{cmd.command} - {cmd.description}")
 
     print_commands(bot, telebot.types.BotCommandScopeDefault(), "Default")
     print_commands(bot, telebot.types.BotCommandScopeAllPrivateChats(), "AllPrivateChats")
