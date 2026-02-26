@@ -1,3 +1,4 @@
+import os
 import json
 import asyncio
 import logging
@@ -12,7 +13,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from src.deyecache_config import DeyeCacheConfig
-from src.hourly_overwrite_file_handler import HourlyOverwriteFileHandler
+
+utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
+sys.path.append(utils_path)
+
+from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

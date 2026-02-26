@@ -7,6 +7,8 @@
     "../modules/pyTelegramBotAPI",
     "../modules/suntime",
     "../modules/dateutil/src",
+    "../common",
+    "../common/utils",
     "src"
   ],
   "python.analysis.useImportHeuristic": true,

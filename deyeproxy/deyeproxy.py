@@ -26,6 +26,7 @@ Usage:
     Example:
         $ LOGGER_HOST=1.2.3.4 python3 deyeproxy.py
 """
+import os
 import sys
 import time
 import errno
@@ -36,7 +37,11 @@ import threading
 
 from typing import Tuple, Optional
 from src.deyeproxy_config import DeyeProxyConfig
-from src.hourly_overwrite_file_handler import HourlyOverwriteFileHandler
+
+utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
+sys.path.append(utils_path)
+
+from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 config = DeyeProxyConfig()
 config.validate_or_exit()
