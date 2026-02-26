@@ -27,14 +27,16 @@ RUN apt-get update && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
   echo $TIMEZONE > /etc/timezone
 
+# Install required Python packages
+RUN pip install --no-cache-dir --break-system-packages \
+  six requests fastapi uvicorn codespell mypy flake8 \
+  types-requests uvloop
+
 # Create user without password, with home directory
 RUN useradd -m -u 3333 -s /usr/sbin/nologin $USER_NAME
 
 # Switch to non-root user
 USER $USER_NAME
-
-# Install required Python packages
-RUN pip install --no-cache-dir six requests
 
 # Set working directory
 WORKDIR $APP_DIR
