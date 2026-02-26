@@ -2,7 +2,10 @@ import telebot
 
 from typing import List
 
+from teletest import TeleTest
+from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
+from telebot_constants import TelebotConstants
 from telebot_menu_time_of_use import TelebotMenuTimeOfUse
 from telebot_users import TelebotUsers
 from telebot_base_handler import TelebotBaseHandler
@@ -27,7 +30,6 @@ from telebot_menu_battery_forecast import TelebotMenuBatteryForecast
 from telebot_menu_writable_registers import TelebotMenuWritableRegisters
 from telebot_menu_master_today_stat import TelebotMenuMasterTodayStat
 from telebot_menu_master_total_stat import TelebotMenuMasterTotalStat
-from teletest import TeleTest
 from testable_telebot import TestableTelebot
 from telebot_menu_revert import TelebotMenuRevert
 from telebot_menu_update import TelebotMenuUpdate
@@ -45,6 +47,8 @@ class MyTelebot:
     self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
     self.update_checker = TelebotLocalUpdateChecker()
+
+    DeyeUtils.ensure_dir_exists(TelebotConstants.data_dir)
 
     def print_commands(bot: telebot.TeleBot, scope, label):
       commands = bot.get_my_commands(scope = scope)

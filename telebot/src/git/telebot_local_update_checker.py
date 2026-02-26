@@ -25,11 +25,11 @@ class TelebotLocalUpdateChecker:
     self.locker = DeyeFileWithLock()
     self.git_helper = GitHelper()
 
-    self.ask_file_name = 'data/last_local_update_ask_time.txt'
-    self.hash_file_name = 'data/last_commit_hash.txt'
+    self.ask_file_name = f'{TelebotConstants.data_dir}/last_local_update_ask_time.txt'
+    self.hash_file_name = f'{TelebotConstants.data_dir}/last_commit_hash.txt'
 
-    DeyeUtils.ensure_file_exists(self.ask_file_name)
-    DeyeUtils.ensure_file_exists(self.hash_file_name)
+    DeyeUtils.ensure_dir_and_file_exists(self.ask_file_name)
+    DeyeUtils.ensure_dir_and_file_exists(self.hash_file_name)
 
   def check_for_local_updates(
     self,

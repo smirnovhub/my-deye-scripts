@@ -31,7 +31,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     self.progress = TelebotProgressMessage(bot)
     lockfile = os.path.join(DeyeFileLock.lock_path, 'teletest.lock')
     self.locker = DeyeFileLocker('teletest', lockfile)
-    self.logs_path = 'data/logs'
+    self.logs_path = f'{TelebotConstants.data_dir}/logs'
     self.running_test = 'none'
     self.intro_text = 'Select test to run:'
     self.tests_base_dir = '../test/src'

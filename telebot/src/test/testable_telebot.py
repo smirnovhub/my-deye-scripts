@@ -44,7 +44,7 @@ class TestableTelebot(telebot.TeleBot):
   - `TelebotFakeTestMessage` is used to simulate `Message` objects returned by `send_message`.
   """
 
-  telebot_test_log_file_name = 'data/logs/telebot_telegram_test.log'
+  telebot_test_log_file_name = f'{TelebotConstants.data_dir}/logs/telebot_telegram_test.log'
 
   def __init__(self, token: str):
     super().__init__(token)

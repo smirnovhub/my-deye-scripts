@@ -20,8 +20,8 @@ class TelebotRemoteUpdateChecker:
   def __init__(self):
     self.locker = DeyeFileWithLock()
     self.git_helper = GitHelper()
-    self.ask_file_name = 'data/last_remote_update_ask_time.txt'
-    DeyeUtils.ensure_file_exists(self.ask_file_name)
+    self.ask_file_name = f'{TelebotConstants.data_dir}/last_remote_update_ask_time.txt'
+    DeyeUtils.ensure_dir_and_file_exists(self.ask_file_name)
 
   def is_on_branch(self):
     last_ask_time = self._load_last_remote_update_ask_time()

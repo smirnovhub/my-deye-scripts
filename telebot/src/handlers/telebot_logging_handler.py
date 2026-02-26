@@ -9,14 +9,15 @@ from telebot_utils import TelebotUtils
 from telebot_users import TelebotUsers
 from deye_file_lock import DeyeFileLock
 from telebot_base_handler import TelebotBaseHandler
+from telebot_constants import TelebotConstants
 
 telebot.apihelper.ENABLE_MIDDLEWARE = True
 
 class TelebotLoggingHandler(TelebotBaseHandler):
   def __init__(self, bot: telebot.TeleBot):
     self.bot = bot
-    self.known_users_messages_path = 'data/logs/known_users'
-    self.unknown_users_messages_path = 'data/logs/unknown_users'
+    self.known_users_messages_path = f'{TelebotConstants.data_dir}/logs/known_users'
+    self.unknown_users_messages_path = f'{TelebotConstants.data_dir}/logs/unknown_users'
     self.max_file_size = 1024 * 1024 * 1
     self.users = TelebotUsers()
 
