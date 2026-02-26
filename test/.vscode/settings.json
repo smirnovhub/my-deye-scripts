@@ -27,6 +27,7 @@
     "../deye/src/solarman/server",
     "../deye/src/utils",
     "../deyecache",
+    "../deyecache/data",
     "../deyecache/src",
     "../telebot/src/test",
     "src"
