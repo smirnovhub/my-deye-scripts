@@ -4,15 +4,21 @@ from backserver_env_var import BackServerEnvVar
 
 class BackServerConfig:
   def __init__(self):
+    self.__server_name = BackServerEnvVar("SERVER_NAME", "", "Individual name of server for logging")
     self.__server_port = BackServerEnvVar("SERVER_PORT", "80", "Local port to listen on")
     self.__back_execution_timeout = BackServerEnvVar("BACK_EXECUTION_TIMEOUT", "15",
                                                      "Timeout for back requests execution, s")
     self.__server_host = '0.0.0.0'
 
     self.__all_vars = [
+      self.__server_name,
       self.__server_port,
       self.__back_execution_timeout,
     ]
+
+  @property
+  def SERVER_NAME(self) -> str:
+    return self.__server_name.value
 
   @property
   def SERVER_HOST(self) -> str:

@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import asyncio
 import logging
 import traceback
@@ -27,17 +26,39 @@ import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 from backserver_config import BackServerConfig
 from deye_web_dependency_provider import DeyeWebDependencyProvider
+from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
+
+config = BackServerConfig()
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+  "[%(asctime)s.%(msecs)03d] %(message)s",
+  "%Y-%m-%d %H:%M:%S",
+)
+
+DATA_DIR = f"data/backserver-{config.SERVER_NAME}"
+
+file_handler = HourlyOverwriteFileHandler(
+  directory = DATA_DIR,
+  log_file_template = f"backserver-{config.SERVER_NAME}-{{0}}.log",
+)
+
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+console = logging.StreamHandler(sys.stdout)
+console.setFormatter(formatter)
+logger.addHandler(console)
 
 # Define the lifespan context manager
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan_handler(app: FastAPI):
   """
   Manage the lifespan of the FastAPI application.
 
   This function handles startup and shutdown events for the Deye Cache service.
   """
-  logger = logging.getLogger("uvicorn.default")
-
   # This code runs on startup
   logger.info(f"--- Deye BackServer started ---")
   config.print_config(logger)
@@ -50,15 +71,13 @@ async def lifespan(app: FastAPI):
   logger.info("Deye BackServer is shutting down...")
 
 app = FastAPI(
-  lifespan = lifespan,
+  lifespan = lifespan_handler,
   docs_url = "/",
   # This setting hides the "Schemas" section at the bottom
   swagger_ui_parameters = {"defaultModelsExpandDepth": -1},
 )
 
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
-
-config = BackServerConfig()
 dependency_provider = DeyeWebDependencyProvider()
 
 # Better to define the executor outside to reuse threads
@@ -129,14 +148,6 @@ def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
 if __name__ == "__main__":
   config.print_usage()
 
-  # Load the config from the JSON file
-  try:
-    with open("src/backserver/log_config.json", "r") as f:
-      log_config = json.load(f)
-  except Exception as e:
-    print(f"Failed to load logging config: {e}")
-    sys.exit(1)
-
   uvicorn.run(
     app,
     host = config.SERVER_HOST,
@@ -144,6 +155,6 @@ if __name__ == "__main__":
     timeout_keep_alive = 15,
     proxy_headers = False,
     forwarded_allow_ips = None,
-    log_config = log_config,
+    log_config = None,
     use_colors = False,
   )

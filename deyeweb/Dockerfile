@@ -129,6 +129,7 @@ COPY demoserver/src/common/*.py $REPO_NAME/common/
 
 FROM python:3.14-slim AS deyebackserver
 
+ENV SERVER_NAME=deyeback
 ENV SERVER_PORT=80
 
 # Set remote repository name
@@ -163,7 +164,7 @@ RUN pip install --no-cache-dir --break-system-packages \
   six requests fastapi uvicorn uvloop
 
 # Create user without password, with home directory
-RUN useradd -m -u 5757 -s /usr/sbin/nologin $USER_NAME
+RUN useradd -m -u 3333 -s /usr/sbin/nologin $USER_NAME
 
 # Switch to non-root user
 USER $USER_NAME
@@ -185,13 +186,4 @@ EXPOSE $SERVER_PORT
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME/deyeweb
 
-# Adding 'exec' allows signals to be passed directly to Uvicorn
-CMD exec uvicorn backserver:app \
-  --loop uvloop \
-  --host 0.0.0.0 \
-  --port ${SERVER_PORT} \
-  --timeout-keep-alive 15 \
-  --no-proxy-headers \
-  --forwarded-allow-ips="" \
-  --log-config src/backserver/log_config.json \
-  --no-use-colors
+CMD ["python3", "backserver.py"]
