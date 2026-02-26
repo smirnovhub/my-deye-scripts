@@ -56,13 +56,19 @@ class TestableTelebot(telebot.TeleBot):
     if os.path.exists(TestableTelebot.telebot_test_log_file_name):
       os.remove(TestableTelebot.telebot_test_log_file_name)
 
-    logging.basicConfig(
-      filename = TestableTelebot.telebot_test_log_file_name,
-      filemode = 'w',
-      level = logging.INFO,
-      format = '[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s',
-      datefmt = DeyeUtils.time_format_str,
+    file_handler = logging.FileHandler(
+      TestableTelebot.telebot_test_log_file_name,
+      mode = 'w',
+      encoding = 'utf-8',
     )
+
+    formatter = logging.Formatter(
+      '[%(asctime)s.%(msecs)03d] %(message)s',
+      '%Y-%m-%d %H:%M:%S',
+    )
+
+    file_handler.setFormatter(formatter)
+    self.log.addHandler(file_handler)
 
   def clear_messages(self):
     self.messages.clear()

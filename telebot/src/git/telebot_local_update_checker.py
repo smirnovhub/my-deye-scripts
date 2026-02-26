@@ -1,4 +1,5 @@
 import time
+import logging
 import telebot
 
 from typing import Optional
@@ -24,6 +25,7 @@ class TelebotLocalUpdateChecker:
   def __init__(self):
     self.locker = DeyeFileWithLock()
     self.git_helper = GitHelper()
+    self.logger = logging.getLogger()
 
     self.ask_file_name = f'{TelebotConstants.data_dir}/last_local_update_ask_time.txt'
     self.hash_file_name = f'{TelebotConstants.data_dir}/last_commit_hash.txt'
@@ -146,7 +148,7 @@ class TelebotLocalUpdateChecker:
       str_val = sfile.readline().strip()
       return float(str_val) if str_val else 0
     except Exception:
-      print('Error while loading last local update ask time')
+      self.logger.info('Error while loading last local update ask time')
       raise
     finally:
       self.locker.close_file()
@@ -165,7 +167,7 @@ class TelebotLocalUpdateChecker:
       sfile = self.locker.open_file(self.ask_file_name, 'w')
       sfile.write(str(int(time)))
     except Exception:
-      print('Error while saving last local update ask time')
+      self.logger.info('Error while saving last local update ask time')
       raise
     finally:
       self.locker.close_file()
@@ -184,7 +186,7 @@ class TelebotLocalUpdateChecker:
       sfile = self.locker.open_file(self.hash_file_name, 'r')
       return str(sfile.readline().strip())
     except Exception:
-      print('Error while loading last commit hash')
+      self.logger.info('Error while loading last commit hash')
       raise
     finally:
       self.locker.close_file()
@@ -203,7 +205,7 @@ class TelebotLocalUpdateChecker:
       sfile = self.locker.open_file(self.hash_file_name, 'w')
       sfile.write(hash)
     except Exception:
-      print('Error while saving last commit hash')
+      self.logger.info('Error while saving last commit hash')
       raise
     finally:
       self.locker.close_file()

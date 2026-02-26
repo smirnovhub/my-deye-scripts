@@ -1,3 +1,4 @@
+import logging
 import telebot
 
 from typing import List
@@ -47,14 +48,15 @@ class MyTelebot:
     self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
     self.update_checker = TelebotLocalUpdateChecker()
+    self.logger = logging.getLogger()
 
     DeyeUtils.ensure_dir_exists(TelebotConstants.data_dir)
 
     def print_commands(bot: telebot.TeleBot, scope, label):
       commands = bot.get_my_commands(scope = scope)
-      print(f"\n{label} commands:")
+      self.logger.info(f"{label} commands:")
       for cmd in commands:
-        print(f"  /{cmd.command} – {cmd.description}")
+        self.logger.info(f"  /{cmd.command} – {cmd.description}")
 
     print_commands(bot, telebot.types.BotCommandScopeDefault(), "Default")
     print_commands(bot, telebot.types.BotCommandScopeAllPrivateChats(), "AllPrivateChats")
@@ -67,7 +69,7 @@ class MyTelebot:
       self.update_checker.update_last_commit_hash()
     except Exception as e:
       message = f'Error while updating last commit hash: {str(e)}'
-      print(message)
+      self.logger.info(message)
       send_private_telegram_message(message)
 
     # Register common handlers
@@ -118,13 +120,13 @@ class MyTelebot:
       try:
         bot.set_my_commands(authorized_commands, scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:
-        print(f'An exception occurred while setting commands for user {user.id}: {str(e)}')
+        self.logger.info(f'An exception occurred while setting commands for user {user.id}: {str(e)}')
 
     for user in self.users.blocked_users:
       try:
         bot.set_my_commands([], scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:
-        print(f'An exception occurred while setting command for blocked user {user.id}: {str(e)}')
+        self.logger.info(f'An exception occurred while setting command for blocked user {user.id}: {str(e)}')
 
   def get_common_handlers(self, bot: telebot.TeleBot) -> List[TelebotBaseHandler]:
     return [

@@ -1,3 +1,4 @@
+import logging
 import telebot
 import traceback
 
@@ -134,6 +135,6 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         self.bot.send_message(chat_id, str(e))
       except Exception as e:
         self.bot.send_message(chat_id, str(e))
-        print(traceback.format_exc())
+        self.logger.info(traceback.format_exc())
     else:
       self.bot.send_message(chat_id, 'Time sync cancelled')

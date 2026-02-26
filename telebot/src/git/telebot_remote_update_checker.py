@@ -1,4 +1,5 @@
 import time
+import logging
 import telebot
 
 from git_helper import GitHelper
@@ -20,6 +21,7 @@ class TelebotRemoteUpdateChecker:
   def __init__(self):
     self.locker = DeyeFileWithLock()
     self.git_helper = GitHelper()
+    self.logger = logging.getLogger()
     self.ask_file_name = f'{TelebotConstants.data_dir}/last_remote_update_ask_time.txt'
     DeyeUtils.ensure_dir_and_file_exists(self.ask_file_name)
 
@@ -94,7 +96,7 @@ class TelebotRemoteUpdateChecker:
       str_val = sfile.readline().strip()
       return float(str_val) if str_val else 0
     except Exception:
-      print('Error while loading last remote update ask time')
+      self.logger.info('Error while loading last remote update ask time')
       raise
     finally:
       self.locker.close_file()
@@ -113,7 +115,7 @@ class TelebotRemoteUpdateChecker:
       sfile = self.locker.open_file(self.ask_file_name, 'w')
       sfile.write(str(int(time)))
     except Exception:
-      print('Error while saving last remote update ask time')
+      self.logger.info('Error while saving last remote update ask time')
       raise
     finally:
       self.locker.close_file()

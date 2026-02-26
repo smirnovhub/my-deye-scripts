@@ -55,5 +55,4 @@ class TelebotBaseUsers:
     if duplicates:
       msg = f"ERROR: duplicated user IDs detected in {text}: {duplicates}"
       log.info(msg)
-      print(msg)
       raise ValueError(msg)
