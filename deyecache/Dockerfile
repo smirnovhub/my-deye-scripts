@@ -25,7 +25,7 @@ RUN apt-get update && \
   echo $TIMEZONE > /etc/timezone
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages fastapi uvicorn
+RUN pip install --no-cache-dir --break-system-packages fastapi uvicorn uvloop
 
 # Create user without password, with home directory
 RUN useradd -m -u 7575 -s /usr/sbin/nologin $USER_NAME
@@ -49,6 +49,7 @@ WORKDIR $APP_DIR/deyecache
 
 # Adding 'exec' allows signals to be passed directly to Uvicorn
 CMD exec uvicorn deyecache:app \
+  --loop uvloop \
   --host 0.0.0.0 \
   --port ${SERVER_PORT} \
   --timeout-keep-alive 15 \

@@ -15,7 +15,7 @@ from src.deyecache_config import DeyeCacheConfig
 
 # Define the lifespan context manager
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan_handler(app: FastAPI):
   """
   Manage the lifespan of the FastAPI application.
 
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
   logger.info("DeyeCache service is shutting down...")
 
 app = FastAPI(
-  lifespan = lifespan,
+  lifespan = lifespan_handler,
   docs_url = "/",
   # This setting hides the "Schemas" section at the bottom
   swagger_ui_parameters = {"defaultModelsExpandDepth": -1},
