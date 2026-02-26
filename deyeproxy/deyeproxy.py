@@ -321,5 +321,12 @@ def main() -> None:
     server.close()
     logger.info("Server socket closed.")
 
+    for handler in logging.getLogger().handlers:
+      handler.flush()
+      handler.close()
+
+    sys.stdout.flush()
+    sys.stderr.flush()
+
 if __name__ == "__main__":
   main()
