@@ -43,7 +43,7 @@ RUN apt-get update && \
   echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Install required Python packages
-RUN pip install --no-cache-dir six requests --break-system-packages
+RUN pip install --no-cache-dir --break-system-packages six requests uvloop
 
 # Set working directory
 WORKDIR $APP_DIR
@@ -159,7 +159,8 @@ RUN apt-get update && \
   echo $TIMEZONE > /etc/timezone
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages six requests fastapi uvicorn
+RUN pip install --no-cache-dir --break-system-packages \
+  six requests fastapi uvicorn uvloop
 
 # Create user without password, with home directory
 RUN useradd -m -u 5757 -s /usr/sbin/nologin $USER_NAME
@@ -186,6 +187,7 @@ WORKDIR $APP_DIR/$REPO_NAME/deyeweb
 
 # Adding 'exec' allows signals to be passed directly to Uvicorn
 CMD exec uvicorn backserver:app \
+  --loop uvloop \
   --host 0.0.0.0 \
   --port ${SERVER_PORT} \
   --timeout-keep-alive 15 \
