@@ -98,6 +98,7 @@ async def handle_front_requests():
       html = builder.get_front_html()
       return HTMLResponse(content = html, status_code = 200)
     except Exception as e:
+      logger.error(traceback.format_exc())
       return HTMLResponse(
         content = f"<h1>Frontend Error</h1><pre>{str(e)}\n{traceback.format_exc()}</pre>",
         status_code = 500,
@@ -124,6 +125,7 @@ async def handle_back_requests(json_data: Dict[str, Any]):
       timeout = config.BACK_EXECUTION_TIMEOUT,
     )
   except Exception as e:
+    logger.error(traceback.format_exc())
     known_exception_class = dependency_provider.known_exception
     utils_class = dependency_provider.utils
 
