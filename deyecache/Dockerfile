@@ -36,6 +36,7 @@ USER $USER_NAME
 # Set working directory
 WORKDIR $APP_DIR
 
+COPY --chown=$USER_NAME:$USER_NAME common/utils/ ./common/utils
 COPY --chown=$USER_NAME:$USER_NAME deyecache/ ./deyecache/
 
 # Use unbuffered output to see logs in docker logs
