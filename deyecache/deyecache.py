@@ -12,6 +12,29 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from src.deyecache_config import DeyeCacheConfig
+from src.hourly_overwrite_file_handler import HourlyOverwriteFileHandler
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+  "[%(asctime)s.%(msecs)03d] %(message)s",
+  "%Y-%m-%d %H:%M:%S",
+)
+
+DATA_DIR = "data/deyecache"
+
+file_handler = HourlyOverwriteFileHandler(
+  directory = DATA_DIR,
+  log_file_template = "deyecache-{0}.log",
+)
+
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+console = logging.StreamHandler(sys.stdout)
+console.setFormatter(formatter)
+logger.addHandler(console)
 
 # Define the lifespan context manager
 @asynccontextmanager
@@ -21,8 +44,6 @@ async def lifespan_handler(app: FastAPI):
 
   This function handles startup and shutdown events for the Deye Cache service.
   """
-  logger = logging.getLogger("uvicorn.default")
-
   # This code runs on startup
   logger.info(f"----- Deye Cache started -----")
   config.print_config(logger)
@@ -33,6 +54,13 @@ async def lifespan_handler(app: FastAPI):
 
   # This code runs on shutdown
   logger.info("DeyeCache service is shutting down...")
+
+  for handler in logging.getLogger().handlers:
+    handler.flush()
+    handler.close()
+
+  sys.stdout.flush()
+  sys.stderr.flush()
 
 app = FastAPI(
   lifespan = lifespan_handler,
@@ -212,14 +240,6 @@ async def get_cache_stat():
 if __name__ == "__main__":
   config.print_usage()
 
-  # Load the config from the JSON file
-  try:
-    with open("log_config.json", "r") as f:
-      log_config = json.load(f)
-  except Exception as e:
-    print(f"Failed to load logging config: {e}")
-    sys.exit(1)
-
   uvicorn.run(
     app,
     host = config.SERVER_HOST,
@@ -227,6 +247,6 @@ if __name__ == "__main__":
     timeout_keep_alive = 15,
     proxy_headers = False,
     forwarded_allow_ips = None,
-    log_config = log_config,
+    log_config = None,
     use_colors = False,
   )
