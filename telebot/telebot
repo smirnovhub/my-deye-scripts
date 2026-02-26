@@ -35,6 +35,7 @@ import telebot
 # to send error messages if some import fails
 from common_utils import CommonUtils
 from telebot_send_message import send_private_telegram_message
+from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 # Simple and safe way for HTML parse_mode
 def escape_html(text: str) -> str:
@@ -43,7 +44,7 @@ def escape_html(text: str) -> str:
 
 def graceful_shutdown(signum, frame):
   # Log signal receipt
-  print(f"Caught signal {signum}, sending last message...")
+  logger.info(f"Caught signal {signum}, sending last message...")
 
   try:
     # Send a final message synchronously
@@ -51,7 +52,7 @@ def graceful_shutdown(signum, frame):
                                   f"Telebot is going down...")
   except Exception as e:
     # Log error if message fails
-    print(f"Failed to send goodbye message: {e}")
+    logger.info(f"Failed to send goodbye message: {e}")
 
   # Stop the polling loop
   bot.stop_polling()
@@ -62,6 +63,28 @@ def graceful_shutdown(signum, frame):
 # Register for both manual interrupt and system termination
 signal.signal(signal.SIGINT, graceful_shutdown)
 signal.signal(signal.SIGTERM, graceful_shutdown)
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+  "[%(asctime)s.%(msecs)03d] %(message)s",
+  "%Y-%m-%d %H:%M:%S",
+)
+
+DATA_DIR = "data/telebot/logs"
+
+file_handler = HourlyOverwriteFileHandler(
+  directory = DATA_DIR,
+  log_file_template = "telebot-{0}.log",
+)
+
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+console = logging.StreamHandler(sys.stdout)
+console.setFormatter(formatter)
+logger.addHandler(console)
 
 try:
   from mytelebot import MyTelebot
