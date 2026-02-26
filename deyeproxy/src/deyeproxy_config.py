@@ -4,6 +4,7 @@ from src.deyeproxy_env_var import DeyeProxyEnvVar
 
 class DeyeProxyConfig:
   def __init__(self):
+    self.__proxy_name = DeyeProxyEnvVar("PROXY_NAME", "", "Individual name of proxy for logging (mandatory)")
     self.__logger_host = DeyeProxyEnvVar("LOGGER_HOST", "", "IP/Hostname of the inverter logger (mandatory)")
     self.__logger_port = DeyeProxyEnvVar("LOGGER_PORT", "8899", "Target port on the logger")
     self.__proxy_port = DeyeProxyEnvVar("PROXY_PORT", "8899", "Local port to listen on")
@@ -15,6 +16,7 @@ class DeyeProxyConfig:
     self.__proxy_host = '0.0.0.0'
 
     self.__all_vars = [
+      self.__proxy_name,
       self.__logger_host,
       self.__logger_port,
       self.__proxy_port,
@@ -23,6 +25,10 @@ class DeyeProxyConfig:
       self.__data_timeout,
       self.__log_level,
     ]
+
+  @property
+  def PROXY_NAME(self) -> str:
+    return self.__proxy_name.value
 
   @property
   def LOGGER_HOST(self) -> str:

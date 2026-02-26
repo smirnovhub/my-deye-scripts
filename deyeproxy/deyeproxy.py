@@ -36,9 +36,32 @@ import threading
 
 from typing import Tuple, Optional
 from src.deyeproxy_config import DeyeProxyConfig
+from src.hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 config = DeyeProxyConfig()
 config.validate_or_exit()
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+  "[%(asctime)s.%(msecs)03d] %(message)s",
+  "%Y-%m-%d %H:%M:%S",
+)
+
+DATA_DIR = f"data/deyeproxy-{config.PROXY_NAME}"
+
+file_handler = HourlyOverwriteFileHandler(
+  directory = DATA_DIR,
+  log_file_template = f"deyeproxy-{config.PROXY_NAME}-{{0}}.log",
+)
+
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+console = logging.StreamHandler(sys.stdout)
+console.setFormatter(formatter)
+logger.addHandler(console)
 
 # Global lock to synchronize access to the physical logger
 logger_lock: threading.Lock = threading.Lock()
@@ -56,8 +79,6 @@ logging.basicConfig(
   datefmt = '%Y-%m-%d %H:%M:%S',
   handlers = [logging.StreamHandler(sys.stdout)],
 )
-
-logger = logging.getLogger("deyeproxy")
 
 def get_proxy_external_ip(host: Optional[str], port: int) -> Optional[str]:
   if not host:
