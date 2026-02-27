@@ -1,4 +1,5 @@
 import os
+import re
 
 class EnvUtils:
   @staticmethod
@@ -30,6 +31,11 @@ class EnvUtils:
   @staticmethod
   def get_telegram_bot_api_test_token() -> str:
     return os.getenv('BOT_API_TEST_TOKEN', '').strip()
+
+  @staticmethod
+  def get_log_name(default: str) -> str:
+    log_name = os.getenv("LOG_NAME", default)
+    return re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
 
   @staticmethod
   def is_tests_on() -> bool:
