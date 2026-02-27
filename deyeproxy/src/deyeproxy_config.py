@@ -1,22 +1,23 @@
 import sys
+import logging
 
-from src.deyeproxy_env_var import DeyeProxyEnvVar
+from env_var import EnvVar
 
 class DeyeProxyConfig:
   def __init__(self):
-    self.__proxy_name = DeyeProxyEnvVar("PROXY_NAME", "", "Individual name of proxy for logging (mandatory)")
-    self.__logger_host = DeyeProxyEnvVar("LOGGER_HOST", "", "IP/Hostname of the inverter logger (mandatory)")
-    self.__logger_port = DeyeProxyEnvVar("LOGGER_PORT", "8899", "Target port on the logger")
-    self.__proxy_port = DeyeProxyEnvVar("PROXY_PORT", "8899", "Local port to listen on")
-    self.__max_connections = DeyeProxyEnvVar("MAX_CONCURRENT_CONNECTIONS", "10", "Max simultaneous connections")
-    self.__connect_timeout = DeyeProxyEnvVar("CONNECT_TIMEOUT", "5", "Timeout for logger connection")
-    self.__data_timeout = DeyeProxyEnvVar("DATA_TIMEOUT", "10", "Inactivity timeout for session")
-    self.__log_level = DeyeProxyEnvVar("LOG_LEVEL", "INFO", "Log level for logging")
+    self.__log_name = EnvVar("LOG_NAME", "deyeproxy", "Individual folder name for logging")
+    self.__logger_host = EnvVar("LOGGER_HOST", "", "IP/Hostname of the inverter logger (mandatory)")
+    self.__logger_port = EnvVar("LOGGER_PORT", "8899", "Target port on the logger")
+    self.__proxy_port = EnvVar("PROXY_PORT", "8899", "Local port to listen on")
+    self.__max_connections = EnvVar("MAX_CONCURRENT_CONNECTIONS", "10", "Max simultaneous connections")
+    self.__connect_timeout = EnvVar("CONNECT_TIMEOUT", "5", "Timeout for logger connection")
+    self.__data_timeout = EnvVar("DATA_TIMEOUT", "10", "Inactivity timeout for session")
+    self.__log_level = EnvVar("LOG_LEVEL", "INFO", "Log level for logging")
 
     self.__proxy_host = '0.0.0.0'
 
     self.__all_vars = [
-      self.__proxy_name,
+      self.__log_name,
       self.__logger_host,
       self.__logger_port,
       self.__proxy_port,
@@ -26,9 +27,11 @@ class DeyeProxyConfig:
       self.__log_level,
     ]
 
+    self.__logger = logging.getLogger()
+
   @property
-  def PROXY_NAME(self) -> str:
-    return self.__proxy_name.value
+  def LOG_NAME(self) -> str:
+    return self.__log_name.value
 
   @property
   def LOGGER_HOST(self) -> str:
@@ -65,9 +68,9 @@ class DeyeProxyConfig:
   def validate_or_exit(self):
     """Validate that mandatory settings are present, otherwise exit."""
     if not self.LOGGER_HOST:
-      print(f"Environment variable '{self.__logger_host.name}' is not set. Exiting.")
-      print("\nAvailable environment variables:")
+      self.__logger.error(f"Environment variable '{self.__logger_host.name}' is not set. Exiting.")
+      self.__logger.error("Available environment variables:")
       for var in self.__all_vars:
         default_str = f" (default: {var.default})" if var.default else ""
-        print(f"  {var.name:<26} - {var.description}{default_str}")
+        self.__logger.error(f"  {var.name:<26} - {var.description}{default_str}")
       sys.exit(1)

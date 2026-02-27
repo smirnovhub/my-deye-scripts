@@ -1,6 +1,6 @@
 import os
 
-class DeyeCacheEnvVar:
+class EnvVar:
   def __init__(self, name: str, default: str, description: str):
     self.__name = name
     self.__default = default

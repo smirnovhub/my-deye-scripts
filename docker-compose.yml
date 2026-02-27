@@ -26,7 +26,7 @@ services:
       args:
         - BRANCH=${APP_BRANCH}
     environment:
-      - SERVER_NAME=servername
+      - LOG_NAME=deyebackserver
       - SERVER_PORT=80
     image: deyebackserver
     container_name: deyebackserver
@@ -51,6 +51,7 @@ services:
       context: .
       dockerfile: deyecache/Dockerfile
     environment:
+      - LOG_NAME=deyecache
       - SERVER_PORT=80
       - MAX_KEYS_COUNT=32
       - MAX_JSON_SIZE=32768
@@ -67,7 +68,7 @@ services:
       context: .
       dockerfile: deyeproxy/Dockerfile
     environment:
-      - PROXY_NAME=proxyname
+      - LOG_NAME=deyeproxy
       - LOGGER_HOST=192.168.1.101
       - LOGGER_PORT=8899
       - PROXY_PORT=8899

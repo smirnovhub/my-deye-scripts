@@ -37,11 +37,11 @@ formatter = logging.Formatter(
   "%Y-%m-%d %H:%M:%S",
 )
 
-DATA_DIR = f"data/backserver-{config.SERVER_NAME}"
+DATA_DIR = f"data/{config.LOG_NAME}"
 
 file_handler = HourlyOverwriteFileHandler(
   directory = DATA_DIR,
-  log_file_template = f"backserver-{config.SERVER_NAME}-{{0}}.log",
+  log_file_template = f"backserver-{{0}}.log",
 )
 
 file_handler.setFormatter(formatter)
@@ -72,7 +72,6 @@ async def lifespan_handler(app: FastAPI):
 
   for handler in logging.getLogger().handlers:
     handler.flush()
-    handler.close()
 
   sys.stdout.flush()
   sys.stderr.flush()
@@ -155,7 +154,7 @@ def get_error_result(message: str, callstack: str = '') -> Dict[str, Any]:
   return result
 
 if __name__ == "__main__":
-  config.print_usage()
+  config.print_usage(logger)
 
   uvicorn.run(
     app,

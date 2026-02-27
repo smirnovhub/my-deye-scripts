@@ -36,15 +36,14 @@ import signal
 import threading
 
 from typing import Tuple, Optional
-from src.deyeproxy_config import DeyeProxyConfig
 
 utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
 sys.path.append(utils_path)
 
+from src.deyeproxy_config import DeyeProxyConfig
 from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 config = DeyeProxyConfig()
-config.validate_or_exit()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -54,11 +53,11 @@ formatter = logging.Formatter(
   "%Y-%m-%d %H:%M:%S",
 )
 
-DATA_DIR = f"data/deyeproxy-{config.PROXY_NAME}"
+DATA_DIR = f"data/{config.LOG_NAME}"
 
 file_handler = HourlyOverwriteFileHandler(
   directory = DATA_DIR,
-  log_file_template = f"deyeproxy-{config.PROXY_NAME}-{{0}}.log",
+  log_file_template = f"deyeproxy-{{0}}.log",
 )
 
 file_handler.setFormatter(formatter)
@@ -67,6 +66,8 @@ logger.addHandler(file_handler)
 console = logging.StreamHandler(sys.stdout)
 console.setFormatter(formatter)
 logger.addHandler(console)
+
+config.validate_or_exit()
 
 # Global lock to synchronize access to the physical logger
 logger_lock: threading.Lock = threading.Lock()
@@ -328,7 +329,6 @@ def main() -> None:
 
     for handler in logging.getLogger().handlers:
       handler.flush()
-      handler.close()
 
     sys.stdout.flush()
     sys.stderr.flush()

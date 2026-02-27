@@ -12,13 +12,14 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from src.deyecache_config import DeyeCacheConfig
 
 utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
 sys.path.append(utils_path)
 
+from src.deyecache_config import DeyeCacheConfig
 from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
+config = DeyeCacheConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -27,7 +28,7 @@ formatter = logging.Formatter(
   "%Y-%m-%d %H:%M:%S",
 )
 
-DATA_DIR = "data/deyecache"
+DATA_DIR = f"data/{config.LOG_NAME}"
 
 file_handler = HourlyOverwriteFileHandler(
   directory = DATA_DIR,
@@ -62,7 +63,6 @@ async def lifespan_handler(app: FastAPI):
 
   for handler in logging.getLogger().handlers:
     handler.flush()
-    handler.close()
 
   sys.stdout.flush()
   sys.stderr.flush()
@@ -75,8 +75,6 @@ app = FastAPI(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
-
-config = DeyeCacheConfig()
 
 # In-memory storage for any JSON data
 cache_storage: Dict[str, Any] = {}
@@ -243,7 +241,7 @@ async def get_cache_stat():
   }
 
 if __name__ == "__main__":
-  config.print_usage()
+  config.print_usage(logger)
 
   uvicorn.run(
     app,

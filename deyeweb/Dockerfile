@@ -129,7 +129,7 @@ COPY demoserver/src/common/*.py $REPO_NAME/common/
 
 FROM python:3.14-slim AS deyebackserver
 
-ENV SERVER_NAME=deyeback
+ENV LOG_NAME=backserver
 ENV SERVER_PORT=80
 
 # Set remote repository name
