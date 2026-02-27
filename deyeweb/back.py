@@ -57,6 +57,7 @@ logger.addHandler(console)
 dependency_provider = DeyeWebDependencyProvider()
 
 def send_error_and_exit(message: str, callstack: str = '') -> None:
+  logger.error(f'{message}\n{callstack}')
   constants = dependency_provider.constants
   if constants:
     result = {
@@ -71,6 +72,13 @@ def send_error_and_exit(message: str, callstack: str = '') -> None:
     }
 
   print(json.dumps(result))
+
+  for handler in logging.getLogger().handlers:
+    handler.flush()
+
+  sys.stdout.flush()
+  sys.stderr.flush()
+
   sys.exit(1)
 
 dependency_provider = DeyeWebDependencyProvider()
@@ -117,3 +125,9 @@ json_str = json.dumps(result)
 
 # Return json to php
 print(json_str)
+
+for handler in logging.getLogger().handlers:
+  handler.flush()
+
+sys.stdout.flush()
+sys.stderr.flush()

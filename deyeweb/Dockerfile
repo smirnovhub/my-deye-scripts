@@ -102,6 +102,9 @@ RUN chown -R www-data:www-data $REPO_NAME
 # Apache runs on ports 80 and 443
 EXPOSE 80 443
 
+# Use unbuffered output to see logs in docker logs
+ENV PYTHONUNBUFFERED=1
+
 # Use the script as entrypoint
 ENTRYPOINT ["entrypoint.sh"]
 
@@ -185,6 +188,9 @@ COPY --chown=$USER_NAME:$USER_NAME common/*.py $REPO_NAME/common/
 
 # Expose proxy port
 EXPOSE $SERVER_PORT
+
+# Use unbuffered output to see logs in docker logs
+ENV PYTHONUNBUFFERED=1
 
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME/deyeweb

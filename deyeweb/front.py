@@ -58,7 +58,14 @@ else:
   # Get all errors as a formatted string
   all_errors = dependency_provider.get_all_errors()
   error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items())
+  logger.error(error_text)
   print(f"<h1>Frontend Error</h1><pre>{error_text}</pre>")
+
+for handler in logging.getLogger().handlers:
+  handler.flush()
+
+sys.stdout.flush()
+sys.stderr.flush()
 
 #from deye_web_utils import DeyeWebUtils
 #with open("/tmp/front_classes_count.txt", "w", encoding = "utf-8") as f:
