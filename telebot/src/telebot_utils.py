@@ -13,7 +13,7 @@ class TelebotUtils:
 
   @staticmethod
   def get_data_dir() -> str:
-    log_name = EnvUtils.get_log_name()
+    log_name = EnvUtils.get_log_name("telebot")
     return TelebotConstants.data_dir.format(log_name)
 
   @staticmethod
