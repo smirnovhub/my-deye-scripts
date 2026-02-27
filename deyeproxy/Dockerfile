@@ -29,7 +29,7 @@ RUN apt-get update && \
   echo $TIMEZONE > /etc/timezone
 
 # Create user without password, with home directory
-RUN useradd -m -u 3333 -s /usr/sbin/nologin $USER_NAME
+RUN useradd -m -u 1673 -s /usr/sbin/nologin $USER_NAME
 
 # Switch to non-root user
 USER $USER_NAME

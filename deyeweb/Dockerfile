@@ -170,7 +170,7 @@ RUN pip install --no-cache-dir --break-system-packages \
   six requests fastapi uvicorn uvloop
 
 # Create user without password, with home directory
-RUN useradd -m -u 3333 -s /usr/sbin/nologin $USER_NAME
+RUN useradd -m -u 7634 -s /usr/sbin/nologin $USER_NAME
 
 # Switch to non-root user
 USER $USER_NAME

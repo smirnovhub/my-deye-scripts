@@ -29,7 +29,7 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir --break-system-packages fastapi uvicorn uvloop
 
 # Create user without password, with home directory
-RUN useradd -m -u 3333 -s /usr/sbin/nologin $USER_NAME
+RUN useradd -m -u 7777 -s /usr/sbin/nologin $USER_NAME
 
 # Switch to non-root user
 USER $USER_NAME

@@ -64,7 +64,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 formatter = logging.Formatter(
-  "[%(asctime)s.%(msecs)03d] %(message)s",
+  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
   "%Y-%m-%d %H:%M:%S",
 )
 
