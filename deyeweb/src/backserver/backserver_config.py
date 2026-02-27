@@ -31,13 +31,17 @@ class BackServerConfig:
   def BACK_EXECUTION_TIMEOUT(self) -> float:
     return self.__back_execution_timeout.as_float()
 
+  def _get_max_var_length(self) -> int:
+    return max((len(var.name) for var in self.__all_vars), default = 0)
+
   def print_usage(self, logger: logging.Logger):
     logger.info("Available environment variables:")
+    len = self._get_max_var_length()
     for var in self.__all_vars:
       default_str = f" (default: {var.default})" if var.default else ""
-      logger.info(f"  {var.name:<22} - {var.description}{default_str}")
-    logger.info("")
+      logger.info(f"  {var.name:<{len}} - {var.description}{default_str}")
 
   def print_config(self, logger: logging.Logger):
+    len = self._get_max_var_length()
     for var in self.__all_vars:
-      logger.info(f"{var.name:<22} : {var.value}")
+      logger.info(f"{var.name:<{len}} : {var.value}")

@@ -45,13 +45,17 @@ class DeyeCacheConfig:
   def MAX_JSON_STORAGE_SIZE(self) -> int:
     return self.__max_json_storage_size.as_int()
 
+  def _get_max_var_length(self) -> int:
+    return max((len(var.name) for var in self.__all_vars), default = 0)
+
   def print_usage(self, logger: logging.Logger):
     logger.info("Available environment variables:")
+    len = self._get_max_var_length()
     for var in self.__all_vars:
       default_str = f" (default: {var.default})" if var.default else ""
-      logger.info(f"  {var.name:<21} - {var.description}{default_str}")
-    logger.info("")
+      logger.info(f"  {var.name:<{len}} - {var.description}{default_str}")
 
   def print_config(self, logger: logging.Logger):
+    len = self._get_max_var_length()
     for var in self.__all_vars:
-      logger.info(f"{var.name:<21} : {var.value}")
+      logger.info(f"{var.name:<{len}} : {var.value}")

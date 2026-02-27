@@ -65,12 +65,16 @@ class DeyeProxyConfig:
   def LOG_LEVEL(self) -> str:
     return self.__log_level.value
 
+  def _get_max_var_length(self) -> int:
+    return max((len(var.name) for var in self.__all_vars), default = 0)
+
   def validate_or_exit(self):
     """Validate that mandatory settings are present, otherwise exit."""
     if not self.LOGGER_HOST:
+      len = self._get_max_var_length()
       self.__logger.error(f"Environment variable '{self.__logger_host.name}' is not set. Exiting.")
       self.__logger.error("Available environment variables:")
       for var in self.__all_vars:
         default_str = f" (default: {var.default})" if var.default else ""
-        self.__logger.error(f"  {var.name:<26} - {var.description}{default_str}")
+        self.__logger.error(f"  {var.name:<{len}} - {var.description}{default_str}")
       sys.exit(1)
