@@ -50,10 +50,6 @@ file_handler = HourlyOverwriteFileHandler(
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-console = logging.StreamHandler(sys.stdout)
-console.setFormatter(formatter)
-logger.addHandler(console)
-
 dependency_provider = DeyeWebDependencyProvider()
 
 def send_error_and_exit(message: str, callstack: str = '') -> None:
