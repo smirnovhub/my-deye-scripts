@@ -34,12 +34,12 @@ def escape_html(text: str) -> str:
 
 def graceful_shutdown(signum, frame):
   # Log signal receipt
-  logger.info(f"Caught signal {signum}, sending last message...")
+  logger.info("Telebot is going down...")
 
   try:
     # Send a final message synchronously
     send_private_telegram_message(f"{CommonUtils.large_yellow_circle_emoji} "
-                                  f"Telebot is going down...")
+                                  "Telebot is going down...")
   except Exception as e:
     # Log error if message fails
     logger.info(f"Failed to send goodbye message: {e}")
@@ -82,6 +82,8 @@ logger.addHandler(file_handler)
 console = logging.StreamHandler(sys.stdout)
 console.setFormatter(formatter)
 logger.addHandler(console)
+
+logger.info('Telebot is starting...')
 
 try:
   from mytelebot import MyTelebot
