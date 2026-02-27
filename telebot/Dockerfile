@@ -58,4 +58,4 @@ WORKDIR $APP_DIR/$REPO_NAME
 ENV PYTHONUNBUFFERED=1
 
 # Starting the bot
-CMD ["python3", "telebot/telebot.py"]
+CMD ["python3", "telebot/deyetelebot.py"]
