@@ -1,11 +1,11 @@
 import os
-import re
-import threading
 import time
+import threading
 import telebot
 
 from typing import Dict, List, Optional
 
+from env_utils import EnvUtils
 from telebot_constants import TelebotConstants
 
 class TelebotUtils:
@@ -13,8 +13,7 @@ class TelebotUtils:
 
   @staticmethod
   def get_data_dir() -> str:
-    log_name = os.getenv("LOG_NAME", "telebot")
-    log_name = re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
+    log_name = EnvUtils.get_log_name()
     return TelebotConstants.data_dir.format(log_name)
 
   @staticmethod
