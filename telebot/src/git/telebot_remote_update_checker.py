@@ -4,6 +4,7 @@ import telebot
 
 from git_helper import GitHelper
 from deye_utils import DeyeUtils
+from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from deye_file_with_lock import DeyeFileWithLock
@@ -22,7 +23,8 @@ class TelebotRemoteUpdateChecker:
     self.locker = DeyeFileWithLock()
     self.git_helper = GitHelper()
     self.logger = logging.getLogger()
-    self.ask_file_name = f'{TelebotConstants.data_dir}/last_remote_update_ask_time.txt'
+    data_dir = TelebotUtils.get_data_dir()
+    self.ask_file_name = f'{data_dir}/last_remote_update_ask_time.txt'
     DeyeUtils.ensure_dir_and_file_exists(self.ask_file_name)
 
   def is_on_branch(self):

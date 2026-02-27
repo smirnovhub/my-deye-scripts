@@ -35,6 +35,7 @@ import telebot
 # Should be first in imports list to make possible
 # to send error messages if some import fails
 from common_utils import CommonUtils
+from telebot_utils import TelebotUtils
 from telebot_send_message import send_private_telegram_message
 from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
@@ -58,6 +59,12 @@ def graceful_shutdown(signum, frame):
   # Stop the polling loop
   bot.stop_polling()
 
+  for handler in logging.getLogger().handlers:
+    handler.flush()
+
+  sys.stdout.flush()
+  sys.stderr.flush()
+
   # Exit the process
   sys.exit(0)
 
@@ -73,10 +80,11 @@ formatter = logging.Formatter(
   "%Y-%m-%d %H:%M:%S",
 )
 
-DATA_DIR = "data/telebot/logs"
+dir_name = TelebotUtils.get_data_dir()
+log_dir_name = os.path.join(dir_name, 'logs')
 
 file_handler = HourlyOverwriteFileHandler(
-  directory = DATA_DIR,
+  directory = log_dir_name,
   log_file_template = "telebot-{0}.log",
 )
 

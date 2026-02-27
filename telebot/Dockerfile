@@ -1,5 +1,7 @@
 FROM python:3.14-slim
 
+ENV LOG_NAME=telebot
+
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
 

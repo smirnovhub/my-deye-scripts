@@ -3,10 +3,10 @@ import telebot
 
 from typing import List
 
+from telebot_utils import TelebotUtils
 from teletest import TeleTest
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
-from telebot_constants import TelebotConstants
 from telebot_menu_time_of_use import TelebotMenuTimeOfUse
 from telebot_users import TelebotUsers
 from telebot_base_handler import TelebotBaseHandler
@@ -54,7 +54,8 @@ class MyTelebot:
     self.update_checker = TelebotLocalUpdateChecker()
     self.logger = logger
 
-    DeyeUtils.ensure_dir_exists(TelebotConstants.data_dir)
+    data_dir = TelebotUtils.get_data_dir()
+    DeyeUtils.ensure_dir_exists(data_dir)
 
     def print_commands(bot: telebot.TeleBot, scope, label):
       commands = bot.get_my_commands(scope = scope)

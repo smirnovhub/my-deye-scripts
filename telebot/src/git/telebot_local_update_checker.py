@@ -27,8 +27,9 @@ class TelebotLocalUpdateChecker:
     self.git_helper = GitHelper()
     self.logger = logging.getLogger()
 
-    self.ask_file_name = f'{TelebotConstants.data_dir}/last_local_update_ask_time.txt'
-    self.hash_file_name = f'{TelebotConstants.data_dir}/last_commit_hash.txt'
+    data_dir = TelebotUtils.get_data_dir()
+    self.ask_file_name = f'{data_dir}/last_local_update_ask_time.txt'
+    self.hash_file_name = f'{data_dir}/last_commit_hash.txt'
 
     DeyeUtils.ensure_dir_and_file_exists(self.ask_file_name)
     DeyeUtils.ensure_dir_and_file_exists(self.hash_file_name)

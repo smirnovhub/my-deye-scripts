@@ -1,12 +1,21 @@
 import os
+import re
 import threading
 import time
 import telebot
 
 from typing import Dict, List, Optional
 
+from telebot_constants import TelebotConstants
+
 class TelebotUtils:
   row_break_str = '!break!'
+
+  @staticmethod
+  def get_data_dir() -> str:
+    log_name = os.getenv("LOG_NAME", "telebot")
+    log_name = re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
+    return TelebotConstants.data_dir.format(log_name)
 
   @staticmethod
   def get_inline_button_by_data(

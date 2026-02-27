@@ -10,4 +10,5 @@ class TelebotConstants:
   buttons_remove_delay_sec = 0
   git_repository_remote_check_period_sec = 60 * 60 * 24
   git_repository_local_check_period_sec = 60 * 60 * 12
-  data_dir = 'data/telebot'
+  data_dir = 'data/{0}'
+  default_log_name = 'telebot'
