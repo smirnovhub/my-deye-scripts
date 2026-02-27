@@ -3,6 +3,7 @@ import time
 import logging
 import threading
 
+from typing import IO, Any, Optional
 from datetime import datetime
 
 class HourlyOverwriteFileHandler(logging.Handler):
@@ -16,8 +17,8 @@ class HourlyOverwriteFileHandler(logging.Handler):
     self.directory = directory
     self.log_file_template = log_file_template
     self.encoding = encoding
-    self._current_hour = None
-    self._stream = None
+    self._current_hour: Optional[str] = None
+    self._stream: Optional[IO[Any]] = None
     self._lock = threading.RLock()
 
     os.makedirs(self.directory, exist_ok = True)
@@ -30,7 +31,7 @@ class HourlyOverwriteFileHandler(logging.Handler):
     filename = self.log_file_template.format(hour)
     return os.path.join(self.directory, filename)
 
-  def _open_initial_stream(self):
+  def _open_initial_stream(self) -> None:
     """Open file at startup: overwrite if old, append if current day."""
     hour = self._get_hour()
     filename = self._build_filename(hour)
@@ -47,7 +48,7 @@ class HourlyOverwriteFileHandler(logging.Handler):
       self._stream = open(filename, mode = mode, encoding = self.encoding)
       self._current_hour = hour
 
-  def _rollover_if_needed(self):
+  def _rollover_if_needed(self) -> None:
     hour = self._get_hour()
 
     if hour != self._current_hour:
@@ -59,7 +60,6 @@ class HourlyOverwriteFileHandler(logging.Handler):
 
         # Overwrite only on real hour change
         self._stream = open(filename, mode = "w", encoding = self.encoding)
-
         self._current_hour = hour
 
   def emit(self, record: logging.LogRecord):
@@ -67,9 +67,10 @@ class HourlyOverwriteFileHandler(logging.Handler):
       with self._lock:
         self._rollover_if_needed()
 
-        msg = self.format(record)
-        self._stream.write(msg + "\n")
-        self._stream.flush()
+        if self._stream:
+          msg = self.format(record)
+          self._stream.write(msg + "\n")
+          self._stream.flush()
 
     except Exception:
       self.handleError(record)
