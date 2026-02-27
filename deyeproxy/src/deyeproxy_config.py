@@ -31,7 +31,7 @@ class DeyeProxyConfig:
 
   @property
   def LOG_NAME(self) -> str:
-    return self.__log_name.value
+    return self.__log_name.as_filtered_value
 
   @property
   def LOGGER_HOST(self) -> str:

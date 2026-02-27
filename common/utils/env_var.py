@@ -1,4 +1,5 @@
 import os
+import re
 
 class EnvVar:
   def __init__(self, name: str, default: str, description: str):
@@ -22,6 +23,10 @@ class EnvVar:
   @property
   def value(self) -> str:
     return self.__value
+
+  @property
+  def as_filtered_value(self) -> str:
+    return re.sub(r'[^a-zA-Z0-9-]+', '-', self.__value).strip('-')
 
   def as_int(self) -> int:
     return int(self.__value)

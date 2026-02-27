@@ -17,7 +17,7 @@ class BackServerConfig:
 
   @property
   def LOG_NAME(self) -> str:
-    return self.__log_name.value
+    return self.__log_name.as_filtered_value
 
   @property
   def SERVER_HOST(self) -> str:
