@@ -53,7 +53,7 @@ if not loggers.is_test_loggers:
 commands = [
   sys.executable,
   '-u',
-  os.path.join(base_path, 'telebot/telebot'),
+  os.path.join(base_path, 'telebot/deyetelebot.py'),
 ]
 
 log.info(f'Command to execute: {commands}')
