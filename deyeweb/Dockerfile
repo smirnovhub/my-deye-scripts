@@ -113,12 +113,15 @@ CMD ["apache2-foreground"]
 ###############
 
 FROM baseweb AS deyeweb
+ENV LOG_NAME=deyeweb
 
 ###############
 ### demoweb ###
 ###############
 
 FROM baseweb AS demoweb
+
+ENV LOG_NAME=demoweb
 
 # Copy demo server configs to container
 COPY demoserver/src/common/*.py $REPO_NAME/common/
