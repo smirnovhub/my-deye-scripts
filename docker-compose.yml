@@ -132,6 +132,23 @@ services:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/deyeproxy/deyeproxy/data
 
+  log-observer:
+    build:
+      context: .
+      dockerfile: logobserver/Dockerfile
+    image: log-observer
+    container_name: log-observer
+    hostname: log-observer
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GLOBAL_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/var/www/html
+
   demo-web:
     build:
       context: .

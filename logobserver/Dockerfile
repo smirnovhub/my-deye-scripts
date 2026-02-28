@@ -8,8 +8,6 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
-  mc \
-  locales \
   openssl && \
   apt-get purge -y --auto-remove \
   g++ \
@@ -26,18 +24,6 @@ RUN apt-get update && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
   echo $TIMEZONE > /etc/timezone && \
   echo "alias ls='ls --color=auto'" >> /root/.bashrc
-
-# Generate locales
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-  echo "en_GB.UTF-8 UTF-8" >> /etc/locale.gen && \
-  locale-gen
-
-# Set locales
-ENV TERM=xterm
-ENV EDITOR=mcedit
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:en
-ENV LC_TIME=en_GB.UTF-8
 
 # Enable Apache rewrite module (common for PHP apps)
 RUN a2enmod rewrite && \
