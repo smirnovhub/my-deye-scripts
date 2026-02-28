@@ -77,20 +77,23 @@ RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
   -out /etc/ssl/certs/apache-selfsigned.crt \
   -subj "/C=UA/L=Kyiv/O=Development/CN=localhost"
 
-# Enable the default SSL configuration of Apache
-RUN a2ensite default-ssl
-
-# Point Apache to our new certificates 
-# By default, default-ssl uses snakeoil certs, let's point to ours:
-RUN sed -i 's|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/apache-selfsigned.crt|' /etc/apache2/sites-available/default-ssl.conf && \
-  sed -i 's|SSLCertificateKeyFile.*|SSLCertificateKeyFile /etc/ssl/private/apache-selfsigned.key|' /etc/apache2/sites-available/default-ssl.conf
-
 # Comment out the Alias /icons/ directive inside the alias module configuration
 # This frees up the /icons/ path for our own application
 RUN sed -i 's|^Alias /icons/|#Alias /icons/|' /etc/apache2/mods-available/alias.conf
 
 # Copy proxy configuration
-COPY deyeweb/src/backserver/apache-proxy-settings.conf /etc/apache2/conf-available/apache-proxy-settings.conf
+COPY deyeweb/apache/apache-proxy-settings.conf /etc/apache2/conf-available/apache-proxy-settings.conf
+
+# Copy custom logs configuration
+# It also includes our ssl configuration
+COPY deyeweb/apache/apache-custom-log.conf /etc/apache2/sites-available/apache-custom-log.conf
+COPY deyeweb/apache/apache-custom-log-ssl.conf /etc/apache2/sites-available/apache-custom-log-ssl.conf
+
+# Enable our custom logging and ssl certificates
+RUN a2dissite 000-default && \
+  a2dissite default-ssl && \
+  a2ensite apache-custom-log && \
+  a2ensite apache-custom-log-ssl
 
 # Copy and prepare the entrypoint script
 COPY deyeweb/entrypoint.sh /usr/local/bin/
@@ -116,7 +119,7 @@ CMD ["apache2-foreground"]
 ###############
 
 FROM baseweb AS deyeweb
-ENV LOG_NAME=deyeweb
+ENV DEYE_LOG_NAME=deyeweb
 
 ###############
 ### demoweb ###
@@ -124,7 +127,7 @@ ENV LOG_NAME=deyeweb
 
 FROM baseweb AS demoweb
 
-ENV LOG_NAME=demoweb
+ENV DEYE_LOG_NAME=demoweb
 
 # Copy demo server configs to container
 COPY demoserver/src/common/*.py $REPO_NAME/common/
@@ -135,7 +138,7 @@ COPY demoserver/src/common/*.py $REPO_NAME/common/
 
 FROM python:3.14-slim AS deyebackserver
 
-ENV LOG_NAME=backserver
+ENV DEYE_LOG_NAME=backserver
 ENV SERVER_PORT=80
 
 # Set remote repository name

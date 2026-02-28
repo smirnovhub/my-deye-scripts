@@ -4,7 +4,7 @@ from env_var import EnvVar
 
 class BackServerConfig:
   def __init__(self):
-    self.__log_name = EnvVar("LOG_NAME", "backserver", "Individual folder name for logging")
+    self.__log_name = EnvVar("DEYE_LOG_NAME", "backserver", "Individual folder name for logging")
     self.__server_port = EnvVar("SERVER_PORT", "80", "Local port to listen on")
     self.__back_execution_timeout = EnvVar("BACK_EXECUTION_TIMEOUT", "15", "Timeout for back requests execution, s")
     self.__server_host = '0.0.0.0'

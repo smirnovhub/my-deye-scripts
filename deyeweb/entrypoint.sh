@@ -24,5 +24,9 @@ else
     a2disconf -f apache-proxy-settings || true
 fi
 
+# Create log directory
+mkdir -p "/var/www/html/data/${DEYE_LOG_NAME}"
+chown -R www-data:www-data "/var/www/html/data/${DEYE_LOG_NAME}"
+
 # Execute the main container process
 exec "$@"

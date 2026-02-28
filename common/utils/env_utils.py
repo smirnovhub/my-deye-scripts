@@ -46,7 +46,7 @@ class EnvUtils:
 
   @staticmethod
   def get_log_name(default: str) -> str:
-    log_name = os.getenv("LOG_NAME", default)
+    log_name = os.getenv("DEYE_LOG_NAME", default)
     return re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
 
   @staticmethod

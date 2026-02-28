@@ -5,7 +5,7 @@ from env_var import EnvVar
 
 class DeyeProxyConfig:
   def __init__(self):
-    self.__log_name = EnvVar("LOG_NAME", "deyeproxy", "Individual folder name for logging")
+    self.__log_name = EnvVar("DEYE_LOG_NAME", "deyeproxy", "Individual folder name for logging")
     self.__logger_host = EnvVar("LOGGER_HOST", "", "IP/Hostname of the inverter logger (mandatory)")
     self.__logger_port = EnvVar("LOGGER_PORT", "8899", "Target port on the logger")
     self.__proxy_port = EnvVar("PROXY_PORT", "8899", "Local port to listen on")
