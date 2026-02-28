@@ -2,15 +2,18 @@ import os
 import sys
 import asyncio
 import logging
+import socket
 import traceback
 import uvicorn
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware
+
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
@@ -51,6 +54,14 @@ console = logging.StreamHandler(sys.stdout)
 console.setFormatter(formatter)
 logger.addHandler(console)
 
+def get_external_ip(host: str, port: int) -> Optional[str]:
+  try:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+      s.connect((host, port))
+      return s.getsockname()[0]
+  except Exception:
+    return None
+
 # Define the lifespan context manager
 @asynccontextmanager
 async def lifespan_handler(app: FastAPI):
@@ -63,6 +74,11 @@ async def lifespan_handler(app: FastAPI):
   logger.info(f"--- Deye BackServer started ---")
   config.print_config(logger)
   logger.info(f"-------------------------------")
+
+  external_ip = get_external_ip("8.8.8.8", 53)
+  actual_ip = external_ip if external_ip else config.SERVER_HOST
+
+  logger.info(f"Listening on: {actual_ip}:{config.SERVER_PORT}")
 
   # The application runs here
   yield

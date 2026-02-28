@@ -86,10 +86,7 @@ logging.basicConfig(
   handlers = [logging.StreamHandler(sys.stdout)],
 )
 
-def get_proxy_external_ip(host: Optional[str], port: int) -> Optional[str]:
-  if not host:
-    return None
-
+def get_external_ip(host: str, port: int) -> Optional[str]:
   try:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
       s.connect((host, port))
@@ -285,7 +282,7 @@ def main() -> None:
     server.close()
     sys.exit(1)
 
-  external_ip = get_proxy_external_ip(config.LOGGER_HOST, config.LOGGER_PORT)
+  external_ip = get_external_ip(config.LOGGER_HOST, config.LOGGER_PORT)
   actual_ip = external_ip if external_ip else config.PROXY_HOST
 
   log_level_name = logging._levelToName[log_level]
