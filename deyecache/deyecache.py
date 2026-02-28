@@ -2,11 +2,12 @@ import os
 import json
 import asyncio
 import logging
+import socket
 import sys
 import time
 import uvicorn
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from datetime import datetime
 
 from contextlib import asynccontextmanager
@@ -29,6 +30,9 @@ formatter = logging.Formatter(
 )
 
 DATA_DIR = f"data/{config.LOG_NAME}"
+
+# Path for the persistent cache storage file
+CACHE_FILE_PATH = os.path.join(DATA_DIR, "cache_storage.json")
 
 file_handler = HourlyOverwriteFileHandler(
   directory = DATA_DIR,
@@ -55,8 +59,37 @@ async def lifespan_handler(app: FastAPI):
   config.print_config(logger)
   logger.info(f"------------------------------")
 
+  external_ip = get_external_ip("8.8.8.8", 53)
+  actual_ip = external_ip if external_ip else config.SERVER_HOST
+
+  logger.info(f"Listening on: {actual_ip}:{config.SERVER_PORT}")
+
+  # Cache restoring logic
+  logger.info(f"Restoring cache from {CACHE_FILE_PATH}...")
+  if os.path.exists(CACHE_FILE_PATH):
+    try:
+      with open(CACHE_FILE_PATH, "r", encoding = "utf-8") as f:
+        loaded_data = json.load(f)
+        cache_storage.update(loaded_data)
+        logger.info(f"Restored {len(loaded_data)} keys from {CACHE_FILE_PATH}")
+    except Exception as e:
+      logger.error(f"Failed to load cache from {CACHE_FILE_PATH}: {e}")
+  else:
+    logger.warning(f"File {CACHE_FILE_PATH} doesn't exist.")
+
   # The application runs here
   yield
+
+  # Cache save logic
+  logger.info(f"Saving cache to {CACHE_FILE_PATH}...")
+  try:
+    # Ensure directory exists before saving
+    os.makedirs(DATA_DIR, exist_ok = True)
+    with open(CACHE_FILE_PATH, "w", encoding = "utf-8") as f:
+      json.dump(cache_storage, f, ensure_ascii = False, indent = 2)
+    logger.info(f"Successfully saved {len(cache_storage)} keys to {CACHE_FILE_PATH}")
+  except Exception as e:
+    logger.error(f"Failed to save cache to {CACHE_FILE_PATH}: {e}")
 
   # This code runs on shutdown
   logger.info("DeyeCache service is shutting down...")
@@ -83,6 +116,14 @@ cache_storage: Dict[str, Any] = {}
 locks: Dict[str, asyncio.Lock] = {}
 # Global lock to protect access to the locks dictionary
 locks_lock = asyncio.Lock()
+
+def get_external_ip(host: str, port: int) -> Optional[str]:
+  try:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+      s.connect((host, port))
+      return s.getsockname()[0]
+  except Exception:
+    return None
 
 def deep_merge(source: Dict[str, Any], update: Dict[str, Any]) -> None:
   """
