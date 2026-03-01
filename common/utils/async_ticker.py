@@ -12,7 +12,15 @@ class AsyncTicker:
   ):
     self._period = period
     self._align_with_period = align_with_period
+    self._stop_event = asyncio.Event()
     self._logger = logging.getLogger()
+    self._logger.setLevel(logging.INFO)
+
+  def stop(self) -> None:
+    """
+    Public method to stop the ticker manually from code.
+    """
+    self._stop_event.set()
 
   async def __aiter__(self):
     """
@@ -31,11 +39,11 @@ class AsyncTicker:
       next_tick += period_sec
 
     try:
-      while True:
+      while not self._stop_event.is_set():
         # Calculate how long to wait until the next tick
         wait_time = max(0.0, next_tick - time.time())
 
-        await asyncio.sleep(wait_time)
+        await self._wait_with_cancellation(wait_time)
 
         yield # Yield control to the calling loop
 
@@ -51,3 +59,20 @@ class AsyncTicker:
       raise
     finally:
       self._logger.info("AsyncTicker finished.")
+
+  async def _wait_with_cancellation(self, wait_time: float) -> None:
+    """
+    Wait for the given time in small intervals, so that stop_event or cancel can be processed immediately.
+    """
+    check_time_sec = 0.5
+    remaining = wait_time
+
+    while remaining > 0:
+      interval = min(check_time_sec, remaining)
+      try:
+        await asyncio.wait_for(self._stop_event.wait(), timeout = interval)
+        # stop_event was set → exit immediately
+        break
+      except (asyncio.TimeoutError, asyncio.exceptions.TimeoutError):
+        # Timeout expired, continue waiting
+        remaining -= interval
