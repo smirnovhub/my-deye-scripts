@@ -43,33 +43,35 @@ class HourlyOverwriteFileHandler(logging.Handler):
     current_hour = self._get_hour()
 
     filename = self._build_filename(current_hour)
-
-    mode = "a"
-    if os.path.exists(filename):
-      mtime = os.path.getmtime(filename)
-      file_date = datetime.fromtimestamp(mtime).date()
-
-      # If the file on disk is older than today, overwrite it
-      if file_date < current_date:
-        mode = "w"
+    mode = "w" if self._is_file_too_old(filename, current_date) else "a"
 
     with self._lock:
       self._stream = open(filename, mode = mode, encoding = self.encoding)
       self._current_date = current_date
       self._current_hour = current_hour
 
+  def _is_file_too_old(self, filename: str, current_date: date) -> bool:
+    if not os.path.exists(filename):
+      return False
+
+    mtime = os.path.getmtime(filename)
+    file_date = datetime.fromtimestamp(mtime).date()
+
+    return file_date < current_date
+
   def _rollover_if_needed(self) -> None:
     """Check for hour change OR date change."""
     current_date = self._get_date()
     current_hour = self._get_hour()
 
+    filename = self._build_filename(current_hour)
+    too_old = self._is_file_too_old(filename, current_date)
+
     # Trigger rollover if the hour is different OR if it's a new day
-    if current_hour != self._current_hour or current_date != self._current_date:
+    if too_old or current_hour != self._current_hour or current_date != self._current_date:
       with self._lock:
         if self._stream:
           self._stream.close()
-
-        filename = self._build_filename(current_hour)
 
         # Always overwrite when shifting to a new time slot
         self._stream = open(filename, mode = "w", encoding = self.encoding)
