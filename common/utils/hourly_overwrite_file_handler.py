@@ -1,10 +1,9 @@
 import os
-import time
 import logging
 import threading
 
 from typing import IO, Any, Optional
-from datetime import datetime
+from datetime import datetime, date
 
 class HourlyOverwriteFileHandler(logging.Handler):
   def __init__(
@@ -17,7 +16,11 @@ class HourlyOverwriteFileHandler(logging.Handler):
     self.directory = directory
     self.log_file_template = log_file_template
     self.encoding = encoding
+
+    # Track both hour and date to handle inactivity > 24h
     self._current_hour: Optional[str] = None
+    self._current_date: Optional[date] = None
+
     self._stream: Optional[IO[Any]] = None
     self._lock = threading.RLock()
 
@@ -27,40 +30,51 @@ class HourlyOverwriteFileHandler(logging.Handler):
   def _get_hour(self) -> str:
     return datetime.now().strftime("%H")
 
+  def _get_date(self) -> date:
+    return datetime.now().date()
+
   def _build_filename(self, hour: str) -> str:
     filename = self.log_file_template.format(hour)
     return os.path.join(self.directory, filename)
 
   def _open_initial_stream(self) -> None:
-    """Open file at startup: overwrite if old, append if current day."""
-    hour = self._get_hour()
-    filename = self._build_filename(hour)
+    """Initial startup: determine whether to append or overwrite."""
+    current_date = self._get_date()
+    current_hour = self._get_hour()
+
+    filename = self._build_filename(current_hour)
 
     mode = "a"
     if os.path.exists(filename):
       mtime = os.path.getmtime(filename)
-      file_day = time.localtime(mtime).tm_mday
-      if file_day != datetime.now().day:
-        # File from yesterday - overwrite
+      file_date = datetime.fromtimestamp(mtime).date()
+
+      # If the file on disk is older than today, overwrite it
+      if file_date < current_date:
         mode = "w"
 
     with self._lock:
       self._stream = open(filename, mode = mode, encoding = self.encoding)
-      self._current_hour = hour
+      self._current_date = current_date
+      self._current_hour = current_hour
 
   def _rollover_if_needed(self) -> None:
-    hour = self._get_hour()
+    """Check for hour change OR date change."""
+    current_date = self._get_date()
+    current_hour = self._get_hour()
 
-    if hour != self._current_hour:
+    # Trigger rollover if the hour is different OR if it's a new day
+    if current_hour != self._current_hour or current_date != self._current_date:
       with self._lock:
         if self._stream:
           self._stream.close()
 
-        filename = self._build_filename(hour)
+        filename = self._build_filename(current_hour)
 
-        # Overwrite only on real hour change
+        # Always overwrite when shifting to a new time slot
         self._stream = open(filename, mode = "w", encoding = self.encoding)
-        self._current_hour = hour
+        self._current_date = current_date
+        self._current_hour = current_hour
 
   def emit(self, record: logging.LogRecord):
     try:
