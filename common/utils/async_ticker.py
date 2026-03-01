@@ -30,6 +30,8 @@ class AsyncTicker:
     period_sec = self._period.total_seconds()
     self._logger.info("AsyncTicker started.")
 
+    yield # Yield control to the calling loop
+
     # Calculate the initial tick time
     next_tick = time.time()
     if self._align_with_period:
