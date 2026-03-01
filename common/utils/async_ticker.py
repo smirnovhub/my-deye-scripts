@@ -49,3 +49,5 @@ class AsyncTicker:
     except asyncio.CancelledError:
       self._logger.info("AsyncTicker cancelled.")
       raise
+    finally:
+      self._logger.info("AsyncTicker finished.")
