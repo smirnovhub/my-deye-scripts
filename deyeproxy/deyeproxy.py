@@ -57,7 +57,7 @@ DATA_DIR = f"data/{config.LOG_NAME}"
 
 file_handler = HourlyOverwriteFileHandler(
   directory = DATA_DIR,
-  log_file_template = f"deyeproxy-{{0}}.log",
+  log_file_template = f"deye-proxy-{{0}}.log",
 )
 
 file_handler.setFormatter(formatter)

@@ -44,7 +44,7 @@ data_dir = f"data/{log_name}"
 
 file_handler = HourlyOverwriteFileHandler(
   directory = data_dir,
-  log_file_template = f"deyeweb-back-{{0}}.log",
+  log_file_template = f"deye-web-back-{{0}}.log",
 )
 
 file_handler.setFormatter(formatter)

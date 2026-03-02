@@ -32,11 +32,11 @@ formatter = logging.Formatter(
 DATA_DIR = f"data/{config.LOG_NAME}"
 
 # Path for the persistent cache storage file
-CACHE_FILE_PATH = os.path.join(DATA_DIR, "cache_storage.json")
+CACHE_FILE_PATH = os.path.join(DATA_DIR, "cache-storage.json")
 
 file_handler = HourlyOverwriteFileHandler(
   directory = DATA_DIR,
-  log_file_template = "deyecache-{0}.log",
+  log_file_template = "deye-cache-{0}.log",
 )
 
 file_handler.setFormatter(formatter)
