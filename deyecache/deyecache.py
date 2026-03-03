@@ -11,7 +11,8 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.gzip import GZipMiddleware
 
 utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
@@ -54,6 +55,8 @@ async def lifespan_handler(app: FastAPI):
 
   This function handles startup and shutdown events for the Deye Cache service.
   """
+  global cache_storage, locks, logger
+
   # This code runs on startup
   logger.info("----- Deye Cache started -----")
   config.print_config(logger)
@@ -71,6 +74,7 @@ async def lifespan_handler(app: FastAPI):
       with open(CACHE_FILE_PATH, "r", encoding = "utf-8") as f:
         loaded_data = json.load(f)
         cache_storage.update(loaded_data)
+        locks = {key: asyncio.Lock() for key in cache_storage}
         logger.info(f"Restored {len(loaded_data)} keys from {CACHE_FILE_PATH}")
     except Exception as e:
       logger.error(f"Failed to load cache from {CACHE_FILE_PATH}: {e}")
@@ -155,6 +159,34 @@ async def get_lock(key: str) -> asyncio.Lock:
     if key not in locks:
       locks[key] = asyncio.Lock()
     return locks[key]
+
+# Helper to find the very first exception in the chain
+def get_original_error(exc: BaseException) -> BaseException:
+  # Digging through the exception chain
+  # Mashumaro uses __context__ for implicit chaining
+  cause = exc.__cause__ or exc.__context__
+  if cause:
+    return get_original_error(cause)
+  return exc
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+  # Log the path and stack trace once for the entire application
+  original_exc = get_original_error(exc)
+  # Extract clean message
+  error_message = str(original_exc)
+
+  if isinstance(original_exc, KeyError):
+    error_message = f"KeyError: {error_message}"
+
+  logger.error(f"Exception at {request.url.path}: {error_message}", exc_info = exc)
+  return JSONResponse(
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+    content = {
+      "detail": error_message,
+      "path": request.url.path,
+    },
+  )
 
 @app.get("/ping", tags = ["Server Health Operations"])
 def ping():
