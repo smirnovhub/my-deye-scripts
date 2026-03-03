@@ -55,9 +55,9 @@ async def lifespan_handler(app: FastAPI):
   This function handles startup and shutdown events for the Deye Cache service.
   """
   # This code runs on startup
-  logger.info(f"----- Deye Cache started -----")
+  logger.info("----- Deye Cache started -----")
   config.print_config(logger)
-  logger.info(f"------------------------------")
+  logger.info("------------------------------")
 
   external_ip = get_external_ip("8.8.8.8", 53)
   actual_ip = external_ip if external_ip else config.SERVER_HOST
