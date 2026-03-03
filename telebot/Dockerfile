@@ -32,7 +32,7 @@ RUN apt-get update && \
 # Install required Python packages
 RUN pip install --no-cache-dir --break-system-packages \
   six requests fastapi uvicorn codespell mypy flake8 \
-  types-requests uvloop
+  types-requests uvloop mashumaro
 
 # Create user without password, with home directory
 RUN useradd -m -u 1111 -s /usr/sbin/nologin $USER_NAME
