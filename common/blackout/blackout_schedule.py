@@ -5,11 +5,11 @@ from datetime import datetime
 from dataclasses import dataclass
 from mashumaro.mixins.json import DataClassJSONMixin
 
-from blackout_event import BlackoutEvent
+from blackout_scheduled_event import BlackoutScheduledEvent
 
 @dataclass
 class BlackoutSchedule(DataClassJSONMixin):
-  events: List[BlackoutEvent]
+  events: List[BlackoutScheduledEvent]
 
   def __post_init__(self):
     # Sort events by date after object creation
