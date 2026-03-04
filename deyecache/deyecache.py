@@ -55,7 +55,7 @@ async def lifespan_handler(app: FastAPI):
 
   This function handles startup and shutdown events for the Deye Cache service.
   """
-  global cache_storage, locks, logger
+  global locks
 
   # This code runs on startup
   logger.info("----- Deye Cache started -----")
