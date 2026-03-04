@@ -1,9 +1,8 @@
-#!/usr/bin/python3 -u
-
 import os
 import sys
 import json
 import traceback
+import logging
 
 from pathlib import Path
 
@@ -17,10 +16,9 @@ from common_modules import import_dirs
 
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
-from deye_web_utils import DeyeWebUtils
-from deye_web_constants import DeyeWebConstants
-from deye_web_params_processor import DeyeWebParamsProcessor
-from deye_exceptions import DeyeKnownException
+from env_utils import EnvUtils
+from deye_web_dependency_provider import DeyeWebDependencyProvider
+from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 #import logging
 #from deye_utils import DeyeUtils
@@ -33,28 +31,83 @@ from deye_exceptions import DeyeKnownException
 #  datefmt = DeyeUtils.time_format_str,
 #)
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+  "%Y-%m-%d %H:%M:%S",
+)
+
+log_name = EnvUtils.get_log_name("deyeweb")
+data_dir = f"data/{log_name}"
+
+file_handler = HourlyOverwriteFileHandler(
+  directory = data_dir,
+  log_file_template = f"deye-web-back-{{0}}.log",
+)
+
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+dependency_provider = DeyeWebDependencyProvider()
+
+def send_error_and_exit(message: str, callstack: str = '') -> None:
+  logger.error(f'{message}\n{callstack}')
+  constants = dependency_provider.constants
+  if constants:
+    result = {
+      constants.result_error_field: f'Error: {message}',
+    }
+
+    if callstack and constants.print_call_stack_on_exception:
+      result[constants.result_callstack_field] = f'<pre>{callstack}</pre>'
+  else:
+    result = {
+      "error": f"Error: {message} (constants module not available)",
+    }
+
+  print(json.dumps(result))
+
+  for handler in logging.getLogger().handlers:
+    handler.flush()
+
+  sys.stdout.flush()
+  sys.stderr.flush()
+
+  sys.exit(1)
+
+dependency_provider = DeyeWebDependencyProvider()
+
 try:
   # Read json from php
   raw = sys.stdin.read()
+
+  if not raw:
+    send_error_and_exit('JSON request is empty')
+
   json_data = json.loads(raw)
 
-  processor = DeyeWebParamsProcessor()
-  result = processor.get_params(json_data)
-except DeyeKnownException as e:
-  exception_str = DeyeWebUtils.get_tail(str(e).strip('"'), ':')
-  result = {
-    DeyeWebConstants.result_error_field: f'Error: {exception_str}',
-  }
-
-  if DeyeWebConstants.print_call_stack_on_exception:
-    result[DeyeWebConstants.result_callstack_field] = f'<pre>{traceback.format_exc()}</pre>'
+  # Lazy load back params processor
+  params_processor = dependency_provider.back_params_processor
+  if params_processor:
+    result = params_processor.get_params(json_data)
+  else:
+    all_errors = dependency_provider.get_all_errors()
+    error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items())
+    send_error_and_exit(f"Params processor module not available: {error_text}")
 except Exception as e:
-  result = {
-    DeyeWebConstants.result_error_field: f'Error: {str(e)}',
-  }
+  logger.error(traceback.format_exc())
+  known_exception_class = dependency_provider.known_exception
+  utils_class = dependency_provider.utils
 
-  if DeyeWebConstants.print_call_stack_on_exception:
-    result[DeyeWebConstants.result_callstack_field] = f'<pre>{traceback.format_exc()}</pre>'
+  # Handle known exception safely (without crashing if class not loaded)
+  if known_exception_class and isinstance(known_exception_class, type) and isinstance(
+      e, known_exception_class) and utils_class:
+    exception_str = utils_class.get_tail(str(e).strip('"'), ':')
+    send_error_and_exit(exception_str, traceback.format_exc())
+  else:
+    send_error_and_exit(str(e), traceback.format_exc())
 
 # Convert result to JSON string
 json_str = json.dumps(result)
@@ -68,3 +121,9 @@ json_str = json.dumps(result)
 
 # Return json to php
 print(json_str)
+
+for handler in logging.getLogger().handlers:
+  handler.flush()
+
+sys.stdout.flush()
+sys.stderr.flush()

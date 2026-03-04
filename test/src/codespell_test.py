@@ -22,6 +22,7 @@ def run_test(path: str):
   commands = [
     "codespell",
     os.path.join(base_path, path),
+    '--skip=favicon.svg',
   ]
 
   log.info(f'Running codespell for {path}...')
@@ -41,6 +42,10 @@ def run_test(path: str):
     sys.exit(1)
 
 run_test('common')
+run_test('demoserver')
 run_test('deye')
+run_test('deyecache')
+run_test('deyeproxy')
+run_test('deyeweb')
 run_test('telebot')
 run_test('test')

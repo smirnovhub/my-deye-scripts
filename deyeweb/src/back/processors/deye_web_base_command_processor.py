@@ -2,9 +2,9 @@ from typing import Any, Dict, List
 
 from git_helper import GitHelper
 from deye_register import DeyeRegister
-from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
+from deye_registers_holder import DeyeRegistersHolder
 from deye_web_formatters_config import DeyeWebFormattersConfig
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_web_sections_holder import DeyeWebSectionsHolder
@@ -39,10 +39,12 @@ class DeyeWebBaseCommandProcessor:
 
   def make_register_value(
     self,
-    registers: DeyeRegisters,
+    inverter: str,
+    holder: DeyeRegistersHolder,
     register: DeyeRegister,
     colors: Dict[str, DeyeWebColor],
   ) -> str:
+    registers = holder.all_registers[inverter]
     formatter = self.formatters_config.get_formatter_for_register(register.name)
     old_color = colors.get(register.name, DeyeWebColor.gray)
     new_color = formatter.get_color(registers, register)
@@ -56,4 +58,8 @@ class DeyeWebBaseCommandProcessor:
     if new_color.id > old_color.id and formatter.will_affect_tab_color:
       colors[register.name] = new_color
 
-    return formatter.format_register(registers, register)
+    return formatter.format_register(
+      inverter = inverter,
+      holder = holder,
+      register = register,
+    )

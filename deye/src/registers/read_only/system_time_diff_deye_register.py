@@ -18,7 +18,14 @@ class SystemTimeDiffDeyeRegister(IntDeyeRegister):
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
-    super().__init__(0, name, description, suffix, avg, 0)
+    super().__init__(
+      address = 0,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+      quantity = 0,
+    )
     self._system_time_register = system_time_register
 
   @property

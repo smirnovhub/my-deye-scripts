@@ -3,10 +3,12 @@ from typing import Any, Dict, List
 from deye_web_utils import DeyeWebUtils
 from deye_web_constants import DeyeWebConstants
 from deye_web_remote_command import DeyeWebRemoteCommand
+from deye_web_reset_cache_command_processor import DeyeWebResetCacheCommandProcessor
 from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 from processors.deye_web_forecast_command_processor import DeyeWebForecastCommandProcessor
 from processors.deye_web_read_registers_command_processor import DeyeWebReadRegistersCommandProcessor
-from processors.deye_web_update_command_processor import DeyeWebUpdateCommandProcessor
+from deye_web_update_scripts_command_processor import DeyeWebUpdateScriptsCommandProcessor
+from deye_web_install_ios_profile_command_processor import DeyeWebInstallIosProfileCommandProcessor
 from processors.deye_web_write_registers_command_processor import DeyeWebWriteRegistersCommandProcessor
 
 class DeyeWebParamsProcessor:
@@ -15,7 +17,9 @@ class DeyeWebParamsProcessor:
       DeyeWebReadRegistersCommandProcessor(),
       DeyeWebWriteRegistersCommandProcessor(),
       DeyeWebForecastCommandProcessor(),
-      DeyeWebUpdateCommandProcessor(),
+      DeyeWebResetCacheCommandProcessor(),
+      DeyeWebUpdateScriptsCommandProcessor(),
+      DeyeWebInstallIosProfileCommandProcessor(),
     ]
 
   def get_params(self, json_data: Any) -> Dict[str, str]:

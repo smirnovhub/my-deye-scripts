@@ -13,6 +13,7 @@ class DeyeWebColor(Enum):
   light_red = '#ffb3b3'
   red = '#ff4d4d'
 
+  # Needed to pass mypy checks
   _color: str
   _id: int
 

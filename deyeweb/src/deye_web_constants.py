@@ -14,9 +14,13 @@ class DeyeWebConstants:
   tab_color_template = '{0}_color'
   selection_list_template = '{0}_{1}_list'
   selection_content_field_template = '{0}_{1}_content_field'
+  styles_template = '{0}_styles'
   remote_data_name = 'remote_data'
   remote_data_with_spinner_name = 'remote_data_with_spinner'
   temporary_data_name = 'temporary_data'
+
+  # When renaming, don't forget to also change in index.php
+  front_cache_file_name = 'deyeweb_cache.txt'
 
   grid_low_voltage_change_max_grid_power = 150
 
@@ -45,10 +49,8 @@ class DeyeWebConstants:
   json_register_value_field = 'register_value'
   result_error_field = 'error'
   result_callstack_field = 'callstack'
-  result_read_styles_field = 'read_styles'
-  result_write_styles_field = 'write_styles'
 
-  open_graphs_on_click = False
+  graphs_base_url = ''
 
   add_html_comments = False
   user_short_html_ids = True

@@ -3,6 +3,7 @@ from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
 from deye_web_utils import DeyeWebUtils
+from deye_registers_holder import DeyeRegistersHolder
 from deye_web_threshold_formatter import DeyeWebThresholdFormatter
 
 class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
@@ -11,10 +12,18 @@ class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
     threshold1: float,
     threshold2: float,
   ):
+    registers = DeyeWebConstants.registers
     super().__init__(
-      threshold1,
-      threshold2,
-      DeyeWebConstants.threshold_reversed_colors,
+      threshold1 = threshold1,
+      threshold2 = threshold2,
+      colors = DeyeWebConstants.threshold_reversed_colors,
+      used_registers = [
+        registers.battery_power_register.name,
+        registers.battery_current_register.name,
+        registers.time_of_use_power_register.name,
+        registers.battery_max_charge_current_register.name,
+        registers.battery_max_discharge_current_register.name,
+      ],
     )
 
   def get_color(self, registers: DeyeRegisters, register: DeyeRegister) -> DeyeWebColor:
@@ -28,19 +37,29 @@ class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
 
     return super().get_color(registers, register)
 
-  def format_register(self, registers: DeyeRegisters, register: DeyeRegister) -> str:
+  def format_register(
+    self,
+    inverter: str,
+    holder: DeyeRegistersHolder,
+    register: DeyeRegister,
+  ) -> str:
     value = self.get_formatted_value(register)
 
-    battery_power = registers.battery_power_register.value
-    battery_current = registers.battery_current_register.value
-    max_battery_power = registers._time_of_use_power_register.value
-    max_battery_charge_current = registers.battery_max_charge_current_register.value
-    max_battery_discharge_current = registers.battery_max_discharge_current_register.value
-
     threshold = self.threshold1
+    registers = holder.all_registers[inverter]
 
     if registers.prefix == self.loggers.accumulated_registers_prefix:
       threshold *= self.loggers.count
+      settings_registers = holder.accumulated_registers
+    else:
+      settings_registers = holder.master_registers
+
+    max_battery_power = settings_registers.time_of_use_power_register.value
+    max_battery_charge_current = settings_registers.battery_max_charge_current_register.value
+    max_battery_discharge_current = settings_registers.battery_max_discharge_current_register.value
+
+    battery_power = registers.battery_power_register.value
+    battery_current = registers.battery_current_register.value
 
     if abs(register.value) >= threshold:
       percent = round(battery_current * 100 / max_battery_discharge_current)

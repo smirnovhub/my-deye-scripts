@@ -1,0 +1,223 @@
+import re
+import json
+import time
+
+from typing import Any, Dict, Optional
+
+from abc import ABC, abstractmethod
+from contextlib import contextmanager
+
+from deye_utils import DeyeUtils
+from deye_exceptions import DeyeCacheException, DeyeKnownException
+from deye_register_cache_data import DeyeRegisterCacheData
+
+# ------------------------------------
+# Base class for caching register data
+# ------------------------------------
+class DeyeRegistersBaseCacheManager(ABC):
+  def __init__(
+    self,
+    name: str,
+    serial: int,
+    verbose = False,
+  ):
+    self._name = re.sub(r'[^a-zA-Z0-9-]+', '-', name).strip('-')
+    self._serial = abs(serial)
+    self._verbose = verbose
+    self._cache_available = False
+
+  def get_cached_registers(
+    self,
+    registers_to_check: Dict[int, DeyeRegisterCacheData],
+  ) -> Dict[int, DeyeRegisterCacheData]:
+    if not self._cache_available:
+      self._cache_available = self._is_cache_available()
+
+    if self._verbose:
+      start_time = time.perf_counter()
+
+    results: Dict[int, DeyeRegisterCacheData] = {}
+
+    try:
+      content: Optional[str] = None
+
+      with self._shared_lock_context():
+        content = self._get_json()
+        if not content or not content.strip():
+          return results
+
+      try:
+        cache_content = json.loads(content)
+      except (json.JSONDecodeError, ValueError) as e:
+        raise DeyeCacheException(f"{self._name}: cache json parse error after get: {e}") from e
+
+      current_time = int(time.time())
+      cached_registry = cache_content.get("registers", {})
+
+      # Iterate through the registers we are interested in
+      for addr, reg in registers_to_check.items():
+        self._check_address_match(addr, reg.address)
+        addr_str = str(addr)
+        if addr_str in cached_registry:
+          entry = cached_registry[addr_str]
+          cached_time = entry.get("time", 0)
+
+          # Check if the cached data is still valid by time duration
+          if (current_time - cached_time) > reg.caching_time:
+            continue
+
+          # Check if midnight was crossed since the last cache update
+          # Cache becomes invalid if a new day has started
+          if not DeyeUtils.is_same_day(cached_time, current_time):
+            continue
+
+          results[addr] = DeyeRegisterCacheData(
+            address = reg.address,
+            quantity = reg.quantity,
+            caching_time = reg.caching_time,
+            values = entry.get("data", []),
+          )
+    except DeyeKnownException:
+      raise
+    except Exception as ee:
+      raise DeyeCacheException(f"{self._name}: cache read error: {ee}") from ee
+
+    if self._verbose:
+      end_time = time.perf_counter()
+      duration_ms = (end_time - start_time) * 1000
+      if self._verbose:
+        print(f"{self._name} cache read took {duration_ms:.3f} ms")
+
+    return results
+
+  def save_to_cache(
+    self,
+    registers_to_save: Dict[int, DeyeRegisterCacheData],
+  ) -> None:
+    if not registers_to_save:
+      return
+
+    if not self._cache_available:
+      self._cache_available = self._is_cache_available()
+
+    if self._verbose:
+      start_time = time.perf_counter()
+
+    try:
+      with self._exclusive_lock_context():
+        cache_content: Dict[str, Any] = {
+          "inverter": self._name,
+          "serial": self._serial,
+          "registers": {},
+        }
+
+        content = self._read_json()
+        if content:
+          try:
+            cache_content = json.loads(content)
+          except (json.JSONDecodeError, ValueError) as e:
+            raise DeyeCacheException(f"{self._name}: cache json parse error after read: {e}") from e
+
+        current_time = int(time.time())
+
+        # Now iterating over dictionary items
+        for addr, reg in registers_to_save.items():
+          self._check_address_match(addr, reg.address)
+          # Store using the address as a string key for JSON compatibility
+          cache_content["registers"][str(addr)] = {
+            "time": current_time,
+            "data": reg.values,
+          }
+
+        json_string = json.dumps(
+          cache_content,
+          ensure_ascii = False,
+        )
+
+        self._save_json(json_string)
+    except DeyeKnownException:
+      raise
+    except Exception as ee:
+      raise DeyeCacheException(f"{self._name}: cache write error: {ee}") from ee
+
+    if self._verbose:
+      end_time = time.perf_counter()
+      duration_ms = (end_time - start_time) * 1000
+      if self._verbose:
+        print(f"{self._name} cache save took {duration_ms:.3f} ms")
+
+  def reset_cache(self) -> None:
+    if not self._cache_available:
+      self._cache_available = self._is_cache_available()
+
+    try:
+      with self._exclusive_lock_context():
+        self._reset()
+    except DeyeKnownException:
+      raise
+    except Exception as ee:
+      raise DeyeCacheException(f"{self._name}: cache reset error: {ee}") from ee
+
+  def _check_address_match(self, key: int, address: int) -> None:
+    """
+    Validates that the dictionary key matches the register address.
+
+    Args:
+      key: The dictionary key to validate.
+      address: The register address to compare against.
+
+    Raises:
+      DeyeCacheException: If the key does not match the address, with a message
+        indicating the mismatch between the dictionary key and register address.
+    """
+    if key != address:
+      raise DeyeCacheException(f"{self._name}: register address mismatch - "
+                               f"dictionary key is {key}, but register address is {address}")
+
+  @abstractmethod
+  def _is_cache_available(self) -> bool:
+    """
+    Check if the cache is available.
+
+    This method verifies whether the cache is currently available for use.
+
+    Returns:
+      bool: True if cache is available for use or False if not available
+    """
+    pass
+
+  @contextmanager
+  def _shared_lock_context(self):
+    yield
+
+  @contextmanager
+  def _exclusive_lock_context(self):
+    yield
+
+  @abstractmethod
+  def _get_json(self) -> str:
+    """
+    Used for general data retrieval.
+    Fetches the current state of the cache to be used for reading and displaying data.
+    """
+    pass
+
+  @abstractmethod
+  def _read_json(self) -> str:
+    """
+    Used specifically for the read-before-write cycle.
+    Fetches existing data to merge with new updates. Can be overridden to return 
+    an empty string if the storage backend (e.g., a smart server) handles merging automatically.
+    """
+    pass
+
+  @abstractmethod
+  def _save_json(self, json_string: str) -> None:
+    pass
+
+  @abstractmethod
+  def _reset(self) -> None:
+    pass
+
+  def close(self):
+    pass

@@ -11,7 +11,8 @@ from deye_web_selections_config import DeyeWebSelectionsConfig
 from deye_registers_holder import DeyeRegistersHolder
 
 class DeyeWebBaseSelectionBuilder:
-  def __init__(self):
+  def __init__(self, confirm = False):
+    self.confirm = confirm
     self.loggers = DeyeWebConstants.loggers
     self.selections_config = DeyeWebSelectionsConfig()
     self.formatters_config = DeyeWebFormattersConfig()
@@ -46,6 +47,12 @@ class DeyeWebBaseSelectionBuilder:
     style_id2 = self.style_manager.register_style("text-align: center;")
     style_id3 = self.style_manager.register_style("display: inline-table; width: auto; margin: 0;")
 
+    formatted_value = formatter.format_register(
+      inverter = self.loggers.master.name,
+      holder = holder,
+      register = register,
+    )
+
     result = f"""
       {DeyeWebUtils.begin_comment(self)}
       <div class="{style_id0}">
@@ -55,7 +62,7 @@ class DeyeWebBaseSelectionBuilder:
             <table class="{style_id3}">
               <tr>
                 <td>
-                  {formatter.format_register(holder.master_registers, register)}
+                  {formatted_value}
                 </td>
               </tr>
             </table>
@@ -68,11 +75,7 @@ class DeyeWebBaseSelectionBuilder:
       return abs(val1 - val2) < 0.0001
 
     cnt = 0
-    correction: float = 0
-
-    for reg, corr in DeyeWebConstants.register_value_corrections.items():
-      if reg.name == register.name:
-        correction = corr
+    correction = DeyeWebConstants.register_value_corrections.get(register.name, 0.0)
 
     registers = holder.master_registers
     value = register.value + correction
@@ -85,10 +88,11 @@ class DeyeWebBaseSelectionBuilder:
         DeyeWebConstants.selection_content_field_template.format(registers.prefix, register.name))
       field_id = DeyeWebUtils.short(f'{register.name}_{cnt}')
       command = DeyeWebRemoteCommand.write_register.name
+      confirm = str(self.confirm).lower()
 
       on_click = ''
       if not disabled and not equal(value, val):
-        on_click = f"""onclick="{command}('{register_field_id}', '{field_id}', '{register.name}', '{val - correction}')" """
+        on_click = f"""onclick="{command}('{register_field_id}', '{field_id}', '{register.name}', '{(val - correction):g}', {confirm});" """
 
       style_id4 = self.style_manager.register_style(DeyeWebConstants.item_td_style)
       style_id5 = self.style_manager.register_style(DeyeWebConstants.item_td_style_with_color.format(val_color.color))

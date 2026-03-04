@@ -23,7 +23,14 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
-    super().__init__(0, 0, name, description, suffix, avg)
+    super().__init__(
+      address = 0,
+      quantity = 0,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+    )
     self.charge_address = charge_address
     self.time_address = time_address
     self.power_address = power_address
@@ -43,11 +50,11 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
 
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     if interactor.is_master or self._avg != DeyeRegisterAverageType.only_master:
-      interactor.enqueue_register(self.charge_address, self.items_count)
-      interactor.enqueue_register(self.time_address, self.items_count)
-      interactor.enqueue_register(self.power_address, self.items_count)
-      interactor.enqueue_register(self.soc_address, self.items_count)
-      interactor.enqueue_register(self.weekly_address, 1)
+      interactor.enqueue_register(self.charge_address, self.items_count, self.caching_time)
+      interactor.enqueue_register(self.time_address, self.items_count, self.caching_time)
+      interactor.enqueue_register(self.power_address, self.items_count, self.caching_time)
+      interactor.enqueue_register(self.soc_address, self.items_count, self.caching_time)
+      interactor.enqueue_register(self.weekly_address, 1, self.caching_time)
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     charges = interactor.read_register(self.charge_address, self.items_count)

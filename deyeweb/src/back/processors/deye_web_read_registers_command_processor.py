@@ -19,10 +19,14 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     command: DeyeWebRemoteCommand,
     json_data: Any,
   ) -> Dict[str, str]:
+    # Will throw is there is no session id
+    session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
+
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       name = 'deyeweb',
       loggers = self.loggers.loggers,
+      caching_time = 5,
       socket_timeout = 5,
       auto_reconnect = True,
       register_creator = lambda prefix: DeyeWebCustomRegisters(
@@ -51,11 +55,13 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
           continue
 
         id = DeyeWebUtils.short(f'{inverter}_{register.name}')
-        result[id] = DeyeWebUtils.clean(self.make_register_value(
-          registers,
-          register,
-          colors,
-        ))
+        result[id] = DeyeWebUtils.clean(
+          self.make_register_value(
+            inverter = inverter,
+            holder = holder,
+            register = register,
+            colors = colors,
+          ))
 
     registers = holder.master_registers
     for register in registers.all_registers:
@@ -66,7 +72,6 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
       selections = builder.build_selections(holder, register)
       result.update(selections)
 
-    session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
     colors_calculator = DeyeWebColorsCalculator(self.sections_holder, session_id)
 
     selection_colors = colors_calculator.get_sections_colors(colors)
@@ -74,6 +79,7 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
 
     colors_calculator.save_colors(colors)
 
-    result[DeyeWebConstants.result_read_styles_field] = self.style_manager.generate_css()
+    style_id = DeyeWebConstants.styles_template.format(command.name)
+    result[style_id] = self.style_manager.generate_css()
 
     return result

@@ -1,4 +1,6 @@
-from typing import Any, List
+from typing import Any, List, Optional
+
+from datetime import timedelta
 
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_exceptions import DeyeNotImplementedException
@@ -69,6 +71,13 @@ class DeyeRegister:
   @property
   def max_value(self) -> float:
     raise self.not_implemented('max_value')
+
+  @property
+  def caching_time(self) -> Optional[timedelta]:
+    raise self.not_implemented('caching_time')
+
+  def set_caching_time(self, caching_time: timedelta) -> None:
+    raise self.not_implemented('set_caching_time')
 
   def error(self, message: str):
     raise DeyeValueException(f'{type(self).__name__}.{message}')

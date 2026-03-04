@@ -6,6 +6,7 @@ class DeyeWebSection(Enum):
   total = 'Total'
   settings = 'Settings'
   forecast = 'Forecast'
+  grid_charging_start_soc = 'Grid Charging Start SOC'
   time_of_use_soc = 'Time Of Use SOC'
   grid_connect_voltage_low = 'Grid LowV'
   time_of_use_power = 'Time Of Use Power'
@@ -17,6 +18,7 @@ class DeyeWebSection(Enum):
   bms = 'BMS'
   service = 'Service'
 
+  # Needed to pass mypy checks
   _title: str
   _id: str
 

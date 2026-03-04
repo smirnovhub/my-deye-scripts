@@ -1,4 +1,6 @@
-from typing import Any, List
+from typing import Any, List, Optional
+
+from datetime import timedelta
 
 from deye_utils import DeyeUtils
 from long_float_deye_register import LongFloatDeyeRegister
@@ -14,8 +16,17 @@ class LongFloatSplittedDeyeRegister(LongFloatDeyeRegister):
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
+    caching_time: Optional[timedelta] = None,
   ):
-    super().__init__(address, name, description, suffix, avg, split_offset + 1)
+    super().__init__(
+      address = address,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+      caching_time = caching_time,
+      quantity = split_offset + 1,
+    )
     self._split_offset = split_offset
 
   @property

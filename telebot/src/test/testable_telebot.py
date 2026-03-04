@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Union
 
 from deye_utils import DeyeUtils
+from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 from telebot_fake_test_message import TelebotFakeTestMessage
 from telebot_deye_helper import TelebotDeyeHelper
@@ -44,7 +45,8 @@ class TestableTelebot(telebot.TeleBot):
   - `TelebotFakeTestMessage` is used to simulate `Message` objects returned by `send_message`.
   """
 
-  telebot_test_log_file_name = 'data/logs/telebot_telegram_test.log'
+  data_dir = TelebotUtils.get_data_dir()
+  telebot_test_log_file_name = f'{data_dir}/logs/telebot_telegram_test.log'
 
   def __init__(self, token: str):
     super().__init__(token)
@@ -56,13 +58,19 @@ class TestableTelebot(telebot.TeleBot):
     if os.path.exists(TestableTelebot.telebot_test_log_file_name):
       os.remove(TestableTelebot.telebot_test_log_file_name)
 
-    logging.basicConfig(
-      filename = TestableTelebot.telebot_test_log_file_name,
-      filemode = 'w',
-      level = logging.INFO,
-      format = '[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s',
-      datefmt = DeyeUtils.time_format_str,
+    file_handler = logging.FileHandler(
+      TestableTelebot.telebot_test_log_file_name,
+      mode = 'w',
+      encoding = 'utf-8',
     )
+
+    formatter = logging.Formatter(
+      '[%(asctime)s.%(msecs)03d] %(message)s',
+      '%Y-%m-%d %H:%M:%S',
+    )
+
+    file_handler.setFormatter(formatter)
+    self.log.addHandler(file_handler)
 
   def clear_messages(self):
     self.messages.clear()

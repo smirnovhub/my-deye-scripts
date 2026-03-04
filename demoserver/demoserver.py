@@ -1,15 +1,3 @@
-#!/usr/bin/python3 -u
-
-# The -u option in Python runs the interpreter in unbuffered mode.
-# That means:
-# stdout and stderr are written immediately (no buffering).
-# You don’t have to wait for the buffer to fill or for the program to
-# exit before print() outputs appear.
-# Equivalent to setting the environment variable PYTHONUNBUFFERED=1.
-# This is especially useful when running Python scripts under systemd,
-# Docker, or when piping output to journalctl, because you want log
-# messages from print() to show up in real time.
-
 import os
 import sys
 import logging

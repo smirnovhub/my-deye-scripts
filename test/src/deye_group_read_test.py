@@ -25,6 +25,7 @@ import_dirs(
   ],
 )
 
+from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
@@ -33,7 +34,7 @@ from deye_test_helper import DeyeTestHelper
 from deye_test_helper import DeyeRegisterRandomValue
 from deye_register_average_type import DeyeRegisterAverageType
 
-DeyeUtils.turn_tests_on()
+EnvUtils.turn_tests_on()
 
 logging.basicConfig(
   level = logging.INFO,
@@ -144,7 +145,8 @@ def check_results(server: SolarmanTestServer, output: str, random_values: Dict[s
       log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
       continue
 
-    if register.avg_type == DeyeRegisterAverageType.only_master and server.name != loggers.master.name:
+    if (register.avg_type == DeyeRegisterAverageType.only_master
+        or register.avg_type == DeyeRegisterAverageType.fake_accumulate) and server.name != loggers.master.name:
       log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
       continue
 

@@ -1,51 +1,166 @@
+const pageUpdateInterval = 7500;
+const lastButtonName = 'last_button';
+
 var totalSeconds = 0;
-var pageUpdateInterval = 7500;
 var updateTimer = null;
 var secondsTimer = null;
 var updating = false;
 var processing = false;
 var writing = false;
 
+document.addEventListener('DOMContentLoaded', () => {
+  onLoad();
+});
+
 function onLoad() {
-  // Get all elements with the class "default_open"
-  var defaultTabs = document.getElementsByClassName("default_open");
+  let defaultTabs = [];
+
+  const lastButtonId = sessionStorage.getItem(lastButtonName);
+
+  if (!isEmpty(lastButtonId)) {
+    const el = document.getElementById(lastButtonId);
+    if (el) {
+      defaultTabs = [el];
+    }
+  }
+
+  if (defaultTabs.length === 0) {
+    defaultTabs = Array.from(document.getElementsByClassName("default_open"));
+  }
 
   // If at least one element exists, click the first one
   if (defaultTabs.length > 0) {
-    const target = defaultTabs[0]
+    const target = defaultTabs[0];
+
+    if (target.id) {
+      sessionStorage.setItem(lastButtonName, target.id);
+    }
+
     target.click(); // simulate click on the first default tab
-    target.scrollIntoView({ behavior: "smooth", inline: "center" });
+    target.scrollIntoView({ behavior: "auto", inline: "center" });
   }
 
-  var spinners = document.getElementsByClassName("remote_data_with_spinner");
-  for (var i = 0; i < spinners.length; i++)
+  const spinners = document.getElementsByClassName("remote_data_with_spinner");
+  for (let i = 0; i < spinners.length; i++)
     addSpinner(spinners[i].id);
 
   update();
   startUpdateTimer();
 
   const menu = document.getElementById("menu");
-  const btnLeft = document.getElementById("scroll-left");
-  const btnRight = document.getElementById("scroll-right");
+  const scrollLeftBtn = document.getElementById("scroll-left");
+  const scrollRightBtn = document.getElementById("scroll-right");
 
-  btnLeft.addEventListener("click", () => {
-    menu.scrollTo({ left: 0, behavior: "smooth" });
+  function updateScrollButtons() {
+    // Check if the content is wider than the visible area
+    const hasScroll = menu.scrollWidth > menu.clientWidth;
+    if (hasScroll) {
+      // Show both buttons if scrolling is possible at all
+      scrollLeftBtn.style.opacity = "1";
+      scrollLeftBtn.style.pointerEvents = "auto";
+      scrollRightBtn.style.opacity = "1";
+      scrollRightBtn.style.pointerEvents = "auto";
+    } else {
+      // Hide both buttons if everything fits on the screen
+      scrollLeftBtn.style.opacity = "0";
+      scrollLeftBtn.style.pointerEvents = "none";
+      scrollRightBtn.style.opacity = "0";
+      scrollRightBtn.style.pointerEvents = "none";
+    }
+  }
+
+  scrollLeftBtn.addEventListener("click", () => {
+    smoothScrollTo(menu, 0, 500);
   });
 
-  btnRight.addEventListener("click", () => {
-    menu.scrollTo({ left: menu.scrollWidth, behavior: "smooth" });
+  scrollRightBtn.addEventListener("click", () => {
+    const maxScroll = menu.scrollWidth - menu.clientWidth;
+    smoothScrollTo(menu, maxScroll, 500);
   });
+
+  window.addEventListener("resize", updateScrollButtons);
+
+  updateScrollButtons();
+
+  window.scrollTo(0, 0);
 }
 
+function getSessionId() {
+  var sessionId = localStorage.getItem('session_id');
+  if (!sessionId) {
+    sessionId = generateSessionId();
+    localStorage.setItem('session_id', sessionId);
+  }
+  return sessionId;
+}
+
+/**
+ * Generates a random session ID (hex string)
+ * @param {number} size - Number of bytes (16 bytes = 32 hex chars)
+ * @returns {string} - Randomly generated string
+ */
+function generateSessionId(size = 16) {
+  const uint8 = new Uint8Array(size);
+  window.crypto.getRandomValues(uint8);
+
+  // Convert bytes to hex string
+  return Array.from(uint8)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * Creates a promise that resolves after a specified delay.
+ * @param {number} ms - The delay in milliseconds
+ * @returns {Promise<void>} A promise that resolves after the specified delay
+ */
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Smoothly scrolls an element to a specific horizontal position with custom duration.
+ * @param {HTMLElement} element - The container to scroll.
+ * @param {number} targetLeft - The target scrollLeft position.
+ * @param {number} duration - Animation duration in milliseconds.
+ */
+function smoothScrollTo(element, targetLeft, duration) {
+  const startLeft = element.scrollLeft;
+  const change = targetLeft - startLeft;
+  const startTime = performance.now();
+
+  function animate(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const easing = progress < 0.5 ?
+      4 * progress * progress * progress :
+      1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+    element.scrollLeft = startLeft + change * easing;
+
+    if (elapsed < duration) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+/**
+ * Interpolates between two hex colors based on a percentage value.
+ * @param {string} color1 - The first hex color (e.g., "#FF0000")
+ * @param {string} color2 - The second hex color (e.g., "#0000FF")
+ * @param {number} percent - The interpolation percentage (0 to 1, will be clamped)
+ * @returns {string} The interpolated hex color
+ */
 function interpolateColor(color1, color2, percent) {
   // Convert the hex colors to RGB values
-  const r1 = parseInt(color1.substring(1, 3), 16);
-  const g1 = parseInt(color1.substring(3, 5), 16);
-  const b1 = parseInt(color1.substring(5, 7), 16);
+  const rgb1 = parseInt(color1.slice(1), 16);
+  const rgb2 = parseInt(color2.slice(1), 16);
 
-  const r2 = parseInt(color2.substring(1, 3), 16);
-  const g2 = parseInt(color2.substring(3, 5), 16);
-  const b2 = parseInt(color2.substring(5, 7), 16);
+  const r1 = rgb1 >> 16, g1 = (rgb1 >> 8) & 0xff, b1 = rgb1 & 0xff;
+  const r2 = rgb2 >> 16, g2 = (rgb2 >> 8) & 0xff, b2 = rgb2 & 0xff;
+
+  percent = Math.min(1, Math.max(0, percent));
 
   // Interpolate the RGB values
   const r = Math.round(r1 + (r2 - r1) * percent);
@@ -53,15 +168,15 @@ function interpolateColor(color1, color2, percent) {
   const b = Math.round(b1 + (b2 - b1) * percent);
 
   // Convert the interpolated RGB values back to a hex color
-  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  return "#" + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
 }
 
 function setGrayscale(grayscale) {
   document.body.style.filter = "grayscale(" + grayscale + ")";
   document.body.style.background = interpolateColor('#ffffff', '#dddddd', grayscale);
 
-  var menus = document.getElementsByClassName("scrollmenu");
-  for (var i = 0; i < menus.length; i++)
+  const menus = document.getElementsByClassName("scrollmenu");
+  for (let i = 0; i < menus.length; i++)
     menus[i].style.background = interpolateColor('#ffffff', '#dddddd', grayscale);
 }
 
@@ -69,7 +184,7 @@ function updateTime() {
   totalSeconds++;
 
   var grayscale = 0;
-  var totalMilliseconds = totalSeconds * 1000;
+  const totalMilliseconds = totalSeconds * 1000;
 
   if (totalMilliseconds > pageUpdateInterval) {
     grayscale = (totalMilliseconds - pageUpdateInterval) / pageUpdateInterval;
@@ -79,8 +194,8 @@ function updateTime() {
 
   setGrayscale(grayscale);
 
-  var counters = document.getElementsByClassName("counter");
-  for (var i = 0; i < counters.length; i++)
+  const counters = document.getElementsByClassName("counter");
+  for (let i = 0; i < counters.length; i++)
     counters[i].innerHTML = `Last update: ${totalSeconds} seconds ago`;
 }
 
@@ -99,8 +214,8 @@ function startUpdateTimer() {
 function resetSecondsTimer() {
   totalSeconds = 0;
 
-  var counters = document.getElementsByClassName("counter");
-  for (var i = 0; i < counters.length; i++)
+  const counters = document.getElementsByClassName("counter");
+  for (let i = 0; i < counters.length; i++)
     counters[i].innerHTML = `Last update: ${totalSeconds} seconds ago`;
 
   setGrayscale(0);
@@ -138,76 +253,46 @@ function updateAllFields(result) {
   }
 }
 
-function update() {
+async function update() {
   if (updating || processing || writing) {
     return;
   }
 
   updating = true;
 
-  JsHttpRequest.query
-    (
+  try {
+    const result = await JsHttpRequest.query(
       'back.php',
       {
-        'command': 'read_registers'
-      },
-
-      function (result, errors) {
-        try {
-          if (!writing) {
-            updateAllFields(result);
-            resetSecondsTimer();
-          }
-        } finally {
-          updating = false;
-        }
-      },
-      true
+        'command': 'read_registers',
+        'session_id': getSessionId(),
+      }
     );
+
+    if (!writing) {
+      updateAllFields(result);
+    }
+  } catch (error) {
+    console.error("read_registers failed:", error);
+    document.getElementById('error_field').innerHTML = `read_registers failed: ${error}`;
+  } finally {
+    updating = false;
+    resetSecondsTimer();
+  }
 }
 
-function sendCommand(command, field_id) {
-  if (processing || writing) {
+async function write_register(
+  field_id,
+  content_field_id,
+  register_name,
+  register_value,
+  need_confirmation = false,
+) {
+  if (writing) {
     return;
   }
 
-  processing = true;
-
-  addSpinner(field_id);
-
-  JsHttpRequest.query
-    (
-      'back.php',
-      {
-        'command': command
-      },
-
-      function (result, errors) {
-        try {
-          updateAllFields(result);
-          resetSecondsTimer();
-        } finally {
-          processing = false;
-        }
-      },
-      true
-    );
-}
-
-function get_forecast_by_percent(field_id) {
-  sendCommand('get_forecast_by_percent', field_id)
-}
-
-function get_forecast_by_time(field_id) {
-  sendCommand('get_forecast_by_time', field_id)
-}
-
-function update_scripts(field_id) {
-  sendCommand('update_scripts', field_id)
-}
-
-function write_register(field_id, content_field_id, register_name, register_value) {
-  if (writing) {
+  if (need_confirmation && !confirm('Are you sure?')) {
     return;
   }
 
@@ -217,50 +302,86 @@ function write_register(field_id, content_field_id, register_name, register_valu
   addSpinner(field_id);
   addSpinner(content_field_id);
 
-  JsHttpRequest.query
-    (
+  try {
+    const result = await JsHttpRequest.query(
       'back.php',
       {
         'command': 'write_register',
         'register_name': register_name,
         'register_value': register_value,
-      },
-
-      function (result, errors) {
-        try {
-          updateAllFields(result);
-          resetSecondsTimer();
-          startUpdateTimer();
-        } finally {
-          writing = false;
-        }
-      },
-      true
+        'session_id': getSessionId(),
+      }
     );
+
+    updateAllFields(result);
+  } catch (error) {
+    console.error("write_register failed:", error);
+    document.getElementById('error_field').innerHTML = `write_register failed: ${error}`;
+  } finally {
+    writing = false;
+    resetSecondsTimer();
+    startUpdateTimer();
+  }
+}
+
+async function sendCommand(command, field_id) {
+  if (processing || writing) {
+    return;
+  }
+
+  processing = true;
+  addSpinner(field_id);
+
+  try {
+    const result = await JsHttpRequest.query(
+      'back.php',
+      {
+        'command': command,
+        'session_id': getSessionId(),
+      }
+    );
+
+    updateAllFields(result);
+
+    // Reload current page if python sent 'need_reload' field:
+    // result['need_reload'] = 'true'
+    if (result && (result.need_reload === true || result.need_reload === 'true')) {
+      sessionStorage.removeItem(lastButtonName);
+      await delay(5000);
+      await waitUntilPageIsReachable(window.location.href, 15000);
+      location.reload();
+    }
+  } catch (error) {
+    console.error(`${command} failed:`, error);
+    document.getElementById('error_field').innerHTML = `${command} failed: ${error}`;
+  } finally {
+    processing = false;
+    resetSecondsTimer();
+  }
 }
 
 function addSpinner(field_id) {
-  var spinnerHTML = '<div class="spinner"></div>';
-  var matches = document.querySelectorAll(`[id="${field_id}"]`);
-  for (var i = 0; i < matches.length; i++) {
+  const spinnerHTML = '<div class="spinner"></div>';
+  const matches = document.querySelectorAll(`[id="${field_id}"]`);
+  for (let i = 0; i < matches.length; i++) {
     matches[i].innerHTML = spinnerHTML;
   }
 }
 
 function openPage(pageName, buttonName, doScroll = false) {
-  var tabContent = document.getElementsByClassName("tabcontent");
-  for (var i = 0; i < tabContent.length; i++) {
+  const tabContent = document.getElementsByClassName("tabcontent");
+  for (let i = 0; i < tabContent.length; i++) {
     tabContent[i].style.display = "none";
   }
 
-  var tabLinks = document.getElementsByClassName("tablink");
-  for (var i = 0; i < tabLinks.length; i++) {
+  const tabLinks = document.getElementsByClassName("tablink");
+  for (let i = 0; i < tabLinks.length; i++) {
     tabLinks[i].style.boxShadow = "";
   }
 
-  var temps = document.getElementsByClassName("temporary_data");
-  for (var i = 0; i < temps.length; i++)
-    temps[i].innerHTML = ""
+  const temps = document.getElementsByClassName("temporary_data");
+  for (let i = 0; i < temps.length; i++)
+    temps[i].innerHTML = "";
 
   document.getElementById(pageName).style.display = "block";
 
@@ -269,15 +390,71 @@ function openPage(pageName, buttonName, doScroll = false) {
 
   if (doScroll) {
     target.scrollIntoView({ behavior: "smooth", inline: "center" });
+  } else {
+    target.scrollIntoView({ behavior: "smooth", inline: "nearest" });
   }
 
   window.scrollTo(0, 0);
+  sessionStorage.setItem(lastButtonName, buttonName);
 }
 
+/**
+ * Checks if a value is empty.
+ * @param {*} value - The value to check.
+ * @returns {boolean} True if the value is null, undefined, or an empty string (after trimming), false otherwise.
+ */
 function isEmpty(value) {
   return (value == null || (typeof value === "string" && value.trim().length === 0));
 }
 
+/**
+ * Opens a URL in a new browser tab and focuses on it.
+ * @param {string} url - The URL to open in a new tab
+ * @returns {void}
+ */
 function openInNewTab(url) {
   window.open(url, '_blank').focus();
+}
+
+/**
+ * Polls a given URL until it returns a 2xx status or the timeout is reached.
+ * @param {string} url - The URL to check for availability.
+ * @param {number} - Total maximum time to poll in milliseconds.
+ * @returns {Promise<void>} - Resolves when the page is reachable or the time expires.
+ */
+async function waitUntilPageIsReachable(url, waitTime) {
+  const startTime = Date.now();
+  const interval = 1500;
+  const timeoutMs = 500;
+
+  console.log(`Starting polling for: ${url}`);
+
+  while ((Date.now() - startTime) < waitTime) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        console.log(`Success: Received status ${response.status}`);
+        break;
+      } else {
+        console.log(`Received status ${response.status}. Retrying...`);
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.warn(`Request timed out after ${timeoutMs}ms`);
+      } else {
+        console.error('Network error or server unreachable. Retrying...', error);
+      }
+    }
+
+    await delay(interval);
+  }
 }

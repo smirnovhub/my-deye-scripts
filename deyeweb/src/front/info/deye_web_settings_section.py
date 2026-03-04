@@ -16,6 +16,7 @@ class DeyeWebSettingsSection(DeyeWebBaseInfoSection):
     )
     self._registers: List[DeyeRegister] = [
       registers.grid_connect_voltage_low_register,
+      registers.grid_charging_start_soc_register,
       registers.time_of_use_soc_register,
       registers.time_of_use_power_register,
       registers.battery_max_charge_current_register,
@@ -47,4 +48,4 @@ class DeyeWebSettingsSection(DeyeWebBaseInfoSection):
   def format_click_string(self, section_id: str) -> str:
     tab_id = DeyeWebUtils.short(DeyeWebConstants.tab_template.format(section_id))
     page_id = DeyeWebUtils.short(DeyeWebConstants.page_template.format(section_id))
-    return f"openPage('{page_id}', '{tab_id}', true)"
+    return f"openPage('{page_id}', '{tab_id}', true);"

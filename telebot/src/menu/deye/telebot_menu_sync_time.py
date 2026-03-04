@@ -86,7 +86,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         f'<b>Are you sure to sync inverter time?</b>',
         self.on_user_confirmation,
       )
-    elif diff_seconds > TelebotConstants.inverter_system_time_does_not_need_sync_threshold_sec:
+    elif diff_seconds > TelebotConstants.inverter_system_time_need_sync_difference_sec:
       self.on_user_confirmation(message.chat.id, True)
     else:
       self.bot.send_message(
@@ -134,6 +134,6 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         self.bot.send_message(chat_id, str(e))
       except Exception as e:
         self.bot.send_message(chat_id, str(e))
-        print(traceback.format_exc())
+        self.logger.info(traceback.format_exc())
     else:
       self.bot.send_message(chat_id, 'Time sync cancelled')

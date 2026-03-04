@@ -1,14 +1,34 @@
+/* Legacy style for old browsers */
 .spinner {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  background: conic-gradient(#0000 10%, #555555);
-  mask: radial-gradient(farthest-side, #0000 calc(100% - 35%), #000 0);
-  animation: spinner-zp9dbg 1s infinite linear;
+  border: 8px solid #f0f0f0;
+  border-top: 8px solid #555555;
+  animation: spinner-animation 1s infinite linear;
 }
 
-@keyframes spinner-zp9dbg {
+/* Modern style for new browsers */
+@supports (
+  (background: conic-gradient(#0000 10%, #555555)) and
+  (
+    (mask: radial-gradient(black, transparent)) or
+    (-webkit-mask: radial-gradient(black, transparent))
+  )
+) {
+  .spinner {
+    border: none; /* Remove legacy borders */
+    background: conic-gradient(#0000 10%, #555555);
+    mask: radial-gradient(farthest-side, #0000 calc(100% - 35%), #000 0);
+    -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 35%), #000 0);
+  }
+}
+
+@keyframes spinner-animation {
+  from {
+    transform: rotate(0deg);
+  }
   to {
-    transform: rotate(1turn);
+    transform: rotate(360deg);
   }
 }

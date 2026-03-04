@@ -21,3 +21,11 @@ class DeyeLoggers(DeyeBaseLoggers):
       #  serial = 1234567890,
       #),
     ]
+
+  @property
+  def remote_cache_server(self) -> str:
+    # Specify cache server if you want
+    # to use remote cache, as example:
+    # http://192.168.0.77/
+    # See 'deyecache' folder for details
+    return ''

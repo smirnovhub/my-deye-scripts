@@ -1,4 +1,5 @@
 from typing import Dict
+from urllib.parse import urljoin
 
 from simple_singleton import singleton
 from deye_web_constants import DeyeWebConstants
@@ -6,9 +7,7 @@ from deye_web_constants import DeyeWebConstants
 @singleton
 class DeyeWebGraphsConfig:
   def __init__(self):
-    self.base_path = '../solar/current_graphs'
     registers = DeyeWebConstants.registers
-
     self.urls: Dict[str, str] = {
       registers.battery_current_register.name: 'battery_current.png',
       registers.battery_power_register.name: 'battery_power.png',
@@ -28,8 +27,8 @@ class DeyeWebGraphsConfig:
     }
 
   def get_url_for_register(self, register_name: str) -> str:
-    if not DeyeWebConstants.open_graphs_on_click:
+    if not DeyeWebConstants.graphs_base_url:
       return ''
 
     url = self.urls.get(register_name, '')
-    return f'{self.base_path}/{url}' if url else ''
+    return urljoin(DeyeWebConstants.graphs_base_url, url) if url else ''

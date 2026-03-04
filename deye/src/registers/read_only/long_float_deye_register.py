@@ -1,4 +1,6 @@
-from typing import Any
+from typing import Any, Optional
+
+from datetime import timedelta
 
 from deye_utils import DeyeUtils
 from float_deye_register import FloatDeyeRegister
@@ -13,9 +15,18 @@ class LongFloatDeyeRegister(FloatDeyeRegister):
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
+    caching_time: Optional[timedelta] = None,
     quantity: int = 2,
   ):
-    super().__init__(address, name, description, suffix, avg, quantity)
+    super().__init__(
+      address = address,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+      caching_time = caching_time,
+      quantity = quantity,
+    )
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     data = interactor.read_register(self.address, self.quantity)

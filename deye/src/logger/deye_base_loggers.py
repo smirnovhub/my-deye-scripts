@@ -1,23 +1,31 @@
+import threading
+
 from typing import List, Optional
 
-from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
 from deye_system_type import DeyeSystemType
 from deye_exceptions import DeyeNotImplementedException
 
 class DeyeBaseLoggers:
-  # 'demoserver' should match docker configuration
-  demo_server_name = 'demoserver'
-
   _instance = None
+  _lock = threading.Lock()
 
   def __new__(cls, *args, **kwargs):
     if cls._instance is None:
-      if DeyeUtils.is_tests_on():
-        from deye_test_loggers import DeyeTestLoggers
-        cls._instance = super().__new__(DeyeTestLoggers) # type: ignore
-      else:
-        cls._instance = super().__new__(cls) # type: ignore
+      with cls._lock:
+        # Double-check inside the lock
+        if cls._instance is None:
+          from env_utils import EnvUtils
+          if EnvUtils.is_tests_on():
+            from deye_test_loggers import DeyeTestLoggers
+            cls._instance = super().__new__(DeyeTestLoggers) # type: ignore
+            if EnvUtils.is_remote_cache_on():
+              cls._instance._remote_cache_server = EnvUtils.get_remote_cache_server() # type: ignore
+            else:
+              cls._instance._remote_cache_server = '' # type: ignore
+          else:
+            cls._instance = super().__new__(cls) # type: ignore
+            cls._instance._remote_cache_server = '' # type: ignore
     return cls._instance
 
   @property
@@ -27,6 +35,15 @@ class DeyeBaseLoggers:
   @property
   def slaves(self) -> List[DeyeLogger]:
     raise DeyeNotImplementedException('slaves')
+
+  @property
+  def remote_cache_server(self) -> str:
+    return self._remote_cache_server # type: ignore
+
+  @property
+  def demo_server_name(self) -> str:
+    # Demo server name should match docker configuration
+    return 'demoserver'
 
   @property
   def loggers(self) -> List[DeyeLogger]:
@@ -46,7 +63,7 @@ class DeyeBaseLoggers:
   @property
   def is_demo_loggers(self) -> bool:
     for logger in self.loggers:
-      if logger.address != DeyeBaseLoggers.demo_server_name:
+      if logger.address != self.demo_server_name:
         return False
     return True
 

@@ -1,16 +1,40 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from datetime import datetime, timedelta
+
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_modbus_solarman import DeyeModbusSolarman
+from deye_register_cache_data import DeyeRegisterCacheData
+from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
+from deye_registers_local_cache_manager import DeyeRegistersLocalCacheManager
+from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
 
 class DeyeModbusInteractor:
   def __init__(self, logger: DeyeLogger, **kwargs):
     self.logger = logger
     self.loggers = DeyeLoggers()
     self.solarman = DeyeModbusSolarman(logger, **kwargs)
-    self.registers_queue: Dict[int, int] = dict()
-    self.verbose = kwargs.get('verbose', False)
+    self.registers: Dict[int, DeyeRegisterCacheData] = dict()
+    self.verbose = bool(kwargs.get('verbose', False))
+    self.default_caching_time = max(0, int(kwargs.get('caching_time', 3)))
     self.max_register_count = 120
+
+    # Initialize cache manager
+    self.cache_manager: DeyeRegistersBaseCacheManager
+    if self.loggers.remote_cache_server:
+      self.cache_manager = DeyeRegistersRemoteCacheManager(
+        name = self.logger.name,
+        serial = self.logger.serial,
+        remote_cache_server = self.loggers.remote_cache_server,
+        verbose = self.verbose,
+      )
+    else:
+      self.cache_manager = DeyeRegistersLocalCacheManager(
+        name = self.logger.name,
+        serial = self.logger.serial,
+        verbose = self.verbose,
+      )
 
   @property
   def name(self) -> str:
@@ -21,68 +45,153 @@ class DeyeModbusInteractor:
     return self.logger.name == self.loggers.master.name
 
   def clear_registers_queue(self) -> None:
-    self.registers_queue.clear()
+    self.registers.clear()
 
-  def enqueue_register(self, register_addr: int, quantity: int) -> None:
-    for i in range(quantity):
-      self.registers_queue[register_addr + i] = 0
+  def enqueue_register(
+    self,
+    address: int,
+    quantity: int,
+    caching_time: Optional[timedelta],
+  ) -> None:
+    cache_time = self.default_caching_time
+    if cache_time > 0 and caching_time:
+      cache_time = int(caching_time.total_seconds())
+
+    self.registers[address] = DeyeRegisterCacheData(
+      address = address,
+      quantity = quantity,
+      caching_time = cache_time,
+    )
 
   def process_enqueued_registers(self) -> None:
-    if len(self.registers_queue) == 0:
+    if not self.registers:
       return
 
-    sorted_queue = dict(sorted(self.registers_queue.items()))
-    end_address = max(sorted_queue.keys())
+    if self.default_caching_time < 1:
+      # Do NOT use any caching on read
+      self.registers = self.read_from_inverter(self.registers)
+      self.cache_manager.save_to_cache(self.registers)
+      return
 
-    groups = []
-    registers = []
+    now = datetime.now()
 
-    for item in sorted_queue:
-      registers.append(item)
-      count = max(registers) - min(registers)
+    cached_registers: Dict[int, DeyeRegisterCacheData] = {}
 
-      if count >= self.max_register_count:
-        registers.pop()
-        groups.append(list(registers))
-        registers.clear()
-        registers.append(item)
-
-      if item == end_address:
-        groups.append(list(registers))
+    # Reset cache during the first 5 minutes of the day
+    if now.hour == 0 and now.minute < 5:
+      if self.verbose:
+        print(f'{self.name} resetting cache because midnight')
+      self.cache_manager.reset_cache()
+    else:
+      cached_registers = self.cache_manager.get_cached_registers(self.registers)
 
     if self.verbose:
-      test = str(groups).replace("], ", "],\n  ").replace("[[", "[\n  [").replace("]]", "]\n]")
-      print(f'register groups to read from {self.logger.name}:')
-      print(test)
+      registers_caching_time = {addr: reg.caching_time for addr, reg in self.registers.items()}
+      print(f'{self.name} registers cache times: {registers_caching_time}')
+      cached_data_map = {addr: reg.values for addr, reg in cached_registers.items()}
+      print(f'{self.name} cached registers: {cached_data_map}')
+
+    # Create a new dictionary containing only registers NOT found in cache
+    uncached_registers = {addr: val for addr, val in self.registers.items() if addr not in cached_registers}
+
+    if self.verbose:
+      print(f'{self.name} uncached registers: {list(uncached_registers.keys())}')
+
+    if uncached_registers:
+      polled_registers = self.read_from_inverter(uncached_registers)
+      self.cache_manager.save_to_cache(polled_registers)
+      self.registers = {**cached_registers, **polled_registers}
+    else:
+      self.registers = cached_registers
+
+  def read_from_inverter(
+    self,
+    registers: Dict[int, DeyeRegisterCacheData],
+  ) -> Dict[int, DeyeRegisterCacheData]:
+    """Reads registers from inverter and returns a NEW dictionary with NEW objects."""
+    if not registers:
+      return {}
+
+    results: Dict[int, DeyeRegisterCacheData] = {}
+    sorted_addrs = sorted(registers.keys())
+
+    groups: List[List[DeyeRegisterCacheData]] = []
+    current_group: List[DeyeRegisterCacheData] = []
+
+    for addr in sorted_addrs:
+      reg = registers[addr]
+      if not current_group:
+        current_group.append(reg)
+        continue
+
+      group_start = current_group[0].address
+      block_end = reg.address + reg.quantity
+
+      if (block_end - group_start) <= self.max_register_count:
+        current_group.append(reg)
+      else:
+        groups.append(current_group)
+        current_group = [reg]
+
+    if current_group:
+      groups.append(current_group)
+
+    if self.verbose:
+      simple_groups = [[reg.address for reg in group] for group in groups]
+      grp = str(simple_groups).replace("], ", "],\n  ").replace("[[", "[\n  [").replace("]]", "]\n]")
+      print(f'register groups to read from {self.name}:\n{grp}')
 
     try:
       for group in groups:
-        start = min(group)
-        count = max(group) - start + 1
+        start = group[0].address
+        last_item = group[-1]
+        count = (last_item.address + last_item.quantity) - start
 
-        data = self.solarman.read_holding_registers(register_addr = start, quantity = count)
+        data = self.solarman.read_holding_registers(address = start, quantity = count)
 
-        for idx, value in enumerate(data):
-          if (idx + start) in group:
-            self.registers_queue[idx + start] = value
+        for reg in group:
+          offset = reg.address - start
+          results[reg.address] = DeyeRegisterCacheData(
+            address = reg.address,
+            quantity = reg.quantity,
+            caching_time = reg.caching_time,
+            values = data[offset:offset + reg.quantity],
+          )
     finally:
       self.solarman.disconnect()
 
-  def read_register(self, register_addr: int, quantity: int) -> List[int]:
-    result = []
+    return results
 
-    for i in range(quantity):
-      key = register_addr + i
-      result.append(self.registers_queue[key] if key in self.registers_queue else 0)
+  def read_register(self, address: int, quantity: int) -> List[int]:
+    reg = self.registers.get(address)
+    return reg.values[:quantity] if reg else [0] * quantity
+
+  def write_register(self, address: int, values: List[int]) -> int:
+    try:
+      result = self.solarman.write_multiple_holding_registers(address, values)
+    finally:
+      self.solarman.disconnect()
+
+    # Create a new data object for the updated register
+    updated_register = DeyeRegisterCacheData(
+      address = address,
+      quantity = len(values),
+      caching_time = self.default_caching_time,
+      values = values,
+    )
+
+    # Update the local dictionary with the new object
+    # This ensures subsequent reads within this session get the new value
+    self.registers[address] = updated_register
+
+    # Update the persistent JSON cache
+    self.cache_manager.save_to_cache({address: updated_register})
 
     return result
 
-  def write_register(self, register_addr: int, values: List[int]) -> int:
-    try:
-      return self.solarman.write_multiple_holding_registers(register_addr, values)
-    finally:
-      self.solarman.disconnect()
+  def reset_cache(self) -> None:
+    self.cache_manager.reset_cache()
 
-  # Deprecated
   def disconnect(self) -> None:
-    pass
+    self.clear_registers_queue()
+    self.cache_manager.close()

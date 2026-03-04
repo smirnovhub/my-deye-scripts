@@ -1,6 +1,8 @@
+import random
+
 import telebot
 
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Tuple
 from dataclasses import dataclass, field
 
 from telebot_utils import TelebotUtils
@@ -47,10 +49,14 @@ class SequentialChoices:
 
     SequentialChoices._register_global_handler(bot)
 
-    keyboard = TelebotUtils.get_keyboard_for_choices({
-      child.label: str(i)
-      for i, child in enumerate(root.children)
-    }, max_per_row, SequentialChoices._seq_prefix)
+    keyboard = TelebotUtils.get_keyboard_for_choices(
+      {
+        child.label: str(i)
+        for i, child in enumerate(root.children)
+      },
+      max_per_row,
+      SequentialChoices._seq_prefix,
+    )
 
     message = bot.send_message(chat_id, root.text if root.text else text, reply_markup = keyboard, parse_mode = "HTML")
 
@@ -139,10 +145,25 @@ class SequentialChoices:
 
       # go to child node
       state.current_node = child_node
-      keyboard = TelebotUtils.get_keyboard_for_choices({
-        b.label: str(i)
-        for i, b in enumerate(child_node.children)
-      }, state.max_per_row, SequentialChoices._seq_prefix)
+
+      def get_button_pair(index: int, label: str) -> Tuple[str, str]:
+        """
+        Determines the key-value pair for a button node.
+        Returns (random_key, row_break_str) for separators,
+        otherwise (label, index_string).
+        """
+        if label == TelebotUtils.row_break_str:
+          # Generate a unique key for the separator
+          random_key: str = str(random.randint(100000, 999999))
+          return random_key, TelebotUtils.row_break_str
+
+        return label, str(index)
+
+      keyboard = TelebotUtils.get_keyboard_for_choices(
+        dict(get_button_pair(i, b.label) for i, b in enumerate(child_node.children)),
+        state.max_per_row,
+        SequentialChoices._seq_prefix,
+      )
 
       try:
         if child_node.text and child_node.text != current_node.text:

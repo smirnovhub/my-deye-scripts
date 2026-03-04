@@ -1,41 +1,80 @@
 import sys
+import logging
 
-from src.deyeproxy_env_var import DeyeProxyEnvVar
+from env_var import EnvVar
 
 class DeyeProxyConfig:
   def __init__(self):
-    self._logger_host_var = DeyeProxyEnvVar("LOGGER_HOST", "", "IP/Hostname of the inverter logger (mandatory)")
-    logger_port_var = DeyeProxyEnvVar("LOGGER_PORT", "8899", "Target port on the logger")
-    proxy_port_var = DeyeProxyEnvVar("PROXY_PORT", "8899", "Local port to listen on")
-    max_connections_var = DeyeProxyEnvVar("MAX_CONCURRENT_CONNECTIONS", "10", "Max simultaneous connections")
-    connect_timeout_var = DeyeProxyEnvVar("CONNECT_TIMEOUT", "5", "Timeout for logger connection")
-    data_timeout_var = DeyeProxyEnvVar("DATA_TIMEOUT", "10", "Inactivity timeout for session")
-    log_level_var = DeyeProxyEnvVar("LOG_LEVEL", "INFO", "Log level for logging")
+    self.__log_name = EnvVar("DEYE_LOG_NAME", "deyeproxy", "Individual folder name for logging")
+    self.__logger_host = EnvVar("LOGGER_HOST", "", "IP/Hostname of the inverter logger (mandatory)")
+    self.__logger_port = EnvVar("LOGGER_PORT", "8899", "Target port on the logger")
+    self.__proxy_port = EnvVar("PROXY_PORT", "8899", "Local port to listen on")
+    self.__max_connections = EnvVar("MAX_CONCURRENT_CONNECTIONS", "10", "Max simultaneous connections")
+    self.__connect_timeout = EnvVar("CONNECT_TIMEOUT", "5", "Timeout for logger connection")
+    self.__data_timeout = EnvVar("DATA_TIMEOUT", "10", "Inactivity timeout for session")
+    self.__log_level = EnvVar("LOG_LEVEL", "INFO", "Log level for logging")
 
-    self.LOGGER_HOST = self._logger_host_var.value
-    self.LOGGER_PORT = logger_port_var.as_int()
-    self.PROXY_HOST = '0.0.0.0'
-    self.PROXY_PORT = proxy_port_var.as_int()
-    self.MAX_CONCURRENT_CONNECTIONS = max_connections_var.as_int()
-    self.CONNECT_TIMEOUT = connect_timeout_var.as_float()
-    self.DATA_TIMEOUT = data_timeout_var.as_float()
-    self.LOG_LEVEL = log_level_var.value
+    self.__proxy_host = '0.0.0.0'
 
-    self._all_vars = [
-      self._logger_host_var,
-      logger_port_var,
-      proxy_port_var,
-      max_connections_var,
-      connect_timeout_var,
-      data_timeout_var,
-      log_level_var,
+    self.__all_vars = [
+      self.__log_name,
+      self.__logger_host,
+      self.__logger_port,
+      self.__proxy_port,
+      self.__max_connections,
+      self.__connect_timeout,
+      self.__data_timeout,
+      self.__log_level,
     ]
 
+    self.__logger = logging.getLogger()
+
+  @property
+  def LOG_NAME(self) -> str:
+    return self.__log_name.as_filtered_value
+
+  @property
+  def LOGGER_HOST(self) -> str:
+    return self.__logger_host.value
+
+  @property
+  def LOGGER_PORT(self) -> int:
+    return self.__logger_port.as_int()
+
+  @property
+  def PROXY_HOST(self) -> str:
+    return self.__proxy_host
+
+  @property
+  def PROXY_PORT(self) -> int:
+    return self.__proxy_port.as_int()
+
+  @property
+  def MAX_CONCURRENT_CONNECTIONS(self) -> int:
+    return self.__max_connections.as_int()
+
+  @property
+  def CONNECT_TIMEOUT(self) -> float:
+    return self.__connect_timeout.as_float()
+
+  @property
+  def DATA_TIMEOUT(self) -> float:
+    return self.__data_timeout.as_float()
+
+  @property
+  def LOG_LEVEL(self) -> str:
+    return self.__log_level.value
+
+  def _get_max_var_length(self) -> int:
+    return max((len(var.name) for var in self.__all_vars), default = 0)
+
   def validate_or_exit(self):
+    """Validate that mandatory settings are present, otherwise exit."""
     if not self.LOGGER_HOST:
-      print(f"Environment variable '{self._logger_host_var.name}' is not set. Exiting.")
-      print("\nAvailable environment variables:")
-      for var in self._all_vars:
+      len = self._get_max_var_length()
+      self.__logger.error(f"Environment variable '{self.__logger_host.name}' is not set. Exiting.")
+      self.__logger.error("Available environment variables:")
+      for var in self.__all_vars:
         default_str = f" (default: {var.default})" if var.default else ""
-        print(f"  {var.name:<26} - {var.description}{default_str}")
+        self.__logger.error(f"  {var.name:<{len}} - {var.description}{default_str}")
       sys.exit(1)

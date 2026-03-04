@@ -23,8 +23,12 @@
     "../deye/src/registers/read_write/time_of_use",
     "../deye/src/registers/read_write/time_of_use/data",
     "../deye/src/solarman",
+    "../deye/src/solarman/cache",
     "../deye/src/solarman/server",
     "../deye/src/utils",
+    "../deyecache",
+    "../deyecache/data",
+    "../deyecache/src",
     "../telebot/src/test",
     "src"
   ],

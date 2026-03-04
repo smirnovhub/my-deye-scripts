@@ -1,8 +1,8 @@
 from deye_register import DeyeRegister
-from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
 from deye_web_utils import DeyeWebUtils
+from deye_registers_holder import DeyeRegistersHolder
 from deye_web_threshold_formatter import DeyeWebThresholdFormatter
 
 class DeyeWebBatterySocFormatter(DeyeWebThresholdFormatter):
@@ -18,10 +18,20 @@ class DeyeWebBatterySocFormatter(DeyeWebThresholdFormatter):
       will_affect_tab_color = False,
     )
 
-  def format_register(self, registers: DeyeRegisters, register: DeyeRegister) -> str:
+  def format_register(
+    self,
+    inverter: str,
+    holder: DeyeRegistersHolder,
+    register: DeyeRegister,
+  ) -> str:
     if not isinstance(register.value, int):
-      return super().format_register(registers, register)
+      return super().format_register(
+        inverter = inverter,
+        holder = holder,
+        register = register,
+      )
 
+    registers = holder.all_registers[inverter]
     color1 = super().get_color(registers, register)
     color2 = color1
 

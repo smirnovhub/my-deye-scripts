@@ -129,7 +129,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, str(e))
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
-      print(traceback.format_exc())
+      self.logger.info(traceback.format_exc())
 
   def process_read_write_register_step2(
     self,
@@ -168,7 +168,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
-      print(traceback.format_exc())
+      self.logger.info(traceback.format_exc())
 
   def get_register_value(self, register: DeyeRegister) -> str:
     # should be local to avoid issues with locks
@@ -259,7 +259,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
             self.bot.send_message(message.chat.id, str(e))
           except Exception as e:
             self.bot.send_message(message.chat.id, str(e))
-            print(traceback.format_exc())
+            self.logger.info(traceback.format_exc())
           finally:
             holder.disconnect()
 

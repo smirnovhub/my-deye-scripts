@@ -8,7 +8,7 @@ class DeyeLoggers(DeyeBaseLoggers):
   def master(self) -> DeyeLogger:
     return DeyeLogger(
       name = 'master',
-      address = DeyeBaseLoggers.demo_server_name,
+      address = self.demo_server_name,
       serial = 1,
       port = 5001,
     )
@@ -19,7 +19,7 @@ class DeyeLoggers(DeyeBaseLoggers):
     return [
       DeyeLogger(
         name = f'slave{i}',
-        address = DeyeBaseLoggers.demo_server_name,
+        address = self.demo_server_name,
         serial = self.master.serial + i,
         port = self.master.port + i,
       ) for i in range(1, count + 1)

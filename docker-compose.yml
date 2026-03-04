@@ -1,76 +1,187 @@
 # See .env file for additional parameters like BRANCH, etc.
+#
+# BEFORE START NEED TO CREATE SHARED VOLUME:
+# docker volume create deye_shared_volume
+# docker run --rm -v deye_shared_volume:/data busybox chmod 1777 /data
+#
 services:
-  telebot:
-    build:
-      context: .
-      dockerfile: telebot/Dockerfile
-      args:
-        - BRANCH=${APP_BRANCH}
-    image: telebot
-    container_name: telebot
-    hostname: telebot
-    restart: unless-stopped
-
-  deyeweb:
+  deye-web:
     build:
       context: .
       dockerfile: deyeweb/Dockerfile
       target: deyeweb
       args:
-        - BRANCH=${APP_BRANCH}
-    image: deyeweb
-    container_name: deyeweb
-    hostname: deyeweb
+        BRANCH: ${APP_BRANCH}
+    environment:
+      DEYE_LOG_NAME: "deye-web"
+      BACK_SERVER_URL: "http://172.17.17.27"
+      USE_BACK_SERVER: "false"
+    image: deye-web
+    container_name: deye-web
+    hostname: deye-web
     ports:
       - "80:80"
       - "443:443"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GLOBAL_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/var/www/html/data
 
-  demoweb:
+  deye-back-server:
+    build:
+      context: .
+      dockerfile: deyeweb/Dockerfile
+      target: deyebackserver
+      args:
+        BRANCH: ${APP_BRANCH}
+    environment:
+      DEYE_LOG_NAME: "deye-back-server"
+      SERVER_PORT: "80"
+      BACK_EXECUTION_TIMEOUT: "15"
+    image: deye-back-server
+    container_name: deye-back-server
+    hostname: deye-back-server
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GLOBAL_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/home/backserver/my-deye-scripts/deyeweb/data
+
+  telebot:
+    build:
+      context: .
+      dockerfile: telebot/Dockerfile
+      args:
+        BRANCH: ${APP_BRANCH}
+    environment:
+      DEYE_LOG_NAME: "telebot"
+    image: telebot
+    container_name: telebot
+    hostname: telebot
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${DEYE_TELEBOT_PIDS_LIMIT}
+          memory: ${DEYE_TELEBOT_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/home/telebot/my-deye-scripts/telebot/data
+
+  deye-cache:
+    build:
+      context: .
+      dockerfile: deyecache/Dockerfile
+    environment:
+      DEYE_LOG_NAME: "deye-cache"
+      SERVER_PORT: "80"
+      MAX_KEYS_COUNT: "32"
+      MAX_JSON_SIZE: "32768"
+      MAX_JSON_STORAGE_SIZE: "262144"
+    image: deye-cache
+    container_name: deye-cache
+    hostname: deye-cache
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GLOBAL_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/home/deyecache/deyecache/data
+
+  deye-proxy:
+    build:
+      context: .
+      dockerfile: deyeproxy/Dockerfile
+    environment:
+      DEYE_LOG_NAME: "deye-proxy"
+      LOGGER_HOST: "192.168.1.101"
+      LOGGER_PORT: "8899"
+      PROXY_PORT: "8899"
+      MAX_CONCURRENT_CONNECTIONS: "10"
+      CONNECT_TIMEOUT: "5"
+      DATA_TIMEOUT: "10"
+      LOG_LEVEL: "INFO"
+    image: deye-proxy
+    container_name: deye-proxy
+    hostname: deye-proxy
+    ports:
+      - "8899:8899"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GLOBAL_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/home/deyeproxy/deyeproxy/data
+
+  log-observer:
+    build:
+      context: .
+      dockerfile: logobserver/Dockerfile
+    image: log-observer
+    container_name: log-observer
+    hostname: log-observer
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GLOBAL_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/var/www/html
+
+  demo-web:
     build:
       context: .
       dockerfile: deyeweb/Dockerfile
       target: demoweb
       args:
-        - BRANCH=${APP_BRANCH}
-    image: demoweb
-    container_name: demoweb
-    hostname: demoweb
+        BRANCH: ${APP_BRANCH}
+    environment:
+      BACK_SERVER_URL: "http://172.17.17.27"
+      USE_BACK_SERVER: "false"
+    image: demo-web
+    container_name: demo-web
+    hostname: demo-web
     ports:
       - "8080:80"
       - "4430:443"
     restart: unless-stopped
 
-  demoserver:
+  demo-server:
     build:
       context: .
       dockerfile: demoserver/Dockerfile
       args:
-        - BRANCH=${APP_BRANCH}
-        - PORTS=5000 5001
-    image: demoserver
-    container_name: demoserver
-    hostname: demoserver
+        BRANCH: ${APP_BRANCH}
+        PORTS: "5000 5001"
+    image: demo-server
+    container_name: demo-server
+    hostname: demo-server
     ports:
       - "5000:5000"
       - "5001:5001"
     restart: unless-stopped
 
-  deye_master_proxy:
-    build:
-      context: .
-      dockerfile: deyeproxy/Dockerfile
-    environment:
-      - LOGGER_HOST=192.168.1.101
-      - LOGGER_PORT=8899
-      - PROXY_PORT=8899
-      - MAX_CONCURRENT_CONNECTIONS=10
-      - CONNECT_TIMEOUT=5
-      - DATA_TIMEOUT=10
-      - LOG_LEVEL=INFO
-    image: deyeproxy
-    container_name: deye_master_proxy
-    hostname: deye_master_proxy
-    ports:
-      - "8899:8899"
-    restart: unless-stopped
+volumes:
+  deye_shared_volume:
+    external: true

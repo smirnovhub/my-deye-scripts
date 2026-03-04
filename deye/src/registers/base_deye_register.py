@@ -1,10 +1,11 @@
 import math
-from typing import Any, List, Union
 
-from datetime import datetime
+from typing import Any, List, Optional, Union
+from datetime import datetime, timedelta
 
 from deye_utils import DeyeUtils
 from deye_base_enum import DeyeBaseEnum
+from deye_exceptions import DeyeValueException
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
@@ -19,6 +20,7 @@ class BaseDeyeRegister(DeyeRegister):
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
+    caching_time: Optional[timedelta] = None,
   ):
     self._address = address
     self._quantity = quantity
@@ -30,15 +32,32 @@ class BaseDeyeRegister(DeyeRegister):
     self._value: Union[int, float, str, datetime, DeyeBaseEnum] = 0
     self._min_value: Union[int, float] = 0
     self._max_value: Union[int, float] = 0
+    self._caching_time = caching_time
     self._loggers = DeyeLoggers()
 
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
-    if interactor.is_master or self._avg != DeyeRegisterAverageType.only_master:
-      interactor.enqueue_register(self.address, self.quantity)
+    if interactor.is_master or (self._avg != DeyeRegisterAverageType.only_master
+                                and self._avg != DeyeRegisterAverageType.fake_accumulate):
+      interactor.enqueue_register(self.address, self.quantity, self.caching_time)
 
   def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     if len(interactors) == 1:
       self._value = self.read_from_master_interactor(interactors)
+      return self._value
+
+    if self._avg == DeyeRegisterAverageType.fake_accumulate:
+      value = self.read_from_master_interactor(interactors)
+
+      # Check if the value is a number before multiplication
+      if isinstance(value, (int, float)):
+        value *= len(interactors)
+      else:
+        # Handle the error if the type is unexpected
+        class_name = self.__class__.__name__
+        raise DeyeValueException(f"{class_name}: you can use {self._avg.name} only for "
+                                 f"numeric registers, but got {type(value).__name__}")
+
+      self._value = value
       return self._value
 
     if self._avg == DeyeRegisterAverageType.accumulate:
@@ -147,3 +166,10 @@ class BaseDeyeRegister(DeyeRegister):
   @property
   def max_value(self) -> float:
     return self._max_value
+
+  @property
+  def caching_time(self) -> Optional[timedelta]:
+    return self._caching_time
+
+  def set_caching_time(self, caching_time: timedelta) -> None:
+    self._caching_time = caching_time

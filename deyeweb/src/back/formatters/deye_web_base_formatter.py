@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
@@ -6,16 +8,23 @@ from deye_web_constants import DeyeWebConstants
 from deye_web_style_manager import DeyeWebStyleManager
 from deye_web_graphs_config import DeyeWebGraphsConfig
 from deye_web_value_formatter import DeyeWebValueFormatter
+from deye_registers_holder import DeyeRegistersHolder
 
 class DeyeWebBaseFormatter:
   def __init__(
     self,
     will_affect_tab_color: bool = True,
+    used_registers: Optional[List[str]] = None,
   ):
     self.loggers = DeyeWebConstants.loggers
     self.graphs_config = DeyeWebGraphsConfig()
     self.style_manager = DeyeWebStyleManager()
     self.will_affect_tab_color = will_affect_tab_color
+    self._used_registers: List[str] = used_registers if used_registers else []
+
+  @property
+  def used_registers(self) -> List[str]:
+    return self._used_registers
 
   def get_formatted_value(self, register: DeyeRegister) -> str:
     if register.name in DeyeWebConstants.registers_without_formatting:
@@ -52,7 +61,13 @@ class DeyeWebBaseFormatter:
     url = self.graphs_config.get_url_for_register(register.name)
     return DeyeWebConstants.cursor_style if url else ''
 
-  def format_register(self, registers: DeyeRegisters, register: DeyeRegister) -> str:
+  def format_register(
+    self,
+    inverter: str,
+    holder: DeyeRegistersHolder,
+    register: DeyeRegister,
+  ) -> str:
+    registers = holder.all_registers[inverter]
     value = self.get_formatted_value(register)
     color = self.get_color(registers, register)
 

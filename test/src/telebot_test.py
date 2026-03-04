@@ -24,11 +24,12 @@ import_dirs(
   ],
 )
 
+from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_test_helper import DeyeTestHelper
 
-DeyeUtils.turn_tests_on()
+EnvUtils.turn_tests_on()
 
 logging.basicConfig(
   level = logging.INFO,
@@ -52,7 +53,7 @@ if not loggers.is_test_loggers:
 commands = [
   sys.executable,
   '-u',
-  os.path.join(base_path, 'telebot/telebot'),
+  os.path.join(base_path, 'telebot/deyetelebot.py'),
 ]
 
 log.info(f'Command to execute: {commands}')

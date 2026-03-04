@@ -13,35 +13,19 @@ class DeyeWebServiceSection(DeyeWebBaseSection):
     id1 = DeyeWebUtils.short(DeyeWebConstants.page_template.format(self.section.id))
     id2 = DeyeWebUtils.short(self.section.title)
 
-    style_id1 = self.style_manager.register_style(DeyeWebConstants.item_td_style)
-    style_id2 = self.style_manager.register_style(
-      DeyeWebConstants.item_td_style_with_color.format(DeyeWebColor.green.color))
-    style_id3 = self.style_manager.register_style(DeyeWebConstants.flex_center_style)
-    cursor_style_id = self.style_manager.register_style(DeyeWebConstants.cursor_style)
-
-    command = DeyeWebRemoteCommand.update_scripts.name
+    style_id1 = self.style_manager.register_style(DeyeWebConstants.flex_center_style)
 
     return f"""
       {DeyeWebUtils.begin_comment(self)}
       <div id="{id1}" class="tabcontent">
         <center>
-          <table>
-            <tr>
-              <td onclick="{command}('{id2}');" class="{style_id1} {style_id2} {cursor_style_id}">
-                Update Scripts
-              </td>
-            </tr>
-          </table>
+          {self.get_command_html('Reset Cache', DeyeWebRemoteCommand.reset_cache)}
           <br>
-          <table>
-            <tr>
-              <td onclick="window.location.href='mobileconfig.php';" class="{style_id1} {style_id2} {cursor_style_id}">
-                Install iOS Profile
-              </td>
-            </tr>
-          </table>
+          {self.get_command_html('Update Scripts', DeyeWebRemoteCommand.update_scripts)}
           <br>
-          <table class="{style_id3}">
+          {self.get_command_html('Install iOS Profile', DeyeWebRemoteCommand.install_ios_profile)}
+          <br>
+          <table class="{style_id1}">
             <tr>
               <td>
                 <center>
@@ -51,8 +35,27 @@ class DeyeWebServiceSection(DeyeWebBaseSection):
             </tr>
           </table>
           <br><br>
-          <div class="counter {style_id3}">&nbsp;</div>
+          <div class="counter {style_id1}">&nbsp;</div>
         </center>
       </div>
       {DeyeWebUtils.end_comment(self)}
     """.strip()
+
+  def get_command_html(self, title: str, command: DeyeWebRemoteCommand) -> str:
+    id = DeyeWebUtils.short(self.section.title)
+    command = DeyeWebUtils.get_remote_command(command, id)
+
+    style_id1 = self.style_manager.register_style(DeyeWebConstants.item_td_style)
+    style_id2 = self.style_manager.register_style(
+      DeyeWebConstants.item_td_style_with_color.format(DeyeWebColor.green.color))
+    cursor_style_id = self.style_manager.register_style(DeyeWebConstants.cursor_style)
+
+    return f"""
+      <table>
+        <tr>
+          <td onclick="{command}" class="{style_id1} {style_id2} {cursor_style_id}">
+            {title}
+          </td>
+        </tr>
+      </table>
+    """

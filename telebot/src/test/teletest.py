@@ -64,7 +64,6 @@ class TeleTest:
         log.info(f'Running module {type(module).__name__}...')
         module.run_tests(servers)
         log.info(f'Module {type(module).__name__} done successfully')
-      print(DeyeTestHelper.test_success_str)
       log.info(DeyeTestHelper.test_success_str)
     except Exception as e:
       info = ''
@@ -72,7 +71,6 @@ class TeleTest:
         info = (f'(name = {module.name}, command = {module.command}, '
                 f'register_creator = {type(module.register_creator(module.name)).__name__})')
       msg = f'An exception occurred while running {type(module).__name__}{info}: {str(e)}'
-      print(msg)
       log.info(msg)
       time.sleep(1)
       send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} '

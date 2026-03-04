@@ -1,12 +1,13 @@
 FROM python:3.14-slim
 
+ENV DEYE_LOG_NAME=deyeproxy
+ENV LOG_LEVEL=INFO
 ENV LOGGER_HOST=192.168.1.101
 ENV LOGGER_PORT=8899
 ENV PROXY_PORT=8899
 ENV MAX_CONCURRENT_CONNECTIONS=10
 ENV CONNECT_TIMEOUT=5
 ENV DATA_TIMEOUT=10
-ENV LOG_LEVEL=INFO
 
 # Set username variable
 ARG USER_NAME=deyeproxy
@@ -28,7 +29,7 @@ RUN apt-get update && \
   echo $TIMEZONE > /etc/timezone
 
 # Create user without password, with home directory
-RUN useradd -m -u 7777 -s /usr/sbin/nologin $USER_NAME
+RUN useradd -m -u 1673 -s /usr/sbin/nologin $USER_NAME
 
 # Switch to non-root user
 USER $USER_NAME
@@ -36,7 +37,11 @@ USER $USER_NAME
 # Set working directory
 WORKDIR $APP_DIR
 
+COPY --chown=$USER_NAME:$USER_NAME common/utils/ ./common/utils
 COPY --chown=$USER_NAME:$USER_NAME deyeproxy/ ./deyeproxy/
+
+# Set working directory
+WORKDIR $APP_DIR/deyeproxy
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1
@@ -44,4 +49,4 @@ ENV PYTHONUNBUFFERED=1
 # Expose proxy port
 EXPOSE $PROXY_PORT
 
-CMD ["python3", "deyeproxy/deyeproxy.py"]
+CMD ["python3", "deyeproxy.py"]

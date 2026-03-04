@@ -1,0 +1,37 @@
+from typing import List, Optional
+
+from deye_exceptions import DeyeCacheException
+
+class DeyeRegisterCacheData:
+  """Container for register data and its caching metadata."""
+  def __init__(
+    self,
+    address: int,
+    quantity: int,
+    caching_time: int,
+    values: Optional[List[int]] = None,
+  ):
+    self._address = address
+    self._quantity = quantity
+    self._caching_time = caching_time
+    self._values = values if values else [0] * quantity
+
+    if self._quantity != len(self._values):
+      raise DeyeCacheException(f"Quantity mismatch for register {address}: "
+                               f"expected {self._quantity}, but got {len(self._values)} values.")
+
+  @property
+  def address(self) -> int:
+    return self._address
+
+  @property
+  def quantity(self) -> int:
+    return self._quantity
+
+  @property
+  def caching_time(self) -> int:
+    return self._caching_time
+
+  @property
+  def values(self) -> List[int]:
+    return self._values

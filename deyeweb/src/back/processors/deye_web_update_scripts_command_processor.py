@@ -1,13 +1,17 @@
+import os
 import re
+import tempfile
 
 from typing import Any, Dict
 
+from deye_web_constants import DeyeWebConstants
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
+from deye_registers_holder import DeyeRegistersHolder
 from deye_web_remote_command import DeyeWebRemoteCommand
 from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
-class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
+class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
     super().__init__([DeyeWebRemoteCommand.update_scripts])
 
@@ -16,9 +20,16 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
     command: DeyeWebRemoteCommand,
     json_data: Any,
   ) -> Dict[str, str]:
-    def get_result(result: str) -> Dict[str, str]:
+    def get_result(text: str) -> Dict[str, str]:
+      result: Dict[str, str] = {}
+
       id = DeyeWebUtils.short(DeyeWebSection.service.title)
-      return {id: result + self.style_manager.generate_css()}
+      result[id] = text
+
+      style_id = DeyeWebConstants.styles_template.format(command.name)
+      result[style_id] = self.style_manager.generate_css()
+
+      return result
 
     try:
       current_branch_name = self.git_helper.get_current_branch_name()
@@ -30,9 +41,22 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
 
       if 'up to date' in pull_result.lower():
         last_commit = self.git_helper.get_last_commit_hash_and_comment()
-        return get_result("Already up to date.<br>"
+        return get_result('<p style="color: green;">'
+                          "Already up to date.<br>"
                           f"You are currently on branch '{current_branch_name}':<br>"
-                          f"<b>{last_commit}</b>")
+                          f"<b>{last_commit}</b></p>")
+
+      cache_file_path = os.path.join(tempfile.gettempdir(), DeyeWebConstants.front_cache_file_name)
+      DeyeWebUtils.file_truncate(cache_file_path)
+
+      holder = DeyeRegistersHolder(name = 'deyeweb', loggers = self.loggers.loggers)
+
+      try:
+        holder.reset_cache()
+      finally:
+        holder.disconnect()
+
+      DeyeWebUtils.shutdown_with_delay()
     except Exception as e:
       err = str(e).replace(': ', ':<br>').replace('\n', '<br>')
       return get_result(f'<p style="color: red;">{err}</p>')
@@ -40,4 +64,10 @@ class DeyeWebUpdateCommandProcessor(DeyeWebBaseCommandProcessor):
     pattern = r'\d+ files? changed.*'
     matches = re.findall(pattern, pull_result)
 
-    return get_result("\n".join(matches))
+    text = "\n".join(matches)
+    text += '<br>Update completed. Please wait for page refresh to apply the changes...'
+
+    result = get_result(text)
+    result['need_reload'] = 'true'
+
+    return result

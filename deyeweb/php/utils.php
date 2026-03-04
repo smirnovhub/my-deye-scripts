@@ -1,37 +1,8 @@
 <?php
 
+require_once(__DIR__ . '/constants.php');
+
 class TimeoutException extends RuntimeException {}
-
-/**
- * Starts a PHP session with a custom lifetime.
- *
- * @param int $days Number of days for the session to live.
- */
-function startSession(int $days = 7): void
-{
-  // convert days to seconds
-  $lifetime = $days * 24 * 60 * 60;
-
-  // Set session lifetime
-  ini_set('session.gc_maxlifetime', $lifetime);
-  ini_set('session.cookie_lifetime', $lifetime);
-
-  // Start the session
-  session_start();
-}
-
-/**
- * Saves session data and closes the session to release the file lock.
- * This allows other concurrent AJAX requests to proceed while the
- * current script performs long-running operations (e.g., executing Python).
- * Note: Session data can still be read after this call, but not modified.
- *
- * @return void
- */
-function closeSession(): void
-{
-  session_write_close();
-}
 
 /**
  * Processes and validates the incoming JSON payload.
@@ -134,6 +105,155 @@ function readPipeWithTimeout($pipe, int $timeout_sec = 7): string
 }
 
 /**
+ * Executes a shell command and updates the cache file using file locking.
+ *
+ * @param string $fileName The absolute path to the cache file.
+ * @param string $command  The shell command to execute.
+ * @param bool   $blocking Whether to wait for the lock or exit immediately if busy.
+ * @return string The output of the executed command, or an empty string on failure 
+ * or if the lock was not acquired in non-blocking mode.
+ */
+function executeCommandAndUpdateCacheWithLock(string $fileName, string $command, bool $blocking): string
+{
+  // 'c+' mode: Opens for reading/writing. 
+  // Creates file if it doesn't exist. Does not truncate.
+  $fp = fopen($fileName, "c+");
+  if (!$fp) {
+    return '';
+  }
+
+  $output = '';
+  $flags = LOCK_EX;
+
+  if (!$blocking) {
+    $flags |= LOCK_NB;
+  }
+
+  try {
+    if (flock($fp, $flags)) {
+      try {
+        $output = trim((string)shell_exec($command));
+        if ($output != '') {
+          ftruncate($fp, 0);
+          rewind($fp);
+          fwrite($fp, $output);
+          fflush($fp);
+        }
+      } finally {
+        flock($fp, LOCK_UN);
+      }
+    }
+  } finally {
+    fclose($fp);
+  }
+
+  return $output;
+}
+
+/**
+ * Safely reads the contents of a cache file using a shared lock.
+ *
+ * @param string $fileName The absolute path to the cache file.
+ * @return string The file contents, or an empty string if the file 
+ * does not exist, is empty, or cannot be locked.
+ */
+function getCacheFileContentWithLock(string $fileName): string
+{
+  $isExists = file_exists($fileName);
+  if (!$isExists) {
+    return '';
+  }
+
+  $fp = fopen($fileName, "r");
+  if (!$fp) {
+    return '';
+  }
+
+  try {
+    // Use shared lock (LOCK_SH) for reading
+    if (flock($fp, LOCK_SH)) {
+      try {
+        // Clear stat cache to get actual file size
+        clearstatcache(true, $fileName);
+        $size = filesize($fileName);
+        if ($size > 0) {
+          return trim((string)fread($fp, $size));
+        }
+      } finally {
+        flock($fp, LOCK_UN);
+      }
+    }
+  } finally {
+    fclose($fp);
+  }
+
+  return '';
+}
+
+/**
+ * Determines whether the output can be gzip encoded.
+ *
+ * Checks if gzip compression is supported and can be applied to the raw output.
+ *
+ * @param string $str The raw output string to be checked for gzip encoding capability.
+ *
+ * @return bool True if gzip encoding is possible, false otherwise.
+ */
+function canGzipStr(string $str): bool
+{
+  if (strlen($str) < GZIP_ENCODING_THRESHOLD) {
+    return false;
+  }
+
+  $isGzipSupported = isset($_SERVER['HTTP_ACCEPT_ENCODING']) &&
+    strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false;
+
+  if ($isGzipSupported && function_exists('gzencode')) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Detects if the client requested a cache bypass (hard refresh).
+ *
+ * This checks for standard HTTP headers (Cache-Control and Pragma) 
+ * typically sent when a user presses Ctrl+F5 or Cmd+Shift+R.
+ *
+ * @return bool True if "no-cache" header is present, false otherwise.
+ */
+function isCacheClearRequested(): bool
+{
+  $cacheControl = $_SERVER['HTTP_CACHE_CONTROL'] ?? '';
+  $pragma = $_SERVER['HTTP_PRAGMA'] ?? '';
+
+  $hasNoCache = stripos($cacheControl, 'no-cache') !== false;
+  $hasPragma = stripos($pragma, 'no-cache') !== false;
+
+  return $hasNoCache || $hasPragma;
+}
+
+/**
+ * Determines if a file is older than the specified maximum age.
+ * * Returns true if the file does not exist or if the time elapsed since 
+ * its last modification exceeds $maxFileAge seconds.
+ *
+ * @param string $fileName   The path to the file to check.
+ * @param int    $maxFileAge The maximum allowed age of the file in seconds.
+ * @return bool              True if update is needed, false otherwise.
+ */
+function needUpdateCache(string $fileName, int $maxFileAge): bool
+{
+  if (!file_exists($fileName)) {
+    return true;
+  }
+
+  clearstatcache(true, $fileName);
+  return (time() - filemtime($fileName)) > $maxFileAge;
+}
+
+/**
  * Generates the base site URL including protocol, host, and the current directory path.
  * 
  * @return string The absolute base URL with a trailing slash.
@@ -183,6 +303,21 @@ function getFakeUuid(): string
 {
   // Generates a random-like UUID v4
   return strtoupper(vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(md5(uniqid()), 4)));
+}
+
+/**
+ * Generates a random hexadecimal string of a specified length.
+ * * @param int $length The desired length of the resulting string.
+ * @return string A random hex string.
+ */
+function getRandomString(int $length = 8): string
+{
+  // Each byte becomes 2 hex characters, so we need half as many bytes
+  // We use ceil() to ensure we have enough bytes for odd lengths
+  $bytes = random_bytes(ceil($length / 2));
+
+  // Convert to hex and trim to the exact requested length
+  return substr(bin2hex($bytes), 0, $length);
 }
 
 /**

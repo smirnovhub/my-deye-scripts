@@ -1,5 +1,9 @@
 import gc
+import os
 import re
+import signal
+import threading
+import time
 import zlib
 import random
 import inspect
@@ -7,10 +11,13 @@ import inspect
 from typing import Any, List
 from collections import Counter
 
+from deye_file_lock import DeyeFileLock
 from deye_web_constants import DeyeWebConstants
+from deye_web_remote_command import DeyeWebRemoteCommand
 
 class DeyeWebUtils:
   _id_stack: List[int] = []
+  SPACES_REGEXP = re.compile(r'\s{2,}')
 
   @staticmethod
   def _generate_id() -> int:
@@ -59,14 +66,15 @@ class DeyeWebUtils:
 
   @staticmethod
   def short(string: str) -> str:
+    str = string.lower()
     if DeyeWebConstants.user_short_html_ids:
-      return DeyeWebUtils.get_shortened_string(string)
-    return string
+      return DeyeWebUtils.get_shortened_string(str)
+    return str
 
   @staticmethod
   def clean(string: str) -> str:
     if DeyeWebConstants.clean_html_code:
-      string = re.sub(r'\s{2,}', ' ', string)
+      string = DeyeWebUtils.SPACES_REGEXP.sub(' ', string)
       string = string.replace('> ', '>')
       string = string.replace(' <', '<')
     elif DeyeWebConstants.add_html_comments:
@@ -143,3 +151,64 @@ class DeyeWebUtils:
 
     # Return the substring after the last separator
     return string[pos + 1:]
+
+  @staticmethod
+  def file_truncate(filename: str) -> None:
+    """
+    Safely clears the contents of a file using an exclusive system lock.
+
+    This method opens the file in 'a+' mode to ensure it exists, acquires 
+    an exclusive lock to prevent race conditions during concurrent access, 
+    and then truncates the file size to zero.
+
+    Args:
+        filename (str): The absolute or relative path to the file to be truncated.
+
+    Raises:
+        OSError: If the file cannot be opened or locking fails.
+    """
+    # Open in "a+" to handle existence and locking in one go
+    with open(filename, "a+", encoding = "utf-8") as f:
+      try:
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
+
+        # Truncate content
+        f.seek(0)
+        f.truncate(0)
+        f.flush()
+      finally:
+        DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
+
+  @staticmethod
+  def get_remote_command(command: DeyeWebRemoteCommand, id: str) -> str:
+    """
+    Generate a JavaScript function call string to send a remote command.
+    
+    Args:
+      command (DeyeWebRemoteCommand): The remote command to send.
+      id (str): The identifier of the target html field.
+    
+    Returns:
+      str: A formatted JavaScript string that calls sendCommand with the command name and id.
+         Format: "sendCommand('<command_name>', '<id>');"
+    """
+    return f"sendCommand('{command.name}', '{id}');"
+
+  @staticmethod
+  def shutdown_with_delay(delay: int = 1) -> None:
+    """
+    Schedules a process termination after a specified delay.
+    
+    This method starts a background daemon thread that waits for 'delay' 
+    seconds and then sends a SIGTERM signal to the current process. 
+    It is typically used to allow a server to send a final confirmation 
+    response to a client before shutting down.
+
+    Args:
+        delay (int): Time in seconds to wait before termination.
+    """
+    def delayed_kill():
+      time.sleep(delay)
+      os.kill(os.getpid(), signal.SIGTERM)
+
+    threading.Thread(target = delayed_kill, daemon = True).start()

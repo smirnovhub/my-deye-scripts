@@ -2,16 +2,19 @@ import telebot
 
 from datetime import datetime
 
+from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_file_lock import DeyeFileLock
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_send_message import send_private_telegram_message
+from telebot_utils import TelebotUtils
 
 class TelebotMenuStart(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-
+    self._data_dir = TelebotUtils.get_data_dir()
+    
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.start
@@ -32,10 +35,10 @@ class TelebotMenuStart(TelebotMenuItemHandler):
     if self.users.is_user_blocked(user.id) or self.users.is_user_allowed(user.id):
       self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
     else:
-      result = self.add_user_to_file('data/access_requests.txt', user.id, name)
+      result = self.add_user_to_file(f'{self._data_dir}/access_requests.txt', user.id, name)
       if result:
         self.bot.send_message(message.chat.id, f'Access requested for user {user.id}')
-        if not DeyeUtils.is_tests_on():
+        if not EnvUtils.is_tests_on():
           send_private_telegram_message(f'<b>Access requested:</b>\n{info}')
       else:
         self.bot.send_message(message.chat.id, f'Access already requested for user {user.id}')
@@ -45,7 +48,7 @@ class TelebotMenuStart(TelebotMenuItemHandler):
   # If not → append the entry and return True.
   # Entry format: YYYY-MM-DD HH:MM:SS USER_ID
   def add_user_to_file(self, file_path: str, user_id: int, user_name: str) -> bool:
-    if DeyeUtils.is_tests_on():
+    if EnvUtils.is_tests_on():
       return True
 
     with open(file_path, "a+", encoding = "utf-8") as f:

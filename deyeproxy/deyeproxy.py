@@ -1,8 +1,11 @@
 """
-Solarman V5 TCP Proxy Server
+Deye TCP Proxy Server
+
+Author: Dmitry Smirnov 
+https://github.com/smirnovhub
 
 This module provides a thread-safe, exclusive-access proxy for communicating with 
-Solarman V5 data loggers (found in Deye, Sunsynk, and Victron inverters). 
+Solarman V5 data loggers (found in Deye, Sunsynk, and other inverters). 
 
 The proxy solves the "single-connection" limitation of the hardware by queuing 
 multiple client requests and ensuring only one session is active at a time 
@@ -23,6 +26,7 @@ Usage:
     Example:
         $ LOGGER_HOST=1.2.3.4 python3 deyeproxy.py
 """
+import os
 import sys
 import time
 import errno
@@ -32,9 +36,37 @@ import signal
 import threading
 
 from typing import Tuple, Optional
+
+utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
+sys.path.append(utils_path)
+
 from src.deyeproxy_config import DeyeProxyConfig
+from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 config = DeyeProxyConfig()
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+  "%Y-%m-%d %H:%M:%S",
+)
+
+DATA_DIR = f"data/{config.LOG_NAME}"
+
+file_handler = HourlyOverwriteFileHandler(
+  directory = DATA_DIR,
+  log_file_template = f"deye-proxy-{{0}}.log",
+)
+
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+console = logging.StreamHandler(sys.stdout)
+console.setFormatter(formatter)
+logger.addHandler(console)
+
 config.validate_or_exit()
 
 # Global lock to synchronize access to the physical logger
@@ -54,12 +86,7 @@ logging.basicConfig(
   handlers = [logging.StreamHandler(sys.stdout)],
 )
 
-logger = logging.getLogger("deyeproxy")
-
-def get_proxy_external_ip(host: Optional[str], port: int) -> Optional[str]:
-  if not host:
-    return None
-
+def get_external_ip(host: str, port: int) -> Optional[str]:
   try:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
       s.connect((host, port))
@@ -118,8 +145,9 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       return
 
     logger_sock: Optional[socket.socket] = None
-    wait_duration = time.time() - start_wait
+
     session_start = time.time()
+    wait_duration = session_start - start_wait
 
     logger.info(f"{client_ip}:{client_port} Lock acquired "
                 f"(waited {wait_duration:.2f}s). Connecting to logger...")
@@ -161,7 +189,7 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       l2c.start()
 
       wait_interval = 1.0
-      elapsed_time = 0
+      elapsed_time = 0.0
 
       while not stop_event.is_set() and not shutdown_event.is_set():
         if stop_event.wait(timeout = wait_interval):
@@ -195,11 +223,13 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       logger.error(f"{client_ip}:{client_port} Connection to logger timed out")
     except ConnectionRefusedError:
       logger.error(f"{client_ip}:{client_port} Logger refused connection")
-    except Exception as e:
+    except OSError as e:
       if e.errno == errno.EHOSTUNREACH:
         logger.error(f"{client_ip}:{client_port} No route to host")
       else:
         logger.error(f"{client_ip}:{client_port} Unexpected error: {type(e).__name__}: {e}")
+    except Exception as ee:
+      logger.error(f"{client_ip}:{client_port} Unexpected error: {type(ee).__name__}: {ee}")
     finally:
       # Cleanup: ensure both sockets are closed and lock is released
       if logger_sock:
@@ -252,19 +282,19 @@ def main() -> None:
     server.close()
     sys.exit(1)
 
-  external_ip = get_proxy_external_ip(config.LOGGER_HOST, config.LOGGER_PORT)
+  external_ip = get_external_ip(config.LOGGER_HOST, config.LOGGER_PORT)
   actual_ip = external_ip if external_ip else config.PROXY_HOST
 
   log_level_name = logging._levelToName[log_level]
 
-  logger.info(f"--- Solarman V5 Proxy started ---")
+  logger.info(f"------- Deye Proxy started -------")
   logger.info(f"Target logger   : {config.LOGGER_HOST}:{config.LOGGER_PORT}")
   logger.info(f"Listening on    : {actual_ip}:{config.PROXY_PORT}")
   logger.info(f"Max connections : {config.MAX_CONCURRENT_CONNECTIONS}")
   logger.info(f"Connect timeout : {config.CONNECT_TIMEOUT}s")
   logger.info(f"Data timeout    : {config.DATA_TIMEOUT}s")
   logger.info(f"Log level       : {log_level_name}")
-  logger.info(f"---------------------------------")
+  logger.info(f"----------------------------------")
 
   server.settimeout(1.0)
 
@@ -293,6 +323,12 @@ def main() -> None:
   finally:
     server.close()
     logger.info("Server socket closed.")
+
+    for handler in logging.getLogger().handlers:
+      handler.flush()
+
+    sys.stdout.flush()
+    sys.stderr.flush()
 
 if __name__ == "__main__":
   main()

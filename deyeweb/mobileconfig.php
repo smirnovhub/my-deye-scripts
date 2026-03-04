@@ -18,8 +18,8 @@
 
 // File names
 $config_file_name = 'deyeweb.mobileconfig';
-$config_template_file_name = 'icons/deyeweb.mobileconfig.template';
-$icon_file_name = 'icons/deyeweb_icon.png';
+$config_template_file_name = 'icons/ios/deyeweb.mobileconfig.template';
+$icon_file_path = 'icons/ios';
 
 ob_start();
 
@@ -50,6 +50,17 @@ if (!file_exists($config_template_file_name)) {
   error("Error: template file not found.");
 }
 
+$icon_name = trim($_GET['icon'] ?? '');
+if (empty($icon_name)) {
+  error("Error: icon name is empty.");
+}
+
+if (!preg_match('/^[a-zA-Z0-9_-]+$/', $icon_name)) {
+  error("Error: wrong icon name.");
+}
+
+$icon_file_name = $icon_file_path . '/' . $icon_name . '.png';
+
 // Check if icon exists
 if (!file_exists($icon_file_name)) {
   error("Error: icon file not found.");
@@ -58,11 +69,14 @@ if (!file_exists($icon_file_name)) {
 // Read template content and icon
 $content = file_get_contents($config_template_file_name);
 $icon = getFileAsBase64Mime($icon_file_name);
+$siteName = getSiteName();
 
 // Replace placeholders
-$content = str_replace('TARGET_URL', getSiteName(), $content);
+$content = str_replace('TARGET_URL', $siteName, $content);
+$content = str_replace('PAYLOAD_ID', getRandomString(), $content);
 $content = str_replace('RANDOM_UUID_1', getFakeUuid(), $content);
 $content = str_replace('RANDOM_UUID_2', getFakeUuid(), $content);
+$content = str_replace('PAYLOAD_DISPLAY_NAME', 'Deye Web (' . $siteName . ')', $content);
 $content = str_replace('ICON_BASE64_DATA', trim($icon), $content);
 
 // Output result

@@ -1,5 +1,6 @@
 import os
 import time
+
 from typing import IO, Any, Optional
 
 from deye_file_lock import DeyeFileLock
@@ -71,7 +72,7 @@ class DeyeFileWithLock:
           raise DeyeLockTimeoutException(f"{self.lock_name}: Timeout while waiting for lock on {self.path}")
         time.sleep(0.25)
 
-  def open_file(self, path: str, mode: str, timeout: int = 15) -> Optional[IO[Any]]:
+  def open_file(self, path: str, mode: str, timeout: int = 15) -> IO[Any]:
     """
     Open a file with proper locking applied based on the access mode.
 
@@ -92,7 +93,7 @@ class DeyeFileWithLock:
 
     if "w" in mode or "a" in mode:
       # Write/append mode: open file for read/write (a+) and lock exclusively
-      self.sfile = open(path, "a+")
+      self.sfile = open(path, "a+", encoding = "utf-8")
       self._acquire_lock_with_retry(self.sfile, DeyeFileLock.LOCK_EX, timeout)
 
       # Position file pointer according to mode
@@ -103,7 +104,7 @@ class DeyeFileWithLock:
         self.sfile.seek(0, os.SEEK_END) # Move pointer to end for append
     else:
       # Read or read/write without explicit write intent: shared lock
-      self.sfile = open(path, mode)
+      self.sfile = open(path, mode, encoding = "utf-8")
       self._acquire_lock_with_retry(self.sfile, DeyeFileLock.LOCK_SH, timeout)
 
     return self.sfile

@@ -8,7 +8,7 @@ from deye_web_base_selection_builder import DeyeWebBaseSelectionBuilder
 
 class DeyeWebGridConnectVoltageLowSelectionBuilder(DeyeWebBaseSelectionBuilder):
   def __init__(self):
-    super().__init__()
+    super().__init__(confirm = True)
 
   def build_selections_html(
     self,

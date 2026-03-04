@@ -1,11 +1,9 @@
-#!/usr/bin/python3 -u
-
 import os
 import sys
+import logging
 import traceback
 
 from pathlib import Path
-from typing import List
 
 current_path = Path(__file__).parent.resolve()
 modules_path = (current_path / '../modules').resolve()
@@ -17,81 +15,53 @@ from common_modules import import_dirs
 
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
-from deye_web_utils import DeyeWebUtils
-from deye_web_constants import DeyeWebConstants
-from deye_web_base_section import DeyeWebBaseSection
-from deye_web_sections_holder import DeyeWebSectionsHolder
-from deye_web_style_manager import DeyeWebStyleManager
+from env_utils import EnvUtils
+from deye_web_dependency_provider import DeyeWebDependencyProvider
+from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
-def build_tab_header(sections: List[DeyeWebBaseSection]):
-  menu = ''
-  for section in sections:
-    menu += section.build_tab_header()
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
-  arrow_size = 50
+formatter = logging.Formatter(
+  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+  "%Y-%m-%d %H:%M:%S",
+)
 
-  style_id = style_manager.register_style(f"padding-bottom: 5px;")
+log_name = EnvUtils.get_log_name("deyeweb")
+data_dir = f"data/{log_name}"
 
-  result = f"""
-    <div class="scroll-wrapper">
-      <div id="scroll-left" class="fixed {style_id}"><img width="{arrow_size}"
-        src="images/left_arrow.svg"></div>
-      <div id="menu" class="scrollmenu">
-        {menu}
-      </div>
-      <div id="scroll-right" class="fixed {style_id}"><img width="{arrow_size}"
-        src="images/right_arrow.svg"></div>
-    </div>
-  """
+file_handler = HourlyOverwriteFileHandler(
+  directory = data_dir,
+  log_file_template = f"deye-web-front-{{0}}.log",
+)
 
-  print(DeyeWebUtils.clean(result))
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
-def build_tab_content(sections: List[DeyeWebBaseSection], style_manager: DeyeWebStyleManager):
-  content = ''
-  for section in sections:
-    content += section.build_tab_content()
+dependency_provider = DeyeWebDependencyProvider()
 
-  style_id = style_manager.register_style(DeyeWebConstants.flex_center_style)
+builder = dependency_provider.front_builder
 
-  result = f"""
-    <div class="{style_id}">
-      {content}
-    </div>
-  """
+builder = dependency_provider.front_builder
+if builder:
+  try:
+    html = builder.get_front_html()
+    print(html)
+  except Exception as e:
+    logger.error(traceback.format_exc())
+    print(f"<h1>Frontend Error</h1><pre>{str(e)}\n{traceback.format_exc()}</pre>")
+else:
+  # Get all errors as a formatted string
+  all_errors = dependency_provider.get_all_errors()
+  error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items())
+  logger.error(error_text)
+  print(f"<h1>Frontend Error</h1><pre>{error_text}</pre>")
 
-  print(DeyeWebUtils.clean(result))
+for handler in logging.getLogger().handlers:
+  handler.flush()
 
-try:
-  sections_holder = DeyeWebSectionsHolder()
-  style_manager = DeyeWebStyleManager()
-
-  build_tab_header(sections_holder.sections)
-
-  style_id = style_manager.register_style("background-color: red; color: white; text-align: center;")
-
-  print(f"""
-      <div class="remote_data {style_id}" id="error_field"
-        data-remote_field="{DeyeWebConstants.result_error_field}">
-      </div>
-    """)
-
-  build_tab_content(sections_holder.sections, style_manager)
-
-  print(style_manager.generate_css())
-except Exception as e:
-  print(f'{str(e)}\n{traceback.format_exc()}')
-
-print(f"""
-  <div class="remote_data" id="read_styles_field"
-    data-remote_field="{DeyeWebConstants.result_read_styles_field}">
-  </div>
-  <div class="remote_data" id="write_styles_field"
-    data-remote_field="{DeyeWebConstants.result_write_styles_field}">
-  </div>
-  <div class="remote_data" id="callstack_field"
-    data-remote_field="{DeyeWebConstants.result_callstack_field}">
-  </div>
-""")
+sys.stdout.flush()
+sys.stderr.flush()
 
 #from deye_web_utils import DeyeWebUtils
 #with open("/tmp/front_classes_count.txt", "w", encoding = "utf-8") as f:

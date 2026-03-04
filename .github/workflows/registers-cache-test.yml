@@ -28,8 +28,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install requests
+          python -m pip install requests fastapi uvicorn
 
       - name: Run tests
         run: |
-          python -u test/src/deye_registers_cache_test.py
+          python -u test/src/deye_cache_server_test.py
+          python -u test/src/deye_registers_local_cache_manager_test.py
+          python -u test/src/deye_registers_local_cache_test.py
+          python -u test/src/deye_registers_remote_cache_manager_test.py
+          python -u test/src/deye_registers_remote_cache_test.py

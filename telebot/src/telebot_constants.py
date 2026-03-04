@@ -5,9 +5,10 @@ class TelebotConstants:
   undo_button_name = 'Undo'
   undo_button_remove_delay_sec = 5
   sync_inverter_time_button_name = 'Sync inverter time'
-  inverter_system_time_does_not_need_sync_threshold_sec = 15
   inverter_system_time_need_sync_difference_sec = 120
   inverter_system_time_too_big_difference_sec = 900
   buttons_remove_delay_sec = 0
   git_repository_remote_check_period_sec = 60 * 60 * 24
   git_repository_local_check_period_sec = 60 * 60 * 12
+  data_dir = 'data/{0}'
+  default_log_name = 'telebot'

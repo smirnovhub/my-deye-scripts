@@ -23,21 +23,21 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
-  git \
+  git && \
   apt-get autoremove -y && \
   apt-get clean -y && \
   rm -rf /var/lib/apt/lists/* && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
   echo $TIMEZONE > /etc/timezone
 
+# Install required Python packages
+RUN pip install --no-cache-dir --break-system-packages six requests
+
 # Create user without password, with home directory
 RUN useradd -m -u 5555 -s /usr/sbin/nologin $USER_NAME
 
 # Switch to non-root user
 USER $USER_NAME
-
-# Install required Python packages
-RUN pip install --no-cache-dir six requests
 
 # Set working directory
 WORKDIR $APP_DIR
@@ -48,7 +48,7 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   git submodule update --init --recursive
 
 # Copy pre-configured configs to container
-COPY demoserver/src/common/*.py $REPO_NAME/common/
+COPY --chown=$USER_NAME:$USER_NAME demoserver/src/common/*.py $REPO_NAME/common/
 
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME
@@ -60,4 +60,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE ${PORTS}
 
 # Starting the bot
-CMD ["python3", "demoserver/demoserver"]
+CMD ["python3", "demoserver/demoserver.py"]

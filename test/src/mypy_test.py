@@ -47,8 +47,6 @@ def run_tests(dirs: List[str]):
       "mypy",
       "--ignore-missing-imports",
       "--check-untyped-defs",
-      "--python-version",
-      "3.8",
       os.path.join(base_path, path),
     ]
 
@@ -69,7 +67,11 @@ def run_tests(dirs: List[str]):
 
 dirs = [
   'common',
+  'demoserver',
   'deye',
+  'deyecache',
+  'deyeproxy',
+  'deyeweb',
   'telebot',
   'test',
 ]

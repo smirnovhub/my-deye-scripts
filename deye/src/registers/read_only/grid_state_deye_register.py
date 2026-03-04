@@ -6,8 +6,21 @@ from deye_register_average_type import DeyeRegisterAverageType
 from deye_grid_state import DeyeGridState
 
 class GridStateDeyeRegister(IntDeyeRegister):
-  def __init__(self, address: int, name: str, description: str, suffix: str, avg = DeyeRegisterAverageType.none):
-    super().__init__(address, name, description, suffix, avg)
+  def __init__(
+    self,
+    address: int,
+    name: str,
+    description: str,
+    suffix: str,
+    avg = DeyeRegisterAverageType.none,
+  ):
+    super().__init__(
+      address = address,
+      name = name,
+      description = description,
+      suffix = suffix,
+      avg = avg,
+    )
     self._value = DeyeGridState.unknown
 
   def read(self, interactors: List[DeyeModbusInteractor]) -> Any:

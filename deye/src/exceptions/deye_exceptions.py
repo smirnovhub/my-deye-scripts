@@ -60,3 +60,6 @@ class DeyeQueueIsEmptyException(DeyeKnownException):
   and no item could be retrieved before the timeout expired
   """
   pass
+
+class DeyeCacheException(DeyeKnownException):
+  pass

@@ -14,7 +14,13 @@ class TotalEnergyCostRegister(BaseEnergyCostRegister):
     description: str,
     avg = DeyeRegisterAverageType.none,
   ):
-    super().__init__(energy_register, energy_costs, name, description, avg)
+    super().__init__(
+      energy_register = energy_register,
+      energy_costs = energy_costs,
+      name = name,
+      description = description,
+      avg = avg,
+    )
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     total_cost = 0.0

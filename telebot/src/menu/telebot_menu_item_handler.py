@@ -29,6 +29,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     self.log = logging.getLogger()
     self.users = TelebotUsers()
     self.loggers = DeyeLoggers()
+    self.logger = logging.getLogger()
     self.auth_helper = TelebotAuthHelper()
     self.local_update_checker = TelebotLocalUpdateChecker()
     self.remote_update_checker = TelebotRemoteUpdateChecker()
@@ -78,7 +79,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         self.bot.send_message(message.chat.id, str(e))
       except Exception as e:
         self.bot.send_message(message.chat.id, str(e))
-        print(traceback.format_exc())
+        self.logger.info(traceback.format_exc())
 
   def process_message(self, message: telebot.types.Message):
     """
@@ -137,7 +138,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         return True
     except Exception as e:
       self.bot.send_message(message.chat.id, f'Error while checking for updates: {str(e)}')
-      print(f'Error while checking for updates: {str(e)}')
+      self.logger.info(f'Error while checking for updates: {str(e)}')
 
     return False
 

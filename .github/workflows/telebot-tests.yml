@@ -63,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: telebot-python-${{ matrix.python-version }}-log
-          path: telebot/data/logs/telebot_telegram_test.log
+          path: telebot/data/telebot/logs/telebot_telegram_test.log
           overwrite: true
           compression-level: 9
           if-no-files-found: error
@@ -71,4 +71,4 @@ jobs:
       - name: Print log
         if: success() || failure()
         run: |
-          cat telebot/data/logs/telebot_telegram_test.log
+          cat telebot/data/telebot/logs/telebot_telegram_test.log

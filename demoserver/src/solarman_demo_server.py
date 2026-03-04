@@ -1,6 +1,8 @@
 from typing import Dict, List
 
+from deye_registers import DeyeRegisters
 from solarman_base_server import SolarmanBaseServer
+from deye_test_helper import DeyeTestHelper
 
 from umodbus.functions import (
   ReadHoldingRegisters,
@@ -16,7 +18,14 @@ class SolarmanDemoServer(SolarmanBaseServer):
     port: int = 8899,
   ):
     super().__init__(name, address, serial, port)
-    self.registers: Dict[int, int] = {}
+    self.registers_data: Dict[int, int] = {}
+    self.registers = DeyeRegisters()
+
+    for reg in self.registers.read_write_registers:
+      random_value = DeyeTestHelper.get_random_by_register_type(reg)
+      if random_value:
+        for i, value in enumerate(random_value.values):
+          self.registers_data[reg.address + i] = value
 
   def get_new_registers_values(self, starting_address: int, values: List[int]) -> Dict[int, int]:
     """
@@ -64,7 +73,7 @@ class SolarmanDemoServer(SolarmanBaseServer):
     List[int]
         A list of register values corresponding to the requested addresses.
     """
-    return [self.registers.get(i, 0) for i in range(
+    return [self.registers_data.get(i, 0) for i in range(
       starting_address,
       starting_address + quantity,
     )]
@@ -72,6 +81,13 @@ class SolarmanDemoServer(SolarmanBaseServer):
   def on_read_holding_registers(self, func: ReadHoldingRegisters) -> bytes:
     if func.quantity is None or func.starting_address is None:
       raise ValueError("ReadHoldingRegisters request missing starting_address or quantity")
+
+    reg = next((r for r in self.registers.all_registers if r.address == func.starting_address), None)
+    if reg:
+      random_value = DeyeTestHelper.get_random_by_register_type(reg)
+      if random_value:
+        for i, value in enumerate(random_value.values):
+          self.registers_data[reg.address + i] = value
 
     read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
     new_values = self.get_new_registers_values(func.starting_address, read_values)
@@ -84,7 +100,7 @@ class SolarmanDemoServer(SolarmanBaseServer):
       raise ValueError("ReadHoldingRegisters request missing starting_address or values")
 
     write_values = self.get_new_registers_values(func.starting_address, func.values)
-    self.registers.update(write_values)
+    self.registers_data.update(write_values)
 
     self.log.info(f'{self.name}: write registers {write_values}')
     return func.create_response_pdu()

@@ -1,5 +1,7 @@
 FROM python:3.14-slim
 
+ENV DEYE_LOG_NAME=telebot
+
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
 
@@ -20,21 +22,23 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
-  git \
+  git && \
   apt-get autoremove -y && \
   apt-get clean -y && \
   rm -rf /var/lib/apt/lists/* && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
   echo $TIMEZONE > /etc/timezone
 
+# Install required Python packages
+RUN pip install --no-cache-dir --break-system-packages \
+  six requests fastapi uvicorn uvloop codespell mypy flake8 \
+  types-requests mashumaro
+
 # Create user without password, with home directory
-RUN useradd -m -u 3333 -s /usr/sbin/nologin $USER_NAME
+RUN useradd -m -u 1111 -s /usr/sbin/nologin $USER_NAME
 
 # Switch to non-root user
 USER $USER_NAME
-
-# Install required Python packages
-RUN pip install --no-cache-dir six requests
 
 # Set working directory
 WORKDIR $APP_DIR
@@ -50,5 +54,8 @@ COPY --chown=$USER_NAME:$USER_NAME common/*.py $REPO_NAME/common/
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME
 
+# Use unbuffered output to see logs in docker logs
+ENV PYTHONUNBUFFERED=1
+
 # Starting the bot
-CMD ["python3", "telebot/telebot"]
+CMD ["python3", "telebot/deyetelebot.py"]

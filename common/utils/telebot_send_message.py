@@ -3,24 +3,40 @@ import requests
 
 from telebot_credentials import TelebotCredentials
 
-_api_url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&parse_mode=HTML&text={2}"
+_api_url = "https://api.telegram.org/bot{0}/sendMessage"
 
-def send_private_telegram_message(message):
+def send_private_telegram_message(message: str) -> None:
   try:
     if is_bot_token_correct(TelebotCredentials.BOT_API_TOKEN) and is_chat_id_correct(
         TelebotCredentials.PRIVATE_CHAT_ID):
-      url = _api_url.format(TelebotCredentials.BOT_API_TOKEN, TelebotCredentials.PRIVATE_CHAT_ID, message)
-      requests.get(url)
-  except:
-    print(f'Error while sending message to {TelebotCredentials.PRIVATE_CHAT_ID}')
+      payload = {
+        'chat_id': TelebotCredentials.PRIVATE_CHAT_ID,
+        'text': message[:3072],
+        'parse_mode': 'HTML',
+      }
 
-def send_public_telegram_message(message):
+      url = _api_url.format(TelebotCredentials.BOT_API_TOKEN)
+      response = requests.post(url, data = payload, timeout = 5)
+      if response.status_code != requests.codes.ok:
+        print(f"Failed to send private telegram message: {response.text}")
+  except:
+    print(f'Failed to send private telegram message to {TelebotCredentials.PRIVATE_CHAT_ID}')
+
+def send_public_telegram_message(message: str) -> None:
   try:
     if is_bot_token_correct(TelebotCredentials.BOT_API_TOKEN) and is_chat_id_correct(TelebotCredentials.PUBLIC_CHAT_ID):
-      url = _api_url.format(TelebotCredentials.BOT_API_TOKEN, TelebotCredentials.PUBLIC_CHAT_ID, message)
-      requests.get(url)
+      payload = {
+        'chat_id': TelebotCredentials.PUBLIC_CHAT_ID,
+        'text': message[:3072],
+        'parse_mode': 'HTML',
+      }
+
+      url = _api_url.format(TelebotCredentials.BOT_API_TOKEN)
+      response = requests.post(url, data = payload, timeout = 5)
+      if response.status_code != requests.codes.ok:
+        print(f"Failed to send public telegram message: {response.text}")
   except:
-    print(f'Error while sending message to {TelebotCredentials.PUBLIC_CHAT_ID}')
+    print(f'Failed to send public telegram message to {TelebotCredentials.PUBLIC_CHAT_ID}')
 
 def is_bot_token_correct(token: str) -> bool:
   pattern = re.compile(r"^\d+:.+$")

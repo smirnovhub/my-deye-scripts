@@ -23,6 +23,7 @@ import_dirs(
   ],
 )
 
+from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_base_enum import DeyeBaseEnum
@@ -30,7 +31,7 @@ from solarman_test_server import SolarmanTestServer
 from deye_registers_holder import DeyeRegistersHolder
 from deye_test_helper import DeyeTestHelper
 
-DeyeUtils.turn_tests_on()
+EnvUtils.turn_tests_on()
 
 logging.basicConfig(
   level = logging.INFO,
