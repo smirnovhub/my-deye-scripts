@@ -79,7 +79,8 @@ class DeyeModbusInteractor:
 
     # Reset cache during the first 5 minutes of the day
     if now.hour == 0 and now.minute < 5:
-      print(f'{self.name} resetting cache because midnight')
+      if self.verbose:
+        print(f'{self.name} resetting cache because midnight')
       self.cache_manager.reset_cache()
     else:
       cached_registers = self.cache_manager.get_cached_registers(self.registers)
