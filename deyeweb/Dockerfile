@@ -43,7 +43,7 @@ RUN apt-get update && \
   echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages six requests uvloop
+RUN pip install --no-cache-dir --break-system-packages six requests
 
 # Set working directory
 WORKDIR $APP_DIR
