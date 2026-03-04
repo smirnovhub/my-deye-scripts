@@ -34,6 +34,9 @@ RUN pip install --no-cache-dir --break-system-packages \
   six requests fastapi uvicorn uvloop codespell mypy flake8 \
   types-requests mashumaro
 
+# Copy some useful health scripts like pids guard, etc.
+COPY --chmod=755 health/*.sh /usr/local/bin/
+
 # Create user without password, with home directory
 RUN useradd -m -u 1111 -s /usr/sbin/nologin $USER_NAME
 
