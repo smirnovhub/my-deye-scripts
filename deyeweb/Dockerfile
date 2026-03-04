@@ -161,6 +161,7 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
+  tini \
   git && \
   apt-get autoremove -y && \
   apt-get clean -y && \
@@ -171,6 +172,9 @@ RUN apt-get update && \
 # Install required Python packages
 RUN pip install --no-cache-dir --break-system-packages \
   six requests fastapi uvicorn uvloop
+
+# Copy some useful health scripts like pids guard, etc.
+COPY --chmod=755 health/*.sh /usr/local/bin/
 
 # Create user without password, with home directory
 RUN useradd -m -u 7634 -s /usr/sbin/nologin $USER_NAME
@@ -197,5 +201,10 @@ ENV PYTHONUNBUFFERED=1
 
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME/deyeweb
+
+# Use tini as an init process to properly reap zombie processes (PID 1 problem).
+# This prevents 'git' processes from lingering in a <zombie> state when
+# the Python parent doesn't or can't collect their exit status.
+ENTRYPOINT ["/usr/bin/tini", "--"]
 
 CMD ["python3", "backserver.py"]
