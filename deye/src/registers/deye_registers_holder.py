@@ -97,7 +97,9 @@ class DeyeRegistersHolder:
 
       for interactor in self._interactors:
         try:
-          for register in self.master_registers.all_registers:
+          # Get the first available DeyeRegisters object from the values
+          registers = next(iter(self.all_registers.values())).all_registers
+          for register in registers:
             register.enqueue(interactor)
 
           # Submit the task to the pool
