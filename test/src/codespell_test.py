@@ -22,7 +22,7 @@ def run_test(path: str):
   commands = [
     "codespell",
     os.path.join(base_path, path),
-    '--skip=favicon.svg',
+    '--skip=*.svg,*.log',
   ]
 
   log.info(f'Running codespell for {path}...')
