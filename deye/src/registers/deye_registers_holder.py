@@ -10,7 +10,6 @@ from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
-from raising_thread import RaisingThread
 from deye_file_lock import DeyeFileLock
 from deye_base_locker import DeyeBaseLocker
 from deye_empty_locker import DeyeEmptyLocker
@@ -18,6 +17,7 @@ from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_exceptions import DeyeNoSocketAvailableException
 from deye_exceptions import DeyeQueueIsEmptyException
+from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
 class DeyeRegistersHolder:
   def __init__(
@@ -76,7 +76,7 @@ class DeyeRegistersHolder:
   def read_registers(self) -> None:
     def log_retry(attempt, total_attempts, exception):
       self._log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-                    f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
+                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
 
     locker = self.create_locker()
     locker.acquire()
@@ -91,26 +91,40 @@ class DeyeRegistersHolder:
       locker.release()
 
   def _read_registers_internal(self) -> None:
-    tasks: List[RaisingThread] = []
+    # We use a ThreadPoolExecutor for better management of concurrent tasks
+    with ThreadPoolExecutor(max_workers = len(self._interactors)) as executor:
+      futures = []
 
-    for interactor in self._interactors:
+      for interactor in self._interactors:
+        try:
+          for register in self.master_registers.all_registers:
+            register.enqueue(interactor)
+
+          # Submit the task to the pool
+          future = executor.submit(interactor.process_enqueued_registers)
+          futures.append(future)
+        except Exception as e:
+          raise DeyeUtils.get_reraised_exception(
+            e,
+            f'{type(self).__name__}: error while enqueue {interactor.name}',
+          ) from e
+
       try:
-        for register in list(self.all_registers.values())[0].all_registers:
-          register.enqueue(interactor)
-        tasks.append(
-          RaisingThread(target = interactor.process_enqueued_registers, name = interactor.name.title() + "Thread"))
+        # We wait for all tasks, but with a timeout to prevent total hang
+        done, not_done = wait(futures, timeout = 15, return_when = ALL_COMPLETED)
+
+        # To replicate your exception handling, we check completed futures.
+        # Calling future.result() will re-raise the exception from the thread.
+        for future in done:
+          future.result()
+
+        # If there are tasks that didn't finish in 15s, we can treat it as an error
+        if not_done:
+          raise TimeoutError(f"Some interactors timed out.")
+
       except Exception as e:
-        raise DeyeUtils.get_reraised_exception(
-          e, f'{type(self).__name__}: error while enqueue {interactor.name} registers') from e
-
-    try:
-      for task in tasks:
-        task.start()
-
-      for task in tasks:
-        task.join()
-    except Exception as e:
-      raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while reading registers') from e
+        # This matches your original error handling style
+        raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while reading registers') from e
 
     for interactor in self._interactors:
       try:
@@ -156,7 +170,7 @@ class DeyeRegistersHolder:
   def write_register(self, register: DeyeRegister, value) -> Any:
     def log_retry(attempt, total_attempts, exception):
       self._log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
-                    f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
+                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
 
     locker = self.create_locker()
     locker.acquire()
