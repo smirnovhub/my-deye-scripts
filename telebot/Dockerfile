@@ -22,6 +22,7 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
+  tini \
   git && \
   apt-get autoremove -y && \
   apt-get clean -y && \
@@ -59,6 +60,11 @@ WORKDIR $APP_DIR/$REPO_NAME
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1
+
+# Use tini as an init process to properly reap zombie processes (PID 1 problem).
+# This prevents processes from lingering in a <zombie> state when
+# the Python parent doesn't or can't collect their exit status.
+ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Starting the bot
 CMD ["python3", "telebot/deyetelebot.py"]

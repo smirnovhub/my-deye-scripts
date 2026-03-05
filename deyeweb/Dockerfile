@@ -203,7 +203,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR $APP_DIR/$REPO_NAME/deyeweb
 
 # Use tini as an init process to properly reap zombie processes (PID 1 problem).
-# This prevents 'git' processes from lingering in a <zombie> state when
+# This prevents processes from lingering in a <zombie> state when
 # the Python parent doesn't or can't collect their exit status.
 ENTRYPOINT ["/usr/bin/tini", "--"]
 

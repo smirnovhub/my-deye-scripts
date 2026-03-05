@@ -54,6 +54,11 @@ services:
         limits:
           pids: ${GLOBAL_PIDS_LIMIT}
           memory: ${GLOBAL_MEMORY_LIMIT}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/pids_guard.sh"]
+      interval: 5m
+      timeout: 15s
+      retries: 1
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/backserver/my-deye-scripts/deyeweb/data
@@ -75,6 +80,11 @@ services:
         limits:
           pids: ${DEYE_TELEBOT_PIDS_LIMIT}
           memory: ${DEYE_TELEBOT_MEMORY_LIMIT}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/pids_guard.sh"]
+      interval: 5m
+      timeout: 15s
+      retries: 1
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/telebot/my-deye-scripts/telebot/data
