@@ -89,7 +89,13 @@ class EcoflowUtils:
     return headers
 
   @staticmethod
-  def put_request(url: str, key: str, secret: str, params: Optional[Dict[str, Any]] = None) -> requests.Response:
+  def put_request(
+    session: requests.Session,
+    url: str,
+    key: str,
+    secret: str,
+    params: Optional[Dict[str, Any]] = None,
+  ) -> requests.Response:
     """
     Send an HTTP PUT request with signed headers and optional JSON body.
 
@@ -103,10 +109,16 @@ class EcoflowUtils:
         requests.Response: Response object returned by the requests library.
     """
     headers = EcoflowUtils.get_headers(key, secret, params)
-    return requests.put(url, headers = headers, json = params, timeout = 10)
+    return session.put(url, headers = headers, json = params, timeout = 10)
 
   @staticmethod
-  def get_request(url: str, key: str, secret: str, params: Optional[Dict[str, Any]] = None) -> requests.Response:
+  def get_request(
+    session: requests.Session,
+    url: str,
+    key: str,
+    secret: str,
+    params: Optional[Dict[str, Any]] = None,
+  ) -> requests.Response:
     """
     Send an HTTP GET request with signed headers and optional JSON body.
 
@@ -120,10 +132,16 @@ class EcoflowUtils:
         requests.Response: Response object returned by the requests library.
     """
     headers = EcoflowUtils.get_headers(key, secret, params)
-    return requests.get(url, headers = headers, json = params, timeout = 10)
+    return session.get(url, headers = headers, json = params, timeout = 10)
 
   @staticmethod
-  def post_request(url: str, key: str, secret: str, params: Optional[Dict[str, Any]] = None) -> requests.Response:
+  def post_request(
+    session: requests.Session,
+    url: str,
+    key: str,
+    secret: str,
+    params: Optional[Dict[str, Any]] = None,
+  ) -> requests.Response:
     """
     Send an HTTP POST request with signed headers and optional JSON body.
 
@@ -137,4 +155,4 @@ class EcoflowUtils:
         requests.Response: Response object returned by the requests library.
     """
     headers = EcoflowUtils.get_headers(key, secret, params)
-    return requests.post(url, headers = headers, json = params, timeout = 10)
+    return session.post(url, headers = headers, json = params, timeout = 10)

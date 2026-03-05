@@ -8,6 +8,7 @@ from ecoflow_device import EcoflowDevice
 from ecoflow_devices import EcoflowDevices
 from ecoflow_device_status import EcoflowDeviceStatus
 from ecoflow_credentials import EcoflowCredentials
+from http_session_singleton import HttpSessionSingleton
 
 from ecoflow_exceptions import (
   EcoflowHttpErrorException,
@@ -40,6 +41,7 @@ class EcoflowPowerStreamInteractor:
     self.set_permanent_watts_cmd = 'WN511_SET_PERMANENT_WATTS_PACK'
     self.permanent_watts_field = '20_1.permanentWatts'
     self.power_scale = 10
+    self.session = HttpSessionSingleton().session
     self.logger = logging.getLogger()
     self.logger.setLevel(logging.INFO)
 
@@ -80,7 +82,13 @@ class EcoflowPowerStreamInteractor:
     if self.verbose:
       self.logger.info(f'{self.name}: getting devices list...')
 
-    response = EcoflowUtils.get_request(self.device_url, self.key, self.secret)
+    response = EcoflowUtils.get_request(
+      self.session,
+      self.device_url,
+      self.key,
+      self.secret,
+    )
+
     if response.status_code != HTTPStatus.OK:
       if self.verbose:
         self.logger.info(f'{self.name}: server returned http error {response.status_code} while getting devices list')
@@ -123,7 +131,17 @@ class EcoflowPowerStreamInteractor:
     if self.verbose:
       self.logger.info(f'{self.name}: getting power for {device.name}...')
 
-    response = EcoflowUtils.post_request(self.quota_url, self.key, self.secret, {'sn': device.serial, 'params': params})
+    response = EcoflowUtils.post_request(
+      self.session,
+      self.quota_url,
+      self.key,
+      self.secret,
+      {
+        'sn': device.serial,
+        'params': params
+      },
+    )
+
     if response.status_code != HTTPStatus.OK:
       if self.verbose:
         self.logger.info(
@@ -161,11 +179,18 @@ class EcoflowPowerStreamInteractor:
       self.logger.info(f'{self.name}: set new power for {device.name} to {power} W')
 
     params = {'permanentWatts': power * self.power_scale}
-    response = EcoflowUtils.put_request(self.quota_url, self.key, self.secret, {
-      'sn': device.serial,
-      'cmdCode': self.set_permanent_watts_cmd,
-      'params': params
-    })
+
+    response = EcoflowUtils.put_request(
+      self.session,
+      self.quota_url,
+      self.key,
+      self.secret,
+      {
+        'sn': device.serial,
+        'cmdCode': self.set_permanent_watts_cmd,
+        'params': params
+      },
+    )
 
     if response.status_code != HTTPStatus.OK:
       if self.verbose:
