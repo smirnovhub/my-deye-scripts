@@ -16,12 +16,10 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
     self,
     name: str,
     serial: int,
-    verbose = False,
   ):
     super().__init__(
       name = name,
       serial = serial,
-      verbose = verbose,
     )
 
     cache_path = DeyeFileLock.lock_path
@@ -33,9 +31,8 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
     # Ensure cache file exists
     DeyeUtils.ensure_file_exists(self._cache_filename, mode = 0o666)
 
-    if self._verbose:
-      print(f"{self._name} {self.__class__.__name__} initialized")
-      print(f"Local cache file name: {self._cache_filename}")
+    self._logger.info(f"{self._name} {self.__class__.__name__} initialized")
+    self._logger.info(f"Local cache file name: {self._cache_filename}")
 
   @contextmanager
   def _shared_lock_context(self):

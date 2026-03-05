@@ -1,6 +1,7 @@
 import re
 import json
 import time
+import logging
 
 from typing import Any, Dict, Optional
 
@@ -19,12 +20,11 @@ class DeyeRegistersBaseCacheManager(ABC):
     self,
     name: str,
     serial: int,
-    verbose = False,
   ):
     self._name = re.sub(r'[^a-zA-Z0-9-]+', '-', name).strip('-')
     self._serial = abs(serial)
-    self._verbose = verbose
     self._cache_available = False
+    self._logger = logging.getLogger()
 
   def get_cached_registers(
     self,
@@ -33,9 +33,7 @@ class DeyeRegistersBaseCacheManager(ABC):
     if not self._cache_available:
       self._cache_available = self._is_cache_available()
 
-    if self._verbose:
-      start_time = time.perf_counter()
-
+    start_time = time.perf_counter()
     results: Dict[int, DeyeRegisterCacheData] = {}
 
     try:
@@ -82,11 +80,9 @@ class DeyeRegistersBaseCacheManager(ABC):
     except Exception as ee:
       raise DeyeCacheException(f"{self._name}: cache read error: {ee}") from ee
 
-    if self._verbose:
-      end_time = time.perf_counter()
-      duration_ms = (end_time - start_time) * 1000
-      if self._verbose:
-        print(f"{self._name} cache read took {duration_ms:.3f} ms")
+    end_time = time.perf_counter()
+    duration_ms = (end_time - start_time) * 1000
+    self._logger.info(f"{self._name} cache read took {duration_ms:.3f} ms")
 
     return results
 
@@ -100,8 +96,7 @@ class DeyeRegistersBaseCacheManager(ABC):
     if not self._cache_available:
       self._cache_available = self._is_cache_available()
 
-    if self._verbose:
-      start_time = time.perf_counter()
+    start_time = time.perf_counter()
 
     try:
       with self._exclusive_lock_context():
@@ -140,11 +135,9 @@ class DeyeRegistersBaseCacheManager(ABC):
     except Exception as ee:
       raise DeyeCacheException(f"{self._name}: cache write error: {ee}") from ee
 
-    if self._verbose:
-      end_time = time.perf_counter()
-      duration_ms = (end_time - start_time) * 1000
-      if self._verbose:
-        print(f"{self._name} cache save took {duration_ms:.3f} ms")
+    end_time = time.perf_counter()
+    duration_ms = (end_time - start_time) * 1000
+    self._logger.info(f"{self._name} cache save took {duration_ms:.3f} ms")
 
   def reset_cache(self) -> None:
     if not self._cache_available:
