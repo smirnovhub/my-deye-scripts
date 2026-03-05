@@ -30,7 +30,7 @@ class DeyeRegistersHolder:
     self._interactors: List[DeyeModbusInteractor] = []
     self._master_interactor: Optional[DeyeModbusInteractor] = None
     self._loggers = loggers
-    self.log = logging.getLogger()
+    self._log = logging.getLogger()
     self._all_loggers = DeyeLoggers()
 
     # Initialize locker
@@ -75,7 +75,7 @@ class DeyeRegistersHolder:
 
   def read_registers(self) -> None:
     def log_retry(attempt, total_attempts, exception):
-      self.log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
+      self._log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
 
     locker = self.create_locker()
@@ -155,7 +155,7 @@ class DeyeRegistersHolder:
 
   def write_register(self, register: DeyeRegister, value) -> Any:
     def log_retry(attempt, total_attempts, exception):
-      self.log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
+      self._log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
 
     locker = self.create_locker()
