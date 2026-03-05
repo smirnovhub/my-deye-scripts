@@ -17,7 +17,7 @@ from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_exceptions import DeyeNoSocketAvailableException
 from deye_exceptions import DeyeQueueIsEmptyException
-from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
+from concurrent.futures import Future, ThreadPoolExecutor, wait, ALL_COMPLETED
 
 class DeyeRegistersHolder:
   def __init__(
@@ -91,20 +91,21 @@ class DeyeRegistersHolder:
       locker.release()
 
   def _read_registers_internal(self) -> None:
+    # Get the first available DeyeRegisters object from the values
+    registers = next(iter(self.all_registers.values())).all_registers
+
     # We use a ThreadPoolExecutor for better management of concurrent tasks
     with ThreadPoolExecutor(max_workers = len(self._interactors)) as executor:
-      futures = []
+      future_to_interactor: Dict[Future[None], DeyeModbusInteractor] = {}
 
       for interactor in self._interactors:
         try:
-          # Get the first available DeyeRegisters object from the values
-          registers = next(iter(self.all_registers.values())).all_registers
           for register in registers:
             register.enqueue(interactor)
 
           # Submit the task to the pool
-          future = executor.submit(interactor.process_enqueued_registers)
-          futures.append(future)
+          future: Future[None] = executor.submit(interactor.process_enqueued_registers)
+          future_to_interactor[future] = interactor
         except Exception as e:
           raise DeyeUtils.get_reraised_exception(
             e,
@@ -113,16 +114,21 @@ class DeyeRegistersHolder:
 
       try:
         # We wait for all tasks, but with a timeout to prevent total hang
-        done, not_done = wait(futures, timeout = 10, return_when = ALL_COMPLETED)
+        done, not_done = wait(
+          future_to_interactor.keys(),
+          timeout = 10,
+          return_when = ALL_COMPLETED,
+        )
 
         # To replicate your exception handling, we check completed futures.
         # Calling future.result() will re-raise the exception from the thread.
         for future in done:
           future.result()
 
-        # If there are tasks that didn't finish in 15s, we can treat it as an error
+        # If there are tasks that didn't finish in time, we can treat it as an error
         if not_done:
-          raise TimeoutError(f"Some interactors timed out.")
+          timed_out = [future_to_interactor[f].name for f in not_done]
+          raise TimeoutError(f"Some interactors timed out: {', '.join(timed_out)}")
 
       except Exception as e:
         # This matches your original error handling style
