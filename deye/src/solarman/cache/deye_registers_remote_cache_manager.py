@@ -29,7 +29,7 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     self._session = HttpSessionSingleton().session
 
     self._logger.info(f"{self._name} {self.__class__.__name__} initialized")
-    self._logger.info(f"Remote cache endpoint: {self._inverter_cache_endpoint}")
+    self._logger.info(f"{self._name} remote cache endpoint: {self._inverter_cache_endpoint}")
 
   def _get_json(self) -> str:
     """
