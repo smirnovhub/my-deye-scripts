@@ -17,12 +17,10 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     name: str,
     serial: int,
     remote_cache_server: str,
-    verbose = False,
   ):
     super().__init__(
       name = name,
       serial = serial,
-      verbose = verbose,
     )
 
     self._remote_cache_server = remote_cache_server
