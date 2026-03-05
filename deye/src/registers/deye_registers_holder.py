@@ -111,7 +111,7 @@ class DeyeRegistersHolder:
 
       try:
         # We wait for all tasks, but with a timeout to prevent total hang
-        done, not_done = wait(futures, timeout = 15, return_when = ALL_COMPLETED)
+        done, not_done = wait(futures, timeout = 10, return_when = ALL_COMPLETED)
 
         # To replicate your exception handling, we check completed futures.
         # Calling future.result() will re-raise the exception from the thread.
