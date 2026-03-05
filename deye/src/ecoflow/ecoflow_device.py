@@ -1,5 +1,12 @@
 class EcoflowDevice:
-  def __init__(self, name: str, serial: str, device_type: str, max_power: int, max_real_power: int):
+  def __init__(
+    self,
+    name: str,
+    serial: str,
+    device_type: str,
+    max_power: int,
+    max_real_power: int,
+  ):
     self._name = name
     self._serial = serial
     self._device_type = device_type
