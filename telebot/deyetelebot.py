@@ -89,7 +89,6 @@ try:
   from mytelebot import MyTelebot
   from env_utils import EnvUtils
   from testable_telebot import TestableTelebot
-  from telebot_credentials import TelebotCredentials
   
   if EnvUtils.is_tests_on():
     token = EnvUtils.get_telegram_bot_api_test_token()
@@ -99,7 +98,7 @@ try:
     sys.exit(0)
   
   send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')
-  bot = telebot.TeleBot(TelebotCredentials.BOT_API_TOKEN)
+  bot = telebot.TeleBot(EnvUtils.get_telegram_bot_api_token())
   mybot = MyTelebot(bot, logger)
   bot.infinity_polling()
 except Exception as e:
