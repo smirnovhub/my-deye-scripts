@@ -1,5 +1,3 @@
-import threading
-
 from typing import List, Optional
 
 from deye_logger import DeyeLogger
@@ -7,22 +5,6 @@ from deye_system_type import DeyeSystemType
 from deye_exceptions import DeyeNotImplementedException
 
 class DeyeBaseLoggers:
-  _instance = None
-  _lock = threading.Lock()
-
-  def __new__(cls, *args, **kwargs):
-    if cls._instance is None:
-      with cls._lock:
-        # Double-check inside the lock
-        if cls._instance is None:
-          from env_utils import EnvUtils
-          if EnvUtils.is_tests_on():
-            from deye_test_loggers import DeyeTestLoggers
-            cls._instance = super().__new__(DeyeTestLoggers) # type: ignore
-          else:
-            cls._instance = super().__new__(cls) # type: ignore
-    return cls._instance
-
   @property
   def master(self) -> DeyeLogger:
     raise DeyeNotImplementedException('master')
@@ -36,11 +18,6 @@ class DeyeBaseLoggers:
     raise DeyeNotImplementedException('remote_cache_server')
 
   @property
-  def demo_server_name(self) -> str:
-    # Demo server name should match docker configuration
-    return 'demoserver'
-
-  @property
   def loggers(self) -> List[DeyeLogger]:
     return [self.master] + self.slaves
 
@@ -52,13 +29,6 @@ class DeyeBaseLoggers:
   def is_test_loggers(self) -> bool:
     for logger in self.loggers:
       if logger.address != '127.0.0.1':
-        return False
-    return True
-
-  @property
-  def is_demo_loggers(self) -> bool:
-    for logger in self.loggers:
-      if logger.address != self.demo_server_name:
         return False
     return True
 

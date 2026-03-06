@@ -3,7 +3,9 @@ from typing import List
 from env_utils import EnvUtils
 from deye_logger import DeyeLogger
 from deye_base_loggers import DeyeBaseLoggers
+from simple_singleton import singleton
 
+@singleton
 class DeyeLoggers(DeyeBaseLoggers):
   @property
   def master(self) -> DeyeLogger:
