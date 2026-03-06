@@ -1,5 +1,6 @@
 from typing import List
 
+from env_utils import EnvUtils
 from deye_logger import DeyeLogger
 from deye_base_loggers import DeyeBaseLoggers
 
@@ -8,24 +9,34 @@ class DeyeLoggers(DeyeBaseLoggers):
   def master(self) -> DeyeLogger:
     return DeyeLogger(
       name = 'master',
-      address = '192.168.0.73',
-      serial = 1234567890,
+      address = EnvUtils.get_master_logger_host(),
+      serial = EnvUtils.get_master_logger_serial(),
+      port = EnvUtils.get_master_logger_port(),
     )
 
   @property
   def slaves(self) -> List[DeyeLogger]:
-    return [
-      #DeyeLogger(
-      #  name = 'slave1',
-      #  address = '192.168.0.75',
-      #  serial = 1234567890,
-      #),
-    ]
+    slaves = []
+
+    # Iterate to find all configured slaves
+    for i in range(1, 16):
+      address = EnvUtils.get_slave_logger_host(i)
+
+      # Stop the loop if the current slave address is empty or not set
+      if not address:
+        break
+
+      # Append the slave logger if validation passes
+      slaves.append(
+        DeyeLogger(
+          name = f'slave{i}',
+          address = address,
+          serial = EnvUtils.get_slave_logger_serial(i),
+          port = EnvUtils.get_slave_logger_port(i),
+        ))
+
+    return slaves
 
   @property
   def remote_cache_server(self) -> str:
-    # Specify cache server if you want
-    # to use remote cache, as example:
-    # http://192.168.0.77/
-    # See 'deyecache' folder for details
-    return ''
+    return EnvUtils.get_remote_cache_server_url()
