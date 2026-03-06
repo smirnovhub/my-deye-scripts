@@ -89,6 +89,9 @@ class EnvUtils:
   @staticmethod
   def get_gps_latitude() -> float:
     lat = os.getenv('DEYE_GPS_LATITUDE', '50.45').strip()
+    if not lat:
+      raise RuntimeError("You didn't set GPS latitude for sunrise/sunset calculation")
+
     try:
       val = float(lat)
       # Validate if latitude is within the legal range [-90, 90]
@@ -101,6 +104,9 @@ class EnvUtils:
   @staticmethod
   def get_gps_longitude() -> float:
     lon = os.getenv('DEYE_GPS_LONGITUDE', '30.52').strip()
+    if not lon:
+      raise RuntimeError("You didn't set GPS longitude for sunrise/sunset calculation")
+
     try:
       val = float(lon)
       # Validate if longitude is within the legal range [-180, 180]
