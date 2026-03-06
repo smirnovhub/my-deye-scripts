@@ -21,24 +21,8 @@ class EnvUtils:
     return os.getenv('MIKROTIK_SERVER_URL', '').strip()
 
   @staticmethod
-  def get_mikrotik_server_user() -> str:
-    return os.getenv('MIKROTIK_SERVER_USER', '').strip()
-
-  @staticmethod
-  def get_mikrotik_server_password() -> str:
-    return os.getenv('MIKROTIK_SERVER_PASSWORD', '').strip()
-
-  @staticmethod
   def get_scheduler_server_url() -> str:
     return os.getenv('SCHEDULER_SERVER_URL', '').strip()
-
-  @staticmethod
-  def get_scheduler_server_user() -> str:
-    return os.getenv('SCHEDULER_SERVER_USER', '').strip()
-
-  @staticmethod
-  def get_scheduler_server_password() -> str:
-    return os.getenv('SCHEDULER_SERVER_PASSWORD', '').strip()
 
   @staticmethod
   def get_telegram_bot_api_test_token() -> str:
