@@ -71,8 +71,20 @@ class EnvUtils:
     return os.getenv('SCHEDULER_SERVER_URL', '').strip()
 
   @staticmethod
+  def get_telegram_bot_api_token() -> str:
+    return os.getenv('TELEGRAM_BOT_API_TOKEN', '').strip()
+
+  @staticmethod
+  def get_telegram_private_chat_id() -> str:
+    return os.getenv('TELEGRAM_PRIVATE_CHAT_ID', '').strip()
+
+  @staticmethod
+  def get_telegram_public_chat_idn() -> str:
+    return os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
+
+  @staticmethod
   def get_telegram_bot_api_test_token() -> str:
-    return os.getenv('BOT_API_TEST_TOKEN', '').strip()
+    return os.getenv('TELEGRAM_BOT_API_TEST_TOKEN', '').strip()
 
   @staticmethod
   def get_log_name(default: str) -> str:
