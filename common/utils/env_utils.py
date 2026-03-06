@@ -112,7 +112,7 @@ class EnvUtils:
       raise RuntimeError(f'Wrong GPS longitude format or value: {lon}') from e
 
   @staticmethod
-  def get_openweathermap_appid() -> str:
+  def get_open_weather_map_appid() -> str:
     return os.getenv('OPEN_WEATHER_MAP_APPID', '').strip()
 
   @staticmethod
