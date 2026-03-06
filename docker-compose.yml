@@ -14,14 +14,10 @@ services:
         BRANCH: ${APP_BRANCH}
     environment:
       DEYE_LOG_NAME: "deye-web"
-      BACK_SERVER_URL: "http://172.17.17.27"
-      USE_BACK_SERVER: "false"
+      BACK_SERVER_URL: ""
     image: deye-web
     container_name: deye-web
     hostname: deye-web
-    ports:
-      - "80:80"
-      - "443:443"
     restart: unless-stopped
     deploy:
       resources:
@@ -46,8 +42,6 @@ services:
     image: deye-back-server
     container_name: deye-back-server
     hostname: deye-back-server
-    ports:
-      - "80:80"
     restart: unless-stopped
     deploy:
       resources:
@@ -102,8 +96,6 @@ services:
     image: deye-cache
     container_name: deye-cache
     hostname: deye-cache
-    ports:
-      - "80:80"
     restart: unless-stopped
     deploy:
       resources:
@@ -130,8 +122,6 @@ services:
     image: deye-proxy
     container_name: deye-proxy
     hostname: deye-proxy
-    ports:
-      - "8899:8899"
     restart: unless-stopped
     deploy:
       resources:
@@ -167,14 +157,10 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     environment:
-      BACK_SERVER_URL: "http://172.17.17.27"
-      USE_BACK_SERVER: "false"
+      BACK_SERVER_URL: ""
     image: demo-web
     container_name: demo-web
     hostname: demo-web
-    ports:
-      - "8080:80"
-      - "4430:443"
     restart: unless-stopped
 
   demo-server:
