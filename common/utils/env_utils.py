@@ -87,6 +87,35 @@ class EnvUtils:
     return os.getenv('TELEGRAM_BOT_API_TEST_TOKEN', '').strip()
 
   @staticmethod
+  def get_gps_latitude() -> float:
+    lat = os.getenv('DEYE_GPS_LATITUDE', '50.45').strip()
+    try:
+      val = float(lat)
+      # Validate if latitude is within the legal range [-90, 90]
+      if not (-90.0 <= val <= 90.0):
+        raise ValueError(f"Latitude {val} is out of range [-90, 90]")
+      return val
+    except (ValueError, TypeError) as e:
+      raise RuntimeError(f'Wrong GPS latitude format or value: {lat}') from e
+
+  @staticmethod
+  def get_gps_longitude() -> float:
+    lon = os.getenv('DEYE_GPS_LONGITUDE', '30.52').strip()
+    try:
+      val = float(lon)
+      # Validate if longitude is within the legal range [-180, 180]
+      if not (-180.0 <= val <= 180.0):
+        raise ValueError(f"Longitude {val} is out of range [-180, 180]")
+      return val
+    except (ValueError, TypeError) as e:
+      # Re-raise as RuntimeError with a descriptive message
+      raise RuntimeError(f'Wrong GPS longitude format or value: {lon}') from e
+
+  @staticmethod
+  def get_openweathermap_appid() -> str:
+    return os.getenv('OPEN_WEATHER_MAP_APPID', '').strip()
+
+  @staticmethod
   def get_log_name(default: str) -> str:
     log_name = os.getenv("DEYE_LOG_NAME", default)
     return re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')

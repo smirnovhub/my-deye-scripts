@@ -4,9 +4,8 @@ FROM php:8.4-apache AS baseweb
 ARG REPO_NAME=my-deye-scripts
 ENV REPO_NAME=${REPO_NAME}
 # Set a default value for the backend URL (if backend used)
+# If set we will use apache proxy instead of regular php backend
 ENV BACK_SERVER_URL=http://172.17.17.27
-# If true we will use apache proxy instead of regular php backend
-ENV USE_BACK_SERVER=false
 
 # Set remote branch name
 ARG BRANCH=master
@@ -96,8 +95,7 @@ RUN a2dissite 000-default && \
   a2ensite apache-custom-log-ssl
 
 # Copy and prepare the entrypoint script
-COPY deyeweb/entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY --chmod=755 deyeweb/entrypoint.sh /usr/local/bin/
 
 # Set proper permissions for Apache
 RUN chown -R www-data:www-data $REPO_NAME
@@ -109,7 +107,7 @@ EXPOSE 80 443
 ENV PYTHONUNBUFFERED=1
 
 # Use the script as entrypoint
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Redeclare the default command for php-apache images
 CMD ["apache2-foreground"]
