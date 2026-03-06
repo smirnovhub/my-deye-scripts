@@ -19,13 +19,8 @@ class DeyeBaseLoggers:
           if EnvUtils.is_tests_on():
             from deye_test_loggers import DeyeTestLoggers
             cls._instance = super().__new__(DeyeTestLoggers) # type: ignore
-            if EnvUtils.is_remote_cache_on():
-              cls._instance._remote_cache_server = EnvUtils.get_remote_cache_server() # type: ignore
-            else:
-              cls._instance._remote_cache_server = '' # type: ignore
           else:
             cls._instance = super().__new__(cls) # type: ignore
-            cls._instance._remote_cache_server = '' # type: ignore
     return cls._instance
 
   @property
@@ -38,7 +33,7 @@ class DeyeBaseLoggers:
 
   @property
   def remote_cache_server(self) -> str:
-    return self._remote_cache_server # type: ignore
+    raise DeyeNotImplementedException('remote_cache_server')
 
   @property
   def demo_server_name(self) -> str:

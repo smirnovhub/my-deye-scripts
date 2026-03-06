@@ -3,18 +3,12 @@ import re
 
 class EnvUtils:
   @staticmethod
-  def is_remote_cache_on() -> bool:
-    value = os.getenv('USE_REMOTE_CACHE', '').strip().lower()
-    return value in ('true', 'yes')
+  def set_remote_cache_server_url(server: str):
+    os.environ['REMOTE_CACHE_SERVER_URL'] = server
 
   @staticmethod
-  def turn_remote_cache_on(server: str):
-    os.environ['USE_REMOTE_CACHE'] = 'true'
-    os.environ['REMOTE_CACHE_SERVER'] = server
-
-  @staticmethod
-  def get_remote_cache_server() -> str:
-    return os.getenv('REMOTE_CACHE_SERVER', '').strip()
+  def get_remote_cache_server_url() -> str:
+    return os.getenv('REMOTE_CACHE_SERVER_URL', '').strip()
 
   @staticmethod
   def get_mikrotik_server_url() -> str:
