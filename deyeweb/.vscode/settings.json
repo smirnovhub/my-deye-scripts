@@ -16,7 +16,7 @@
     "../deye/src/ecoflow",
     "../deye/src/exceptions",
     "../deye/src/locker",
-    "../deye/src/logger",
+    "../deye/src/loggers",
     "../deye/src/registers",
     "../deye/src/registers/enum",
     "../deye/src/registers/inverters",

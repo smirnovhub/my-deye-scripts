@@ -16,7 +16,7 @@
     "src/ecoflow",
     "src/exceptions",
     "src/locker",
-    "src/logger",
+    "src/loggers",
     "src/registers",
     "src/registers/enum",
     "src/registers/inverters",
