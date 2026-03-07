@@ -18,7 +18,7 @@ class DeyeLoggers(DeyeBaseLoggers):
 
   @property
   def slaves(self) -> List[DeyeLogger]:
-    slaves = []
+    slaves: List[DeyeLogger] = []
 
     # Iterate to find all configured slaves
     for i in range(1, 16):

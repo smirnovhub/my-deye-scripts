@@ -5,7 +5,6 @@ from typing import List
 from key_value_store import KeyValueStore
 from ecoflow_device import EcoflowDevice
 from ecoflow_devices import EcoflowDevices
-from ecoflow_credentials import EcoflowCredentials
 from ecoflow_powerstream_interactor import EcoflowPowerStreamInteractor
 
 class EcoflowDeviceAggregator:
@@ -17,15 +16,27 @@ class EcoflowDeviceAggregator:
   convenience methods to set, get, and adjust power across multiple devices.
 
   Parameters:
+    access_key (str): Ecoflow API access key.
+    secret_key (str): Ecoflow API secret key.
     cache_file (str): Path to a local file used for caching device power values.
     **kwargs: Optional keyword arguments passed to EcoflowPowerStreamInteractor:
       - name (str): Name identifier for logging (default: 'ecoflow').
       - verbose (bool): Enable verbose logging (default: False).
   """
-  def __init__(self, cache_file, **kwargs):
+  def __init__(
+    self,
+    access_key: str,
+    secret_key: str,
+    cache_file,
+    **kwargs,
+  ):
     self.devices = EcoflowDevices()
-    credentials = EcoflowCredentials()
-    self.interactor = EcoflowPowerStreamInteractor(credentials, **kwargs)
+    self.interactor = EcoflowPowerStreamInteractor(
+      access_key = access_key,
+      secret_key = secret_key,
+      **kwargs,
+    )
+
     self.name = kwargs.get('name', 'ecoflow')
     self.verbose = kwargs.get('verbose', False)
     self.power_cache = KeyValueStore(cache_file, -1)

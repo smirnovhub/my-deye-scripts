@@ -7,7 +7,6 @@ from ecoflow_utils import EcoflowUtils
 from ecoflow_device import EcoflowDevice
 from ecoflow_devices import EcoflowDevices
 from ecoflow_device_status import EcoflowDeviceStatus
-from ecoflow_credentials import EcoflowCredentials
 from http_session_singleton import HttpSessionSingleton
 
 from ecoflow_exceptions import (
@@ -26,18 +25,24 @@ class EcoflowPowerStreamInteractor:
   - Handle API errors
 
   Parameters:
-    credentials (EcoflowCredentials): Access credentials for Ecoflow API.
+    access_key (str): Ecoflow API access key.
+    secret_key (str): Ecoflow API secret key.
     **kwargs: Optional keyword arguments:
       - name (str): Name identifier for logging (default: 'ecoflow').
       - verbose (bool): Enable verbose logging (default: False).
   """
-  def __init__(self, credentials: EcoflowCredentials, **kwargs):
+  def __init__(
+    self,
+    access_key: str,
+    secret_key: str,
+    **kwargs,
+  ):
+    self.access_key = access_key
+    self.secret_key = secret_key
     self.name = kwargs.get('name', 'ecoflow')
     self.verbose = kwargs.get('verbose', False)
     self.quota_url = 'https://api.ecoflow.com/iot-open/sign/device/quota'
     self.device_url = 'https://api.ecoflow.com/iot-open/sign/device/list'
-    self.key = credentials.accessKey
-    self.secret = credentials.secretKey
     self.set_permanent_watts_cmd = 'WN511_SET_PERMANENT_WATTS_PACK'
     self.permanent_watts_field = '20_1.permanentWatts'
     self.power_scale = 10
@@ -85,8 +90,8 @@ class EcoflowPowerStreamInteractor:
     response = EcoflowUtils.get_request(
       self.session,
       self.device_url,
-      self.key,
-      self.secret,
+      self.access_key,
+      self.secret_key,
     )
 
     if response.status_code != HTTPStatus.OK:
@@ -134,8 +139,8 @@ class EcoflowPowerStreamInteractor:
     response = EcoflowUtils.post_request(
       self.session,
       self.quota_url,
-      self.key,
-      self.secret,
+      self.access_key,
+      self.secret_key,
       {
         'sn': device.serial,
         'params': params
@@ -183,8 +188,8 @@ class EcoflowPowerStreamInteractor:
     response = EcoflowUtils.put_request(
       self.session,
       self.quota_url,
-      self.key,
-      self.secret,
+      self.access_key,
+      self.secret_key,
       {
         'sn': device.serial,
         'cmdCode': self.set_permanent_watts_cmd,

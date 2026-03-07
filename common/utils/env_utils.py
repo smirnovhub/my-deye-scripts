@@ -122,6 +122,18 @@ class EnvUtils:
     return os.getenv('OPEN_WEATHER_MAP_APPID', '').strip()
 
   @staticmethod
+  def get_ecoflow_access_key() -> str:
+    return os.getenv('ECOFLOW_ACCESS_KEY', '').strip()
+
+  @staticmethod
+  def get_ecoflow_secret_key() -> str:
+    return os.getenv('ECOFLOW_SECRET_KEY', '').strip()
+
+  @staticmethod
+  def get_ecoflow_device(num: int) -> str:
+    return os.getenv(f'ECOFLOW_DEVICE{num}', '').strip()
+
+  @staticmethod
   def get_log_name(default: str) -> str:
     log_name = os.getenv("DEYE_LOG_NAME", default)
     return re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')

@@ -1,4 +1,8 @@
 class EcoflowDevice:
+  """
+  WARNING: Fields in this class are serialized to JSON and stored in environment variables.
+  Do not rename or remove fields without updating the corresponding ENV configurations.
+  """
   def __init__(
     self,
     name: str,
