@@ -13,7 +13,7 @@ class EcoflowDevices:
 
     # Iterate to find all configured devices
     for i in range(1, 16):
-      device_json = EnvUtils.get_ecoflow_device(i)
+      device_json = EnvUtils.get_ecoflow_device_json(i)
 
       # Stop the loop if the current devices is empty or not set
       if not device_json:
@@ -21,6 +21,8 @@ class EcoflowDevices:
 
       # Parse string back to dictionary
       device_dict = json.loads(device_json)
+      if not device_dict:
+        break
 
       # Append the devices if validation passes
       devices.append(EcoflowDevice(**device_dict))

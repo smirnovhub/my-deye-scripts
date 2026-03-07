@@ -130,11 +130,23 @@ class EnvUtils:
     return os.getenv('ECOFLOW_SECRET_KEY', '').strip()
 
   @staticmethod
-  def get_ecoflow_device(num: int) -> str:
-    return os.getenv(f'ECOFLOW_DEVICE{num}', '').strip()
+  def get_ecoflow_device_json(num: int) -> str:
+    return os.getenv(f'ECOFLOW_DEVICE{num}_JSON', '{}').strip()
+
+  def get_deye_pv_energy_costs_json() -> str:
+    return os.getenv('DEYE_PV_ENERGY_COSTS_JSON', '{}').strip()
+
+  def get_deye_grid_purchased_energy_costs_json() -> str:
+    return os.getenv('DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON', '{}').strip()
+
+  def get_deye_grid_feed_in_energy_costs_json() -> str:
+    return os.getenv('DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON', '{}').strip()
+
+  def get_deye_gen_energy_costs_json() -> str:
+    return os.getenv('DEYE_GEN_ENERGY_COSTS_JSON', '{}').strip()
 
   def get_deye_energy_cost_currency_code() -> str:
-    return os.getenv('DEYE_ENERGY_COST_CURRENCY_CODE', '').strip()
+    return os.getenv('DEYE_ENERGY_COST_CURRENCY_CODE', 'USD').strip()[:3]
 
   @staticmethod
   def get_log_name(default: str) -> str:
