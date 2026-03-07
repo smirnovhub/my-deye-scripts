@@ -12,6 +12,10 @@ services:
       target: deyeweb
       args:
         BRANCH: ${APP_BRANCH}
+    depends_on:
+      - deye-proxy
+      - deye-cache
+      - deye-back-server
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -50,6 +54,9 @@ services:
       target: deyebackserver
       args:
         BRANCH: ${APP_BRANCH}
+    depends_on:
+      - deye-proxy
+      - deye-cache
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -93,6 +100,9 @@ services:
       dockerfile: telebot/Dockerfile
       args:
         BRANCH: ${APP_BRANCH}
+    depends_on:
+      - deye-proxy
+      - deye-cache
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
