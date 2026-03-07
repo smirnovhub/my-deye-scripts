@@ -36,7 +36,6 @@ services:
       DEYE_LOG_NAME: deye-web
     image: deye-web
     container_name: deye-web
-    hostname: deye-web
     restart: unless-stopped
     deploy:
       resources:
@@ -78,7 +77,6 @@ services:
       BACK_EXECUTION_TIMEOUT: 15
     image: deye-back-server
     container_name: deye-back-server
-    hostname: deye-back-server
     restart: unless-stopped
     deploy:
       resources:
@@ -122,7 +120,6 @@ services:
       DEYE_LOG_NAME: telebot
     image: telebot
     container_name: telebot
-    hostname: telebot
     restart: unless-stopped
     deploy:
       resources:
@@ -150,7 +147,6 @@ services:
       MAX_JSON_STORAGE_SIZE: 262144
     image: deye-cache
     container_name: deye-cache
-    hostname: deye-cache
     restart: unless-stopped
     deploy:
       resources:
@@ -176,7 +172,6 @@ services:
       LOG_LEVEL: INFO
     image: deye-proxy
     container_name: deye-proxy
-    hostname: deye-proxy
     restart: unless-stopped
     deploy:
       resources:
@@ -193,7 +188,6 @@ services:
       dockerfile: logobserver/Dockerfile
     image: log-observer
     container_name: log-observer
-    hostname: log-observer
     restart: unless-stopped
     deploy:
       resources:
