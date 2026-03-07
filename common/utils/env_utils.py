@@ -55,10 +55,6 @@ class EnvUtils:
     return 1 <= int(port_num) <= 65535
 
   @staticmethod
-  def set_remote_cache_server_url(server: str):
-    os.environ['REMOTE_CACHE_SERVER_URL'] = server
-
-  @staticmethod
   def get_remote_cache_server_url() -> str:
     return os.getenv('REMOTE_CACHE_SERVER_URL', '').strip()
 
@@ -162,7 +158,3 @@ class EnvUtils:
   def is_tests_on() -> bool:
     value = os.getenv('IS_TEST_RUN', '').strip().lower()
     return value in ('true', 'yes')
-
-  @staticmethod
-  def turn_tests_on():
-    os.environ['IS_TEST_RUN'] = 'true'
