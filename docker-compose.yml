@@ -18,13 +18,14 @@ services:
 
       REMOTE_CACHE_SERVER_URL: ${REMOTE_CACHE_SERVER_URL}
 
+      BACK_SERVER_URL: ${DEYE_WEB_BACK_SERVER_URL}
+
       DEYE_ENERGY_COST_CURRENCY_CODE: ${DEYE_ENERGY_COST_CURRENCY_CODE}
 
       DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
       DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
 
       DEYE_LOG_NAME: deye-web
-      BACK_SERVER_URL: ${DEYE_WEB_BACK_SERVER_URL}
     image: deye-web
     container_name: deye-web
     hostname: deye-web
