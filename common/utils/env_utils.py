@@ -133,6 +133,9 @@ class EnvUtils:
   def get_ecoflow_device(num: int) -> str:
     return os.getenv(f'ECOFLOW_DEVICE{num}', '').strip()
 
+  def get_deye_energy_cost_currency_code() -> str:
+    return os.getenv('DEYE_ENERGY_COST_CURRENCY_CODE', '').strip()
+
   @staticmethod
   def get_log_name(default: str) -> str:
     log_name = os.getenv("DEYE_LOG_NAME", default)

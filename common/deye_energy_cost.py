@@ -1,5 +1,9 @@
 from typing import Dict
 
+from env_utils import EnvUtils
+from simple_singleton import singleton
+
+@singleton
 class DeyeEnergyCost:
   # To add new price just add current total pv production (in kWh)
   # as a key and add a new price for kWh as value
@@ -37,4 +41,4 @@ class DeyeEnergyCost:
 
   @property
   def currency_code(self) -> str:
-    return 'USD'
+    return EnvUtils.get_deye_energy_cost_currency_code()
