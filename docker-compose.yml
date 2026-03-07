@@ -13,8 +13,19 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     environment:
-      DEYE_LOG_NAME: "deye-web"
-      BACK_SERVER_URL: ""
+      DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
+      DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
+
+      DEYE_SLAVE1_LOGGER_HOST: ${DEYE_SLAVE1_LOGGER_PROXY_HOST}
+      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
+
+      REMOTE_CACHE_SERVER_URL: ${REMOTE_CACHE_SERVER_URL}
+
+      DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
+      DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
+
+      DEYE_LOG_NAME: deye-web
+      BACK_SERVER_URL: ${DEYE_WEB_BACK_SERVER_URL}
     image: deye-web
     container_name: deye-web
     hostname: deye-web
@@ -36,9 +47,21 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     environment:
-      DEYE_LOG_NAME: "deye-back-server"
-      SERVER_PORT: "80"
-      BACK_EXECUTION_TIMEOUT: "15"
+      DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
+      DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
+
+      DEYE_SLAVE1_LOGGER_HOST: ${DEYE_SLAVE1_LOGGER_PROXY_HOST}
+      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
+
+      REMOTE_CACHE_SERVER_URL: ${REMOTE_CACHE_SERVER_URL}
+
+      DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
+      DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
+
+      DEYE_LOG_NAME: deye-back-server
+
+      SERVER_PORT: 80
+      BACK_EXECUTION_TIMEOUT: 15
     image: deye-back-server
     container_name: deye-back-server
     hostname: deye-back-server
@@ -64,7 +87,21 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     environment:
-      DEYE_LOG_NAME: "telebot"
+      DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
+      DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
+
+      DEYE_SLAVE1_LOGGER_HOST: ${DEYE_SLAVE1_LOGGER_PROXY_HOST}
+      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
+
+      REMOTE_CACHE_SERVER_URL: ${REMOTE_CACHE_SERVER_URL}
+      MIKROTIK_SERVER_URL: ${MIKROTIK_SERVER_URL}
+      SCHEDULER_SERVER_URL: ${SCHEDULER_SERVER_URL}
+
+      TELEGRAM_BOT_API_TOKEN: ${TELEGRAM_BOT_API_TOKEN}
+      TELEGRAM_PRIVATE_CHAT_ID: ${TELEGRAM_PRIVATE_CHAT_ID}
+      TELEGRAM_PUBLIC_CHAT_ID: ${TELEGRAM_PUBLIC_CHAT_ID}
+
+      DEYE_LOG_NAME: telebot
     image: telebot
     container_name: telebot
     hostname: telebot
@@ -88,11 +125,11 @@ services:
       context: .
       dockerfile: deyecache/Dockerfile
     environment:
-      DEYE_LOG_NAME: "deye-cache"
-      SERVER_PORT: "80"
-      MAX_KEYS_COUNT: "32"
-      MAX_JSON_SIZE: "32768"
-      MAX_JSON_STORAGE_SIZE: "262144"
+      DEYE_LOG_NAME: deye-cache
+      SERVER_PORT: 80
+      MAX_KEYS_COUNT: 32
+      MAX_JSON_SIZE: 32768
+      MAX_JSON_STORAGE_SIZE: 262144
     image: deye-cache
     container_name: deye-cache
     hostname: deye-cache
@@ -111,14 +148,14 @@ services:
       context: .
       dockerfile: deyeproxy/Dockerfile
     environment:
-      DEYE_LOG_NAME: "deye-proxy"
-      LOGGER_HOST: "192.168.1.101"
-      LOGGER_PORT: "8899"
-      PROXY_PORT: "8899"
-      MAX_CONCURRENT_CONNECTIONS: "10"
-      CONNECT_TIMEOUT: "5"
-      DATA_TIMEOUT: "10"
-      LOG_LEVEL: "INFO"
+      DEYE_LOG_NAME: deye-proxy
+      LOGGER_HOST: ${DEYE_MASTER_LOGGER_HOST}
+      LOGGER_PORT: 8899
+      PROXY_PORT: 8899
+      MAX_CONCURRENT_CONNECTIONS: 10
+      CONNECT_TIMEOUT: 5
+      DATA_TIMEOUT: 10
+      LOG_LEVEL: INFO
     image: deye-proxy
     container_name: deye-proxy
     hostname: deye-proxy
@@ -148,35 +185,6 @@ services:
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/var/www/html
-
-  demo-web:
-    build:
-      context: .
-      dockerfile: deyeweb/Dockerfile
-      target: demoweb
-      args:
-        BRANCH: ${APP_BRANCH}
-    environment:
-      BACK_SERVER_URL: ""
-    image: demo-web
-    container_name: demo-web
-    hostname: demo-web
-    restart: unless-stopped
-
-  demo-server:
-    build:
-      context: .
-      dockerfile: demoserver/Dockerfile
-      args:
-        BRANCH: ${APP_BRANCH}
-        PORTS: "5000 5001"
-    image: demo-server
-    container_name: demo-server
-    hostname: demo-server
-    ports:
-      - "5000:5000"
-      - "5001:5001"
-    restart: unless-stopped
 
 volumes:
   deye_shared_volume:
