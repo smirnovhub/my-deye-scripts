@@ -53,8 +53,8 @@ jobs:
 
       - name: Run tests
         env:
-          TEST_RUN: "true"
-          BOT_API_TEST_TOKEN: ${{ secrets.BOT_API_TEST_TOKEN }}
+          IS_TEST_RUN: "true"
+          TELEGRAM_BOT_API_TEST_TOKEN: ${{ secrets.TELEGRAM_BOT_API_TEST_TOKEN }}
         run: |
           python -u test/src/telebot_test.py
 

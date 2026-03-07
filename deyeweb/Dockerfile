@@ -4,9 +4,8 @@ FROM php:8.4-apache AS baseweb
 ARG REPO_NAME=my-deye-scripts
 ENV REPO_NAME=${REPO_NAME}
 # Set a default value for the backend URL (if backend used)
+# If set we will use apache proxy instead of regular php backend
 ENV BACK_SERVER_URL=http://172.17.17.27
-# If true we will use apache proxy instead of regular php backend
-ENV USE_BACK_SERVER=false
 
 # Set remote branch name
 ARG BRANCH=master
@@ -96,8 +95,7 @@ RUN a2dissite 000-default && \
   a2ensite apache-custom-log-ssl
 
 # Copy and prepare the entrypoint script
-COPY deyeweb/entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY --chmod=755 deyeweb/entrypoint.sh /usr/local/bin/
 
 # Set proper permissions for Apache
 RUN chown -R www-data:www-data $REPO_NAME
@@ -109,7 +107,7 @@ EXPOSE 80 443
 ENV PYTHONUNBUFFERED=1
 
 # Use the script as entrypoint
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Redeclare the default command for php-apache images
 CMD ["apache2-foreground"]
@@ -161,6 +159,7 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
+  tini \
   git && \
   apt-get autoremove -y && \
   apt-get clean -y && \
@@ -171,6 +170,9 @@ RUN apt-get update && \
 # Install required Python packages
 RUN pip install --no-cache-dir --break-system-packages \
   six requests fastapi uvicorn uvloop
+
+# Copy some useful health scripts like pids guard, etc.
+COPY --chmod=755 health/*.sh /usr/local/bin/
 
 # Create user without password, with home directory
 RUN useradd -m -u 7634 -s /usr/sbin/nologin $USER_NAME
@@ -197,5 +199,10 @@ ENV PYTHONUNBUFFERED=1
 
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME/deyeweb
+
+# Use tini as an init process to properly reap zombie processes (PID 1 problem).
+# This prevents processes from lingering in a <zombie> state when
+# the Python parent doesn't or can't collect their exit status.
+ENTRYPOINT ["/usr/bin/tini", "--"]
 
 CMD ["python3", "backserver.py"]

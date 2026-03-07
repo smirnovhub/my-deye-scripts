@@ -8,6 +8,8 @@
     "../modules/suntime",
     "../modules/dateutil/src",
     "../common",
+    "../common/blackout",
+    "../common/blackout/enum",
     "../common/utils",
     "src"
   ],

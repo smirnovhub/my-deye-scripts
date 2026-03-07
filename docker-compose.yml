@@ -12,16 +12,31 @@ services:
       target: deyeweb
       args:
         BRANCH: ${APP_BRANCH}
+    depends_on:
+      - deye-proxy
+      - deye-cache
+      - deye-back-server
     environment:
-      DEYE_LOG_NAME: "deye-web"
-      BACK_SERVER_URL: "http://172.17.17.27"
-      USE_BACK_SERVER: "false"
+      DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
+      DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
+
+      REMOTE_CACHE_SERVER_URL: ${REMOTE_CACHE_SERVER_URL}
+
+      BACK_SERVER_URL: ${DEYE_WEB_BACK_SERVER_URL}
+
+      DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
+      DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
+      DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON: ${DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON}
+      DEYE_GEN_ENERGY_COSTS_JSON: ${DEYE_GEN_ENERGY_COSTS_JSON}
+
+      DEYE_ENERGY_COST_CURRENCY_CODE: ${DEYE_ENERGY_COST_CURRENCY_CODE}
+
+      DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
+      DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
+
+      DEYE_LOG_NAME: deye-web
     image: deye-web
     container_name: deye-web
-    hostname: deye-web
-    ports:
-      - "80:80"
-      - "443:443"
     restart: unless-stopped
     deploy:
       resources:
@@ -39,21 +54,42 @@ services:
       target: deyebackserver
       args:
         BRANCH: ${APP_BRANCH}
+    depends_on:
+      - deye-proxy
+      - deye-cache
     environment:
-      DEYE_LOG_NAME: "deye-back-server"
-      SERVER_PORT: "80"
-      BACK_EXECUTION_TIMEOUT: "15"
+      DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
+      DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
+
+      REMOTE_CACHE_SERVER_URL: ${REMOTE_CACHE_SERVER_URL}
+
+      DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
+      DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
+      DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON: ${DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON}
+      DEYE_GEN_ENERGY_COSTS_JSON: ${DEYE_GEN_ENERGY_COSTS_JSON}
+
+      DEYE_ENERGY_COST_CURRENCY_CODE: ${DEYE_ENERGY_COST_CURRENCY_CODE}
+
+      DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
+      DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
+
+      DEYE_LOG_NAME: deye-back-server
+
+      SERVER_PORT: 80
+      BACK_EXECUTION_TIMEOUT: 15
     image: deye-back-server
     container_name: deye-back-server
-    hostname: deye-back-server
-    ports:
-      - "80:80"
     restart: unless-stopped
     deploy:
       resources:
         limits:
           pids: ${GLOBAL_PIDS_LIMIT}
           memory: ${GLOBAL_MEMORY_LIMIT}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/pids_guard.sh"]
+      interval: 5m
+      timeout: 15s
+      retries: 1
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/backserver/my-deye-scripts/deyeweb/data
@@ -64,17 +100,41 @@ services:
       dockerfile: telebot/Dockerfile
       args:
         BRANCH: ${APP_BRANCH}
+    depends_on:
+      - deye-proxy
+      - deye-cache
     environment:
-      DEYE_LOG_NAME: "telebot"
+      DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
+      DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
+
+      REMOTE_CACHE_SERVER_URL: ${REMOTE_CACHE_SERVER_URL}
+
+      DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
+      DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
+      DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON: ${DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON}
+      DEYE_GEN_ENERGY_COSTS_JSON: ${DEYE_GEN_ENERGY_COSTS_JSON}
+
+      DEYE_ENERGY_COST_CURRENCY_CODE: ${DEYE_ENERGY_COST_CURRENCY_CODE}
+
+      TELEGRAM_BOT_API_TOKEN: ${TELEGRAM_BOT_API_TOKEN}
+      TELEGRAM_BOT_API_TEST_TOKEN: ${TELEGRAM_BOT_API_TEST_TOKEN}
+      TELEGRAM_PRIVATE_CHAT_ID: ${TELEGRAM_PRIVATE_CHAT_ID}
+      TELEGRAM_PUBLIC_CHAT_ID: ${TELEGRAM_PUBLIC_CHAT_ID}
+
+      DEYE_LOG_NAME: telebot
     image: telebot
     container_name: telebot
-    hostname: telebot
     restart: unless-stopped
     deploy:
       resources:
         limits:
           pids: ${DEYE_TELEBOT_PIDS_LIMIT}
           memory: ${DEYE_TELEBOT_MEMORY_LIMIT}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/pids_guard.sh"]
+      interval: 5m
+      timeout: 15s
+      retries: 1
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/telebot/my-deye-scripts/telebot/data
@@ -84,16 +144,13 @@ services:
       context: .
       dockerfile: deyecache/Dockerfile
     environment:
-      DEYE_LOG_NAME: "deye-cache"
-      SERVER_PORT: "80"
-      MAX_KEYS_COUNT: "32"
-      MAX_JSON_SIZE: "32768"
-      MAX_JSON_STORAGE_SIZE: "262144"
+      DEYE_LOG_NAME: deye-cache
+      SERVER_PORT: 80
+      MAX_KEYS_COUNT: 32
+      MAX_JSON_SIZE: 32768
+      MAX_JSON_STORAGE_SIZE: 262144
     image: deye-cache
     container_name: deye-cache
-    hostname: deye-cache
-    ports:
-      - "80:80"
     restart: unless-stopped
     deploy:
       resources:
@@ -109,19 +166,16 @@ services:
       context: .
       dockerfile: deyeproxy/Dockerfile
     environment:
-      DEYE_LOG_NAME: "deye-proxy"
-      LOGGER_HOST: "192.168.1.101"
-      LOGGER_PORT: "8899"
-      PROXY_PORT: "8899"
-      MAX_CONCURRENT_CONNECTIONS: "10"
-      CONNECT_TIMEOUT: "5"
-      DATA_TIMEOUT: "10"
-      LOG_LEVEL: "INFO"
+      DEYE_LOG_NAME: deye-proxy
+      LOGGER_HOST: ${DEYE_MASTER_LOGGER_HOST}
+      LOGGER_PORT: 8899
+      PROXY_PORT: 8899
+      MAX_CONCURRENT_CONNECTIONS: 10
+      CONNECT_TIMEOUT: 5
+      DATA_TIMEOUT: 10
+      LOG_LEVEL: INFO
     image: deye-proxy
     container_name: deye-proxy
-    hostname: deye-proxy
-    ports:
-      - "8899:8899"
     restart: unless-stopped
     deploy:
       resources:
@@ -138,7 +192,6 @@ services:
       dockerfile: logobserver/Dockerfile
     image: log-observer
     container_name: log-observer
-    hostname: log-observer
     restart: unless-stopped
     deploy:
       resources:
@@ -148,39 +201,6 @@ services:
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/var/www/html
-
-  demo-web:
-    build:
-      context: .
-      dockerfile: deyeweb/Dockerfile
-      target: demoweb
-      args:
-        BRANCH: ${APP_BRANCH}
-    environment:
-      BACK_SERVER_URL: "http://172.17.17.27"
-      USE_BACK_SERVER: "false"
-    image: demo-web
-    container_name: demo-web
-    hostname: demo-web
-    ports:
-      - "8080:80"
-      - "4430:443"
-    restart: unless-stopped
-
-  demo-server:
-    build:
-      context: .
-      dockerfile: demoserver/Dockerfile
-      args:
-        BRANCH: ${APP_BRANCH}
-        PORTS: "5000 5001"
-    image: demo-server
-    container_name: demo-server
-    hostname: demo-server
-    ports:
-      - "5000:5000"
-      - "5001:5001"
-    restart: unless-stopped
 
 volumes:
   deye_shared_volume:

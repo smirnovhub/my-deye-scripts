@@ -1,0 +1,234 @@
+import logging
+
+from typing import Any, Dict, List
+from http import HTTPStatus
+
+from ecoflow_utils import EcoflowUtils
+from ecoflow_device import EcoflowDevice
+from ecoflow_devices import EcoflowDevices
+from ecoflow_device_status import EcoflowDeviceStatus
+from http_session_singleton import HttpSessionSingleton
+
+from ecoflow_exceptions import (
+  EcoflowHttpErrorException,
+  EcoflowResponseErrorException,
+)
+
+class EcoflowPowerStreamInteractor:
+  """
+  Interacts with Ecoflow devices over the Ecoflow cloud API.
+
+  Provides methods to:
+  - Retrieve online device list
+  - Get device power usage
+  - Set device power limits
+  - Handle API errors
+
+  Parameters:
+    access_key (str): Ecoflow API access key.
+    secret_key (str): Ecoflow API secret key.
+    **kwargs: Optional keyword arguments:
+      - name (str): Name identifier for logging (default: 'ecoflow').
+      - verbose (bool): Enable verbose logging (default: False).
+  """
+  def __init__(
+    self,
+    access_key: str,
+    secret_key: str,
+    **kwargs,
+  ):
+    self.access_key = access_key
+    self.secret_key = secret_key
+    self.name = kwargs.get('name', 'ecoflow')
+    self.verbose = kwargs.get('verbose', False)
+    self.quota_url = 'https://api.ecoflow.com/iot-open/sign/device/quota'
+    self.device_url = 'https://api.ecoflow.com/iot-open/sign/device/list'
+    self.set_permanent_watts_cmd = 'WN511_SET_PERMANENT_WATTS_PACK'
+    self.permanent_watts_field = '20_1.permanentWatts'
+    self.power_scale = 10
+    self.session = HttpSessionSingleton().session
+    self.logger = logging.getLogger()
+    self.logger.setLevel(logging.INFO)
+
+  def get_device_status(self, device: EcoflowDevice, payload: Dict[str, Any]) -> EcoflowDeviceStatus:
+    """
+    Get the online status of a specific device from API payload.
+
+    Parameters:
+      device (EcoflowDevice): Device instance to check.
+      payload (Dict[str, Any]): JSON payload from the device list API.
+
+    Returns:
+      EcoflowDeviceStatus: Status of the device (online, offline, unknown, etc.).
+    """
+    for status in payload.get('data', []):
+      if status.get('sn') == device.serial and status.get('productName') == device.device_type:
+        online_status = status.get('online', 0)
+        for state in EcoflowDeviceStatus:
+          if online_status == state.value:
+            return state
+        return EcoflowDeviceStatus.unknown
+
+    return EcoflowDeviceStatus.unknown
+
+  def get_online_devices(self, devices: EcoflowDevices) -> List[EcoflowDevice]:
+    """
+    Return a list of devices that are currently online.
+
+    Parameters:
+      devices (EcoflowDevices): Collection of devices to check.
+
+    Raises:
+      EcoflowException: If API call fails or returns an error.
+
+    Returns:
+      List[EcoflowDevice]: Devices that are online according to the API.
+    """
+    if self.verbose:
+      self.logger.info(f'{self.name}: getting devices list...')
+
+    response = EcoflowUtils.get_request(
+      self.session,
+      self.device_url,
+      self.access_key,
+      self.secret_key,
+    )
+
+    if response.status_code != HTTPStatus.OK:
+      if self.verbose:
+        self.logger.info(f'{self.name}: server returned http error {response.status_code} while getting devices list')
+      raise EcoflowHttpErrorException(
+        f'{self.name}: server returned http error {response.status_code} while getting devices list')
+
+    json = response.json()
+    self.check_error(json, 'getting devices list')
+
+    if self.verbose:
+      self.logger.info(f'{self.name}: get_online_devices() result {json}')
+
+    online_devices = []
+
+    for device in devices.devices:
+      device_status = self.get_device_status(device, json)
+      if device_status == EcoflowDeviceStatus.online:
+        if self.verbose:
+          self.logger.info(f'{self.name}: device {device.name} status is {device_status.name}')
+        online_devices.append(device)
+
+    return online_devices
+
+  def get_power(self, device: EcoflowDevice) -> int:
+    """
+    Retrieve the current permanent power setting of a device.
+
+    Parameters:
+      device (EcoflowDevice): Device to query.
+
+    Raises:
+      EcoflowException: If API call fails or returns an error.
+
+    Returns:
+      int: Current power in watts (rounded from API value).
+    """
+    quotas = [self.permanent_watts_field]
+    params = {'quotas': quotas}
+
+    if self.verbose:
+      self.logger.info(f'{self.name}: getting power for {device.name}...')
+
+    response = EcoflowUtils.post_request(
+      self.session,
+      self.quota_url,
+      self.access_key,
+      self.secret_key,
+      {
+        'sn': device.serial,
+        'params': params
+      },
+    )
+
+    if response.status_code != HTTPStatus.OK:
+      if self.verbose:
+        self.logger.info(
+          f'{self.name}: server returned http error {response.status_code} while getting power for {device.name}')
+      raise EcoflowHttpErrorException(
+        f'{self.name}: server returned http error {response.status_code} while getting power for {device.name}')
+
+    json = response.json()
+    self.check_error(json, device.name)
+
+    if self.verbose:
+      self.logger.info(f'{self.name}: get_power() result {json}')
+
+    power = int(round(json['data'][self.permanent_watts_field] / self.power_scale))
+
+    if self.verbose:
+      self.logger.info(f'{self.name}: current power for {device.name} is {power} W')
+
+    return power
+
+  def set_power(self, device: EcoflowDevice, power: int):
+    """
+    Set a new permanent power limit for a device.
+
+    Parameters:
+      device (EcoflowDevice): Device to configure.
+      power (int): Power value in watts to set (clamped to device limits).
+
+    Raises:
+      EcoflowException: If API call fails or returns an error.
+    """
+    power = max(0, min(power, device.max_power))
+
+    if self.verbose:
+      self.logger.info(f'{self.name}: set new power for {device.name} to {power} W')
+
+    params = {'permanentWatts': power * self.power_scale}
+
+    response = EcoflowUtils.put_request(
+      self.session,
+      self.quota_url,
+      self.access_key,
+      self.secret_key,
+      {
+        'sn': device.serial,
+        'cmdCode': self.set_permanent_watts_cmd,
+        'params': params
+      },
+    )
+
+    if response.status_code != HTTPStatus.OK:
+      if self.verbose:
+        self.logger.info(
+          f'{self.name}: server returned http error {response.status_code} while setting power for {device.name}')
+      raise EcoflowHttpErrorException(
+        f'{self.name}: server returned http error {response.status_code} while setting power for {device.name}')
+
+    json = response.json()
+    self.check_error(json, device.name)
+
+    if self.verbose:
+      self.logger.info(f'{self.name}: set_power() result {json}')
+
+  def check_error(self, json: Dict[str, Any], device_name: str):
+    """
+    Validate API response for errors and raise exception if needed.
+
+    Parameters:
+      json (Dict[str, Any]): JSON response from Ecoflow API.
+      device_name (str): Name of the device related to this response.
+
+    Raises:
+      EcoflowException: If API response contains error code or invalid format.
+    """
+    if 'code' not in json:
+      raise EcoflowResponseErrorException(f'{self.name}: response missing \'code\' field for {device_name}')
+
+    try:
+      code = int(json['code'])
+    except Exception:
+      raise EcoflowResponseErrorException(f'{self.name}: invalid \'code\' value ({json["code"]}) for {device_name}')
+
+    if code != 0:
+      message = f': {json["message"]}' if 'message' in json else ''
+      raise EcoflowResponseErrorException(f'{self.name}: server returned error code {code} for {device_name}{message}')

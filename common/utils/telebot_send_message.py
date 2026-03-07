@@ -1,44 +1,55 @@
 import re
 import requests
 
-from telebot_credentials import TelebotCredentials
+from env_utils import EnvUtils
 
 _api_url = "https://api.telegram.org/bot{0}/sendMessage"
 
 def send_private_telegram_message(message: str) -> None:
-  try:
-    if is_bot_token_correct(TelebotCredentials.BOT_API_TOKEN) and is_chat_id_correct(
-        TelebotCredentials.PRIVATE_CHAT_ID):
-      payload = {
-        'chat_id': TelebotCredentials.PRIVATE_CHAT_ID,
-        'text': message[:3072],
-        'parse_mode': 'HTML',
-      }
+  token = EnvUtils.get_telegram_bot_api_token()
+  chat_id = EnvUtils.get_telegram_private_chat_id()
 
-      url = _api_url.format(TelebotCredentials.BOT_API_TOKEN)
-      response = requests.post(url, data = payload, timeout = 5)
-      if response.status_code != requests.codes.ok:
-        print(f"Failed to send private telegram message: {response.text}")
-  except:
-    print(f'Failed to send private telegram message to {TelebotCredentials.PRIVATE_CHAT_ID}')
+  _send_telegram_message(
+    message = message,
+    token = token,
+    chat_id = chat_id,
+    log_str = 'private',
+  )
 
 def send_public_telegram_message(message: str) -> None:
+  token = EnvUtils.get_telegram_bot_api_token()
+  chat_id = EnvUtils.get_telegram_public_chat_idn()
+
+  _send_telegram_message(
+    message = message,
+    token = token,
+    chat_id = chat_id,
+    log_str = 'public',
+  )
+
+def _send_telegram_message(
+  message: str,
+  token: str,
+  chat_id: str,
+  log_str: str,
+) -> None:
+
   try:
-    if is_bot_token_correct(TelebotCredentials.BOT_API_TOKEN) and is_chat_id_correct(TelebotCredentials.PUBLIC_CHAT_ID):
+    if _is_bot_token_correct(token) and _is_chat_id_correct(chat_id):
       payload = {
-        'chat_id': TelebotCredentials.PUBLIC_CHAT_ID,
+        'chat_id': chat_id,
         'text': message[:3072],
         'parse_mode': 'HTML',
       }
 
-      url = _api_url.format(TelebotCredentials.BOT_API_TOKEN)
+      url = _api_url.format(token)
       response = requests.post(url, data = payload, timeout = 5)
       if response.status_code != requests.codes.ok:
-        print(f"Failed to send public telegram message: {response.text}")
+        print(f"Failed to send {log_str} telegram message: {response.text}")
   except:
-    print(f'Failed to send public telegram message to {TelebotCredentials.PUBLIC_CHAT_ID}')
+    print(f'Failed to send {log_str} telegram message to {chat_id}')
 
-def is_bot_token_correct(token: str) -> bool:
+def _is_bot_token_correct(token: str) -> bool:
   pattern = re.compile(r"^\d+:.+$")
   if pattern.match(token):
     return True
@@ -46,7 +57,7 @@ def is_bot_token_correct(token: str) -> bool:
     print(f'Bot token is invalid')
     return False
 
-def is_chat_id_correct(chat_id: str) -> bool:
+def _is_chat_id_correct(chat_id: str) -> bool:
   pattern = re.compile(r"^-?\d+$")
   if pattern.match(str(chat_id)):
     return True

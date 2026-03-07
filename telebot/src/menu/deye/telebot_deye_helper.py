@@ -18,7 +18,7 @@ class TelebotDeyeHelper:
     'socket_timeout': 10,
     'caching_time': 5,
     'verbose': False,
-    'auto_reconnect': True,
+    'auto_reconnect': False,
   }
 
   if EnvUtils.is_tests_on():
@@ -27,7 +27,7 @@ class TelebotDeyeHelper:
       'socket_timeout': 1,
       'caching_time': 0,
       'verbose': True,
-      'auto_reconnect': True,
+      'auto_reconnect': False,
     }
 
   @staticmethod

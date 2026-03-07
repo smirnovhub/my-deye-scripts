@@ -319,7 +319,7 @@ def main() -> None:
         continue
       except Exception as e:
         logger.error(f"Accept error: {e}")
-        time.sleep(15)
+        time.sleep(1)
   finally:
     server.close()
     logger.info("Server socket closed.")

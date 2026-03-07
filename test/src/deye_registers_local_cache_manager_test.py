@@ -48,7 +48,7 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
 
     self.name = "test_inverter"
     self.serial = 1234567
-    self.cache_manager = DeyeRegistersLocalCacheManager(self.name, self.serial, verbose = False)
+    self.cache_manager = DeyeRegistersLocalCacheManager(self.name, self.serial)
 
     safe_name = self.get_safe_file_name(self.name)
 
