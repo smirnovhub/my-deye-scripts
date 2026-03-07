@@ -41,9 +41,9 @@ loggers = DeyeLoggers()
 log = logging.getLogger()
 start_time = time.time()
 
-token = os.getenv('BOT_API_TEST_TOKEN', '')
+token = os.getenv('TELEGRAM_BOT_API_TEST_TOKEN', '')
 if not token:
-  log.info('ERROR: BOT_API_TEST_TOKEN not found in your environment')
+  log.info('ERROR: TELEGRAM_BOT_API_TEST_TOKEN not found in your environment')
   sys.exit(1)
 
 if not loggers.is_test_loggers:
