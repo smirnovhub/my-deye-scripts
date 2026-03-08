@@ -4,6 +4,7 @@ services:
   # This container will run and exit immediately
   init-permissions:
     image: busybox
+    container_name: init-permissions
     volumes:
       - deye_shared_volume:/data
     command: chmod 1777 /data
