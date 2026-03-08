@@ -93,4 +93,6 @@ class DeyeWebConstants:
     registers.time_of_use_power_register.name,
   ]
 
-  register_value_corrections: Dict[DeyeRegister, float] = {}
+  register_value_corrections: Dict[str, float] = {}
+
+  section_title_corrections: Dict[DeyeWebSection, str] = {}
