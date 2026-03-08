@@ -1,9 +1,11 @@
-# See .env file for additional parameters like BRANCH, etc.
-#
-# BEFORE START NEED TO CREATE SHARED VOLUME:
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# BEFORE START YOU NEED TO CREATE SHARED VOLUME:
 # docker volume create deye_shared_volume
 # docker run --rm -v deye_shared_volume:/data busybox chmod 1777 /data
-#
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# See .env file for additional parameters like BRANCH, etc.
+
 services:
   deye-web:
     build:
