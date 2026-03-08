@@ -47,6 +47,9 @@ services:
     image: deye-web
     container_name: deye-web
     restart: unless-stopped
+    ports:
+      - "${DEYE_WEB_HTTP_MAPPING_PORT}:80"
+      - "${DEYE_WEB_HTTPS_MAPPING_PORT}:443"
     deploy:
       resources:
         limits:
