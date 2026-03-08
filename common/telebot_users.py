@@ -1,11 +1,9 @@
 from typing import List
 
-from simple_singleton import singleton
 from telebot_user import TelebotUser
 from telebot_menu_item import TelebotMenuItem
 from telebot_base_users import TelebotBaseUsers
 
-@singleton
 class TelebotUsers(TelebotBaseUsers):
   @property
   def allowed_users(self) -> List[TelebotUser]:
