@@ -55,8 +55,6 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       tests_scripts = TelebotTestUtils.find_tests(self.tests_base_dir)
       self.remove_logs(tests_scripts)
 
-      os.environ['BOT_API_TEST_TOKEN'] = self.bot.token
-
       pos = message.text.find(' ')
       if message.from_user and pos != -1:
         param = message.text[pos + 1:].strip()

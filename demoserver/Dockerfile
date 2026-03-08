@@ -51,7 +51,7 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
 COPY --chown=$USER_NAME:$USER_NAME demoserver/src/common/*.py $REPO_NAME/common/
 
 # Set working directory
-WORKDIR $APP_DIR/$REPO_NAME
+WORKDIR $APP_DIR/$REPO_NAME/demoserver
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1
@@ -60,4 +60,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE ${PORTS}
 
 # Starting the bot
-CMD ["python3", "demoserver/demoserver.py"]
+CMD ["python3", "demoserver.py"]

@@ -44,6 +44,8 @@ class BaseEnergyCostRegister(FloatDeyeRegister):
 
   @property
   def current_energy_cost(self) -> float:
+    if not self._energy_costs:
+      return 0.0
     return list(self._energy_costs.values())[-1]
 
   @property

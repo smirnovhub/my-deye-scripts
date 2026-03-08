@@ -22,6 +22,7 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
+  tini \
   git && \
   apt-get autoremove -y && \
   apt-get clean -y && \
@@ -33,6 +34,9 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir --break-system-packages \
   six requests fastapi uvicorn uvloop codespell mypy flake8 \
   types-requests mashumaro
+
+# Copy some useful health scripts like pids guard, etc.
+COPY --chmod=755 health/*.sh /usr/local/bin/
 
 # Create user without password, with home directory
 RUN useradd -m -u 1111 -s /usr/sbin/nologin $USER_NAME
@@ -52,10 +56,15 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
 COPY --chown=$USER_NAME:$USER_NAME common/*.py $REPO_NAME/common/
 
 # Set working directory
-WORKDIR $APP_DIR/$REPO_NAME
+WORKDIR $APP_DIR/$REPO_NAME/telebot
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1
 
+# Use tini as an init process to properly reap zombie processes (PID 1 problem).
+# This prevents processes from lingering in a <zombie> state when
+# the Python parent doesn't or can't collect their exit status.
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
 # Starting the bot
-CMD ["python3", "telebot/deyetelebot.py"]
+CMD ["python3", "deyetelebot.py"]
