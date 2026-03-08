@@ -4,15 +4,18 @@ import re
 class EnvUtils:
   @staticmethod
   def get_master_logger_host() -> str:
-    return os.getenv('DEYE_MASTER_LOGGER_HOST', '').strip()
+    val = os.getenv('DEYE_MASTER_LOGGER_HOST', '').strip()
+    if not val:
+      raise RuntimeError("Environment variable 'DEYE_MASTER_LOGGER_HOST' is not set")
+    return val
 
   @staticmethod
   def get_master_logger_serial() -> int:
-    return EnvUtils.get_logger_serial('DEYE_MASTER_LOGGER_SERIAL')
+    return EnvUtils._get_logger_serial('DEYE_MASTER_LOGGER_SERIAL')
 
   @staticmethod
   def get_master_logger_port() -> int:
-    return EnvUtils.get_logger_port('DEYE_MASTER_LOGGER_PORT')
+    return EnvUtils._get_logger_port('DEYE_MASTER_LOGGER_PORT')
 
   @staticmethod
   def get_slave_logger_host(num: int) -> str:
@@ -20,39 +23,11 @@ class EnvUtils:
 
   @staticmethod
   def get_slave_logger_serial(num: int) -> int:
-    return EnvUtils.get_logger_serial(f'DEYE_SLAVE{num}_LOGGER_SERIAL')
+    return EnvUtils._get_logger_serial(f'DEYE_SLAVE{num}_LOGGER_SERIAL')
 
   @staticmethod
   def get_slave_logger_port(num: int) -> int:
-    return EnvUtils.get_logger_port(f'DEYE_SLAVE{num}_LOGGER_PORT')
-
-  @staticmethod
-  def get_logger_serial(name: str) -> int:
-    serial = os.getenv(name, '').strip()
-
-    if not EnvUtils.is_serial_correct(serial):
-      raise RuntimeError(f'Invalid serial for logger: {name}')
-
-    return int(serial)
-
-  @staticmethod
-  def get_logger_port(name: str) -> int:
-    port = os.getenv(name, '8899').strip()
-
-    if not EnvUtils.is_port_correct(port):
-      raise RuntimeError(f'Invalid port for logger: {name}')
-
-    return int(port)
-
-  @staticmethod
-  def is_serial_correct(serial: str) -> bool:
-    return re.fullmatch(r'\d+', serial) is not None
-
-  @staticmethod
-  def is_port_correct(port_num: str) -> bool:
-    if not re.fullmatch(r'\d{1,5}', port_num):
-      return False
-    return 1 <= int(port_num) <= 65535
+    return EnvUtils._get_logger_port(f'DEYE_SLAVE{num}_LOGGER_PORT')
 
   @staticmethod
   def get_remote_cache_server_url() -> str:
@@ -68,15 +43,10 @@ class EnvUtils:
 
   @staticmethod
   def get_telegram_bot_api_token() -> str:
-    return os.getenv('TELEGRAM_BOT_API_TOKEN', '').strip()
-
-  @staticmethod
-  def get_telegram_private_chat_id() -> str:
-    return os.getenv('TELEGRAM_PRIVATE_CHAT_ID', '').strip()
-
-  @staticmethod
-  def get_telegram_public_chat_id() -> str:
-    return os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
+    val = os.getenv('TELEGRAM_BOT_API_TOKEN', '').strip()
+    if not val:
+      raise RuntimeError("Environment variable 'TELEGRAM_BOT_API_TOKEN' is not set")
+    return val
 
   @staticmethod
   def get_telegram_admin_user_id() -> int:
@@ -88,6 +58,14 @@ class EnvUtils:
       raise RuntimeError(f'Invalid telegram admin user id: {id} - value should be int')
 
     return int(id)
+
+  @staticmethod
+  def get_telegram_private_chat_id() -> str:
+    return os.getenv('TELEGRAM_PRIVATE_CHAT_ID', '').strip()
+
+  @staticmethod
+  def get_telegram_public_chat_id() -> str:
+    return os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
 
   @staticmethod
   def get_telegram_bot_api_test_token() -> str:
@@ -169,3 +147,31 @@ class EnvUtils:
   def is_tests_on() -> bool:
     value = os.getenv('IS_TEST_RUN', '').strip().lower()
     return value in ('true', 'yes')
+
+  @staticmethod
+  def _get_logger_serial(name: str) -> int:
+    serial = os.getenv(name, '').strip()
+
+    if not EnvUtils._is_serial_correct(serial):
+      raise RuntimeError(f'Invalid serial for logger: {name}')
+
+    return int(serial)
+
+  @staticmethod
+  def _get_logger_port(name: str) -> int:
+    port = os.getenv(name, '8899').strip()
+
+    if not EnvUtils._is_port_correct(port):
+      raise RuntimeError(f'Invalid port for logger: {name}')
+
+    return int(port)
+
+  @staticmethod
+  def _is_serial_correct(serial: str) -> bool:
+    return re.fullmatch(r'\d+', serial) is not None
+
+  @staticmethod
+  def _is_port_correct(port_num: str) -> bool:
+    if not re.fullmatch(r'\d{1,5}', port_num):
+      return False
+    return 1 <= int(port_num) <= 65535
