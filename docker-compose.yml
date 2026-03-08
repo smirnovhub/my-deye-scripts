@@ -1,12 +1,13 @@
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# BEFORE START YOU NEED TO CREATE SHARED VOLUME:
-# docker volume create deye_shared_volume
-# docker run --rm -v deye_shared_volume:/data busybox chmod 1777 /data
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 # See .env file for additional parameters like BRANCH, etc.
-
 services:
+  # Temporary service to fix permissions on start
+  # This container will run and exit immediately
+  init-permissions:
+    image: busybox
+    volumes:
+      - deye_shared_volume:/data
+    command: chmod 1777 /data
+
   deye-web:
     build:
       context: .
@@ -15,9 +16,14 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     depends_on:
-      - deye-proxy
-      - deye-cache
-      - deye-back-server
+      init-permissions:
+        condition: service_completed_successfully
+      deye-proxy:
+        condition: service_started
+      deye-cache:
+        condition: service_started
+      deye-back-server:
+        condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -57,8 +63,12 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     depends_on:
-      - deye-proxy
-      - deye-cache
+      init-permissions:
+        condition: service_completed_successfully
+      deye-proxy:
+        condition: service_started
+      deye-cache:
+        condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -103,8 +113,12 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     depends_on:
-      - deye-proxy
-      - deye-cache
+      init-permissions:
+        condition: service_completed_successfully
+      deye-proxy:
+        condition: service_started
+      deye-cache:
+        condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -145,6 +159,9 @@ services:
     build:
       context: .
       dockerfile: deyecache/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
     environment:
       DEYE_LOG_NAME: deye-cache
       SERVER_PORT: 80
@@ -167,6 +184,9 @@ services:
     build:
       context: .
       dockerfile: deyeproxy/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
     environment:
       DEYE_LOG_NAME: deye-proxy
       LOGGER_HOST: ${DEYE_MASTER_LOGGER_HOST}
@@ -192,6 +212,9 @@ services:
     build:
       context: .
       dockerfile: logobserver/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
     image: log-observer
     container_name: log-observer
     restart: unless-stopped
@@ -205,5 +228,4 @@ services:
       - deye_shared_volume:/var/www/html
 
 volumes:
-  deye_shared_volume:
-    external: true
+  deye_shared_volume: {}
