@@ -79,6 +79,17 @@ class EnvUtils:
     return os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
 
   @staticmethod
+  def get_telegram_admin_user_id() -> int:
+    id = os.getenv('TELEGRAM_ADMIN_USER_ID', '').strip()
+    if not id:
+      raise RuntimeError("Environment variable 'TELEGRAM_ADMIN_USER_ID' is not set")
+
+    if not re.fullmatch(r'\d+', id):
+      raise RuntimeError(f'Invalid telegram admin user id: {id} - value should be int')
+
+    return int(id)
+
+  @staticmethod
   def get_telegram_bot_api_test_token() -> str:
     return os.getenv('TELEGRAM_BOT_API_TEST_TOKEN', '').strip()
 
@@ -86,7 +97,7 @@ class EnvUtils:
   def get_gps_latitude() -> float:
     lat = os.getenv('DEYE_GPS_LATITUDE', '50.45').strip()
     if not lat:
-      raise RuntimeError("You didn't set GPS latitude for sunrise/sunset calculation")
+      raise RuntimeError("Environment variable 'DEYE_GPS_LATITUDE' is not set")
 
     try:
       val = float(lat)
@@ -101,7 +112,7 @@ class EnvUtils:
   def get_gps_longitude() -> float:
     lon = os.getenv('DEYE_GPS_LONGITUDE', '30.52').strip()
     if not lon:
-      raise RuntimeError("You didn't set GPS longitude for sunrise/sunset calculation")
+      raise RuntimeError("Environment variable 'DEYE_GPS_LONGITUDE' is not set")
 
     try:
       val = float(lon)
