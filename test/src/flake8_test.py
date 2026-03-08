@@ -26,6 +26,7 @@ def run_test(path: str):
     "--select=E9,F63,F7,F82",
     "--show-source",
     "--statistics",
+    "--jobs=1",
   ]
 
   log.info(f'Running flake8 for {path}...')
