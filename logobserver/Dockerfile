@@ -23,6 +23,8 @@ RUN apt-get update && \
   rm -rf /var/lib/apt/lists/* && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
   echo $TIMEZONE > /etc/timezone && \
+  PHP_EXT_DIR=$(php -i | grep "Scan this dir for additional .ini files" | awk '{print $NF}') && \
+  echo "date.timezone = ${TIMEZONE}" > "$PHP_EXT_DIR/timezone.ini" && \
   echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Enable Apache rewrite module (common for PHP apps)
