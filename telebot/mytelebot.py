@@ -121,8 +121,13 @@ class MyTelebot:
       self.logger.info(f'An exception occurred while setting commands for user {self.admin_user_id}: {str(e)}')
 
     for user in self.users.allowed_users:
+      if user.id == self.admin_user_id:
+        # We already set commands for admin user
+        continue
+
       if self.users.is_user_blocked(user.id):
         continue
+
       authorized_commands: List[telebot.types.BotCommand] = []
       for menu_item in authorized_menu_items:
         if menu_item.is_item_allowed_for_user(user) and menu_item.command.is_acceptable(self.loggers.system_type):
@@ -143,6 +148,10 @@ class MyTelebot:
         self.logger.info(f'An exception occurred while setting commands for user {user.id}: {str(e)}')
 
     for user in self.users.blocked_users:
+      if user.id == self.admin_user_id:
+        # We can't block admin user
+        continue
+
       try:
         bot.set_my_commands([], scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:
