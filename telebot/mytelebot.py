@@ -6,6 +6,7 @@ from typing import List
 from telebot_utils import TelebotUtils
 from teletest import TeleTest
 from deye_utils import DeyeUtils
+from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
 from telebot_menu_time_of_use import TelebotMenuTimeOfUse
 from telebot_users import TelebotUsers
@@ -53,6 +54,7 @@ class MyTelebot:
     self.auth_helper = TelebotAuthHelper()
     self.update_checker = TelebotLocalUpdateChecker()
     self.logger = logger
+    self.admin_user_id = EnvUtils.get_telegram_admin_user_id()
 
     data_dir = TelebotUtils.get_data_dir()
     DeyeUtils.ensure_dir_exists(data_dir)
@@ -104,6 +106,19 @@ class MyTelebot:
     bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeAllChatAdministrators())
 
     bot.set_chat_menu_button(menu_button = telebot.types.MenuButtonCommands('commands'))
+
+    # Add all commands for admin user
+    admin_commands: List[telebot.types.BotCommand] = []
+    for menu_item in authorized_menu_items:
+      if menu_item.command.is_acceptable(self.loggers.system_type):
+        cmds = menu_item.get_commands()
+        for command in cmds:
+          admin_commands.append(command)
+
+    try:
+      bot.set_my_commands(admin_commands, scope = telebot.types.BotCommandScopeChat(chat_id = self.admin_user_id))
+    except Exception as e:
+      self.logger.info(f'An exception occurred while setting commands for user {self.admin_user_id}: {str(e)}')
 
     for user in self.users.allowed_users:
       if self.users.is_user_blocked(user.id):
