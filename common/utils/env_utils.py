@@ -75,7 +75,7 @@ class EnvUtils:
     return os.getenv('TELEGRAM_PRIVATE_CHAT_ID', '').strip()
 
   @staticmethod
-  def get_telegram_public_chat_idn() -> str:
+  def get_telegram_public_chat_id() -> str:
     return os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
 
   @staticmethod
