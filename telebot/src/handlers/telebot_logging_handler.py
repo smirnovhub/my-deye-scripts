@@ -68,8 +68,12 @@ class TelebotLoggingHandler(TelebotBaseHandler):
       try:
         # Acquire exclusive lock for writing
         DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
-        now = datetime.now().strftime(DeyeUtils.time_format_str)
-        f.write(f'[{now}] [{user_id}] [{user_name}] [{type}] [{message}]\n')
+
+        now = datetime.now()
+        milliseconds = int(now.microsecond / 1000)
+        now_str = f"{now.strftime(DeyeUtils.time_format_str)}.{milliseconds:03d}"
+
+        f.write(f'[{now_str}] [{user_id}] [{user_name}] [{type}] [{message}]\n')
         f.flush()
       finally:
         DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
