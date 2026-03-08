@@ -39,7 +39,7 @@ from telebot_menu_battery_forecast_by_percent import TelebotMenuBatteryForecastB
 from telebot_menu_battery_forecast_by_time import TelebotMenuBatteryForecastByTime
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
-from telebot_send_message import send_private_telegram_message
+from telegram_send_message import Telegram
 
 class MyTelebot:
   def __init__(
@@ -75,7 +75,7 @@ class MyTelebot:
     except Exception as e:
       message = f'Error while updating last commit hash: {str(e)}'
       self.logger.info(message)
-      send_private_telegram_message(message)
+      Telegram.send_private_telegram_message(message)
 
     # Register common handlers
     for handler in self.get_common_handlers(bot):

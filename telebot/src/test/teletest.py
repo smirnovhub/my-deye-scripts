@@ -33,7 +33,7 @@ from telebot_writable_registers_test4_module import TelebotWritableRegistersTest
 from telebot_writable_registers_test5_module import TelebotWritableRegistersTest5Module
 from telebot_writable_registers_undo_test_module import TelebotWritableRegistersUndoTestModule
 from telebot_writable_registers_buttons_test_module import TelebotWritableRegistersButtonsTestModule
-from telebot_send_message import send_private_telegram_message
+from telegram_send_message import Telegram
 
 class TeleTest:
   def __init__(self, bot: TestableTelebot):
@@ -73,7 +73,7 @@ class TeleTest:
       msg = f'An exception occurred while running {type(module).__name__}{info}: {str(e)}'
       log.info(msg)
       time.sleep(1)
-      send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} '
+      Telegram.send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} '
                                     f'<b>Telebot test failed</b> while running '
                                     f'{type(module).__name__}{info}: {str(e)}')
       sys.exit(1)

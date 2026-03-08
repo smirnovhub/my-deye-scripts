@@ -24,7 +24,7 @@ import telebot
 # to send error messages if some import fails
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
-from telebot_send_message import send_private_telegram_message
+from telegram_send_message import Telegram
 from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 # Simple and safe way for HTML parse_mode
@@ -38,7 +38,7 @@ def graceful_shutdown(signum, frame):
 
   try:
     # Send a final message synchronously
-    send_private_telegram_message(f"{CommonUtils.large_yellow_circle_emoji} "
+    Telegram.send_private_telegram_message(f"{CommonUtils.large_yellow_circle_emoji} "
                                   "Telebot is going down...")
   except Exception as e:
     # Log error if message fails
@@ -97,13 +97,13 @@ try:
     mybot.run_tests()
     sys.exit(0)
   
-  send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')
+  Telegram.send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')
   bot = telebot.TeleBot(EnvUtils.get_telegram_bot_api_token())
   mybot = MyTelebot(bot, logger)
   bot.infinity_polling()
 except Exception as e:
   stack_trace = escape_html(traceback.format_exc()[-2048:])
-  send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
+  Telegram.send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
                                 f"Telebot unexpectedly stopped working:\n"
                                 f"<code>{stack_trace}</code>")
   time.sleep(30)
