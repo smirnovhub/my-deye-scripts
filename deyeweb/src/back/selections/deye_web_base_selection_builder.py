@@ -1,5 +1,8 @@
+import json
+
 from typing import Dict, List
 
+from env_utils import EnvUtils
 from deye_register import DeyeRegister
 from deye_web_utils import DeyeWebUtils
 from deye_web_color import DeyeWebColor
@@ -17,6 +20,9 @@ class DeyeWebBaseSelectionBuilder:
     self.selections_config = DeyeWebSelectionsConfig()
     self.formatters_config = DeyeWebFormattersConfig()
     self.style_manager = DeyeWebStyleManager()
+
+    js = EnvUtils.get_deye_web_register_value_corrections_json()
+    self.register_value_corrections: Dict[str, float] = json.loads(js)
 
   def build_selections(self, holder: DeyeRegistersHolder, register: DeyeRegister) -> Dict[str, str]:
     selections = self.selections_config.get_selections_for_register(register.name)
@@ -74,13 +80,14 @@ class DeyeWebBaseSelectionBuilder:
     def equal(val1: float, val2: float) -> bool:
       return abs(val1 - val2) < 0.0001
 
-    cnt = 0
-    correction = DeyeWebConstants.register_value_corrections.get(register.name, 0.0)
+    correction = self.register_value_corrections.get(register.name, 0.0)
 
     registers = holder.master_registers
     value = register.value + correction
     suffix = formatter.get_suffix(register.suffix)
     color = formatter.get_color(registers, register)
+
+    cnt = 0
 
     for val in selections:
       val_color = color if equal(value, val) else DeyeWebColor.gray

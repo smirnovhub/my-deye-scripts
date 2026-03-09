@@ -1,6 +1,7 @@
 from typing import Dict
 from urllib.parse import urljoin
 
+from env_utils import EnvUtils
 from simple_singleton import singleton
 from deye_web_constants import DeyeWebConstants
 
@@ -8,6 +9,7 @@ from deye_web_constants import DeyeWebConstants
 class DeyeWebGraphsConfig:
   def __init__(self):
     registers = DeyeWebConstants.registers
+    self.graphs_base_url = EnvUtils.get_deye_web_graphs_base_url()
     self.urls: Dict[str, str] = {
       registers.battery_current_register.name: 'battery_current.png',
       registers.battery_power_register.name: 'battery_power.png',
@@ -27,8 +29,8 @@ class DeyeWebGraphsConfig:
     }
 
   def get_url_for_register(self, register_name: str) -> str:
-    if not DeyeWebConstants.graphs_base_url:
+    if not self.graphs_base_url:
       return ''
 
     url = self.urls.get(register_name, '')
-    return urljoin(DeyeWebConstants.graphs_base_url, url) if url else ''
+    return urljoin(self.graphs_base_url, url) if url else ''

@@ -116,23 +116,28 @@ class EnvUtils:
 
   @staticmethod
   def get_ecoflow_device_json(num: int) -> str:
-    return os.getenv(f'ECOFLOW_DEVICE{num}_JSON', '{}').strip()
+    val = os.getenv(f'ECOFLOW_DEVICE{num}_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_pv_energy_costs_json() -> str:
-    return os.getenv('DEYE_PV_ENERGY_COSTS_JSON', '{}').strip()
+    val = os.getenv('DEYE_PV_ENERGY_COSTS_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_grid_purchased_energy_costs_json() -> str:
-    return os.getenv('DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON', '{}').strip()
+    val = os.getenv('DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_grid_feed_in_energy_costs_json() -> str:
-    return os.getenv('DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON', '{}').strip()
+    val = os.getenv('DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_gen_energy_costs_json() -> str:
-    return os.getenv('DEYE_GEN_ENERGY_COSTS_JSON', '{}').strip()
+    val = os.getenv('DEYE_GEN_ENERGY_COSTS_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_energy_cost_currency_code() -> str:
@@ -142,6 +147,20 @@ class EnvUtils:
   def get_log_name(default: str) -> str:
     log_name = os.getenv("DEYE_LOG_NAME", default)
     return re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
+
+  @staticmethod
+  def get_deye_web_register_value_corrections_json() -> str:
+    val = os.getenv('DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON', '{}').strip()
+    return val if val else '{}'
+
+  @staticmethod
+  def get_deye_web_section_title_corrections_json() -> str:
+    val = os.getenv('DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON', '{}').strip()
+    return val if val else '{}'
+
+  @staticmethod
+  def get_deye_web_graphs_base_url() -> str:
+    return os.getenv('DEYE_WEB_GRAPHS_BASE_URL', '').strip()
 
   @staticmethod
   def is_tests_on() -> bool:

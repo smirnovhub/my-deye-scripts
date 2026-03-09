@@ -1,12 +1,19 @@
+import json
+
+from typing import Dict
+
+from env_utils import EnvUtils
+from deye_web_utils import DeyeWebUtils
 from deye_web_constants import DeyeWebConstants
 from deye_web_section import DeyeWebSection
 from deye_web_style_manager import DeyeWebStyleManager
-from deye_web_utils import DeyeWebUtils
 
 class DeyeWebBaseSection:
   def __init__(self, section: DeyeWebSection):
     self.section: DeyeWebSection = section
     self.style_manager = DeyeWebStyleManager()
+    js = EnvUtils.get_deye_web_section_title_corrections_json()
+    self.title_corrections: Dict[str, str] = json.loads(js)
 
   def build_tab_header(self) -> str:
     tab_id = DeyeWebUtils.short(DeyeWebConstants.tab_template.format(self.section.id))
@@ -17,7 +24,7 @@ class DeyeWebBaseSection:
     if self.section == DeyeWebConstants.default_open_tab:
       default_open = f' {DeyeWebConstants.default_open_tab_id}'.rstrip()
 
-    title = DeyeWebConstants.section_title_corrections.get(self.section)
+    title = self.title_corrections.get(self.section.name)
 
     return f"""
       {DeyeWebUtils.begin_comment(self)}

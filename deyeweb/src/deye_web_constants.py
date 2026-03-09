@@ -50,8 +50,6 @@ class DeyeWebConstants:
   result_error_field = 'error'
   result_callstack_field = 'callstack'
 
-  graphs_base_url = ''
-
   add_html_comments = False
   user_short_html_ids = True
   clean_html_code = True
@@ -92,7 +90,3 @@ class DeyeWebConstants:
     registers.grid_peak_shaving_power_register.name,
     registers.time_of_use_power_register.name,
   ]
-
-  register_value_corrections: Dict[str, float] = {}
-
-  section_title_corrections: Dict[DeyeWebSection, str] = {}
