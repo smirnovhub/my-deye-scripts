@@ -55,7 +55,6 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   git submodule update --init --recursive
 
 # Copy pre-configured configs to container
-COPY common/*.py $REPO_NAME/common/
 COPY --chmod=755 common/utils/hourly_log_rotator.py /usr/local/bin/
 
 # Find and copy only files from the icons directory to the parent directory
@@ -110,6 +109,9 @@ EXPOSE 80 443
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1
 
+# Set working directory
+WORKDIR $APP_DIR/html
+
 # Use the script as entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
@@ -130,9 +132,6 @@ ENV DEYE_LOG_NAME=deyeweb
 FROM baseweb AS demoweb
 
 ENV DEYE_LOG_NAME=demoweb
-
-# Copy demo server configs to container
-COPY demoserver/src/common/*.py $REPO_NAME/common/
 
 ######################
 ### deyebackserver ###
@@ -191,9 +190,6 @@ WORKDIR $APP_DIR
 RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   cd $REPO_NAME && \
   git submodule update --init --recursive
-
-# Copy pre-configured configs to container
-COPY --chown=$USER_NAME:$USER_NAME common/*.py $REPO_NAME/common/
 
 # Expose proxy port
 EXPOSE $SERVER_PORT
