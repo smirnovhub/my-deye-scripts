@@ -54,7 +54,7 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   cd $REPO_NAME && \
   git submodule update --init --recursive
 
-# Copy pre-configured configs to container
+# Copy custom log rotator to container
 COPY --chmod=755 common/utils/hourly_log_rotator.py /usr/local/bin/
 
 # Find and copy only files from the icons directory to the parent directory

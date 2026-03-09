@@ -37,8 +37,9 @@ RUN a2enmod rewrite && \
 RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
   -keyout /etc/ssl/private/apache-selfsigned.key \
   -out /etc/ssl/certs/apache-selfsigned.crt \
-  -subj "/C=UA/L=Kyiv/O=Development/CN=localhost"
-
+  -subj "/C=UA/L=Kyiv/O=Development/CN=localhost" \
+  -addext "basicConstraints=CA:FALSE"
+  
 # Enable the default SSL configuration of Apache
 RUN a2ensite default-ssl
 
