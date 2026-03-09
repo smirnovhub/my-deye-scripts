@@ -1,6 +1,6 @@
+import os
 import json
 import logging
-import os
 import time
 import asyncio
 
@@ -27,9 +27,14 @@ class DeyeStorageManager:
 
   def get(self, key: str) -> Optional[Dict[str, Any]]:
     """
-    Returns cached data for the specified key
+    Returns stored data for the specified key
     """
-    return self._storage.get(key)
+    data = self._storage.get(key)
+    if data is None:
+      # Return 404 if the key was not found in the cache
+      raise HTTPException(status_code = 404, detail = f"Key not found")
+
+    return data
 
   async def clear(self) -> Dict[str, Any]:
     """
