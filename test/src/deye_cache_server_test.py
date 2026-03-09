@@ -33,7 +33,7 @@ import_dirs(
 )
 
 from deyestorage import app
-from deyestorage_config import DeyeStorageConfig
+from deye_storage_config import DeyeStorageConfig
 from deye_utils import DeyeUtils
 
 cache_server_host = '127.0.0.1'

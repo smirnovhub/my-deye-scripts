@@ -49,4 +49,4 @@ EXPOSE $SERVER_PORT
 # Set working directory
 WORKDIR $APP_DIR/deyestorage
 
-CMD ["python3", "deyestorage.py"]
+CMD ["python3", "deye_storage.py"]
