@@ -16,7 +16,7 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
   def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
-    json_data: Any,
+    json_data: Dict[str, Any],
   ) -> Dict[str, str]:
     # Will throw is there is no session id
     session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)

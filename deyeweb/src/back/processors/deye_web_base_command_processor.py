@@ -33,7 +33,7 @@ class DeyeWebBaseCommandProcessor:
   def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
-    json_data: Any,
+    json_data: Dict[str, Any],
   ) -> Dict[str, str]:
     raise NotImplementedError('get_command_result() is not implemented')
 

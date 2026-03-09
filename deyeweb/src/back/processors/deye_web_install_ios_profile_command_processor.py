@@ -15,7 +15,7 @@ class DeyeWebInstallIosProfileCommandProcessor(DeyeWebBaseCommandProcessor):
   def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
-    json_data: Any,
+    json_data: Dict[str, Any],
   ) -> Dict[str, str]:
     result: Dict[str, str] = {}
 
@@ -74,4 +74,5 @@ class DeyeWebInstallIosProfileCommandProcessor(DeyeWebBaseCommandProcessor):
   def get_image_file_names(self, directory_path: str) -> List[str]:
     path = Path(directory_path)
     filenames = [file.stem for file in path.glob('*.png')]
+    filenames.sort()
     return filenames
