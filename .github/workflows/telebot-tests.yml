@@ -55,6 +55,7 @@ jobs:
         env:
           IS_TEST_RUN: "true"
           TELEGRAM_BOT_API_TEST_TOKEN: ${{ secrets.TELEGRAM_BOT_API_TEST_TOKEN }}
+          TELEGRAM_ADMIN_USER_ID: ${{ secrets.TELEGRAM_ADMIN_USER_ID }}
         run: |
           python -u test/src/telebot_test.py
 
