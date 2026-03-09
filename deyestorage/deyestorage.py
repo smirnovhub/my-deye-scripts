@@ -18,10 +18,10 @@ from fastapi.middleware.gzip import GZipMiddleware
 utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
 sys.path.append(utils_path)
 
-from src.deyestorage_config import deyestorageConfig
+from src.deyestorage_config import DeyeStorageConfig
 from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
-config = deyestorageConfig()
+config = DeyeStorageConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
