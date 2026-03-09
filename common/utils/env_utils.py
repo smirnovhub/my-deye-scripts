@@ -159,6 +159,11 @@ class EnvUtils:
     return val if val else '{}'
 
   @staticmethod
+  def get_deye_web_register_description_replacements_json() -> str:
+    val = os.getenv('DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON', '{}').strip()
+    return val if val else '{}'
+
+  @staticmethod
   def get_deye_web_graphs_base_url() -> str:
     return os.getenv('DEYE_WEB_GRAPHS_BASE_URL', '').strip()
 
