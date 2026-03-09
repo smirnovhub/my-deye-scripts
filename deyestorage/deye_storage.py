@@ -168,6 +168,10 @@ async def remove_all_cache():
   """
   return await cache_manager.clear()
 
+@app.options("/cache", tags = ["Cache Statistics Operations"])
+async def get_cache_stat():
+  return cache_manager.get_stat()
+
 #########################################
 ### STORAGE LOGIC (PERMANENT STORAGE) ###
 #########################################
@@ -197,6 +201,10 @@ async def remove_storage_by_key(key: str):
   Remove the storage data for the specific key
   """
   return await storage_manager.remove(key = key)
+
+@app.options("/storage", tags = ["Storage Statistics Operations"])
+async def get_storage_stat():
+  return storage_manager.get_stat()
 
 if __name__ == "__main__":
   config.print_usage(logger)

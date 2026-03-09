@@ -118,6 +118,31 @@ class DeyeStorageManager:
 
     return {"status": "success"}
 
+  def get_stat(self) -> Dict[str, Any]:
+    """
+    Get storage statistics
+    """
+    total_bytes = 0
+
+    for data in self._storage.values():
+      # Calculate raw JSON size in bytes
+      entry_json = json.dumps(data).encode("utf-8")
+      total_bytes += len(entry_json)
+
+    # Max possible size if every key reached its limit
+    max_possible_bytes = self._config.MAX_KEYS_COUNT * self._config.MAX_JSON_STORAGE_SIZE
+
+    return {
+      "keys_used": len(self._storage),
+      "keys_limit": self._config.MAX_KEYS_COUNT,
+      "bytes_used": total_bytes,
+      "bytes_limit": max_possible_bytes,
+      "usage_percent": {
+        "keys": round((len(self._storage) / self._config.MAX_KEYS_COUNT) * 100),
+        "memory": round((total_bytes / max_possible_bytes) * 100),
+      },
+    }
+
   def save_to_file(self, filename: str) -> None:
     # Storage save logic
     self._logger.info(f"Saving storage to {filename}...")
