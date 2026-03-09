@@ -18,10 +18,10 @@ from fastapi.middleware.gzip import GZipMiddleware
 utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
 sys.path.append(utils_path)
 
-from src.deyecache_config import DeyeCacheConfig
+from src.deyestorage_config import deyestorageConfig
 from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
-config = DeyeCacheConfig()
+config = deyestorageConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -32,12 +32,12 @@ formatter = logging.Formatter(
 
 DATA_DIR = f"data/{config.LOG_NAME}"
 
-# Path for the persistent cache storage file
-CACHE_FILE_PATH = os.path.join(DATA_DIR, "cache-storage.json")
+# Path for the persistent storage file
+STORAGE_FILE_PATH = os.path.join(DATA_DIR, "storage.json")
 
 file_handler = HourlyOverwriteFileHandler(
   directory = DATA_DIR,
-  log_file_template = "deye-cache-{0}.log",
+  log_file_template = "deye-storage-{0}.log",
 )
 
 file_handler.setFormatter(formatter)
@@ -53,12 +53,12 @@ async def lifespan_handler(app: FastAPI):
   """
   Manage the lifespan of the FastAPI application.
 
-  This function handles startup and shutdown events for the Deye Cache service.
+  This function handles startup and shutdown events for the Deye Storage service.
   """
   global locks
 
   # This code runs on startup
-  logger.info("----- Deye Cache started -----")
+  logger.info("----- Deye Storage started -----")
   config.print_config(logger)
   logger.info("------------------------------")
 
@@ -67,36 +67,36 @@ async def lifespan_handler(app: FastAPI):
 
   logger.info(f"Listening on: {actual_ip}:{config.SERVER_PORT}")
 
-  # Cache restoring logic
-  logger.info(f"Restoring cache from {CACHE_FILE_PATH}...")
-  if os.path.exists(CACHE_FILE_PATH):
+  # Storage restoring logic
+  logger.info(f"Restoring storage from {STORAGE_FILE_PATH}...")
+  if os.path.exists(STORAGE_FILE_PATH):
     try:
-      with open(CACHE_FILE_PATH, "r", encoding = "utf-8") as f:
+      with open(STORAGE_FILE_PATH, "r", encoding = "utf-8") as f:
         loaded_data = json.load(f)
-        cache_storage.update(loaded_data)
-        locks = {key: asyncio.Lock() for key in cache_storage}
-        logger.info(f"Restored {len(loaded_data)} keys from {CACHE_FILE_PATH}")
+        deye_storage.update(loaded_data)
+        locks = {key: asyncio.Lock() for key in deye_storage}
+        logger.info(f"Restored {len(loaded_data)} keys from {STORAGE_FILE_PATH}")
     except Exception as e:
-      logger.error(f"Failed to load cache from {CACHE_FILE_PATH}: {e}")
+      logger.error(f"Failed to load storage from {STORAGE_FILE_PATH}: {e}")
   else:
-    logger.warning(f"File {CACHE_FILE_PATH} doesn't exist.")
+    logger.warning(f"File {STORAGE_FILE_PATH} doesn't exist.")
 
   # The application runs here
   yield
 
-  # Cache save logic
-  logger.info(f"Saving cache to {CACHE_FILE_PATH}...")
+  # Storage save logic
+  logger.info(f"Saving storage to {STORAGE_FILE_PATH}...")
   try:
     # Ensure directory exists before saving
     os.makedirs(DATA_DIR, exist_ok = True)
-    with open(CACHE_FILE_PATH, "w", encoding = "utf-8") as f:
-      json.dump(cache_storage, f, ensure_ascii = False, indent = 2)
-    logger.info(f"Successfully saved {len(cache_storage)} keys to {CACHE_FILE_PATH}")
+    with open(STORAGE_FILE_PATH, "w", encoding = "utf-8") as f:
+      json.dump(deye_storage, f, ensure_ascii = False, indent = 2)
+    logger.info(f"Successfully saved {len(deye_storage)} keys to {STORAGE_FILE_PATH}")
   except Exception as e:
-    logger.error(f"Failed to save cache to {CACHE_FILE_PATH}: {e}")
+    logger.error(f"Failed to save storage to {STORAGE_FILE_PATH}: {e}")
 
   # This code runs on shutdown
-  logger.info("DeyeCache service is shutting down...")
+  logger.info("deyestorage service is shutting down...")
 
   for handler in logging.getLogger().handlers:
     handler.flush()
@@ -114,7 +114,7 @@ app = FastAPI(
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
 # In-memory storage for any JSON data
-cache_storage: Dict[str, Any] = {}
+deye_storage: Dict[str, Any] = {}
 
 # Lock per inverter
 locks: Dict[str, asyncio.Lock] = {}
@@ -183,7 +183,7 @@ async def global_exception_handler(request: Request, exc: Exception):
   return JSONResponse(
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
     content = {
-      "detail": f"deyecache: {error_message}",
+      "detail": f"deyestorage: {error_message}",
       "path": request.url.path,
     },
   )
@@ -200,7 +200,7 @@ async def get_cache_by_key(key: str):
   """
   Returns cached data for the specified key
   """
-  data = cache_storage.get(key)
+  data = deye_storage.get(key)
   if data is None:
     # Return 404 if the key was not found in the cache
     raise HTTPException(status_code = 404, detail = f"Key not found")
@@ -228,8 +228,8 @@ async def update_cache_by_key(key: str, json_data: Dict[str, Any], request: Requ
     raise HTTPException(status_code = 413, detail = "JSON body size exceeded")
 
   async with locks_lock:
-    is_new_key = key not in cache_storage
-    if is_new_key and len(cache_storage) >= config.MAX_KEYS_COUNT:
+    is_new_key = key not in deye_storage
+    if is_new_key and len(deye_storage) >= config.MAX_KEYS_COUNT:
       raise HTTPException(status_code = 403, detail = "Maximum number of cache keys exceeded")
 
     # Can't use get_lock() here, because we need to
@@ -246,7 +246,7 @@ async def update_cache_by_key(key: str, json_data: Dict[str, Any], request: Requ
       "last_update_by": request.client.host if request.client else "unknown",
     }
 
-    current_data = cache_storage.get(key)
+    current_data = deye_storage.get(key)
     if not current_data:
       current_data = header.copy()
 
@@ -258,7 +258,7 @@ async def update_cache_by_key(key: str, json_data: Dict[str, Any], request: Requ
     deep_merge(current_data, json_data)
     current_data.update(header)
 
-    cache_storage[key] = current_data
+    deye_storage[key] = current_data
 
   return {"status": "success"}
 
@@ -268,14 +268,14 @@ async def remove_cache_by_key(key: str):
   Remove the cache data for the specific key
   """
   async with locks_lock:
-    if key not in cache_storage:
+    if key not in deye_storage:
       raise HTTPException(status_code = 404, detail = "Key not found")
 
     # Getting key lock inside locks_lock
     lock = locks[key]
 
   async with lock:
-    del cache_storage[key]
+    del deye_storage[key]
     return {"status": "success"}
 
 @app.delete("/cache", tags = ["Cache Remove Operations"])
@@ -284,7 +284,7 @@ async def remove_all_cache():
   Remove all cached data for all keys
   """
   async with locks_lock:
-    cache_storage.clear()
+    deye_storage.clear()
   return {"status": "success"}
 
 @app.get("/stat", tags = ["Cache Statistics Operations"])
@@ -294,7 +294,7 @@ async def get_cache_stat():
   """
   total_bytes = 0
 
-  for data in cache_storage.values():
+  for data in deye_storage.values():
     # Calculate raw JSON size in bytes
     entry_json = json.dumps(data).encode("utf-8")
     total_bytes += len(entry_json)
@@ -303,12 +303,12 @@ async def get_cache_stat():
   max_possible_bytes = config.MAX_KEYS_COUNT * config.MAX_JSON_STORAGE_SIZE
 
   return {
-    "keys_used": len(cache_storage),
+    "keys_used": len(deye_storage),
     "keys_limit": config.MAX_KEYS_COUNT,
     "bytes_used": total_bytes,
     "bytes_limit": max_possible_bytes,
     "usage_percent": {
-      "keys": round((len(cache_storage) / config.MAX_KEYS_COUNT) * 100),
+      "keys": round((len(deye_storage) / config.MAX_KEYS_COUNT) * 100),
       "memory": round((total_bytes / max_possible_bytes) * 100),
     },
   }

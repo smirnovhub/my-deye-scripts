@@ -21,7 +21,7 @@ services:
         condition: service_completed_successfully
       deye-proxy:
         condition: service_started
-      deye-cache:
+      deye-storage:
         condition: service_started
       deye-back-server:
         condition: service_started
@@ -76,7 +76,7 @@ services:
         condition: service_completed_successfully
       deye-proxy:
         condition: service_started
-      deye-cache:
+      deye-storage:
         condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
@@ -131,7 +131,7 @@ services:
         condition: service_completed_successfully
       deye-proxy:
         condition: service_started
-      deye-cache:
+      deye-storage:
         condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
@@ -170,21 +170,21 @@ services:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/telebot/my-deye-scripts/telebot/data
 
-  deye-cache:
+  deye-storage:
     build:
       context: .
-      dockerfile: deyecache/Dockerfile
+      dockerfile: deyestorage/Dockerfile
     depends_on:
       init-permissions:
         condition: service_completed_successfully
     environment:
-      DEYE_LOG_NAME: deye-cache
+      DEYE_LOG_NAME: deye-storage
       SERVER_PORT: 80
       MAX_KEYS_COUNT: 32
       MAX_JSON_SIZE: 32768
       MAX_JSON_STORAGE_SIZE: 262144
-    image: deye-cache
-    container_name: deye-cache
+    image: deye-storage
+    container_name: deye-storage
     restart: unless-stopped
     deploy:
       resources:
@@ -193,7 +193,7 @@ services:
           memory: ${GLOBAL_MEMORY_LIMIT}
     volumes:
       # Mount shared folder with read-write permissions
-      - deye_shared_volume:/home/deyecache/deyecache/data
+      - deye_shared_volume:/home/deyestorage/deyestorage/data
 
   deye-proxy:
     build:

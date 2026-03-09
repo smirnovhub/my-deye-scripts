@@ -22,12 +22,12 @@ import_dirs(
   [
     'src',
     os.path.join(base_path, 'deye/src'),
-    os.path.join(base_path, 'deyecache'),
+    os.path.join(base_path, 'deyestorage'),
     os.path.join(base_path, 'common'),
   ],
 )
 
-from deyecache import app
+from deyestorage import app
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_test_utils import DeyeTestUtils
@@ -53,7 +53,7 @@ def run_cache_server():
 
   # Load the config from the JSON file
   try:
-    with open(f"{base_path}/deyecache/log_config.json", "r") as f:
+    with open(f"{base_path}/deyestorage/log_config.json", "r") as f:
       log_config = json.load(f)
   except Exception as e:
     print(f"Failed to load logging config: {e}")

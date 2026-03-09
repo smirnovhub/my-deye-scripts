@@ -2,11 +2,11 @@ import logging
 
 from env_var import EnvVar
 
-class DeyeCacheConfig:
+class DeyeStorageConfig:
   def __init__(self):
-    self.__log_name = EnvVar("DEYE_LOG_NAME", "deyecache", "Individual folder name for logging")
+    self.__log_name = EnvVar("DEYE_LOG_NAME", "deyestorage", "Individual folder name for logging")
     self.__server_port = EnvVar("SERVER_PORT", "80", "Local port to listen on")
-    self.__max_keys_count = EnvVar("MAX_KEYS_COUNT", "32", "Maximum number of top-level keys in cache storage")
+    self.__max_keys_count = EnvVar("MAX_KEYS_COUNT", "32", "Maximum number of top-level keys in storage")
     self.__max_json_size = EnvVar("MAX_JSON_SIZE", str(32 * 1024), "Maximum JSON size in bytes for incoming POST body")
     self.__max_json_storage_size = EnvVar("MAX_JSON_STORAGE_SIZE", str(256 * 1024),
                                           "Maximum total JSON storage size per key in bytes")
