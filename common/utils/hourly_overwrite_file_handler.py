@@ -74,7 +74,8 @@ class HourlyOverwriteFileHandler(logging.Handler):
           self._stream.close()
 
         # Always overwrite when shifting to a new time slot
-        self._stream = open(filename, mode = "w", encoding = self.encoding)
+        mode = "w" if too_old else "a"
+        self._stream = open(filename, mode = mode, encoding = self.encoding)
         self._current_date = current_date
         self._current_hour = current_hour
 
