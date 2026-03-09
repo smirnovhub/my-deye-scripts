@@ -1,5 +1,9 @@
+import json
+
+from typing import Dict
 from dataclasses import dataclass
 
+from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_register import DeyeRegister
 from deye_web_constants import DeyeWebConstants
@@ -10,6 +14,9 @@ class FormattedValue:
   unit: str
 
 class DeyeWebValueFormatter:
+  _js = EnvUtils.get_deye_web_register_value_corrections_json()
+  _register_value_corrections: Dict[str, float] = json.loads(_js)
+
   @staticmethod
   def get_formatted_value(register: DeyeRegister) -> FormattedValue:
     registers = DeyeWebConstants.registers
@@ -38,7 +45,7 @@ class DeyeWebValueFormatter:
     if not isinstance(register.value, float) and not isinstance(register.value, int):
       raise ValueError(f"Type of register value '{register.name}' should be float or int")
 
-    correction = DeyeWebConstants.register_value_corrections.get(register.name, 0.0)
+    correction = DeyeWebValueFormatter._register_value_corrections.get(register.name, 0.0)
     return register.value + correction
 
   @staticmethod

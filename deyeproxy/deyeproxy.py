@@ -97,33 +97,42 @@ def get_external_ip(host: str, port: int) -> Optional[str]:
 def forward_data(
   source: socket.socket,
   destination: socket.socket,
+  source_timeout: float,
   stop_event: threading.Event,
   direction: str,
 ) -> None:
   """
-  Bi-directional data forwarding between two sockets.
+  Bi-directional data forwarding with specific timeout for the source socket.
   """
   total_bytes = 0
+  # Set the specific timeout for this direction
+  source.settimeout(source_timeout)
+
   try:
     while not stop_event.is_set():
       try:
         data = source.recv(1024)
         if not data:
+          # Remote end closed connection
           try:
             destination.shutdown(socket.SHUT_WR)
           except Exception:
             pass
           break
+
         destination.sendall(data)
         total_bytes += len(data)
+      except socket.timeout:
+        # This is where the specific timeout hits
+        logger.error(f"{direction} timed out after {source_timeout}s of inactivity")
+        break
       except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
         logger.error(f"{direction} connection reset by peer")
         break
-      except socket.timeout:
-        continue
-  except Exception:
-    pass
+  except Exception as e:
+    logger.debug(f"{direction} exception: {e}")
   finally:
+    # Signals the other thread and main loop to stop
     stop_event.set()
     logger.info(f"{direction} bytes sent: {total_bytes}")
 
@@ -158,10 +167,6 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       logger_sock.settimeout(config.CONNECT_TIMEOUT)
       logger_sock.connect((config.LOGGER_HOST, config.LOGGER_PORT))
 
-      # Set operational timeouts for data phase
-      logger_sock.settimeout(1)
-      client_sock.settimeout(1)
-
       logger_ip, logger_port = logger_sock.getpeername()
 
       logger.info(f"{client_ip}:{client_port} Bridge established: "
@@ -174,14 +179,26 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       c2l = threading.Thread(
         target = forward_data,
         daemon = True,
-        args = (client_sock, logger_sock, stop_event, f"{client_ip}:{client_port} Client -> Logger"),
+        args = (
+          client_sock,
+          logger_sock,
+          config.CLIENT_IDLE_TIMEOUT,
+          stop_event,
+          f"{client_ip}:{client_port} Client -> Logger",
+        ),
         name = "ClientToLoggerThread",
       )
 
       l2c = threading.Thread(
         target = forward_data,
         daemon = True,
-        args = (logger_sock, client_sock, stop_event, f"{client_ip}:{client_port} Logger -> Client"),
+        args = (
+          logger_sock,
+          client_sock,
+          config.LOGGER_IDLE_TIMEOUT,
+          stop_event,
+          f"{client_ip}:{client_port} Logger -> Client",
+        ),
         name = "LoggerToClientThread",
       )
 
@@ -196,8 +213,8 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
           break
 
         elapsed_time += wait_interval
-        if elapsed_time >= config.DATA_TIMEOUT:
-          logger.error(f"{client_ip}:{client_port} Session timed out after {config.DATA_TIMEOUT}s")
+        if elapsed_time >= config.SESSION_TIMEOUT:
+          logger.error(f"{client_ip}:{client_port} Session timed out after {config.SESSION_TIMEOUT}s")
 
           stop_event.set()
 
@@ -288,12 +305,14 @@ def main() -> None:
   log_level_name = logging._levelToName[log_level]
 
   logger.info(f"------- Deye Proxy started -------")
-  logger.info(f"Target logger   : {config.LOGGER_HOST}:{config.LOGGER_PORT}")
-  logger.info(f"Listening on    : {actual_ip}:{config.PROXY_PORT}")
-  logger.info(f"Max connections : {config.MAX_CONCURRENT_CONNECTIONS}")
-  logger.info(f"Connect timeout : {config.CONNECT_TIMEOUT}s")
-  logger.info(f"Data timeout    : {config.DATA_TIMEOUT}s")
-  logger.info(f"Log level       : {log_level_name}")
+  logger.info(f"Target logger       : {config.LOGGER_HOST}:{config.LOGGER_PORT}")
+  logger.info(f"Listening on        : {actual_ip}:{config.PROXY_PORT}")
+  logger.info(f"Max connections     : {config.MAX_CONCURRENT_CONNECTIONS}")
+  logger.info(f"Connect timeout     : {config.CONNECT_TIMEOUT}s")
+  logger.info(f"Client idle timeout : {config.CLIENT_IDLE_TIMEOUT}s")
+  logger.info(f"Logger idle timeout : {config.LOGGER_IDLE_TIMEOUT}s")
+  logger.info(f"Session timeout     : {config.SESSION_TIMEOUT}s")
+  logger.info(f"Log level           : {log_level_name}")
   logger.info(f"----------------------------------")
 
   server.settimeout(1.0)

@@ -1,3 +1,4 @@
+from env_utils import EnvUtils
 from telebot_user import TelebotUser
 from telebot_users import TelebotUsers
 from telebot_menu_item import TelebotMenuItem
@@ -8,7 +9,8 @@ class TelebotAuthHelper:
   for menu items and writable registers in a Telebot-based system.
   """
   def __init__(self):
-    self.users = TelebotUsers()
+    self._users = TelebotUsers()
+    self._admin_user_id = EnvUtils.get_telegram_admin_user_id()
 
   def is_menu_item_allowed(self, user_id: int, item: TelebotMenuItem) -> bool:
     """
@@ -21,10 +23,13 @@ class TelebotAuthHelper:
     Returns:
         bool: True if the menu item is allowed, False otherwise.
     """
-    if self.users.is_user_blocked(user_id):
+    if user_id == self._admin_user_id:
+      return True
+
+    if self._users.is_user_blocked(user_id):
       return False
 
-    user = self.users.get_allowed_user(user_id)
+    user = self._users.get_allowed_user(user_id)
     if user is None:
       return False
 
@@ -41,7 +46,10 @@ class TelebotAuthHelper:
     Returns:
         bool: True if the menu item is allowed, False otherwise.
     """
-    if self.users.is_user_blocked(user.id):
+    if user.id == self._admin_user_id:
+      return True
+
+    if self._users.is_user_blocked(user.id):
       return False
 
     if item in user.disabled_menu_items:
@@ -66,10 +74,13 @@ class TelebotAuthHelper:
     Returns:
         bool: True if the user is allowed to write to the register, False otherwise.
     """
-    if self.users.is_user_blocked(user_id):
+    if user_id == self._admin_user_id:
+      return True
+
+    if self._users.is_user_blocked(user_id):
       return False
 
-    user = self.users.get_allowed_user(user_id)
+    user = self._users.get_allowed_user(user_id)
     register_name = register_name.lstrip('/')
 
     for register in user.disabled_writable_registers:

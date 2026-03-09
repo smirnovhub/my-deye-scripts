@@ -4,15 +4,18 @@ import re
 class EnvUtils:
   @staticmethod
   def get_master_logger_host() -> str:
-    return os.getenv('DEYE_MASTER_LOGGER_HOST', '').strip()
+    val = os.getenv('DEYE_MASTER_LOGGER_HOST', '').strip()
+    if not val:
+      raise RuntimeError("Environment variable 'DEYE_MASTER_LOGGER_HOST' is not set")
+    return val
 
   @staticmethod
   def get_master_logger_serial() -> int:
-    return EnvUtils.get_logger_serial('DEYE_MASTER_LOGGER_SERIAL')
+    return EnvUtils._get_logger_serial('DEYE_MASTER_LOGGER_SERIAL')
 
   @staticmethod
   def get_master_logger_port() -> int:
-    return EnvUtils.get_logger_port('DEYE_MASTER_LOGGER_PORT')
+    return EnvUtils._get_logger_port('DEYE_MASTER_LOGGER_PORT')
 
   @staticmethod
   def get_slave_logger_host(num: int) -> str:
@@ -20,39 +23,11 @@ class EnvUtils:
 
   @staticmethod
   def get_slave_logger_serial(num: int) -> int:
-    return EnvUtils.get_logger_serial(f'DEYE_SLAVE{num}_LOGGER_SERIAL')
+    return EnvUtils._get_logger_serial(f'DEYE_SLAVE{num}_LOGGER_SERIAL')
 
   @staticmethod
   def get_slave_logger_port(num: int) -> int:
-    return EnvUtils.get_logger_port(f'DEYE_SLAVE{num}_LOGGER_PORT')
-
-  @staticmethod
-  def get_logger_serial(name: str) -> int:
-    serial = os.getenv(name, '').strip()
-
-    if not EnvUtils.is_serial_correct(serial):
-      raise RuntimeError(f'Invalid serial for logger: {name}')
-
-    return int(serial)
-
-  @staticmethod
-  def get_logger_port(name: str) -> int:
-    port = os.getenv(name, '8899').strip()
-
-    if not EnvUtils.is_port_correct(port):
-      raise RuntimeError(f'Invalid port for logger: {name}')
-
-    return int(port)
-
-  @staticmethod
-  def is_serial_correct(serial: str) -> bool:
-    return re.fullmatch(r'\d+', serial) is not None
-
-  @staticmethod
-  def is_port_correct(port_num: str) -> bool:
-    if not re.fullmatch(r'\d{1,5}', port_num):
-      return False
-    return 1 <= int(port_num) <= 65535
+    return EnvUtils._get_logger_port(f'DEYE_SLAVE{num}_LOGGER_PORT')
 
   @staticmethod
   def get_remote_cache_server_url() -> str:
@@ -68,14 +43,28 @@ class EnvUtils:
 
   @staticmethod
   def get_telegram_bot_api_token() -> str:
-    return os.getenv('TELEGRAM_BOT_API_TOKEN', '').strip()
+    val = os.getenv('TELEGRAM_BOT_API_TOKEN', '').strip()
+    if not val:
+      raise RuntimeError("Environment variable 'TELEGRAM_BOT_API_TOKEN' is not set")
+    return val
+
+  @staticmethod
+  def get_telegram_admin_user_id() -> int:
+    id = os.getenv('TELEGRAM_ADMIN_USER_ID', '').strip()
+    if not id:
+      raise RuntimeError("Environment variable 'TELEGRAM_ADMIN_USER_ID' is not set")
+
+    if not re.fullmatch(r'\d+', id):
+      raise RuntimeError(f'Invalid telegram admin user id: {id} - value should be int')
+
+    return int(id)
 
   @staticmethod
   def get_telegram_private_chat_id() -> str:
     return os.getenv('TELEGRAM_PRIVATE_CHAT_ID', '').strip()
 
   @staticmethod
-  def get_telegram_public_chat_idn() -> str:
+  def get_telegram_public_chat_id() -> str:
     return os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
 
   @staticmethod
@@ -86,7 +75,7 @@ class EnvUtils:
   def get_gps_latitude() -> float:
     lat = os.getenv('DEYE_GPS_LATITUDE', '50.45').strip()
     if not lat:
-      raise RuntimeError("You didn't set GPS latitude for sunrise/sunset calculation")
+      raise RuntimeError("Environment variable 'DEYE_GPS_LATITUDE' is not set")
 
     try:
       val = float(lat)
@@ -101,7 +90,7 @@ class EnvUtils:
   def get_gps_longitude() -> float:
     lon = os.getenv('DEYE_GPS_LONGITUDE', '30.52').strip()
     if not lon:
-      raise RuntimeError("You didn't set GPS longitude for sunrise/sunset calculation")
+      raise RuntimeError("Environment variable 'DEYE_GPS_LONGITUDE' is not set")
 
     try:
       val = float(lon)
@@ -127,23 +116,28 @@ class EnvUtils:
 
   @staticmethod
   def get_ecoflow_device_json(num: int) -> str:
-    return os.getenv(f'ECOFLOW_DEVICE{num}_JSON', '{}').strip()
+    val = os.getenv(f'ECOFLOW_DEVICE{num}_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_pv_energy_costs_json() -> str:
-    return os.getenv('DEYE_PV_ENERGY_COSTS_JSON', '{}').strip()
+    val = os.getenv('DEYE_PV_ENERGY_COSTS_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_grid_purchased_energy_costs_json() -> str:
-    return os.getenv('DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON', '{}').strip()
+    val = os.getenv('DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_grid_feed_in_energy_costs_json() -> str:
-    return os.getenv('DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON', '{}').strip()
+    val = os.getenv('DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_gen_energy_costs_json() -> str:
-    return os.getenv('DEYE_GEN_ENERGY_COSTS_JSON', '{}').strip()
+    val = os.getenv('DEYE_GEN_ENERGY_COSTS_JSON', '{}').strip()
+    return val if val else '{}'
 
   @staticmethod
   def get_deye_energy_cost_currency_code() -> str:
@@ -155,6 +149,53 @@ class EnvUtils:
     return re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
 
   @staticmethod
+  def get_deye_web_register_value_corrections_json() -> str:
+    val = os.getenv('DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON', '{}').strip()
+    return val if val else '{}'
+
+  @staticmethod
+  def get_deye_web_section_title_corrections_json() -> str:
+    val = os.getenv('DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON', '{}').strip()
+    return val if val else '{}'
+
+  @staticmethod
+  def get_deye_web_register_description_replacements_json() -> str:
+    val = os.getenv('DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON', '{}').strip()
+    return val if val else '{}'
+
+  @staticmethod
+  def get_deye_web_graphs_base_url() -> str:
+    return os.getenv('DEYE_WEB_GRAPHS_BASE_URL', '').strip()
+
+  @staticmethod
   def is_tests_on() -> bool:
     value = os.getenv('IS_TEST_RUN', '').strip().lower()
     return value in ('true', 'yes')
+
+  @staticmethod
+  def _get_logger_serial(name: str) -> int:
+    serial = os.getenv(name, '').strip()
+
+    if not EnvUtils._is_serial_correct(serial):
+      raise RuntimeError(f'Invalid serial for logger: {name}')
+
+    return int(serial)
+
+  @staticmethod
+  def _get_logger_port(name: str) -> int:
+    port = os.getenv(name, '8899').strip()
+
+    if not EnvUtils._is_port_correct(port):
+      raise RuntimeError(f'Invalid port for logger: {name}')
+
+    return int(port)
+
+  @staticmethod
+  def _is_serial_correct(serial: str) -> bool:
+    return re.fullmatch(r'\d+', serial) is not None
+
+  @staticmethod
+  def _is_port_correct(port_num: str) -> bool:
+    if not re.fullmatch(r'\d{1,5}', port_num):
+      return False
+    return 1 <= int(port_num) <= 65535

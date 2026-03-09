@@ -7,7 +7,7 @@ from deye_utils import DeyeUtils
 from deye_file_lock import DeyeFileLock
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
-from telebot_send_message import send_private_telegram_message
+from telegram_send_message import Telegram
 from telebot_utils import TelebotUtils
 
 class TelebotMenuStart(TelebotMenuItemHandler):
@@ -39,7 +39,7 @@ class TelebotMenuStart(TelebotMenuItemHandler):
       if result:
         self.bot.send_message(message.chat.id, f'Access requested for user {user.id}')
         if not EnvUtils.is_tests_on():
-          send_private_telegram_message(f'<b>Access requested:</b>\n{info}')
+          Telegram.send_private_telegram_message(f'<b>Access requested:</b>\n{info}')
       else:
         self.bot.send_message(message.chat.id, f'Access already requested for user {user.id}')
 

@@ -10,8 +10,27 @@ class DeyeProxyConfig:
     self.__logger_port = EnvVar("LOGGER_PORT", "8899", "Target port on the logger")
     self.__proxy_port = EnvVar("PROXY_PORT", "8899", "Local port to listen on")
     self.__max_connections = EnvVar("MAX_CONCURRENT_CONNECTIONS", "10", "Max simultaneous connections")
+
+    # Maximum time (in seconds) allowed to establish the TCP connection to the logger.
+    # If the connection attempt does not complete within this time, a socket.timeout
+    # exception is raised and the session is aborted.
     self.__connect_timeout = EnvVar("CONNECT_TIMEOUT", "5", "Timeout for logger connection")
-    self.__data_timeout = EnvVar("DATA_TIMEOUT", "10", "Inactivity timeout for session")
+
+    # Maximum inactivity time (in seconds) while waiting for data from the client.
+    # If the client does not send any data within this period, the proxy assumes
+    # the client connection is idle or stalled and terminates the session.
+    self.__client_idle_timeout = EnvVar("CLIENT_IDLE_TIMEOUT", "3", "Inactivity timeout for client")
+
+    # Maximum inactivity time (in seconds) while waiting for data from the logger device.
+    # If no data is received from the logger within this period, the proxy assumes
+    # the logger connection is stalled or broken and terminates the session.
+    self.__logger_idle_timeout = EnvVar("LOGGER_IDLE_TIMEOUT", "5", "Inactivity timeout for logger")
+
+    # Maximum total lifetime of a session (in seconds), regardless of activity.
+    # When this limit is reached, the proxy forcibly terminates the session to
+    # ensure the logger resource is eventually released.
+    self.__session_timeout = EnvVar("SESSION_TIMEOUT", "10", "Maximum duration for session")
+
     self.__log_level = EnvVar("LOG_LEVEL", "INFO", "Log level for logging")
 
     self.__proxy_host = '0.0.0.0'
@@ -23,7 +42,9 @@ class DeyeProxyConfig:
       self.__proxy_port,
       self.__max_connections,
       self.__connect_timeout,
-      self.__data_timeout,
+      self.__client_idle_timeout,
+      self.__logger_idle_timeout,
+      self.__session_timeout,
       self.__log_level,
     ]
 
@@ -58,8 +79,16 @@ class DeyeProxyConfig:
     return self.__connect_timeout.as_float()
 
   @property
-  def DATA_TIMEOUT(self) -> float:
-    return self.__data_timeout.as_float()
+  def CLIENT_IDLE_TIMEOUT(self) -> float:
+    return self.__client_idle_timeout.as_float()
+
+  @property
+  def LOGGER_IDLE_TIMEOUT(self) -> float:
+    return self.__logger_idle_timeout.as_float()
+
+  @property
+  def SESSION_TIMEOUT(self) -> float:
+    return self.__session_timeout.as_float()
 
   @property
   def LOG_LEVEL(self) -> str:

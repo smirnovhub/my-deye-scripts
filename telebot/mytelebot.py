@@ -6,6 +6,7 @@ from typing import List
 from telebot_utils import TelebotUtils
 from teletest import TeleTest
 from deye_utils import DeyeUtils
+from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
 from telebot_menu_time_of_use import TelebotMenuTimeOfUse
 from telebot_users import TelebotUsers
@@ -39,7 +40,7 @@ from telebot_menu_battery_forecast_by_percent import TelebotMenuBatteryForecastB
 from telebot_menu_battery_forecast_by_time import TelebotMenuBatteryForecastByTime
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
-from telebot_send_message import send_private_telegram_message
+from telegram_send_message import Telegram
 
 class MyTelebot:
   def __init__(
@@ -53,6 +54,7 @@ class MyTelebot:
     self.auth_helper = TelebotAuthHelper()
     self.update_checker = TelebotLocalUpdateChecker()
     self.logger = logger
+    self.admin_user_id = EnvUtils.get_telegram_admin_user_id()
 
     data_dir = TelebotUtils.get_data_dir()
     DeyeUtils.ensure_dir_exists(data_dir)
@@ -75,7 +77,7 @@ class MyTelebot:
     except Exception as e:
       message = f'Error while updating last commit hash: {str(e)}'
       self.logger.info(message)
-      send_private_telegram_message(message)
+      Telegram.send_private_telegram_message(message)
 
     # Register common handlers
     for handler in self.get_common_handlers(bot):
@@ -105,9 +107,27 @@ class MyTelebot:
 
     bot.set_chat_menu_button(menu_button = telebot.types.MenuButtonCommands('commands'))
 
+    # Add all commands for admin user
+    admin_commands: List[telebot.types.BotCommand] = []
+    for menu_item in authorized_menu_items:
+      if menu_item.command.is_acceptable(self.loggers.system_type):
+        cmds = menu_item.get_commands()
+        for command in cmds:
+          admin_commands.append(command)
+
+    try:
+      bot.set_my_commands(admin_commands, scope = telebot.types.BotCommandScopeChat(chat_id = self.admin_user_id))
+    except Exception as e:
+      self.logger.info(f'An exception occurred while setting commands for user {self.admin_user_id}: {str(e)}')
+
     for user in self.users.allowed_users:
+      if user.id == self.admin_user_id:
+        # We already set commands for admin user
+        continue
+
       if self.users.is_user_blocked(user.id):
         continue
+
       authorized_commands: List[telebot.types.BotCommand] = []
       for menu_item in authorized_menu_items:
         if menu_item.is_item_allowed_for_user(user) and menu_item.command.is_acceptable(self.loggers.system_type):
@@ -128,6 +148,10 @@ class MyTelebot:
         self.logger.info(f'An exception occurred while setting commands for user {user.id}: {str(e)}')
 
     for user in self.users.blocked_users:
+      if user.id == self.admin_user_id:
+        # We can't block admin user
+        continue
+
       try:
         bot.set_my_commands([], scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:

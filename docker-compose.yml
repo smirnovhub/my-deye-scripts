@@ -1,10 +1,14 @@
 # See .env file for additional parameters like BRANCH, etc.
-#
-# BEFORE START NEED TO CREATE SHARED VOLUME:
-# docker volume create deye_shared_volume
-# docker run --rm -v deye_shared_volume:/data busybox chmod 1777 /data
-#
 services:
+  # Temporary service to fix permissions on start
+  # This container will run and exit immediately
+  init-permissions:
+    image: busybox
+    container_name: init-permissions
+    volumes:
+      - deye_shared_volume:/data
+    command: chmod 1777 /data
+
   deye-web:
     build:
       context: .
@@ -13,9 +17,14 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     depends_on:
-      - deye-proxy
-      - deye-cache
-      - deye-back-server
+      init-permissions:
+        condition: service_completed_successfully
+      deye-proxy:
+        condition: service_started
+      deye-cache:
+        condition: service_started
+      deye-back-server:
+        condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -31,6 +40,11 @@ services:
 
       DEYE_ENERGY_COST_CURRENCY_CODE: ${DEYE_ENERGY_COST_CURRENCY_CODE}
 
+      DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON: ${DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON}
+      DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON: ${DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON}
+      DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON: ${DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON}
+      DEYE_WEB_GRAPHS_BASE_URL: ${DEYE_WEB_GRAPHS_BASE_URL}
+
       DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
       DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
 
@@ -38,6 +52,9 @@ services:
     image: deye-web
     container_name: deye-web
     restart: unless-stopped
+    ports:
+      - "${DEYE_WEB_HTTP_MAPPING_PORT}:80"
+      - "${DEYE_WEB_HTTPS_MAPPING_PORT}:443"
     deploy:
       resources:
         limits:
@@ -55,8 +72,12 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     depends_on:
-      - deye-proxy
-      - deye-cache
+      init-permissions:
+        condition: service_completed_successfully
+      deye-proxy:
+        condition: service_started
+      deye-cache:
+        condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -69,6 +90,11 @@ services:
       DEYE_GEN_ENERGY_COSTS_JSON: ${DEYE_GEN_ENERGY_COSTS_JSON}
 
       DEYE_ENERGY_COST_CURRENCY_CODE: ${DEYE_ENERGY_COST_CURRENCY_CODE}
+
+      DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON: ${DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON}
+      DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON: ${DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON}
+      DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON: ${DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON}
+      DEYE_WEB_GRAPHS_BASE_URL: ${DEYE_WEB_GRAPHS_BASE_URL}
 
       DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
       DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
@@ -101,8 +127,12 @@ services:
       args:
         BRANCH: ${APP_BRANCH}
     depends_on:
-      - deye-proxy
-      - deye-cache
+      init-permissions:
+        condition: service_completed_successfully
+      deye-proxy:
+        condition: service_started
+      deye-cache:
+        condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -116,6 +146,7 @@ services:
 
       DEYE_ENERGY_COST_CURRENCY_CODE: ${DEYE_ENERGY_COST_CURRENCY_CODE}
 
+      TELEGRAM_ADMIN_USER_ID: ${TELEGRAM_ADMIN_USER_ID}
       TELEGRAM_BOT_API_TOKEN: ${TELEGRAM_BOT_API_TOKEN}
       TELEGRAM_BOT_API_TEST_TOKEN: ${TELEGRAM_BOT_API_TEST_TOKEN}
       TELEGRAM_PRIVATE_CHAT_ID: ${TELEGRAM_PRIVATE_CHAT_ID}
@@ -143,6 +174,9 @@ services:
     build:
       context: .
       dockerfile: deyecache/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
     environment:
       DEYE_LOG_NAME: deye-cache
       SERVER_PORT: 80
@@ -165,6 +199,9 @@ services:
     build:
       context: .
       dockerfile: deyeproxy/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
     environment:
       DEYE_LOG_NAME: deye-proxy
       LOGGER_HOST: ${DEYE_MASTER_LOGGER_HOST}
@@ -190,6 +227,9 @@ services:
     build:
       context: .
       dockerfile: logobserver/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
     image: log-observer
     container_name: log-observer
     restart: unless-stopped
@@ -203,5 +243,4 @@ services:
       - deye_shared_volume:/var/www/html
 
 volumes:
-  deye_shared_volume:
-    external: true
+  deye_shared_volume: {}

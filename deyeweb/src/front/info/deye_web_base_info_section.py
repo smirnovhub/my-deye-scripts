@@ -1,5 +1,8 @@
+import json
+
 from typing import List
 
+from env_utils import EnvUtils
 from deye_register import DeyeRegister
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
@@ -10,6 +13,10 @@ from deye_register_average_type import DeyeRegisterAverageType
 class DeyeWebBaseInfoSection(DeyeWebRegistersSection):
   def __init__(self, section: DeyeWebSection, only_master: bool = False):
     super().__init__(section, only_master)
+    js = EnvUtils.get_deye_web_register_description_replacements_json()
+
+    self.register_description_replacements = DeyeWebConstants.register_description_replacement_rules
+    self.register_description_replacements.update(json.loads(js))
 
   def build_registers_str(self, registers: List[DeyeRegister]) -> str:
     result = ''
@@ -41,7 +48,7 @@ class DeyeWebBaseInfoSection(DeyeWebRegistersSection):
     """.strip()
 
   def build_register(self, title: str, register: DeyeRegister, on_click: str = '') -> str:
-    for replace_from, replace_to in DeyeWebConstants.register_description_replacement_rules.items():
+    for replace_from, replace_to in self.register_description_replacements.items():
       title = title.replace(replace_from, replace_to)
 
     for reg, description in DeyeWebConstants.register_description_overriders.items():

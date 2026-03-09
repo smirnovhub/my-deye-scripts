@@ -47,9 +47,6 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   cd $REPO_NAME && \
   git submodule update --init --recursive
 
-# Copy pre-configured configs to container
-COPY --chown=$USER_NAME:$USER_NAME demoserver/src/common/*.py $REPO_NAME/common/
-
 # Set working directory
 WORKDIR $APP_DIR/$REPO_NAME/demoserver
 

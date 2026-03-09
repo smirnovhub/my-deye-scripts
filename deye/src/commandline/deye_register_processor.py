@@ -155,7 +155,6 @@ class DeyeRegisterProcessor:
           socket_timeout = args.connection_timeout,
           caching_time = args.caching_time,
           verbose = args.verbose_output == True,
-          auto_reconnect = False,
         )
         self.interactors.append(interactor)
         if interactor.is_master:

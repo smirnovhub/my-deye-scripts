@@ -24,6 +24,7 @@ class TelebotBaseUsers:
 
   def __init__(self):
     self.registers = DeyeRegisters()
+    self._admin_user_id = EnvUtils.get_telegram_admin_user_id()
     self._validate_users(self.allowed_users, 'allowed users')
     self._validate_users(self.blocked_users, 'blocked users')
 
@@ -36,6 +37,8 @@ class TelebotBaseUsers:
     raise DeyeNotImplementedException('blocked_users')
 
   def is_user_allowed(self, user_id: int) -> bool:
+    if user_id == self._admin_user_id:
+      return True
     return any(user.id == user_id for user in self.allowed_users)
 
   def get_allowed_user(self, user_id: int) -> Optional[TelebotUser]:
@@ -45,6 +48,8 @@ class TelebotBaseUsers:
     return None
 
   def is_user_blocked(self, user_id: int) -> bool:
+    if user_id == self._admin_user_id:
+      return False
     return any(user.id == user_id for user in self.blocked_users)
 
   def _validate_users(self, users: List[TelebotUser], text: str):
