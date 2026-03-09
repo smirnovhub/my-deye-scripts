@@ -25,15 +25,6 @@ RUN apt-get update && \
   openssl \
   python3 \
   python3-pip && \
-  apt-get purge -y --auto-remove \
-  g++ \
-  gcc \
-  make \
-  autoconf \
-  libc-dev \
-  pkg-config \
-  patch \
-  binutils && \
   apt-get autoremove -y && \
   apt-get clean -y && \
   rm -rf /var/lib/apt/lists/* && \
