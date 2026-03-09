@@ -31,14 +31,14 @@ class DeyeStorageManager:
     """
     data = self._storage.get(key)
     if data is None:
-      # Return 404 if the key was not found in the cache
+      # Return 404 if the key was not found in the storage
       raise HTTPException(status_code = 404, detail = f"Key not found")
 
     return data
 
   async def clear(self) -> Dict[str, Any]:
     """
-    Remove all cached data for all keys
+    Remove all stored data for all keys
     """
     async with self._locks_lock:
       self._storage.clear()
@@ -46,7 +46,7 @@ class DeyeStorageManager:
 
   async def remove(self, key: str) -> Dict[str, Any]:
     """
-    Remove the cache data for the specific key
+    Remove the store data for the specific key
     """
     async with self._locks_lock:
       if key not in self._storage:
@@ -86,7 +86,7 @@ class DeyeStorageManager:
     async with self._locks_lock:
       is_new_key = key not in self._storage
       if is_new_key and len(self._storage) >= self._config.MAX_KEYS_COUNT:
-        raise HTTPException(status_code = 403, detail = "Maximum number of cache keys exceeded")
+        raise HTTPException(status_code = 403, detail = "Maximum number of keys exceeded")
 
       # Can't use get_lock() here, because we need to
       # check keys and get new lock inssde locks_lock
