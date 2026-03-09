@@ -40,7 +40,7 @@ from typing import Tuple, Optional
 utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
 sys.path.append(utils_path)
 
-from src.deyeproxy_config import DeyeProxyConfig
+from src.deye_proxy_config import DeyeProxyConfig
 from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 config = DeyeProxyConfig()

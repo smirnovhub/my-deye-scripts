@@ -49,4 +49,4 @@ ENV PYTHONUNBUFFERED=1
 # Expose proxy port
 EXPOSE $PROXY_PORT
 
-CMD ["python3", "deyeproxy.py"]
+CMD ["python3", "deye_proxy.py"]
