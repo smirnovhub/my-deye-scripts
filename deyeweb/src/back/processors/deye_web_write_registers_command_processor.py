@@ -35,7 +35,6 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
       name = 'deyeweb',
       loggers = [self.loggers.master],
       socket_timeout = 5,
-      auto_reconnect = True,
       register_creator = lambda prefix: DeyeWebCustomSingleRegisters(
         register,
         prefix,

@@ -28,7 +28,6 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
       loggers = self.loggers.loggers,
       caching_time = 5,
       socket_timeout = 5,
-      auto_reconnect = True,
       register_creator = lambda prefix: DeyeWebCustomRegisters(
         register_names = self.sections_holder.used_registers,
         prefix = prefix,
