@@ -8,7 +8,7 @@ import signal
 from typing import Optional, TextIO
 from datetime import datetime, date
 
-class HourlyLogRotater:
+class HourlyLogRotator:
   """
   Stream-based hourly log rotator.
 
@@ -18,11 +18,11 @@ class HourlyLogRotater:
   def __init__(
     self,
     directory: str,
-    template: str,
+    log_file_template: str,
     encoding: str = "utf-8",
   ):
     self.directory = directory
-    self.template = template
+    self._log_file_template = log_file_template
     self.encoding = encoding
 
     self._stream: Optional[TextIO] = None
@@ -31,16 +31,7 @@ class HourlyLogRotater:
 
     os.makedirs(self.directory, exist_ok = True)
 
-  def _get_hour(self) -> str:
-    return datetime.now().strftime("%H")
-
-  def _get_date(self) -> date:
-    return datetime.now().date()
-
-  def _build_filename(self, hour: str) -> str:
-    return os.path.join(self.directory, self.template.format(hour = hour))
-
-  def _open_initial_stream(self) -> None:
+  def open_initial_stream(self) -> None:
     """Initial startup: determine whether to append or overwrite."""
     current_date = self._get_date()
     current_hour = self._get_hour()
@@ -52,16 +43,7 @@ class HourlyLogRotater:
     self._current_date = current_date
     self._current_hour = current_hour
 
-  def _is_file_too_old(self, filename: str, current_date: date) -> bool:
-    if not os.path.exists(filename):
-      return False
-
-    mtime = os.path.getmtime(filename)
-    file_date = datetime.fromtimestamp(mtime).date()
-
-    return file_date < current_date
-
-  def _rollover_if_needed(self) -> None:
+  def rollover_if_needed(self) -> None:
     """Check for hour change OR date change."""
     current_date = self._get_date()
     current_hour = self._get_hour()
@@ -80,11 +62,16 @@ class HourlyLogRotater:
       self._current_date = current_date
       self._current_hour = current_hour
 
+  def write(self, msg: str) -> None:
+    if self._stream:
+      self._stream.write(msg + "\n")
+      self._stream.flush()
+
   def run(self) -> None:
-    self._open_initial_stream()
+    self.open_initial_stream()
 
     for line in sys.stdin:
-      self._rollover_if_needed()
+      self.rollover_if_needed()
 
       if self._stream:
         self._stream.write(line)
@@ -94,6 +81,24 @@ class HourlyLogRotater:
     if self._stream:
       self._stream.close()
       self._stream = None
+
+  def _get_hour(self) -> str:
+    return datetime.now().strftime("%H")
+
+  def _get_date(self) -> date:
+    return datetime.now().date()
+
+  def _build_filename(self, hour: str) -> str:
+    return os.path.join(self.directory, self._log_file_template.format(hour))
+
+  def _is_file_too_old(self, filename: str, current_date: date) -> bool:
+    if not os.path.exists(filename):
+      return False
+
+    mtime = os.path.getmtime(filename)
+    file_date = datetime.fromtimestamp(mtime).date()
+
+    return file_date < current_date
 
 def main() -> None:
   if len(sys.argv) != 3:
@@ -107,7 +112,7 @@ def main() -> None:
   directory = sys.argv[1]
   template = sys.argv[2]
 
-  rotator = HourlyLogRotater(directory, template)
+  rotator = HourlyLogRotator(directory, template)
 
   def shutdown(signum, frame):
     rotator.close()
