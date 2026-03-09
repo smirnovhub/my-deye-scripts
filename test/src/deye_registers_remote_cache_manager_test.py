@@ -31,7 +31,7 @@ import_dirs(
   ],
 )
 
-from deyestorage import app
+from deye_storage import app
 from deye_utils import DeyeUtils
 from deye_exceptions import DeyeCacheException
 from deye_register_cache_data import DeyeRegisterCacheData
@@ -55,7 +55,7 @@ def run_cache_server():
   """Function to run the uvicorn server."""
   # Load the config from the JSON file
   try:
-    with open(f"{base_path}/deyestorage/log_config.json", "r") as f:
+    with open("log_config.json", "r") as f:
       log_config = json.load(f)
   except Exception as e:
     print(f"Failed to load logging config: {e}")

@@ -26,13 +26,12 @@ from common_modules import import_dirs
 import_dirs(
   current_path,
   [
-    os.path.join(base_path, 'common'),
     os.path.join(base_path, 'deye/src'),
     os.path.join(base_path, 'deyestorage'),
   ],
 )
 
-from deyestorage import app
+from deye_storage import app
 from deye_storage_config import DeyeStorageConfig
 from deye_utils import DeyeUtils
 
@@ -42,7 +41,6 @@ cache_server_port = 5000
 # Configuration
 BASE_URL = f"http://{cache_server_host}:{cache_server_port}"
 CACHE_URL = f"{BASE_URL}/cache"
-STAT_URL = f"{BASE_URL}/stat"
 PING_URL = f"{BASE_URL}/ping"
 
 log = logging.getLogger()
@@ -52,7 +50,7 @@ def run_cache_server():
   """Function to run the uvicorn server."""
   # Load the config from the JSON file
   try:
-    with open(f"{base_path}/deyestorage/log_config.json", "r") as f:
+    with open("log_config.json", "r") as f:
       log_config = json.load(f)
   except Exception as e:
     print(f"Failed to load logging config: {e}")
@@ -190,7 +188,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
     # Reset all
     self.assertEqual(self.session.delete(CACHE_URL).status_code, 200)
 
-    stats = self.session.get(STAT_URL)
+    stats = self.session.options(CACHE_URL)
     self.assertEqual(stats.status_code, 200)
 
     stats_json = stats.json()
@@ -214,7 +212,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
     # Try to add 33rd key
     res = self.session.post(f"{CACHE_URL}/overflow_key", json = {"data": "fail"})
     self.assertEqual(res.status_code, 403)
-    self.assertIn("Maximum number of cache keys exceeded", res.json()["detail"])
+    self.assertIn("Maximum number of keys exceeded", res.json()["detail"])
 
   def test_json_size_limit_per_reqeust(self):
     """
@@ -428,7 +426,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
       self.session.post(f"{CACHE_URL}/stress_{i}", json = {"data": i})
 
     # Check stats before reset
-    stat_res = self.session.get(STAT_URL).json()
+    stat_res = self.session.options(CACHE_URL).json()
     self.assertEqual(stat_res["keys_used"], config.MAX_KEYS_COUNT)
     self.assertGreater(stat_res["bytes_used"], 0)
 
@@ -436,7 +434,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
     self.assertEqual(self.session.delete(CACHE_URL).status_code, 200)
 
     # Check stats after reset
-    stat_after = self.session.get(STAT_URL).json()
+    stat_after = self.session.options(CACHE_URL).json()
     self.assertEqual(stat_after["keys_used"], 0)
     self.assertEqual(stat_after["bytes_used"], 0)
 
