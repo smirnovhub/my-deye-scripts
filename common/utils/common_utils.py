@@ -13,7 +13,7 @@ class CommonUtils:
   nbsp = unquote("%C2%A0")
 
   @staticmethod
-  def get_external_ip() -> Optional[str]:
+  def get_external_ip(host: str = "8.8.8.8", port: int = 53) -> Optional[str]:
     """
     Retrieves the local IP address of the primary network interface.
 
@@ -28,7 +28,7 @@ class CommonUtils:
     """
     try:
       with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        s.connect(("8.8.8.8", 53))
+        s.connect((host, port))
         return s.getsockname()[0]
     except Exception:
       return None

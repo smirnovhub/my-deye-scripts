@@ -144,9 +144,12 @@ class EnvUtils:
     return os.getenv('DEYE_ENERGY_COST_CURRENCY_CODE', 'USD').strip()[:3]
 
   @staticmethod
-  def get_log_name(default: str) -> str:
-    log_name = os.getenv("DEYE_LOG_NAME", default)
-    return re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
+  def get_log_name() -> str:
+    log_name = os.getenv("DEYE_LOG_NAME", '')
+    log_name = re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
+    if not log_name:
+      raise RuntimeError("Environment variable 'DEYE_LOG_NAME' is not set")
+    return log_name
 
   @staticmethod
   def get_deye_web_register_value_corrections_json() -> str:

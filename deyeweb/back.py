@@ -17,8 +17,8 @@ from common_modules import import_dirs
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 from env_utils import EnvUtils
+from log_utils import LogUtils
 from deye_web_dependency_provider import DeyeWebDependencyProvider
-from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 #import logging
 #from deye_utils import DeyeUtils
@@ -31,24 +31,13 @@ from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 #  datefmt = DeyeUtils.time_format_str,
 #)
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-formatter = logging.Formatter(
-  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-  "%Y-%m-%d %H:%M:%S",
-)
-
-log_name = EnvUtils.get_log_name("deyeweb")
+log_name = EnvUtils.get_log_name()
 data_dir = f"data/{log_name}"
 
-file_handler = HourlyOverwriteFileHandler(
-  directory = data_dir,
-  log_file_template = f"deye-web-back-{{0}}.log",
+logger = LogUtils.setup_hourly_overwrite_file_logger(
+  log_dir = data_dir,
+  log_file_template = "deye-web-back-{0}.log",
 )
-
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
 
 dependency_provider = DeyeWebDependencyProvider()
 

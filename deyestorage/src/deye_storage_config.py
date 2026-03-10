@@ -1,10 +1,11 @@
 import logging
 
-from env_var import EnvVar
+from typing import List
+from env_var import EnvVar, LogNameEnvVar
 
 class DeyeStorageConfig:
   def __init__(self):
-    self.__log_name = EnvVar("DEYE_LOG_NAME", "deyestorage", "Individual folder name for logging")
+    self.__log_name = LogNameEnvVar()
     self.__server_port = EnvVar("SERVER_PORT", "80", "Local port to listen on")
     self.__max_keys_count = EnvVar("MAX_KEYS_COUNT", "32", "Maximum number of top-level keys in storage")
     self.__max_json_size = EnvVar("MAX_JSON_SIZE", str(32 * 1024), "Maximum JSON size in bytes for incoming POST body")
@@ -13,7 +14,7 @@ class DeyeStorageConfig:
 
     self.__server_host = '0.0.0.0'
 
-    self.__all_vars = [
+    self.__all_vars: List[EnvVar] = [
       self.__log_name,
       self.__server_port,
       self.__max_keys_count,
@@ -23,7 +24,7 @@ class DeyeStorageConfig:
 
   @property
   def LOG_NAME(self) -> str:
-    return self.__log_name.as_filtered_value
+    return self.__log_name.value
 
   @property
   def SERVER_HOST(self) -> str:

@@ -2,11 +2,10 @@ import os
 import sys
 import asyncio
 import logging
-import socket
 import traceback
 import uvicorn
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from pathlib import Path
 
@@ -27,40 +26,17 @@ from common_modules import import_dirs
 
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
+from log_utils import LogUtils
+from common_utils import CommonUtils
 from backserver_config import BackServerConfig
 from deye_web_dependency_provider import DeyeWebDependencyProvider
-from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 config = BackServerConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
-formatter = logging.Formatter(
-  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-  "%Y-%m-%d %H:%M:%S",
+logger = LogUtils.setup_hourly_overwrite_file_logger(
+  log_dir = f"data/{config.LOG_NAME}",
+  log_file_template = "back-server-{0}.log",
 )
-
-DATA_DIR = f"data/{config.LOG_NAME}"
-
-file_handler = HourlyOverwriteFileHandler(
-  directory = DATA_DIR,
-  log_file_template = f"back-server-{{0}}.log",
-)
-
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
-console = logging.StreamHandler(sys.stdout)
-console.setFormatter(formatter)
-logger.addHandler(console)
-
-def get_external_ip(host: str, port: int) -> Optional[str]:
-  try:
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-      s.connect((host, port))
-      return s.getsockname()[0]
-  except Exception:
-    return None
 
 # Define the lifespan context manager
 @asynccontextmanager
@@ -75,7 +51,7 @@ async def lifespan_handler(app: FastAPI):
   config.print_config(logger)
   logger.info(f"-------------------------------")
 
-  external_ip = get_external_ip("8.8.8.8", 53)
+  external_ip = CommonUtils.get_external_ip()
   actual_ip = external_ip if external_ip else config.SERVER_HOST
 
   logger.info(f"Listening on: {actual_ip}:{config.SERVER_PORT}")

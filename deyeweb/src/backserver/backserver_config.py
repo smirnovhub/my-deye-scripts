@@ -1,15 +1,16 @@
 import logging
 
-from env_var import EnvVar
+from typing import List
+from env_var import EnvVar, LogNameEnvVar
 
 class BackServerConfig:
   def __init__(self):
-    self.__log_name = EnvVar("DEYE_LOG_NAME", "backserver", "Individual folder name for logging")
+    self.__log_name = LogNameEnvVar()
     self.__server_port = EnvVar("SERVER_PORT", "80", "Local port to listen on")
     self.__back_execution_timeout = EnvVar("BACK_EXECUTION_TIMEOUT", "15", "Timeout for back requests execution, s")
     self.__server_host = '0.0.0.0'
 
-    self.__all_vars = [
+    self.__all_vars: List[EnvVar] = [
       self.__log_name,
       self.__server_port,
       self.__back_execution_timeout,
@@ -17,7 +18,7 @@ class BackServerConfig:
 
   @property
   def LOG_NAME(self) -> str:
-    return self.__log_name.as_filtered_value
+    return self.__log_name.value
 
   @property
   def SERVER_HOST(self) -> str:

@@ -40,32 +40,16 @@ from typing import Tuple, Optional
 utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
 sys.path.append(utils_path)
 
+from log_utils import LogUtils
+from common_utils import CommonUtils
 from src.deye_proxy_config import DeyeProxyConfig
-from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 config = DeyeProxyConfig()
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-formatter = logging.Formatter(
-  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-  "%Y-%m-%d %H:%M:%S",
+logger = LogUtils.setup_hourly_overwrite_file_logger(
+  log_dir = f"data/{config.LOG_NAME}",
+  log_file_template = "deye-proxy-{0}.log",
 )
-
-DATA_DIR = f"data/{config.LOG_NAME}"
-
-file_handler = HourlyOverwriteFileHandler(
-  directory = DATA_DIR,
-  log_file_template = f"deye-proxy-{{0}}.log",
-)
-
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
-console = logging.StreamHandler(sys.stdout)
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 config.validate_or_exit()
 
@@ -85,14 +69,6 @@ logging.basicConfig(
   datefmt = '%Y-%m-%d %H:%M:%S',
   handlers = [logging.StreamHandler(sys.stdout)],
 )
-
-def get_external_ip(host: str, port: int) -> Optional[str]:
-  try:
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-      s.connect((host, port))
-      return s.getsockname()[0]
-  except Exception:
-    return None
 
 def forward_data(
   source: socket.socket,
@@ -299,7 +275,7 @@ def main() -> None:
     server.close()
     sys.exit(1)
 
-  external_ip = get_external_ip(config.LOGGER_HOST, config.LOGGER_PORT)
+  external_ip = CommonUtils.get_external_ip(config.LOGGER_HOST, config.LOGGER_PORT)
   actual_ip = external_ip if external_ip else config.PROXY_HOST
 
   log_level_name = logging._levelToName[log_level]
