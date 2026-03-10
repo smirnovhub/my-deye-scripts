@@ -41,5 +41,6 @@ class LogNameEnvVar(EnvVar):
       name = "DEYE_LOG_NAME",
       default = '',
       description = 'Individual folder name for logging',
-      value = EnvUtils.get_log_name(),
     )
+    # Will replace value from base class!
+    self.__value = EnvUtils.get_log_name()
