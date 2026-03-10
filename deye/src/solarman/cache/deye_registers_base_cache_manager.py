@@ -81,8 +81,8 @@ class DeyeRegistersBaseCacheManager(ABC):
       raise DeyeCacheException(f"{self._name}: cache read error: {ee}") from ee
 
     end_time = time.perf_counter()
-    duration_ms = (end_time - start_time) * 1000
-    self._logger.info(f"{self._name} cache read took {duration_ms:.3f} ms")
+    duration_ms = round((end_time - start_time) * 1000)
+    self._logger.info(f"{self._name} cache read took {duration_ms} ms")
 
     return results
 
@@ -136,8 +136,8 @@ class DeyeRegistersBaseCacheManager(ABC):
       raise DeyeCacheException(f"{self._name}: cache write error: {ee}") from ee
 
     end_time = time.perf_counter()
-    duration_ms = (end_time - start_time) * 1000
-    self._logger.info(f"{self._name} cache save took {duration_ms:.3f} ms")
+    duration_ms = round((end_time - start_time) * 1000)
+    self._logger.info(f"{self._name} cache save took {duration_ms} ms")
 
   def reset_cache(self) -> None:
     if not self._cache_available:
