@@ -69,7 +69,7 @@ dirs = [
   'common',
   'demoserver',
   'deye',
-  'deyecache',
+  'deyestorage',
   'deyeproxy',
   'deyeweb',
   'telebot',

@@ -22,7 +22,7 @@ class DeyeWebParamsProcessor:
       DeyeWebInstallIosProfileCommandProcessor(),
     ]
 
-  def get_params(self, json_data: Any) -> Dict[str, str]:
+  def get_params(self, json_data: Dict[str, Any]) -> Dict[str, str]:
     command_value = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_command_field)
 
     try:

@@ -1,0 +1,221 @@
+import os
+import logging
+import sys
+import uvicorn
+
+from typing import Dict, Any
+
+from contextlib import asynccontextmanager
+from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, status
+from fastapi.middleware.gzip import GZipMiddleware
+
+utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
+sys.path.append(utils_path)
+
+from common_utils import CommonUtils
+from src.deye_storage_config import DeyeStorageConfig
+from src.deye_storage_manager import DeyeStorageManager
+from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
+
+config = DeyeStorageConfig()
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter(
+  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+  "%Y-%m-%d %H:%M:%S",
+)
+
+DATA_DIR = f"data/{config.LOG_NAME}"
+
+# Path for the persistent storage file
+STORAGE_FILE_PATH = os.path.join(DATA_DIR, "storage.json")
+
+file_handler = HourlyOverwriteFileHandler(
+  directory = DATA_DIR,
+  log_file_template = "deye-storage-{0}.log",
+)
+
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+console = logging.StreamHandler(sys.stdout)
+console.setFormatter(formatter)
+logger.addHandler(console)
+
+cache_manager = DeyeStorageManager(
+  config = config,
+  logger = logger,
+)
+
+storage_manager = DeyeStorageManager(
+  config = config,
+  logger = logger,
+)
+
+# Define the lifespan context manager
+@asynccontextmanager
+async def lifespan_handler(app: FastAPI):
+  """
+  Manage the lifespan of the FastAPI application.
+
+  This function handles startup and shutdown events for the Deye Storage service.
+  """
+  # This code runs on startup
+  logger.info("----- Deye Storage started -----")
+  config.print_config(logger)
+  logger.info("------------------------------")
+
+  external_ip = CommonUtils.get_external_ip()
+  actual_ip = external_ip if external_ip else config.SERVER_HOST
+
+  logger.info(f"Listening on: {actual_ip}:{config.SERVER_PORT}")
+
+  # Storage restoring logic
+  storage_manager.load_from_file(STORAGE_FILE_PATH)
+
+  # The application runs here
+  yield
+
+  try:
+    # Ensure directory exists before saving
+    os.makedirs(DATA_DIR, exist_ok = True)
+  except Exception:
+    pass
+
+  # Storage save logic
+  storage_manager.save_to_file(STORAGE_FILE_PATH)
+
+  # This code runs on shutdown
+  logger.info("Deye Storage service is shutting down...")
+
+  for handler in logging.getLogger().handlers:
+    handler.flush()
+
+  sys.stdout.flush()
+  sys.stderr.flush()
+
+app = FastAPI(
+  lifespan = lifespan_handler,
+  docs_url = "/",
+  # This setting hides the "Schemas" section at the bottom
+  swagger_ui_parameters = {"defaultModelsExpandDepth": -1},
+)
+
+app.add_middleware(GZipMiddleware, minimum_size = 1024)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+  # Log the path and stack trace once for the entire application
+  original_exc = CommonUtils.get_original_error(exc)
+  # Extract clean message
+  error_message = str(original_exc)
+
+  if isinstance(original_exc, KeyError):
+    error_message = f"KeyError: {error_message}"
+
+  logger.error(f"Exception at {request.url.path}: {error_message}", exc_info = exc)
+  return JSONResponse(
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+    content = {
+      "detail": f"deyestorage: {error_message}",
+      "path": request.url.path,
+    },
+  )
+
+@app.get("/ping", tags = ["Server Health Operations"])
+def ping():
+  """
+  Health check endpoint that verifies the service is running
+  """
+  return {"status": "success"}
+
+#######################################
+### CACHE LOGIC (TEMPORARY STORAGE) ###
+#######################################
+
+@app.get("/cache/{key}", tags = ["Cache Read Operations"])
+async def get_cache_by_key(key: str):
+  """
+  Returns cached data for the specified key
+  """
+  return cache_manager.get(key)
+
+@app.post("/cache/{key}", tags = ["Cache Update Operations"])
+async def update_cache_by_key(key: str, json_data: Dict[str, Any], request: Request):
+  """
+  Updates the storage data for the specified key using a recursive deep merge.
+  Works with any nested JSON structure
+  """
+  return await cache_manager.update(
+    key = key,
+    json_data = json_data,
+    request = request,
+  )
+
+@app.delete("/cache/{key}", tags = ["Cache Remove Operations"])
+async def remove_cache_by_key(key: str):
+  """
+  Remove the cache data for the specific key
+  """
+  return await cache_manager.remove(key = key)
+
+@app.delete("/cache", tags = ["Cache Remove Operations"])
+async def remove_all_cache():
+  """
+  Remove all cached data for all keys
+  """
+  return await cache_manager.clear()
+
+@app.options("/cache", tags = ["Cache Statistics Operations"])
+async def get_cache_stat():
+  return cache_manager.get_stat()
+
+#########################################
+### STORAGE LOGIC (PERMANENT STORAGE) ###
+#########################################
+
+@app.get("/storage/{key}", tags = ["Storage Read Operations"])
+async def get_storage_by_key(key: str):
+  """
+  Returns stored data for the specified key
+  """
+  return storage_manager.get(key)
+
+@app.post("/storage/{key}", tags = ["Storage Update Operations"])
+async def update_storage_by_key(key: str, json_data: Dict[str, Any], request: Request):
+  """
+  Updates the storage data for the specified key using a recursive deep merge.
+  Works with any nested JSON structure
+  """
+  return await storage_manager.update(
+    key = key,
+    json_data = json_data,
+    request = request,
+  )
+
+@app.delete("/storage/{key}", tags = ["Storage Remove Operations"])
+async def remove_storage_by_key(key: str):
+  """
+  Remove the storage data for the specific key
+  """
+  return await storage_manager.remove(key = key)
+
+@app.options("/storage", tags = ["Storage Statistics Operations"])
+async def get_storage_stat():
+  return storage_manager.get_stat()
+
+if __name__ == "__main__":
+  config.print_usage(logger)
+
+  uvicorn.run(
+    app,
+    host = config.SERVER_HOST,
+    port = config.SERVER_PORT,
+    timeout_keep_alive = 15,
+    proxy_headers = False,
+    forwarded_allow_ips = None,
+    log_config = None,
+    use_colors = False,
+  )

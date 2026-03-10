@@ -18,7 +18,7 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
   def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
-    json_data: Any,
+    json_data: Dict[str, Any],
   ) -> Dict[str, str]:
     def get_result(text: str) -> Dict[str, str]:
       result: Dict[str, str] = {}

@@ -48,7 +48,7 @@ def run_test(path: str):
 run_test('common')
 run_test('demoserver')
 run_test('deye')
-run_test('deyecache')
+run_test('deyestorage')
 run_test('deyeproxy')
 run_test('deyeweb')
 run_test('telebot')

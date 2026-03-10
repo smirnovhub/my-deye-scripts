@@ -8,7 +8,7 @@ import zlib
 import random
 import inspect
 
-from typing import Any, List
+from typing import Any, Dict, List
 from collections import Counter
 
 from deye_file_lock import DeyeFileLock
@@ -102,7 +102,7 @@ class DeyeWebUtils:
     return f"{crc:08x}"
 
   @staticmethod
-  def get_json_field(json_data: Any, field_name: str) -> str:
+  def get_json_field(json_data: Dict[str, Any], field_name: str) -> str:
     if field_name not in json_data:
       raise ValueError(f"Missing '{field_name}' field in JSON")
 

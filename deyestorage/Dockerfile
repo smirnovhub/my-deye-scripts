@@ -1,13 +1,13 @@
 FROM python:3.14-slim
 
-ENV DEYE_LOG_NAME=deyecache
+ENV DEYE_LOG_NAME=deyestorage
 ENV SERVER_PORT=80
 ENV MAX_KEYS_COUNT=32
 ENV MAX_JSON_SIZE=32768
 ENV MAX_JSON_STORAGE_SIZE=262144
 
 # Set username variable
-ARG USER_NAME=deyecache
+ARG USER_NAME=deyestorage
 
 # Set application directory variable
 ARG APP_DIR=/home/$USER_NAME
@@ -38,7 +38,7 @@ USER $USER_NAME
 WORKDIR $APP_DIR
 
 COPY --chown=$USER_NAME:$USER_NAME common/utils/ ./common/utils
-COPY --chown=$USER_NAME:$USER_NAME deyecache/ ./deyecache/
+COPY --chown=$USER_NAME:$USER_NAME deyestorage/ ./deyestorage/
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1
@@ -47,6 +47,6 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE $SERVER_PORT
 
 # Set working directory
-WORKDIR $APP_DIR/deyecache
+WORKDIR $APP_DIR/deyestorage
 
-CMD ["python3", "deyecache.py"]
+CMD ["python3", "deye_storage.py"]

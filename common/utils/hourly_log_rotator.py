@@ -5,7 +5,7 @@ import sys
 import pathlib
 import signal
 
-from typing import Optional, TextIO
+from typing import IO, Any, Optional
 from datetime import datetime, date
 
 class HourlyLogRotator:
@@ -25,7 +25,7 @@ class HourlyLogRotator:
     self._log_file_template = log_file_template
     self.encoding = encoding
 
-    self._stream: Optional[TextIO] = None
+    self._stream: Optional[IO[Any]] = None
     self._current_hour: Optional[str] = None
     self._current_date: Optional[date] = None
 

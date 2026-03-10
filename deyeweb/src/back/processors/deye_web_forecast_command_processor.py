@@ -23,7 +23,7 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
   def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
-    json_data: Any,
+    json_data: Dict[str, Any],
   ) -> Dict[str, str]:
     section_id = DeyeWebUtils.short(DeyeWebSection.forecast.title)
     try:
@@ -39,7 +39,7 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
     self,
     section_id: str,
     command: DeyeWebRemoteCommand,
-    json_data: Any,
+    json_data: Dict[str, Any],
   ) -> Dict[str, str]:
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
