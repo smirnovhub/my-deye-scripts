@@ -34,6 +34,9 @@ class DeyeStorageManager:
       # Return 404 if the key was not found in the storage
       raise HTTPException(status_code = 404, detail = f"Key not found")
 
+    # Here better to make deep copy of the object to
+    # prevent unexpected storage change from client side
+    # return copy.deepcopy(data)
     return data
 
   async def clear(self) -> Dict[str, Any]:
@@ -160,6 +163,10 @@ class DeyeStorageManager:
       try:
         with open(filename, "r", encoding = "utf-8") as f:
           loaded_data = json.load(f)
+
+          if not isinstance(loaded_data, dict):
+            raise ValueError("Invalid storage format")
+
           self._storage.update(loaded_data)
           self._locks = {key: asyncio.Lock() for key in self._storage}
           self._logger.info(f"Restored {len(loaded_data)} keys from {filename}")
@@ -168,37 +175,23 @@ class DeyeStorageManager:
     else:
       self._logger.warning(f"File {filename} doesn't exist.")
 
-  async def _get_lock(self, key: str) -> asyncio.Lock:
-    """
-    Asynchronously retrieves or creates a lock for a given key.
-
-    This function manages a dictionary of asyncio locks, ensuring thread-safe access
-    to lock creation and retrieval. If a lock for the specified key doesn't exist,
-    it creates a new one before returning it.
-
-    Args:
-      key (str): The identifier for the lock.
-
-    Returns:
-      asyncio.Lock: The lock object associated with the given key.
-    """
-    async with self._locks_lock:
-      if key not in self._locks:
-        self._locks[key] = asyncio.Lock()
-      return self._locks[key]
-
   def _deep_merge(
     self,
     source: Dict[str, Any],
     update: Dict[str, Any],
   ) -> None:
     """
-    Recursively merges 'update' into 'source'.
+    Recursively merge dictionary 'update' into 'source'.
+
+    The merge is performed in-place:
+    - nested dictionaries are merged recursively
+    - other values are overwritten
     """
     for key, value in update.items():
-      if isinstance(value, dict) and key in source and isinstance(source[key], dict):
+      src_value = source.get(key)
+      if isinstance(value, dict) and isinstance(src_value, dict):
         # If both are dicts, go deeper
-        self._deep_merge(source[key], value)
+        self._deep_merge(src_value, value)
       else:
         # Otherwise, just overwrite or add the value
         source[key] = value
