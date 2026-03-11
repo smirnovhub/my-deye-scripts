@@ -1,7 +1,7 @@
 import json
 
 from http import HTTPStatus
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 from deye_utils import DeyeUtils
 from deye_exceptions import DeyeCacheException
@@ -105,6 +105,5 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
       response.raise_for_status()
       return True
     except Exception as e:
-      url = urlparse(self._remote_cache_server)
       raise DeyeCacheException(f"{self._name}: remote cache server "
-                               f"{url.hostname} seems to be down") from e
+                               f"{self._remote_cache_server} seems to be down") from e
