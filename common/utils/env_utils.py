@@ -46,6 +46,10 @@ class EnvUtils:
     val = os.getenv('TELEGRAM_BOT_API_TOKEN', '').strip()
     if not val:
       raise RuntimeError("Environment variable 'TELEGRAM_BOT_API_TOKEN' is not set")
+
+    if not re.fullmatch(r"^\d+:.+$", val):
+      raise RuntimeError("TELEGRAM_BOT_API_TOKEN is incorrect")
+
     return val
 
   @staticmethod
@@ -54,18 +58,30 @@ class EnvUtils:
     if not id:
       raise RuntimeError("Environment variable 'TELEGRAM_ADMIN_USER_ID' is not set")
 
-    if not re.fullmatch(r'\d+', id):
+    if not re.fullmatch(r"\d+", id):
       raise RuntimeError(f'Invalid telegram admin user id: {id} - value should be int')
 
     return int(id)
 
   @staticmethod
   def get_telegram_private_chat_id() -> str:
-    return os.getenv('TELEGRAM_PRIVATE_CHAT_ID', '').strip()
+    val = os.getenv('TELEGRAM_PRIVATE_CHAT_ID', '').strip()
+    if not val:
+      raise RuntimeError("Environment variable 'TELEGRAM_PRIVATE_CHAT_ID' is not set")
+
+    if not re.fullmatch(r"\d+", val):
+      raise RuntimeError("TELEGRAM_PRIVATE_CHAT_ID is incorrect")
+
+    return val
 
   @staticmethod
   def get_telegram_public_chat_id() -> str:
-    return os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
+    val = os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
+
+    if val and not re.fullmatch(r"-\d+", val):
+      raise RuntimeError("TELEGRAM_PUBLIC_CHAT_ID is incorrect")
+
+    return val
 
   @staticmethod
   def get_telegram_bot_api_test_token() -> str:

@@ -1,4 +1,3 @@
-import re
 import logging
 import requests
 
@@ -39,10 +38,6 @@ class Telegram:
   ) -> None:
 
     logger = logging.getLogger()
-
-    if not (Telegram.is_bot_token_correct(token, logger) and Telegram.is_chat_id_correct(chat_id, logger)):
-      return
-
     payload = {
       'chat_id': chat_id,
       'text': message[:3072],
@@ -62,21 +57,3 @@ class Telegram:
   def get_api_url(token: str) -> str:
     api_url = "https://api.telegram.org/bot{0}/sendMessage"
     return api_url.format(token)
-
-  @staticmethod
-  def is_bot_token_correct(token: str, logger: logging.Logger) -> bool:
-    pattern = re.compile(r"^\d+:.+$")
-    if pattern.match(token):
-      return True
-    else:
-      logger.info(f'Bot token is invalid')
-      return False
-
-  @staticmethod
-  def is_chat_id_correct(chat_id: str, logger: logging.Logger) -> bool:
-    pattern = re.compile(r"^-?\d+$")
-    if pattern.match(str(chat_id)):
-      return True
-    else:
-      logger.info(f"Chat id '{chat_id}' is invalid")
-      return False
