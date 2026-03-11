@@ -48,7 +48,7 @@ class EnvUtils:
       raise RuntimeError("Environment variable 'TELEGRAM_BOT_API_TOKEN' is not set")
 
     if not re.fullmatch(r"^\d+:.+$", val):
-      raise RuntimeError("TELEGRAM_BOT_API_TOKEN is incorrect")
+      raise RuntimeError("Telegram bot API token 'TELEGRAM_BOT_API_TOKEN' is invalid")
 
     return val
 
@@ -59,7 +59,7 @@ class EnvUtils:
       raise RuntimeError("Environment variable 'TELEGRAM_ADMIN_USER_ID' is not set")
 
     if not re.fullmatch(r"\d+", id):
-      raise RuntimeError(f'Invalid telegram admin user id: {id} - value should be int')
+      raise RuntimeError("Telegram admin user id 'TELEGRAM_ADMIN_USER_ID' is invalid")
 
     return int(id)
 
@@ -70,7 +70,7 @@ class EnvUtils:
       raise RuntimeError("Environment variable 'TELEGRAM_PRIVATE_CHAT_ID' is not set")
 
     if not re.fullmatch(r"\d+", val):
-      raise RuntimeError("TELEGRAM_PRIVATE_CHAT_ID is incorrect")
+      raise RuntimeError("Telegram private chat id 'TELEGRAM_PRIVATE_CHAT_ID' is invalid")
 
     return val
 
@@ -79,7 +79,7 @@ class EnvUtils:
     val = os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
 
     if val and not re.fullmatch(r"-\d+", val):
-      raise RuntimeError("TELEGRAM_PUBLIC_CHAT_ID is incorrect")
+      raise RuntimeError("Telegram public chat id 'TELEGRAM_PUBLIC_CHAT_ID' is invalid")
 
     return val
 
@@ -195,8 +195,11 @@ class EnvUtils:
   def _get_logger_serial(name: str) -> int:
     serial = os.getenv(name, '').strip()
 
+    if not serial:
+      raise RuntimeError(f"Environment variable '{name}' is not set")
+
     if not EnvUtils._is_serial_correct(serial):
-      raise RuntimeError(f'Invalid serial for logger: {name}')
+      raise RuntimeError(f"Logger serial number '{name}' is invalid")
 
     return int(serial)
 
@@ -204,8 +207,11 @@ class EnvUtils:
   def _get_logger_port(name: str) -> int:
     port = os.getenv(name, '8899').strip()
 
+    if not port:
+      raise RuntimeError(f"Environment variable '{name}' is not set")
+
     if not EnvUtils._is_port_correct(port):
-      raise RuntimeError(f'Invalid port for logger: {name}')
+      raise RuntimeError(f"Logger port '{name}' is invalid")
 
     return int(port)
 
