@@ -53,7 +53,7 @@ class SequentialChoices:
     root: ButtonNode,
     final_callback: Optional[Callable[[int, List[ButtonNode]], None]] = None,
     step_callback: Optional[Callable[[int, ButtonNode], None]] = None,
-    text_if_next_command_received: str = '',
+    text_if_next_command_received: Optional[Callable[[], str]] = None,
     max_per_row: int = 5,
   ) -> telebot.types.Message:
     """
@@ -108,7 +108,7 @@ class SequentialChoices:
     message: telebot.types.Message,
     bot: telebot.TeleBot,
     message_id: int,
-    text_if_next_command_received: str,
+    text_if_next_command_received: Optional[Callable[[], str]],
   ):
     """
     Handles plain text input after sequential buttons.
@@ -116,7 +116,7 @@ class SequentialChoices:
     if text_if_next_command_received:
       try:
         bot.edit_message_text(
-          text_if_next_command_received,
+          text_if_next_command_received(),
           chat_id = message.chat.id,
           message_id = message_id,
           reply_markup = None,

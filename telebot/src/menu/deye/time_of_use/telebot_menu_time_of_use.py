@@ -190,7 +190,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
       bot = self.bot,
       chat_id = message.chat.id,
       text = self._message,
-      text_if_next_command_received = self.get_time_of_use_as_text(),
+      text_if_next_command_received = self.get_time_of_use_as_text,
       root = root_buttons,
       step_callback = self.on_button_pressed,
       max_per_row = 6,
