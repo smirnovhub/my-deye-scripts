@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 
 from env_utils import EnvUtils
 from telebot_constants import TelebotConstants
+from telebot_user_choice import TelebotUserChoice
 
 class TelebotUtils:
   row_break_str = '!break!'
@@ -112,18 +113,43 @@ class TelebotUtils:
     Buttons are arranged in rows with up to max_per_row buttons each.
     An empty string as a key forces a line break (starts a new row).
     """
+    choices_list = [TelebotUserChoice(text = k, data = v) for k, v in options.items()]
+    return TelebotUtils.get_keyboard_for_choices_ext(
+      options = choices_list,
+      max_per_row = max_per_row,
+      data_prefix = data_prefix,
+    )
+
+  @staticmethod
+  def get_keyboard_for_choices_ext(
+    options: List[TelebotUserChoice],
+    max_per_row: int,
+    data_prefix: str = '',
+  ) -> telebot.types.InlineKeyboardMarkup:
+    """
+      Build an inline keyboard where:
+        - options is a list of TelebotUserChoice objects,
+        - choice.text is button text,
+        - choice.data is callback_data string.
+      Buttons are arranged in rows with up to max_per_row buttons each.
+      """
     keyboard = telebot.types.InlineKeyboardMarkup()
     row: List[telebot.types.InlineKeyboardButton] = []
 
-    for text, data in options.items():
-      if TelebotUtils.row_break_str in (text, data):
+    for choice in options:
+      # Check for row break in either text or data
+      if TelebotUtils.row_break_str in (choice.text, choice.data):
         # Commit the current row (if not empty) and start a new one
         if row:
           keyboard.row(*row)
           row = []
         continue
 
-      btn = telebot.types.InlineKeyboardButton(text, callback_data = data_prefix + data)
+      btn = telebot.types.InlineKeyboardButton(
+        text = choice.text,
+        callback_data = data_prefix + choice.data,
+      )
+
       row.append(btn)
 
       # Commit row if it's full

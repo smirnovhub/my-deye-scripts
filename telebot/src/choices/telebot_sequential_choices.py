@@ -1,19 +1,31 @@
 import random
-
 import telebot
 
-from typing import Callable, Dict, List, Tuple
-from dataclasses import dataclass, field
+from typing import Callable, Dict, List, Optional
+from dataclasses import dataclass
 
+from telebot_user_choice import TelebotUserChoice
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 
-@dataclass
 class ButtonNode:
-  label: str
-  text: str = ''
-  id: str = ''
-  children: List["ButtonNode"] = field(default_factory = list)
+  def __init__(
+    self,
+    label: str,
+    text: str = '',
+    children: Optional[List["ButtonNode"]] = None,
+  ):
+    self.label: str = label
+    self.text: str = text
+    # Use a list if provided, otherwise create a new empty list
+    self.children: List["ButtonNode"] = children if children is not None else []
+
+  def set_label(self, label: str) -> None:
+    self.label = label
+
+  def __repr__(self) -> str:
+    # Added repr for easier debugging, similar to what dataclass provides
+    return f"ButtonNode(label={self.label!r}, text={self.text!r}, children_count={len(self.children)})"
 
 @dataclass
 class StepState:
@@ -26,6 +38,7 @@ class StepState:
   message_id: int
   max_per_row: int
   final_callback: Callable[[int, List[ButtonNode]], None]
+  step_callback: Optional[Callable[[int, ButtonNode], None]] = None
 
 class SequentialChoices:
   _seq_prefix = "_seq_"
@@ -39,6 +52,7 @@ class SequentialChoices:
     text: str,
     root: ButtonNode,
     final_callback: Callable[[int, List[ButtonNode]], None],
+    step_callback: Optional[Callable[[int, ButtonNode], None]] = None,
     max_per_row: int = 5,
   ) -> telebot.types.Message:
     """
@@ -49,13 +63,15 @@ class SequentialChoices:
 
     SequentialChoices._register_global_handler(bot)
 
-    keyboard = TelebotUtils.get_keyboard_for_choices(
-      {
-        child.label: str(i)
-        for i, child in enumerate(root.children)
-      },
-      max_per_row,
-      SequentialChoices._seq_prefix,
+    choices = [TelebotUserChoice(
+      text = child.label,
+      data = str(i),
+    ) for i, child in enumerate(root.children)]
+
+    keyboard = TelebotUtils.get_keyboard_for_choices_ext(
+      options = choices,
+      max_per_row = max_per_row,
+      data_prefix = SequentialChoices._seq_prefix,
     )
 
     message = bot.send_message(chat_id, root.text if root.text else text, reply_markup = keyboard, parse_mode = "HTML")
@@ -67,6 +83,7 @@ class SequentialChoices:
       message_id = message.message_id,
       max_per_row = max_per_row,
       final_callback = final_callback,
+      step_callback = step_callback,
     )
 
     bot.clear_step_handler_by_chat_id(chat_id)
@@ -128,17 +145,31 @@ class SequentialChoices:
       child_node = current_node.children[index]
       bot.answer_callback_query(call.id)
 
+      # Call the per-step callback if it exists
+      if state.step_callback:
+        state.step_callback(chat_id, child_node)
+
       # save the button label clicked
       state.results.append(child_node)
 
       if not child_node.children:
-        # Leaf node → finish
-        TelebotUtils.remove_inline_buttons_with_delay(
-          bot = bot,
-          chat_id = chat_id,
-          message_id = state.message_id,
-          delay = TelebotConstants.buttons_remove_delay_sec,
-        )
+        is_text_changed = child_node.text and child_node.text != current_node.text
+
+        if is_text_changed:
+          bot.edit_message_text(
+            child_node.text,
+            chat_id = chat_id,
+            message_id = state.message_id,
+            reply_markup = None,
+          )
+        else:
+          TelebotUtils.remove_inline_buttons_with_delay(
+            bot = bot,
+            chat_id = chat_id,
+            message_id = state.message_id,
+            delay = TelebotConstants.buttons_remove_delay_sec,
+          )
+
         state.final_callback(chat_id, state.results)
         del SequentialChoices._step_states[chat_id]
         return
@@ -146,34 +177,39 @@ class SequentialChoices:
       # go to child node
       state.current_node = child_node
 
-      def get_button_pair(index: int, label: str) -> Tuple[str, str]:
+      def get_button_choice(index: int, label: str) -> TelebotUserChoice:
         """
-        Determines the key-value pair for a button node.
-        Returns (random_key, row_break_str) for separators,
+        Determines the choice object for a button node.
+        Returns a choice with a random text key for separators,
         otherwise (label, index_string).
         """
         if label == TelebotUtils.row_break_str:
-          # Generate a unique key for the separator
+          # Generate a unique text key for the separator to avoid collisions
           random_key: str = str(random.randint(100000, 999999))
-          return random_key, TelebotUtils.row_break_str
+          return TelebotUserChoice(text = random_key, data = TelebotUtils.row_break_str)
 
-        return label, str(index)
+        return TelebotUserChoice(text = label, data = str(index))
 
-      keyboard = TelebotUtils.get_keyboard_for_choices(
-        dict(get_button_pair(i, b.label) for i, b in enumerate(child_node.children)),
-        state.max_per_row,
-        SequentialChoices._seq_prefix,
+      # Use a list comprehension to create the options for the extended keyboard
+      keyboard = TelebotUtils.get_keyboard_for_choices_ext(
+        options = [get_button_choice(i, b.label) for i, b in enumerate(child_node.children)],
+        max_per_row = state.max_per_row,
+        data_prefix = SequentialChoices._seq_prefix,
       )
 
+      # Check if message text or keyboard actually changed
+      is_text_changed = child_node.text and child_node.text != current_node.text
+      is_markup_changed = keyboard.to_dict() != call.message.reply_markup.to_dict()
+
       try:
-        if child_node.text and child_node.text != current_node.text:
+        if is_text_changed:
           bot.edit_message_text(
             child_node.text,
             chat_id = chat_id,
             message_id = state.message_id,
             reply_markup = keyboard,
           )
-        else:
+        elif is_markup_changed:
           bot.edit_message_reply_markup(
             chat_id = chat_id,
             message_id = state.message_id,
