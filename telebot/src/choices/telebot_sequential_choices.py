@@ -113,7 +113,8 @@ class SequentialChoices:
     """
     Handles plain text input after sequential buttons.
     """
-    if text_if_next_command_received:
+    text = text_if_next_command_received() if text_if_next_command_received else ''
+    if text:
       try:
         bot.edit_message_text(
           text_if_next_command_received(),
