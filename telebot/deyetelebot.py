@@ -87,9 +87,10 @@ try:
   mybot = MyTelebot(bot, logger)
   bot.infinity_polling()
 except Exception as e:
-  stack_trace = escape_html(traceback.format_exc()[-2048:])
-  Telegram.send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
-                                         f"Telebot unexpectedly stopped working:\n"
-                                         f"<code>{stack_trace}</code>")
-  time.sleep(30)
+  if not EnvUtils.is_tests_on():
+    stack_trace = escape_html(traceback.format_exc()[-2048:])
+    Telegram.send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
+                                           f"Telebot unexpectedly stopped working:\n"
+                                           f"<code>{stack_trace}</code>")
+    time.sleep(30)
   raise
