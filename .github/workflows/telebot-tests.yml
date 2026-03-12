@@ -54,22 +54,8 @@ jobs:
       - name: Run tests
         env:
           IS_TEST_RUN: "true"
+          DEYE_LOG_NAME: telebot_test
+          TELEGRAM_ADMIN_USER_ID: 12345
           TELEGRAM_BOT_API_TEST_TOKEN: ${{ secrets.TELEGRAM_BOT_API_TEST_TOKEN }}
-          TELEGRAM_ADMIN_USER_ID: ${{ secrets.TELEGRAM_ADMIN_USER_ID }}
         run: |
           python -u test/src/telebot_test.py
-
-      - name: Upload logs
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: telebot-python-${{ matrix.python-version }}-log
-          path: telebot/data/telebot/logs/telebot_telegram_test.log
-          overwrite: true
-          compression-level: 9
-          if-no-files-found: error
-
-      - name: Print log
-        if: success() || failure()
-        run: |
-          cat telebot/data/telebot/logs/telebot_telegram_test.log

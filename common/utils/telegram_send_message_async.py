@@ -38,10 +38,6 @@ class TelegramAsync:
     message_type: str,
   ) -> None:
     logger = logging.getLogger()
-
-    if not (Telegram.is_bot_token_correct(token, logger) and Telegram.is_chat_id_correct(chat_id, logger)):
-      return
-
     payload = {
       'chat_id': chat_id,
       'text': message[:3072],

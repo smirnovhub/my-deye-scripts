@@ -46,6 +46,10 @@ class EnvUtils:
     val = os.getenv('TELEGRAM_BOT_API_TOKEN', '').strip()
     if not val:
       raise RuntimeError("Environment variable 'TELEGRAM_BOT_API_TOKEN' is not set")
+
+    if not re.fullmatch(r"^\d+:.+$", val):
+      raise RuntimeError("Telegram bot API token 'TELEGRAM_BOT_API_TOKEN' is invalid")
+
     return val
 
   @staticmethod
@@ -54,18 +58,30 @@ class EnvUtils:
     if not id:
       raise RuntimeError("Environment variable 'TELEGRAM_ADMIN_USER_ID' is not set")
 
-    if not re.fullmatch(r'\d+', id):
-      raise RuntimeError(f'Invalid telegram admin user id: {id} - value should be int')
+    if not re.fullmatch(r"\d+", id):
+      raise RuntimeError("Telegram admin user id 'TELEGRAM_ADMIN_USER_ID' is invalid")
 
     return int(id)
 
   @staticmethod
   def get_telegram_private_chat_id() -> str:
-    return os.getenv('TELEGRAM_PRIVATE_CHAT_ID', '').strip()
+    val = os.getenv('TELEGRAM_PRIVATE_CHAT_ID', '').strip()
+    if not val:
+      raise RuntimeError("Environment variable 'TELEGRAM_PRIVATE_CHAT_ID' is not set")
+
+    if not re.fullmatch(r"\d+", val):
+      raise RuntimeError("Telegram private chat id 'TELEGRAM_PRIVATE_CHAT_ID' is invalid")
+
+    return val
 
   @staticmethod
   def get_telegram_public_chat_id() -> str:
-    return os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
+    val = os.getenv('TELEGRAM_PUBLIC_CHAT_ID', '').strip()
+
+    if val and not re.fullmatch(r"-\d+", val):
+      raise RuntimeError("Telegram public chat id 'TELEGRAM_PUBLIC_CHAT_ID' is invalid")
+
+    return val
 
   @staticmethod
   def get_telegram_bot_api_test_token() -> str:
@@ -144,9 +160,12 @@ class EnvUtils:
     return os.getenv('DEYE_ENERGY_COST_CURRENCY_CODE', 'USD').strip()[:3]
 
   @staticmethod
-  def get_log_name(default: str) -> str:
-    log_name = os.getenv("DEYE_LOG_NAME", default)
-    return re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
+  def get_log_name() -> str:
+    log_name = os.getenv("DEYE_LOG_NAME", '')
+    log_name = re.sub(r'[^a-zA-Z0-9-]+', '-', log_name).strip('-')
+    if not log_name:
+      raise RuntimeError("Environment variable 'DEYE_LOG_NAME' is not set")
+    return log_name
 
   @staticmethod
   def get_deye_web_register_value_corrections_json() -> str:
@@ -176,8 +195,11 @@ class EnvUtils:
   def _get_logger_serial(name: str) -> int:
     serial = os.getenv(name, '').strip()
 
+    if not serial:
+      raise RuntimeError(f"Environment variable '{name}' is not set")
+
     if not EnvUtils._is_serial_correct(serial):
-      raise RuntimeError(f'Invalid serial for logger: {name}')
+      raise RuntimeError(f"Logger serial number '{name}' is invalid")
 
     return int(serial)
 
@@ -185,8 +207,11 @@ class EnvUtils:
   def _get_logger_port(name: str) -> int:
     port = os.getenv(name, '8899').strip()
 
+    if not port:
+      raise RuntimeError(f"Environment variable '{name}' is not set")
+
     if not EnvUtils._is_port_correct(port):
-      raise RuntimeError(f'Invalid port for logger: {name}')
+      raise RuntimeError(f"Logger port '{name}' is invalid")
 
     return int(port)
 

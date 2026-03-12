@@ -13,36 +13,21 @@ from fastapi.middleware.gzip import GZipMiddleware
 utils_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../common/utils"))
 sys.path.append(utils_path)
 
+from log_utils import LogUtils
 from common_utils import CommonUtils
 from src.deye_storage_config import DeyeStorageConfig
 from src.deye_storage_manager import DeyeStorageManager
-from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 config = DeyeStorageConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-formatter = logging.Formatter(
-  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-  "%Y-%m-%d %H:%M:%S",
-)
 
 DATA_DIR = f"data/{config.LOG_NAME}"
-
 # Path for the persistent storage file
 STORAGE_FILE_PATH = os.path.join(DATA_DIR, "storage.json")
 
-file_handler = HourlyOverwriteFileHandler(
-  directory = DATA_DIR,
+logger = LogUtils.setup_hourly_overwrite_file_logger(
+  log_dir = DATA_DIR,
   log_file_template = "deye-storage-{0}.log",
 )
-
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
-console = logging.StreamHandler(sys.stdout)
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 cache_manager = DeyeStorageManager(
   config = config,

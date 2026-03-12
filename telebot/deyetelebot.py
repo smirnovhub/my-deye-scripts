@@ -22,10 +22,10 @@ import telebot
 
 # Should be first in imports list to make possible
 # to send error messages if some import fails
+from log_utils import LogUtils
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from telegram_send_message import Telegram
-from hourly_overwrite_file_handler import HourlyOverwriteFileHandler
 
 # Simple and safe way for HTML parse_mode
 def escape_html(text: str) -> str:
@@ -39,7 +39,7 @@ def graceful_shutdown(signum, frame):
   try:
     # Send a final message synchronously
     Telegram.send_private_telegram_message(f"{CommonUtils.large_yellow_circle_emoji} "
-                                  "Telebot is going down...")
+                                           "Telebot is going down...")
   except Exception as e:
     # Log error if message fails
     logger.info(f"Failed to send goodbye message: {e}")
@@ -60,28 +60,13 @@ def graceful_shutdown(signum, frame):
 signal.signal(signal.SIGINT, graceful_shutdown)
 signal.signal(signal.SIGTERM, graceful_shutdown)
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-formatter = logging.Formatter(
-  "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-  "%Y-%m-%d %H:%M:%S",
-)
-
 dir_name = TelebotUtils.get_data_dir()
 log_dir_name = os.path.join(dir_name, 'logs')
 
-file_handler = HourlyOverwriteFileHandler(
-  directory = log_dir_name,
+logger = LogUtils.setup_hourly_overwrite_file_logger(
+  log_dir = log_dir_name,
   log_file_template = "telebot-{0}.log",
 )
-
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
-console = logging.StreamHandler(sys.stdout)
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 logger.info('Telebot is starting...')
 
@@ -89,22 +74,23 @@ try:
   from mytelebot import MyTelebot
   from env_utils import EnvUtils
   from testable_telebot import TestableTelebot
-  
+
   if EnvUtils.is_tests_on():
     token = EnvUtils.get_telegram_bot_api_test_token()
     bot = TestableTelebot(token)
     mybot = MyTelebot(bot, logger)
     mybot.run_tests()
     sys.exit(0)
-  
+
   Telegram.send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')
   bot = telebot.TeleBot(EnvUtils.get_telegram_bot_api_token())
   mybot = MyTelebot(bot, logger)
   bot.infinity_polling()
 except Exception as e:
-  stack_trace = escape_html(traceback.format_exc()[-2048:])
-  Telegram.send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
-                                f"Telebot unexpectedly stopped working:\n"
-                                f"<code>{stack_trace}</code>")
-  time.sleep(30)
+  if not EnvUtils.is_tests_on():
+    stack_trace = escape_html(traceback.format_exc()[-2048:])
+    Telegram.send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
+                                           f"Telebot unexpectedly stopped working:\n"
+                                           f"<code>{stack_trace}</code>")
+    time.sleep(30)
   raise
