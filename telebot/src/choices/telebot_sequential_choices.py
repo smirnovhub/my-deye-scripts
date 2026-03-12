@@ -37,7 +37,7 @@ class StepState:
   results: List[ButtonNode]
   message_id: int
   max_per_row: int
-  final_callback: Callable[[int, List[ButtonNode]], None]
+  final_callback: Optional[Callable[[int, List[ButtonNode]], None]] = None
   step_callback: Optional[Callable[[int, ButtonNode], None]] = None
 
 class SequentialChoices:
@@ -51,8 +51,9 @@ class SequentialChoices:
     chat_id: int,
     text: str,
     root: ButtonNode,
-    final_callback: Callable[[int, List[ButtonNode]], None],
+    final_callback: Optional[Callable[[int, List[ButtonNode]], None]] = None,
     step_callback: Optional[Callable[[int, ButtonNode], None]] = None,
+    text_if_next_command_received: str = '',
     max_per_row: int = 5,
   ) -> telebot.types.Message:
     """
@@ -97,21 +98,39 @@ class SequentialChoices:
       SequentialChoices._text_input_handler,
       bot,
       message.message_id,
+      text_if_next_command_received,
     )
 
     return message
 
   @staticmethod
-  def _text_input_handler(message: telebot.types.Message, bot: telebot.TeleBot, message_id: int):
+  def _text_input_handler(
+    message: telebot.types.Message,
+    bot: telebot.TeleBot,
+    message_id: int,
+    text_if_next_command_received: str,
+  ):
     """
     Handles plain text input after sequential buttons.
     """
-    TelebotUtils.remove_inline_buttons_with_delay(
-      bot = bot,
-      chat_id = message.chat.id,
-      message_id = message_id,
-      delay = TelebotConstants.buttons_remove_delay_sec,
-    )
+    if text_if_next_command_received:
+      try:
+        bot.edit_message_text(
+          text_if_next_command_received,
+          chat_id = message.chat.id,
+          message_id = message_id,
+          reply_markup = None,
+          parse_mode = 'HTML',
+        )
+      except Exception:
+        pass
+    else:
+      TelebotUtils.remove_inline_buttons_with_delay(
+        bot = bot,
+        chat_id = message.chat.id,
+        message_id = message_id,
+        delay = TelebotConstants.buttons_remove_delay_sec,
+      )
 
     if TelebotUtils.forward_next(bot, message):
       return
@@ -176,9 +195,10 @@ class SequentialChoices:
             delay = TelebotConstants.buttons_remove_delay_sec,
           )
 
-        state.final_callback(chat_id, state.results)
-        del SequentialChoices._step_states[chat_id]
-        return
+        if state.final_callback:
+          state.final_callback(chat_id, state.results)
+          del SequentialChoices._step_states[chat_id]
+          return
 
       # go to child node
       state.current_node = child_node
@@ -222,5 +242,5 @@ class SequentialChoices:
             message_id = state.message_id,
             reply_markup = keyboard,
           )
-      except Exception as e:
-        bot.send_message(chat_id, str(e))
+      except Exception:
+        pass

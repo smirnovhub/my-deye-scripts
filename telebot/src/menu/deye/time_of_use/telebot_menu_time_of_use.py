@@ -190,8 +190,8 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
       bot = self.bot,
       chat_id = message.chat.id,
       text = self._message,
+      text_if_next_command_received = self.get_time_of_use_as_text(),
       root = root_buttons,
-      final_callback = self.on_all_choices_done,
       step_callback = self.on_button_pressed,
       max_per_row = 6,
     )
@@ -257,9 +257,6 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
 
     if isinstance(button, TimeOfUseSwitchButtonNode):
       button.set_enabled(not button.is_enabled)
-
-  def on_all_choices_done(self, chat_id: int, results: List[ButtonNode]):
-    pass
 
   def get_hour_buttons(
     self,
