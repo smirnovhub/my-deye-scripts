@@ -10,6 +10,7 @@ from telebot_utils import TelebotUtils
 from time_of_use_button_line import TimeOfUseButtonLine
 from time_of_use_button_node import TimeOfUseButtonNode
 from time_of_use_button_type import TimeOfUseButtonType
+from time_of_use_buttons import TimeOfUseButtons
 from time_of_use_data import TimeOfUseData
 from custom_single_registers import CustomSingleRegisters
 from telebot_menu_item import TelebotMenuItem
@@ -77,35 +78,37 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
       line = TimeOfUseButtonLine(
         index = i,
         item = item,
-        grid_charge_button = TimeOfUseSwitchButtonNode(
-          enabled = item.charge.grid_charge,
-          button_type = TimeOfUseButtonType.grid_charge,
-          time_of_use_index = i,
-        ),
-        gen_charge_button = TimeOfUseSwitchButtonNode(
-          enabled = item.charge.gen_charge,
-          button_type = TimeOfUseButtonType.gen_charge,
-          time_of_use_index = i,
-        ),
-        start_time_button = TimeOfUseButtonNode(
-          f"{item.time.hour:02d}:{item.time.minute:02d}",
-          button_type = TimeOfUseButtonType.start_time,
-          time_of_use_index = i,
-        ),
-        end_time_button = TimeOfUseButtonNode(
-          f"{next_item.time.hour:02d}:{next_item.time.minute:02d}",
-          button_type = TimeOfUseButtonType.end_time,
-          time_of_use_index = i,
-        ),
-        power_button = TimeOfUseButtonNode(
-          str(item.power),
-          button_type = TimeOfUseButtonType.power,
-          time_of_use_index = i,
-        ),
-        soc_button = TimeOfUseButtonNode(
-          str(item.soc),
-          button_type = TimeOfUseButtonType.soc,
-          time_of_use_index = i,
+        buttons = TimeOfUseButtons(
+          grid_charge_button = TimeOfUseSwitchButtonNode(
+            enabled = item.charge.grid_charge,
+            button_type = TimeOfUseButtonType.grid_charge,
+            time_of_use_index = i,
+          ),
+          gen_charge_button = TimeOfUseSwitchButtonNode(
+            enabled = item.charge.gen_charge,
+            button_type = TimeOfUseButtonType.gen_charge,
+            time_of_use_index = i,
+          ),
+          start_time_button = TimeOfUseButtonNode(
+            f"{item.time.hour:02d}:{item.time.minute:02d}",
+            button_type = TimeOfUseButtonType.start_time,
+            time_of_use_index = i,
+          ),
+          end_time_button = TimeOfUseButtonNode(
+            f"{next_item.time.hour:02d}:{next_item.time.minute:02d}",
+            button_type = TimeOfUseButtonType.end_time,
+            time_of_use_index = i,
+          ),
+          power_button = TimeOfUseButtonNode(
+            str(item.power),
+            button_type = TimeOfUseButtonType.power,
+            time_of_use_index = i,
+          ),
+          soc_button = TimeOfUseButtonNode(
+            str(item.soc),
+            button_type = TimeOfUseButtonType.soc,
+            time_of_use_index = i,
+          ),
         ),
       )
 
@@ -120,7 +123,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
         children = start_minutes,
       )
 
-      line.start_time_button.children = start_hours
+      line.buttons.start_time_button.children = start_hours
 
       end_minutes = self.get_minute_buttons(
         index = i,
@@ -133,24 +136,24 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
         children = end_minutes,
       )
 
-      line.end_time_button.children = end_hours
+      line.buttons.end_time_button.children = end_hours
 
       power_buttons = self.get_power_buttons(index = i)
-      line.power_button.children = power_buttons
+      line.buttons.power_button.children = power_buttons
 
       soc_buttons = self.get_soc_buttons(index = i)
-      line.soc_button.children = soc_buttons
+      line.buttons.soc_button.children = soc_buttons
 
       self.button_lines.append(line)
 
     all_lines_buttons = [
       button for line in self.button_lines for button in [
-        line.grid_charge_button,
-        line.gen_charge_button,
-        line.start_time_button,
-        line.end_time_button,
-        line.power_button,
-        line.soc_button,
+        line.buttons.grid_charge_button,
+        line.buttons.gen_charge_button,
+        line.buttons.start_time_button,
+        line.buttons.end_time_button,
+        line.buttons.power_button,
+        line.buttons.soc_button,
       ]
     ]
 
@@ -233,24 +236,24 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
 
     if button.button_type == TimeOfUseButtonType.start_hour:
       prev_line = get_prev_line(button.time_of_use_index)
-      update_time(line.start_time_button, button.label, True)
-      update_time(prev_line.end_time_button, button.label, True)
+      update_time(line.buttons.start_time_button, button.label, True)
+      update_time(prev_line.buttons.end_time_button, button.label, True)
     elif button.button_type == TimeOfUseButtonType.start_minute:
       prev_line = get_prev_line(button.time_of_use_index)
-      update_time(line.start_time_button, button.label, False)
-      update_time(prev_line.end_time_button, button.label, False)
+      update_time(line.buttons.start_time_button, button.label, False)
+      update_time(prev_line.buttons.end_time_button, button.label, False)
     elif button.button_type == TimeOfUseButtonType.end_hour:
       next_line = get_next_line(button.time_of_use_index)
-      update_time(line.end_time_button, button.label, True)
-      update_time(next_line.start_time_button, button.label, True)
+      update_time(line.buttons.end_time_button, button.label, True)
+      update_time(next_line.buttons.start_time_button, button.label, True)
     elif button.button_type == TimeOfUseButtonType.end_minute:
       next_line = get_next_line(button.time_of_use_index)
-      update_time(line.end_time_button, button.label, False)
-      update_time(next_line.start_time_button, button.label, False)
+      update_time(line.buttons.end_time_button, button.label, False)
+      update_time(next_line.buttons.start_time_button, button.label, False)
     elif button.button_type == TimeOfUseButtonType.power_watt:
-      line.power_button.set_label(button.label)
+      line.buttons.power_button.set_label(button.label)
     elif button.button_type == TimeOfUseButtonType.soc_percent:
-      line.soc_button.set_label(button.label)
+      line.buttons.soc_button.set_label(button.label)
 
     if isinstance(button, TimeOfUseSwitchButtonNode):
       button.set_enabled(not button.is_enabled)
@@ -451,8 +454,8 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
       end_str = format_time(end_hour)
 
       # Set labels for the buttons
-      line.start_time_button.set_label(start_str)
-      line.end_time_button.set_label(end_str)
+      line.buttons.start_time_button.set_label(start_str)
+      line.buttons.end_time_button.set_label(end_str)
 
   def write_time_of_use(self) -> None:
     # should be local to avoid issues with locks
@@ -470,15 +473,15 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
     for line in self.button_lines:
       item = self.time_of_use_data.items[line.index]
 
-      hour, minute = line.start_time_button.label.split(':', 1)
+      hour, minute = line.buttons.start_time_button.label.split(':', 1)
       item.time.hour = int(hour)
       item.time.minute = int(minute)
 
-      item.power = int(line.power_button.label)
-      item.soc = int(line.soc_button.label)
+      item.power = int(line.buttons.power_button.label)
+      item.soc = int(line.buttons.soc_button.label)
 
-      item.charge.grid_charge = line.grid_charge_button.is_enabled
-      item.charge.gen_charge = line.gen_charge_button.is_enabled
+      item.charge.grid_charge = line.buttons.grid_charge_button.is_enabled
+      item.charge.gen_charge = line.buttons.gen_charge_button.is_enabled
 
     new_data = asdict(self.time_of_use_data)
 
