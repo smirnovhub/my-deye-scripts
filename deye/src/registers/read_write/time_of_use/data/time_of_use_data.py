@@ -27,13 +27,11 @@ class TimeOfUseData:
 
     Checks performed:
     1. The list must contain exactly 6 items.
-    2. The first item's time must be 00:00.
-    3. Each item's power must be between 0 and `max_power`.
-    4. Each item's state of charge (SOC) must be between `min_soc` and 100.
-    5. Each item's hour must be between 0 and 23.
-    6. Each item's minute must be between 0 and 59.
-    7. Each item's minute must be a multiple of 5.
-    8. Each subsequent item's time must be strictly greater than the previous item's time.
+    2. Each item's power must be between 0 and `max_power`.
+    3. Each item's state of charge (SOC) must be between `min_soc` and 100.
+    4. Each item's hour must be between 0 and 23.
+    5. Each item's minute must be between 0 and 59.
+    6. Each item's minute must be a multiple of 5.
 
     Args:
         min_soc (int): Minimum allowed state of charge.
@@ -46,9 +44,6 @@ class TimeOfUseData:
 
     if len(self.items) != items_count:
       raise ValueError(f'items count should be {items_count}')
-
-    if self.items[0].time.hour != 0 or self.items[0].time.minute != 0:
-      raise ValueError(f'wrong item {self.items[0].time}: first item time should be 00:00')
 
     for item in self.items:
       if not (0 <= item.power <= max_power):
@@ -65,16 +60,6 @@ class TimeOfUseData:
 
       if item.time.minute % 5 != 0:
         raise ValueError(f'wrong item {item.time}: minute should be a multiple of 5')
-
-    for i in range(1, len(self.items)):
-      prev = self.items[i - 1]
-      curr = self.items[i]
-
-      prev_minutes = prev.time.hour * 60 + prev.time.minute
-      curr_minutes = curr.time.hour * 60 + curr.time.minute
-
-      if curr_minutes < prev_minutes:
-        raise ValueError(f'wrong item {self.items[i].time}: each next time should be greater or equal to previous')
 
   def __str__(self) -> str:
     items = "; ".join(str(item) for item in self.items)

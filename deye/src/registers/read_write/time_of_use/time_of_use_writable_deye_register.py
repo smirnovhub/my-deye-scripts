@@ -1,5 +1,6 @@
 from typing import Any, List
 
+from time_of_use_charge import TimeOfUseCharge
 from time_of_use_data import TimeOfUseData
 from time_of_use_item import TimeOfUseItem
 from time_of_use_time import TimeOfUseTime
@@ -82,8 +83,16 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
           time = time,
           power = powers[index],
           soc = socs[index],
-          grid_charge = bool(charge & 1),
-          gen_charge = bool((charge >> 1) & 1),
+          charge = TimeOfUseCharge(
+            grid_charge = bool(charge & 1),
+            gen_charge = bool((charge >> 1) & 1),
+            bit2 = bool((charge >> 2) & 1),
+            bit3 = bool((charge >> 3) & 1),
+            bit4 = bool((charge >> 4) & 1),
+            bit5 = bool((charge >> 5) & 1),
+            bit6 = bool((charge >> 6) & 1),
+            bit7 = bool((charge >> 7) & 1),
+          ),
         ))
 
       weekly = TimeOfUseWeek(
@@ -118,20 +127,34 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
     # as example: if we set grid charge = true, gen charge = true
     # we will receive 7, but not 3 as int value, because of
     # bit2 is set to 1
-    # for now write of charge settings not supported
+
+    charges = [
+      (int(item.charge.grid_charge) << 0) | #
+      (int(item.charge.gen_charge) << 1) | #
+      (int(item.charge.bit2) << 2) | #
+      (int(item.charge.bit3) << 3) | #
+      (int(item.charge.bit4) << 4) | #
+      (int(item.charge.bit5) << 5) | #
+      (int(item.charge.bit6) << 6) | #
+      (int(item.charge.bit7) << 7) #
+      for item in value.items
+    ]
 
     times = [item.time.hour * 100 + item.time.minute for item in value.items]
     powers = [item.power for item in value.items]
     socs = [item.soc for item in value.items]
 
+    if interactor.write_register(self.charge_address, charges) != len(times):
+      self.error(f'write(): something went wrong while writing charges in {self.description}')
+
     if interactor.write_register(self.time_address, times) != len(times):
-      self.error(f'write(): something went wrong while writing {self.description}')
+      self.error(f'write(): something went wrong while writing times in {self.description}')
 
     if interactor.write_register(self.power_address, powers) != len(powers):
-      self.error(f'write(): something went wrong while writing {self.description}')
+      self.error(f'write(): something went wrong while writing powers in {self.description}')
 
     if interactor.write_register(self.soc_address, socs) != len(socs):
-      self.error(f'write(): something went wrong while writing {self.description}')
+      self.error(f'write(): something went wrong while writing socs in {self.description}')
 
     self._value = value
     return value
