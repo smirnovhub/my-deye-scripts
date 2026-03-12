@@ -31,6 +31,8 @@ jobs:
           python -m pip install requests fastapi uvicorn
 
       - name: Run tests
+        env:
+          DEYE_LOG_NAME: deye_cache_test
         run: |
           python -u test/src/deye_cache_server_test.py
           python -u test/src/deye_registers_local_cache_manager_test.py
