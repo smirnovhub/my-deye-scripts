@@ -3,7 +3,8 @@ from enum import Enum, auto
 class TimeOfUseButtonType(Enum):
   back = auto()
   reset = auto()
-  switch = auto()
+  grid_charge = auto()
+  gen_charge = auto()
   start_time = auto()
   start_hour = auto()
   start_minute = auto()

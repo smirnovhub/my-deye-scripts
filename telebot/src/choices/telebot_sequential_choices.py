@@ -74,7 +74,12 @@ class SequentialChoices:
       data_prefix = SequentialChoices._seq_prefix,
     )
 
-    message = bot.send_message(chat_id, root.text if root.text else text, reply_markup = keyboard, parse_mode = "HTML")
+    message = bot.send_message(
+      chat_id,
+      root.text if root.text else text,
+      reply_markup = keyboard,
+      parse_mode = "HTML",
+    )
 
     SequentialChoices._step_states[chat_id] = StepState(
       message_text = text,
@@ -161,6 +166,7 @@ class SequentialChoices:
             chat_id = chat_id,
             message_id = state.message_id,
             reply_markup = None,
+            parse_mode = 'HTML',
           )
         else:
           TelebotUtils.remove_inline_buttons_with_delay(
@@ -208,6 +214,7 @@ class SequentialChoices:
             chat_id = chat_id,
             message_id = state.message_id,
             reply_markup = keyboard,
+            parse_mode = 'HTML',
           )
         elif is_markup_changed:
           bot.edit_message_reply_markup(

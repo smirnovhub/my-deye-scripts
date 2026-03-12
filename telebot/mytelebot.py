@@ -8,7 +8,7 @@ from teletest import TeleTest
 from deye_utils import DeyeUtils
 from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
-from telebot_menu_time_of_use_new import TelebotMenuTimeOfUseNew
+from telebot_menu_time_of_use import TelebotMenuTimeOfUse
 from telebot_users import TelebotUsers
 from telebot_base_handler import TelebotBaseHandler
 from telebot_auth_helper import TelebotAuthHelper
@@ -181,7 +181,7 @@ class MyTelebot:
       TelebotMenuSlaveTotalStat(bot),
       TelebotMenuAllSettings(bot),
       TelebotMenuMasterSettings(bot),
-      TelebotMenuTimeOfUseNew(bot),
+      TelebotMenuTimeOfUse(bot),
       TelebotMenuBatteryForecast(bot),
       TelebotMenuBatteryForecastByPercent(bot),
       TelebotMenuBatteryForecastByTime(bot),

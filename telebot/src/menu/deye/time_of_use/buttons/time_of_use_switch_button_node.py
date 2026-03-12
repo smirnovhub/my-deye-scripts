@@ -9,12 +9,13 @@ class TimeOfUseSwitchButtonNode(TimeOfUseButtonNode):
   def __init__(
     self,
     enabled: bool,
+    button_type: TimeOfUseButtonType,
     time_of_use_index: int,
     children: Optional[List["ButtonNode"]] = None,
   ):
     super().__init__(
       label = self._get_label(enabled),
-      button_type = TimeOfUseButtonType.switch,
+      button_type = button_type,
       time_of_use_index = time_of_use_index,
       children = children,
     )
