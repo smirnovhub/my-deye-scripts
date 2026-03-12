@@ -59,18 +59,3 @@ jobs:
           TELEGRAM_BOT_API_TEST_TOKEN: ${{ secrets.TELEGRAM_BOT_API_TEST_TOKEN }}
         run: |
           python -u test/src/telebot_test.py
-
-      - name: Upload logs
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: telebot-python-${{ matrix.python-version }}-log
-          path: telebot/data/telebot/logs/telebot_telegram_test.log
-          overwrite: true
-          compression-level: 9
-          if-no-files-found: error
-
-      - name: Print log
-        if: success() || failure()
-        run: |
-          cat telebot/data/telebot/logs/telebot_telegram_test.log
