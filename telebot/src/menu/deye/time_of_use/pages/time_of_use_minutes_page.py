@@ -26,6 +26,10 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
   def page_type(self) -> Enum:
     return self._page_type
 
+  @property
+  def buttons(self) -> List[ButtonNode]:
+    return self._buttons
+
   def prepare(self, time_of_use_line_index: int, **kwargs):
     self._time_of_use_line_index = time_of_use_line_index
 
@@ -54,7 +58,3 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     elif isinstance(button, TimeOfUseButtonNode):
       self.tou_times.values[self._time_of_use_line_index].minute = int(button.text)
       navigator.navigate(TimeOfUsePage.main)
-
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons

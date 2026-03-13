@@ -23,6 +23,10 @@ class TimeOfUseMainPage(TelebotNavigationPage):
   def page_type(self) -> Enum:
     return TimeOfUsePage.main
 
+  @property
+  def buttons(self) -> List[ButtonNode]:
+    return self._buttons
+
   def update(self) -> None:
     header_buttons: List[ButtonNode] = [
       ButtonNode("Grid"),
@@ -108,7 +112,10 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     if button.data == self._save_button.data:
       print("SAVE click")
     elif button.data == self._reset_button.data:
-      print("RESET click")
+      self._reset_time_intervals()
+      self.update()
+      navigator.update()
+      return
     elif button.data == self._week_button.data:
       print("WEEK click")
     elif button.data == self._cancel_button.data:
@@ -152,6 +159,22 @@ class TimeOfUseMainPage(TelebotNavigationPage):
           navigator.navigate(TimeOfUsePage.socs, time_of_use_line_index = button.index)
           return
 
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
+  def _reset_time_intervals(self) -> None:
+    """
+    Directly updates the hour and minute attributes of existing TimeOfUseTime objects.
+    """
+    values = self._tou_data.times.values
+
+    total_intervals = len(values)
+    if total_intervals == 0:
+      return
+
+    hours_per_step = 24 // total_intervals
+
+    # Update only existing objects in the list
+    for i in range(min(total_intervals, len(values))):
+      curr_time = values[i]
+
+      # Modify attributes in-place
+      curr_time.hour = i * hours_per_step
+      curr_time.minute = 0

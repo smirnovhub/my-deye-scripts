@@ -47,8 +47,9 @@ class TelebotPageNavigator:
     chat_id: int,
     text: str,
     page: "TelebotNavigationPage",
-  ) -> None:
+  ) -> telebot.types.Message:
     self._chat_id = chat_id
+    self._current_page = page
 
     page.update()
 
@@ -69,7 +70,7 @@ class TelebotPageNavigator:
       parse_mode = "HTML",
     )
 
-    self._current_page = page
+    return self._message
 
   def navigate(
     self,
@@ -138,7 +139,25 @@ class TelebotPageNavigator:
     data = call.data.replace(self._data_prefix, "")
     self._current_page.handle_click(self, data)
 
-  def stop(self) -> None:
+  def stop(self, text: str = '') -> None:
+    try:
+      if text:
+        self._bot.edit_message_text(
+          text,
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          reply_markup = None,
+          parse_mode = 'HTML',
+        )
+      else:
+        self._bot.edit_message_reply_markup(
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          reply_markup = None,
+        )
+    except Exception:
+      pass
+
     self._message = None
     self._chat_id = None
     self._current_page = None

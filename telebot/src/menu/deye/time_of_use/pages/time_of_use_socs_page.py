@@ -22,6 +22,10 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
   def page_type(self) -> Enum:
     return TimeOfUsePage.socs
 
+  @property
+  def buttons(self) -> List[ButtonNode]:
+    return self._buttons
+
   def prepare(self, time_of_use_line_index: int, **kwargs):
     self._time_of_use_line_index = time_of_use_line_index
 
@@ -58,7 +62,3 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     elif isinstance(button, TimeOfUseButtonNode):
       self.tou_socs.values[self._time_of_use_line_index] = int(button.text)
       navigator.navigate(TimeOfUsePage.main)
-
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
