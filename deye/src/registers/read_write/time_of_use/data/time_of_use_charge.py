@@ -23,6 +23,3 @@ class TimeOfUseCharge:
   bit5: bool
   bit6: bool
   bit7: bool
-
-  def __str__(self) -> str:
-    return f'grid_charge={self.grid_charge}, gen_charge={self.gen_charge}'
