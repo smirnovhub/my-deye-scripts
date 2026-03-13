@@ -8,24 +8,24 @@ from telebot_user_choice import TelebotUserChoice
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 
-class ButtonNode:
+class SimpleButtonNode:
   def __init__(
     self,
     label: str,
     text: str = '',
-    children: Optional[List["ButtonNode"]] = None,
+    children: Optional[List["SimpleButtonNode"]] = None,
   ):
     self.label: str = label
     self.text: str = text
     # Use a list if provided, otherwise create a new empty list
-    self.children: List["ButtonNode"] = children if children is not None else []
+    self.children: Optional[List["SimpleButtonNode"]] = children if children is not None else []
 
   def set_label(self, label: str) -> None:
     self.label = label
 
   def __repr__(self) -> str:
     # Added repr for easier debugging, similar to what dataclass provides
-    return f"ButtonNode(label={self.label!r}, text={self.text!r}, children_count={len(self.children)})"
+    return f"ButtonNode(label={self.label!r}, text={self.text!r}, children_count={len(self.children) if self.children else 'None'})"
 
 @dataclass
 class StepState:
@@ -33,12 +33,12 @@ class StepState:
   Holds the state of a sequential selection using ButtonNode tree.
   """
   message_text: str
-  current_node: ButtonNode
-  results: List[ButtonNode]
+  current_node: SimpleButtonNode
+  results: List[SimpleButtonNode]
   message_id: int
   max_per_row: int
-  final_callback: Optional[Callable[[int, List[ButtonNode]], None]] = None
-  step_callback: Optional[Callable[[int, ButtonNode], None]] = None
+  final_callback: Optional[Callable[[int, List[SimpleButtonNode]], None]] = None
+  step_callback: Optional[Callable[[int, SimpleButtonNode], None]] = None
 
 class SequentialChoices:
   _seq_prefix = "_seq_"
@@ -50,10 +50,9 @@ class SequentialChoices:
     bot: telebot.TeleBot,
     chat_id: int,
     text: str,
-    root: ButtonNode,
-    final_callback: Optional[Callable[[int, List[ButtonNode]], None]] = None,
-    step_callback: Optional[Callable[[int, ButtonNode], None]] = None,
-    text_if_next_command_received: Optional[Callable[[], str]] = None,
+    root: SimpleButtonNode,
+    final_callback: Optional[Callable[[int, List[SimpleButtonNode]], None]] = None,
+    step_callback: Optional[Callable[[int, SimpleButtonNode], None]] = None,
     max_per_row: int = 5,
   ) -> telebot.types.Message:
     """
@@ -98,43 +97,23 @@ class SequentialChoices:
       SequentialChoices._text_input_handler,
       bot,
       message.message_id,
-      text_if_next_command_received,
     )
 
     return message
 
   @staticmethod
-  def _text_input_handler(
-    message: telebot.types.Message,
-    bot: telebot.TeleBot,
-    message_id: int,
-    text_if_next_command_received: Optional[Callable[[], str]],
-  ):
+  def _text_input_handler(message: telebot.types.Message, bot: telebot.TeleBot, message_id: int):
     """
     Handles plain text input after sequential buttons.
     """
-    text = text_if_next_command_received() if text_if_next_command_received else ''
-    if text:
-      try:
-        bot.edit_message_text(
-          text_if_next_command_received(),
-          chat_id = message.chat.id,
-          message_id = message_id,
-          reply_markup = None,
-          parse_mode = 'HTML',
-        )
-      except Exception:
-        pass
-    else:
-      TelebotUtils.remove_inline_buttons_with_delay(
-        bot = bot,
-        chat_id = message.chat.id,
-        message_id = message_id,
-        delay = TelebotConstants.buttons_remove_delay_sec,
-      )
+    TelebotUtils.remove_inline_buttons_with_delay(
+      bot = bot,
+      chat_id = message.chat.id,
+      message_id = message_id,
+      delay = TelebotConstants.buttons_remove_delay_sec,
+    )
 
-    if TelebotUtils.forward_next(bot, message):
-      return
+    TelebotUtils.forward_next(bot, message)
 
   @staticmethod
   def _register_global_handler(bot: telebot.TeleBot):
@@ -144,6 +123,8 @@ class SequentialChoices:
 
     @bot.callback_query_handler(func = TelebotUtils.make_callback_query_filter(SequentialChoices._seq_prefix))
     def _handler(call: telebot.types.CallbackQuery):
+      bot.answer_callback_query(call.id)
+
       chat_id = call.message.chat.id
       state = SequentialChoices._step_states.get(chat_id)
       if not state:
@@ -157,6 +138,9 @@ class SequentialChoices:
 
       current_node = state.current_node
 
+      if current_node.children is None:
+        return
+
       # callback_data is index of ButtonNode child
       index_str = call.data[len(SequentialChoices._seq_prefix):]
       try:
@@ -168,7 +152,9 @@ class SequentialChoices:
         return
 
       child_node = current_node.children[index]
-      bot.answer_callback_query(call.id)
+
+      if child_node.children is None:
+        return
 
       # Call the per-step callback if it exists
       if state.step_callback:

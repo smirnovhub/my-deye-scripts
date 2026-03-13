@@ -123,8 +123,8 @@ class TelebotUtils:
   @staticmethod
   def get_keyboard_for_choices_ext(
     options: List[TelebotUserChoice],
-    max_per_row: int,
     data_prefix: str = '',
+    max_per_row: int = -1,
   ) -> telebot.types.InlineKeyboardMarkup:
     """
       Build an inline keyboard where:
