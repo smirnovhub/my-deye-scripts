@@ -11,6 +11,7 @@ from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 from time_of_use_times import TimeOfUseTimes
 from time_of_use_week import TimeOfUseWeek
+from time_of_use_weeks import TimeOfUseWeeks
 
 class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
   def __init__(
@@ -100,24 +101,34 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
     for soc in socs_data:
       socs.append(soc)
 
-    week = TimeOfUseWeek(
-      enabled = bool(week_data & (1 << 0)),
-      monday = bool(week_data & (1 << 1)),
-      tuesday = bool(week_data & (1 << 2)),
-      wednesday = bool(week_data & (1 << 3)),
-      thursday = bool(week_data & (1 << 4)),
-      friday = bool(week_data & (1 << 5)),
-      saturday = bool(week_data & (1 << 6)),
-      sunday = bool(week_data & (1 << 7)),
-    )
+    weeks = [
+      TimeOfUseWeek(
+        enabled = bool(week_data & (1 << 0)),
+        monday = bool(week_data & (1 << 1)),
+        tuesday = bool(week_data & (1 << 2)),
+        wednesday = bool(week_data & (1 << 3)),
+        thursday = bool(week_data & (1 << 4)),
+        friday = bool(week_data & (1 << 5)),
+        saturday = bool(week_data & (1 << 6)),
+        sunday = bool(week_data & (1 << 7)),
+      )
+    ]
 
-    return TimeOfUseData(
+    data = TimeOfUseData(
       charges = TimeOfUseCharges(charges),
       times = TimeOfUseTimes(times),
       powers = TimeOfUsePowers(powers),
       socs = TimeOfUseSocs(socs),
-      weekly = week,
+      weeks = TimeOfUseWeeks(weeks),
     )
+
+    try:
+      # Just validate sizes
+      data.validate(min_soc = 0, max_power = 7777777)
+    except Exception as e:
+      self.error(f'read(): {str(e)}')
+
+    return data
 
   def write(self, interactor: DeyeModbusInteractor, value) -> Any:
     if not isinstance(value, TimeOfUseData):
@@ -149,7 +160,7 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
         for charge in value.charges.values
       ]
 
-      if interactor.write_register(self.charge_address, charges) != len(times):
+      if interactor.write_register(self.charge_address, charges) != len(charges):
         self.error(f'write(): something went wrong while writing charges in {self.description}')
 
     if value.times.values:
@@ -165,18 +176,20 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
       if interactor.write_register(self.soc_address, value.socs.values) != len(value.socs.values):
         self.error(f'write(): something went wrong while writing socs in {self.description}')
 
-    weekly = ((int(value.weekly.enabled) << 0) | #
-              (int(value.weekly.monday) << 1) | #
-              (int(value.weekly.tuesday) << 2) | #
-              (int(value.weekly.wednesday) << 3) | #
-              (int(value.weekly.thursday) << 4) | #
-              (int(value.weekly.friday) << 5) | #
-              (int(value.weekly.saturday) << 6) | #
-              (int(value.weekly.sunday) << 7) #
-              )
+    if value.weeks.values:
+      week = value.weeks.values[0]
+      weekly = ((int(week.enabled) << 0) | #
+                (int(week.monday) << 1) | #
+                (int(week.tuesday) << 2) | #
+                (int(week.wednesday) << 3) | #
+                (int(week.thursday) << 4) | #
+                (int(week.friday) << 5) | #
+                (int(week.saturday) << 6) | #
+                (int(week.sunday) << 7) #
+                )
 
-    if interactor.write_register(self.weekly_address, [weekly]) != 1:
-      self.error(f'write(): something went wrong while writing weekly in {self.description}')
+      if interactor.write_register(self.weekly_address, [weekly]) != 1:
+        self.error(f'write(): something went wrong while writing weekly in {self.description}')
 
     self._value = value
     return value
