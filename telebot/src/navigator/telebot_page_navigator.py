@@ -18,8 +18,13 @@ class TelebotPageNavigator:
   _instances: Dict[str, "TelebotPageNavigator"] = {}
   _handlers_registered: bool = False
 
-  # Regexp to extract prefix like _n_123_ from string _n_123_action
-  _prefix_pattern = re.compile(rf"^({_navigator_data_prefix}\d+_).+")
+  # Data prefix format:
+  # _nav_1_35_TEST
+  # 1 means navigator id
+  # 35 means button id
+  # TEST means button data
+  _prefix_pattern = re.compile(rf"^{_navigator_data_prefix}(\d+)_(\d+)")
+  _instance_id_template = f"{_navigator_data_prefix}{0}_"
 
   def __init__(self, bot: telebot.TeleBot):
     self._bot = bot
@@ -30,7 +35,7 @@ class TelebotPageNavigator:
 
     with TelebotPageNavigator._lock:
       TelebotPageNavigator._counter += 1
-      self._data_prefix = f"{TelebotPageNavigator._navigator_data_prefix}{TelebotPageNavigator._counter}_"
+      self._data_prefix = TelebotPageNavigator._instance_id_template.format(TelebotPageNavigator._counter)
       TelebotPageNavigator._instances[self._data_prefix] = self
 
       if not TelebotPageNavigator._handlers_registered:
@@ -54,9 +59,9 @@ class TelebotPageNavigator:
     page.update()
 
     user_choices = [TelebotUserChoice(
-      text = node.text,
-      data = node.data,
-    ) for node in page.buttons]
+      text = button.text,
+      data = str(button.id),
+    ) for button in page.buttons]
 
     keyboard = TelebotUtils.get_keyboard_for_choices_ext(
       options = user_choices,
@@ -102,10 +107,12 @@ class TelebotPageNavigator:
     if not self._current_page:
       raise RuntimeError("No current page")
 
-    user_choices = [TelebotUserChoice(
-      text = node.text,
-      data = node.data,
-    ) for node in self._current_page.buttons]
+    user_choices = [
+      TelebotUserChoice(
+        text = button.text,
+        data = str(button.id),
+      ) for button in self._current_page.buttons
+    ]
 
     keyboard = TelebotUtils.get_keyboard_for_choices_ext(
       options = user_choices,
@@ -130,16 +137,21 @@ class TelebotPageNavigator:
     except Exception:
       pass
 
-  def _handle_callback(self, call: telebot.types.CallbackQuery):
+  def _handle_callback(self, button_id: int):
     # Logic for handling navigation
     # Use self._data_prefix to filter or parse data
     if not self._current_page:
       raise RuntimeError("No current page")
 
-    data = call.data.replace(self._data_prefix, "")
-    self._current_page.handle_click(self, data)
+    self._current_page.handle_click(
+      navigator = self,
+      button_id = button_id,
+    )
 
   def stop(self, text: str = '') -> None:
+    if not self._message or not self._chat_id:
+      raise RuntimeError("Navigation has not started yet")
+
     try:
       if text:
         self._bot.edit_message_text(
@@ -158,6 +170,8 @@ class TelebotPageNavigator:
     except Exception:
       pass
 
+    self._bot.clear_step_handler_by_chat_id(self._chat_id)
+
     self._message = None
     self._chat_id = None
     self._current_page = None
@@ -173,11 +187,17 @@ class TelebotPageNavigator:
       if not call.data:
         return
 
+      bot.answer_callback_query(call.id)
+
       # Fast lookup using regex match
       match = TelebotPageNavigator._prefix_pattern.match(call.data)
-      if match:
-        prefix = match.group(1)
-        instance = TelebotPageNavigator._instances.get(prefix)
-        if instance:
-          bot.answer_callback_query(call.id)
-          instance._handle_callback(call)
+      if not match:
+        return
+
+      navigator_id = match.group(1)
+      data_prefix = TelebotPageNavigator._instance_id_template.format(navigator_id)
+
+      instance = TelebotPageNavigator._instances.get(data_prefix)
+      if instance:
+        button_id = int(match.group(2))
+        instance._handle_callback(button_id = button_id)

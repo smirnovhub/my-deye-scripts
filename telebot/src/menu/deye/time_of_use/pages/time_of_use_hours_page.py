@@ -4,7 +4,7 @@ from typing import List
 from button_node import ButtonNode
 from time_of_use_data import TimeOfUseTimes
 from break_button_node import BreakButtonNode
-from pages.time_of_use_page import TimeOfUsePage
+from time_of_use_page import TimeOfUsePage
 from time_of_use_button_node import TimeOfUseButtonNode
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
@@ -47,7 +47,8 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
         self._buttons.append(BreakButtonNode())
 
       self._buttons.append(TimeOfUseButtonNode(
-        f"{value:02}",
+        text = f"{value:02}",
+        data = str(value),
         index = index,
       ))
 
@@ -55,8 +56,8 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     self._buttons.append(self._back_button)
 
   def on_button_clicked(self, navigator: TelebotPageNavigator, button: ButtonNode) -> None:
-    if button.data == self._back_button.data:
+    if button.id == self._back_button.id:
       navigator.navigate(TimeOfUsePage.main)
     elif isinstance(button, TimeOfUseButtonNode):
-      self.tou_times.values[self._time_of_use_line_index].hour = int(button.text)
+      self.tou_times.values[self._time_of_use_line_index].hour = int(button.data)
       navigator.navigate(self._next_page_type, time_of_use_line_index = self._time_of_use_line_index)

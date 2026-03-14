@@ -27,9 +27,13 @@ class TelebotNavigationPage(ABC):
   def update(self) -> None:
     pass
 
-  def handle_click(self, navigator: TelebotPageNavigator, data: str):
+  def handle_click(
+    self,
+    navigator: TelebotPageNavigator,
+    button_id: int,
+  ):
     for button in self.buttons:
-      if button.data == data:
+      if button.id == button_id:
         self.on_button_clicked(navigator, button)
 
   @abstractmethod

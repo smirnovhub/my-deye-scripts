@@ -18,9 +18,9 @@ class TimeOfUseSwitchButtonNode(SwitchButtonNode):
   def index(self) -> int:
     return self._index
 
-  def switch(self) -> None:
-    super().switch()
-    self.set_text(self._get_text(self._enabled))
+  @property
+  def text(self) -> str:
+    return self._get_text(self._enabled)
 
   def _get_text(self, enabled: bool) -> str:
     return CommonUtils.large_green_circle_emoji if enabled else CommonUtils.large_red_circle_emoji

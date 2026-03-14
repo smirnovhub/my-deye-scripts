@@ -5,8 +5,12 @@ class TimeOfUseButtonNode(ButtonNode):
     self,
     text: str,
     index: int,
+    data: str = "",
   ):
-    super().__init__(text = text)
+    super().__init__(
+      text = text,
+      data = data,
+    )
     self._index = index
 
   @property
