@@ -5,7 +5,7 @@ class TimeOfUseSwitchButtonNode(SwitchButtonNode):
   def __init__(
     self,
     enabled: bool,
-    index: int,
+    index: int = 0,
   ):
     super().__init__(
       text = self._get_text(enabled),

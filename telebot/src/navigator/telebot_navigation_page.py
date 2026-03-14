@@ -1,11 +1,16 @@
 from enum import Enum
-from typing import List
+from typing import Callable, Dict, List
 
 from abc import ABC, abstractmethod
 from button_node import ButtonNode
 from telebot_page_navigator import TelebotPageNavigator
 
+Handler = Callable[[TelebotPageNavigator], None]
+
 class TelebotNavigationPage(ABC):
+  def __init__(self):
+    self._button_handlers: Dict[int, Handler] = {}
+
   @property
   @abstractmethod
   def page_type(self) -> Enum:
@@ -36,6 +41,14 @@ class TelebotNavigationPage(ABC):
       if button.id == button_id:
         self.on_button_clicked(navigator, button)
 
-  @abstractmethod
   def on_button_clicked(self, navigator: TelebotPageNavigator, button: ButtonNode) -> None:
-    pass
+    handler = self._button_handlers.get(button.id)
+    if handler:
+      handler(navigator)
+
+  def register_button_handler(self, button: ButtonNode, handler: Handler) -> ButtonNode:
+    self._button_handlers[button.id] = handler
+    return button
+
+  def clear_button_handlers(self) -> None:
+    self._button_handlers.clear()

@@ -16,9 +16,9 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     title: str,
     page_type: TimeOfUsePage,
   ):
-    self.tou_times = tou_times
+    super().__init__()
+    self._tou_times = tou_times
     self._title = title
-    self._back_button = ButtonNode("Back")
     self._page_type = page_type
     self._time_of_use_line_index = -1
 
@@ -34,28 +34,39 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     self._time_of_use_line_index = time_of_use_line_index
 
   def update(self) -> None:
-    self._buttons: List[ButtonNode] = [
+    self.clear_button_handlers()
+
+    buttons: List[ButtonNode] = [
       ButtonNode(self._title),
       BreakButtonNode(),
     ]
 
-    for index, value in enumerate(range(0, 60, 5)):
-      # Add row break before every 6th element (except the first one)
-      if index > 0 and index % 4 == 0:
-        self._buttons.append(BreakButtonNode())
+    minutes = list(range(0, 60, 5))
 
-      self._buttons.append(TimeOfUseButtonNode(
-        f"{value:02}",
-        data = str(value),
-        index = index,
-      ))
+    for i, minute in enumerate(minutes):
+      if i > 0 and i % 4 == 0:
+        buttons.append(BreakButtonNode())
 
-    self._buttons.append(BreakButtonNode())
-    self._buttons.append(self._back_button)
+      btn = TimeOfUseButtonNode(
+        text = f"{minute:02}",
+        data = str(minute),
+        index = i,
+      )
 
-  def on_button_clicked(self, navigator: TelebotPageNavigator, button: ButtonNode) -> None:
-    if button.id == self._back_button.id:
+      self.register_button_handler(btn, self._create_minute_handler(minute))
+      buttons.append(btn)
+
+    buttons.append(BreakButtonNode())
+    buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
+
+    self._buttons = buttons
+
+  def _handle_back(self, navigator: TelebotPageNavigator) -> None:
+    navigator.navigate(TimeOfUsePage.main)
+
+  def _create_minute_handler(self, minute: int):
+    def handler(navigator: TelebotPageNavigator) -> None:
+      self._tou_times.values[self._time_of_use_line_index].minute = minute
       navigator.navigate(TimeOfUsePage.main)
-    elif isinstance(button, TimeOfUseButtonNode):
-      self.tou_times.values[self._time_of_use_line_index].minute = int(button.data)
-      navigator.navigate(TimeOfUsePage.main)
+
+    return handler

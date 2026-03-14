@@ -19,10 +19,9 @@ class TelebotPageNavigator:
   _handlers_registered: bool = False
 
   # Data prefix format:
-  # _nav_1_35_TEST
+  # _nav_1_35
   # 1 means navigator id
   # 35 means button id
-  # TEST means button data
   _prefix_pattern = re.compile(rf"^{_navigator_data_prefix}(\d+)_(\d+)")
   _instance_id_template = f"{_navigator_data_prefix}{0}_"
 

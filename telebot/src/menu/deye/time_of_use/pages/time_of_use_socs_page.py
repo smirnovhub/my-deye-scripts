@@ -14,8 +14,8 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     self,
     tou_socs: TimeOfUseSocs,
   ):
-    self.tou_socs = tou_socs
-    self._back_button = ButtonNode("Back")
+    super().__init__()
+    self._tou_socs = tou_socs
     self._time_of_use_line_index = -1
 
   @property
@@ -30,36 +30,46 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     self._time_of_use_line_index = time_of_use_line_index
 
   def update(self) -> None:
-    self._buttons: List[ButtonNode] = [
-      ButtonNode("Battery SOC, %:"),
+    self.clear_button_handlers()
+
+    buttons: List[ButtonNode] = [
+      ButtonNode("Battery power, W:"),
       BreakButtonNode(),
     ]
 
     values = [
-      ['15', '20', '25', '30', '35'],
-      ['40', '45', '50', '55', '60'],
-      ['65', '70', '75', '80', '85'],
-      ['90', '93', '95', '97', '100'],
+      [15, 20, 25, 30, 35],
+      [40, 45, 50, 55, 60],
+      [65, 70, 75, 80, 85],
+      [90, 93, 95, 97, 100],
     ]
 
-    for index, row in enumerate(values):
-      # Add a row break before every row except the first one
-      if index > 0:
-        self._buttons.append(BreakButtonNode())
+    for row_index, row in enumerate(values):
+      if row_index > 0:
+        buttons.append(BreakButtonNode())
 
       for value in row:
-        self._buttons.append(TimeOfUseButtonNode(
+
+        btn = TimeOfUseButtonNode(
           text = str(value),
           data = str(value),
-          index = index,
-        ))
+          index = row_index,
+        )
 
-    self._buttons.append(BreakButtonNode())
-    self._buttons.append(self._back_button)
+        self.register_button_handler(btn, self._create_soc_handler(value))
+        buttons.append(btn)
 
-  def on_button_clicked(self, navigator: TelebotPageNavigator, button: ButtonNode) -> None:
-    if button.id == self._back_button.id:
+    buttons.append(BreakButtonNode())
+    buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
+
+    self._buttons = buttons
+
+  def _handle_back(self, navigator: TelebotPageNavigator) -> None:
+    navigator.navigate(TimeOfUsePage.main)
+
+  def _create_soc_handler(self, power: int):
+    def handler(navigator: TelebotPageNavigator) -> None:
+      self._tou_socs.values[self._time_of_use_line_index] = power
       navigator.navigate(TimeOfUsePage.main)
-    elif isinstance(button, TimeOfUseButtonNode):
-      self.tou_socs.values[self._time_of_use_line_index] = int(button.data)
-      navigator.navigate(TimeOfUsePage.main)
+
+    return handler

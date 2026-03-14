@@ -1,33 +1,23 @@
 import copy
 
-from dataclasses import asdict
 from enum import Enum
 from typing import List
 
-from common_utils import CommonUtils
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
-from custom_single_registers import CustomSingleRegisters
-from telebot_deye_helper import TelebotDeyeHelper
+from time_of_use_base_page import TimeOfUseBasePage
 from time_of_use_page import TimeOfUsePage
 from time_of_use_button_node import TimeOfUseButtonNode
 from time_of_use_data import TimeOfUseData
-from deye_registers_holder import DeyeLoggers, DeyeRegisters, DeyeRegistersHolder
-from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_switch_button_node import TimeOfUseSwitchButtonNode
 
-class TimeOfUseMainPage(TelebotNavigationPage):
+class TimeOfUseMainPage(TimeOfUseBasePage):
   def __init__(self, tou_data: TimeOfUseData):
+    super().__init__()
     self._tou_data = tou_data
+    self._tou_week = tou_data.weeks.values[0]
     self._tou_original_data = copy.deepcopy(tou_data)
-    self._save_button = ButtonNode("Save")
-    self._reset_button = ButtonNode("Reset")
-    self._week_button = ButtonNode("Week")
-    self._cancel_button = ButtonNode("Cancel")
-    self._loggers = DeyeLoggers()
-    registers = DeyeRegisters()
-    self._register = registers.time_of_use_register
 
   @property
   def page_type(self) -> Enum:
@@ -38,6 +28,8 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     return self._buttons
 
   def update(self) -> None:
+    self.clear_button_handlers()
+
     header_buttons: List[ButtonNode] = [
       ButtonNode("Grid"),
       ButtonNode("Gen"),
@@ -48,193 +40,168 @@ class TimeOfUseMainPage(TelebotNavigationPage):
       BreakButtonNode(),
     ]
 
-    bottom_buttons: List[ButtonNode] = [
-      self._save_button,
-      self._reset_button,
-      self._week_button,
-      self._cancel_button,
+    week_header_buttons: List[ButtonNode] = [
+      ButtonNode("Mon"),
+      ButtonNode("Tue"),
+      ButtonNode("Wed"),
+      ButtonNode("Thu"),
+      ButtonNode("Fri"),
+      ButtonNode("Sat"),
+      ButtonNode("Sun"),
+      BreakButtonNode(),
     ]
 
-    self._grid_charge_buttons: List[ButtonNode] = []
-    self._gen_charge_buttons: List[ButtonNode] = []
+    bottom_buttons: List[ButtonNode] = [
+      self.register_button_handler(ButtonNode("Save"), self._handle_save),
+      self.register_button_handler(ButtonNode("Reset"), self._handle_reset),
+      self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel),
+    ]
 
-    for index, charge in enumerate(self._tou_data.charges.values):
-      self._grid_charge_buttons.append(TimeOfUseSwitchButtonNode(
-        enabled = charge.grid_charge,
-        index = index,
-      ))
-
-      self._gen_charge_buttons.append(TimeOfUseSwitchButtonNode(
-        enabled = charge.gen_charge,
-        index = index,
-      ))
-
-    self._start_time_buttons: List[ButtonNode] = []
-    self._end_time_buttons: List[ButtonNode] = []
-
-    for index, time in enumerate(self._tou_data.times.values):
-      self._start_time_buttons.append(TimeOfUseButtonNode(
-        text = f"{time.hour:02d}:{time.minute:02d}",
-        index = index,
-      ))
-
-      next_value = self._tou_data.times.values[(index + 1) % len(self._tou_data.times.values)]
-
-      self._end_time_buttons.append(
-        TimeOfUseButtonNode(
-          text = f"{next_value.hour:02d}:{next_value.minute:02d}",
-          index = index,
-        ))
-
-    self._powers_buttons: List[ButtonNode] = []
-
-    for index, power in enumerate(self._tou_data.powers.values):
-      self._powers_buttons.append(TimeOfUseButtonNode(
-        text = str(power),
-        data = str(power),
-        index = index,
-      ))
-
-    self._socs_buttons: List[ButtonNode] = []
-
-    for index, soc in enumerate(self._tou_data.socs.values):
-      self._socs_buttons.append(TimeOfUseButtonNode(
-        text = f"{soc}%",
-        data = str(soc),
-        index = index,
-      ))
-
-    self._tou_buttons: List[ButtonNode] = []
-
-    for index, _ in enumerate(self._socs_buttons):
-      self._tou_buttons.extend([
-        self._grid_charge_buttons[index],
-        self._gen_charge_buttons[index],
-        self._start_time_buttons[index],
-        self._end_time_buttons[index],
-        self._powers_buttons[index],
-        self._socs_buttons[index],
-        BreakButtonNode(),
-      ])
-
-    self._buttons = header_buttons + self._tou_buttons + bottom_buttons
-
-  def on_button_clicked(self, navigator: TelebotPageNavigator, button: ButtonNode) -> None:
-    if button.id == self._save_button.id:
-      text = self.get_time_of_use_as_text(self._tou_data)
-      navigator.stop(text)
-      self._clear_unchanged_data(
-        data = self._tou_data,
-        original_data = self._tou_original_data,
-      )
-      self._write_time_of_use()
-    elif button.id == self._reset_button.id:
-      self._reset_time_intervals()
-      self.update()
-      navigator.update()
-      return
-    elif button.id == self._week_button.id:
-      print("WEEK click")
-    elif button.id == self._cancel_button.id:
-      text = self.get_time_of_use_as_text(self._tou_original_data)
-      navigator.stop(text)
-      return
-
-    if isinstance(button, TimeOfUseSwitchButtonNode):
-      button.switch()
-      navigator.update()
-
-      for btn in self._grid_charge_buttons:
-        if btn.id == button.id:
-          self._tou_data.charges.values[button.index].grid_charge = button.enabled
-          return
-
-      for btn in self._gen_charge_buttons:
-        if btn.id == button.id:
-          self._tou_data.charges.values[button.index].gen_charge = button.enabled
-          return
-
-      return
-
-    if isinstance(button, TimeOfUseButtonNode):
-      for btn in self._start_time_buttons:
-        if btn.id == button.id:
-          navigator.navigate(TimeOfUsePage.start_hours, time_of_use_line_index = button.index)
-          return
-
-      for btn in self._end_time_buttons:
-        if btn.id == button.id:
-          index = (button.index + 1) % len(self._end_time_buttons)
-          navigator.navigate(TimeOfUsePage.end_hours, time_of_use_line_index = index)
-          return
-
-      for btn in self._powers_buttons:
-        if btn.id == button.id:
-          navigator.navigate(TimeOfUsePage.powers, time_of_use_line_index = button.index)
-          return
-
-      for btn in self._socs_buttons:
-        if btn.id == button.id:
-          navigator.navigate(TimeOfUsePage.socs, time_of_use_line_index = button.index)
-          return
-
-  def get_time_of_use_as_text(self, data: TimeOfUseData) -> str:
-    def sign(value: bool):
-      on = CommonUtils.large_green_circle_emoji
-      off = CommonUtils.large_red_circle_emoji
-      return on if value else off
-
-    weekly = data.weeks.values[0]
-
-    header = f'{sign(weekly.enabled)} Time of Use schedule:\n'
-    schedule = 'Gr Gen    Time     Pwr SOC\n'
-
-    charges = data.charges.values
-    times = data.times.values
-    powers = data.powers.values
-    socs = data.socs.values
+    charges = self._tou_data.charges.values
+    times = self._tou_data.times.values
+    powers = self._tou_data.powers.values
+    socs = self._tou_data.socs.values
 
     count = len(times)
+    rows_buttons = []
+
     for i in range(count):
-      curr_charge = charges[i]
-      curr_time = times[i]
-      # Next time for the interval end, wrapping around to the first element
+      charge = charges[i]
+      time = times[i]
       next_time = times[(i + 1) % count]
-      curr_power = powers[i]
-      curr_soc = socs[i]
 
-      schedule += (f'{sign(curr_charge.grid_charge)} {sign(curr_charge.gen_charge)} '
-                   f'{curr_time.hour:02d}:{curr_time.minute:02d} '
-                   f'{next_time.hour:02d}:{next_time.minute:02d} '
-                   f'{curr_power:>4} {curr_soc:>3}\n')
+      grid = TimeOfUseSwitchButtonNode(
+        enabled = charge.grid_charge,
+        index = i,
+      )
 
-    days_of_week = 'Mon Tue Wed Thu Fri Sat Sun\n'
-    days_of_week += (f'{sign(weekly.monday)}  '
-                     f'{sign(weekly.tuesday)}  '
-                     f'{sign(weekly.wednesday)}  '
-                     f'{sign(weekly.thursday)}  '
-                     f'{sign(weekly.friday)}  '
-                     f'{sign(weekly.saturday)}  '
-                     f'{sign(weekly.sunday)}')
+      gen = TimeOfUseSwitchButtonNode(
+        enabled = charge.gen_charge,
+        index = i,
+      )
 
-    return f'{header}<pre>{schedule}</pre>\n<pre>{days_of_week}</pre>'
+      start = TimeOfUseButtonNode(
+        text = f"{time.hour:02d}:{time.minute:02d}",
+        index = i,
+      )
 
-  def _write_time_of_use(self) -> None:
-    # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
-      loggers = [self._loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(self._register, prefix),
-      **TelebotDeyeHelper.holder_kwargs,
-    )
+      end = TimeOfUseButtonNode(
+        text = f"{next_time.hour:02d}:{next_time.minute:02d}",
+        index = i,
+      )
 
-    if asdict(self._tou_data) == asdict(self._tou_original_data):
-      print("NO")
-      return
+      power = TimeOfUseButtonNode(
+        text = str(powers[i]),
+        data = str(powers[i]),
+        index = i,
+      )
 
+      soc = TimeOfUseButtonNode(
+        text = f"{socs[i]}%",
+        data = str(socs[i]),
+        index = i,
+      )
+
+      self.register_button_handler(grid, lambda n, b = grid: self._toggle_grid(n, b))
+      self.register_button_handler(gen, lambda n, b = gen: self._toggle_gen(n, b))
+      self.register_button_handler(start,
+                                   lambda n, i = i: n.navigate(TimeOfUsePage.start_hours, time_of_use_line_index = i))
+      self.register_button_handler(
+        end, lambda n, i = i: n.navigate(TimeOfUsePage.end_hours, time_of_use_line_index = (i + 1) % count))
+      self.register_button_handler(power, lambda n, i = i: n.navigate(TimeOfUsePage.powers, time_of_use_line_index = i))
+      self.register_button_handler(soc, lambda n, i = i: n.navigate(TimeOfUsePage.socs, time_of_use_line_index = i))
+
+      rows_buttons.extend([grid, gen, start, end, power, soc, BreakButtonNode()])
+
+    # Days of the week
+    mon = TimeOfUseSwitchButtonNode(enabled = self._tou_week.monday)
+    mon_btn = self.register_button_handler(mon, lambda n, b = mon: self._toggle_monday(n, b))
+    tue = TimeOfUseSwitchButtonNode(enabled = self._tou_week.tuesday)
+    tue_btn = self.register_button_handler(tue, lambda n, b = tue: self._toggle_tuesday(n, b))
+    wed = TimeOfUseSwitchButtonNode(enabled = self._tou_week.wednesday)
+    wed_btn = self.register_button_handler(wed, lambda n, b = wed: self._toggle_wednesday(n, b))
+    thu = TimeOfUseSwitchButtonNode(enabled = self._tou_week.thursday)
+    thu_btn = self.register_button_handler(thu, lambda n, b = thu: self._toggle_thursday(n, b))
+    fri = TimeOfUseSwitchButtonNode(enabled = self._tou_week.friday)
+    fri_btn = self.register_button_handler(fri, lambda n, b = fri: self._toggle_friday(n, b))
+    sat = TimeOfUseSwitchButtonNode(enabled = self._tou_week.saturday)
+    sat_btn = self.register_button_handler(sat, lambda n, b = sat: self._toggle_saturday(n, b))
+    sun = TimeOfUseSwitchButtonNode(enabled = self._tou_week.sunday)
+    sun_btn = self.register_button_handler(sun, lambda n, b = sun: self._toggle_sunday(n, b))
+
+    week_buttons = [
+      mon_btn,
+      tue_btn,
+      wed_btn,
+      thu_btn,
+      fri_btn,
+      sat_btn,
+      sun_btn,
+      BreakButtonNode(),
+    ]
+
+    self._buttons = week_header_buttons + week_buttons + header_buttons + rows_buttons + bottom_buttons
+
+  def _toggle_grid(self, navigator: TelebotPageNavigator, button: TimeOfUseSwitchButtonNode):
+    button.switch()
+    self._tou_data.charges.values[button.index].grid_charge = button.enabled
+    navigator.update()
+
+  def _toggle_gen(self, navigator: TelebotPageNavigator, button: TimeOfUseSwitchButtonNode):
+    button.switch()
+    self._tou_data.charges.values[button.index].gen_charge = button.enabled
+    navigator.update()
+
+  def _toggle_monday(self, navigator: TelebotPageNavigator, button: TimeOfUseSwitchButtonNode) -> None:
+    button.switch()
+    self._tou_week.monday = not self._tou_week.monday
+    navigator.update()
+
+  def _toggle_tuesday(self, navigator: TelebotPageNavigator, button: TimeOfUseSwitchButtonNode) -> None:
+    button.switch()
+    self._tou_week.tuesday = not self._tou_week.tuesday
+    navigator.update()
+
+  def _toggle_wednesday(self, navigator: TelebotPageNavigator, button: TimeOfUseSwitchButtonNode) -> None:
+    button.switch()
+    self._tou_week.wednesday = not self._tou_week.wednesday
+    navigator.update()
+
+  def _toggle_thursday(self, navigator: TelebotPageNavigator, button: TimeOfUseSwitchButtonNode) -> None:
+    button.switch()
+    self._tou_week.thursday = not self._tou_week.thursday
+    navigator.update()
+
+  def _toggle_friday(self, navigator: TelebotPageNavigator, button: TimeOfUseSwitchButtonNode) -> None:
+    button.switch()
+    self._tou_week.friday = not self._tou_week.friday
+    navigator.update()
+
+  def _toggle_saturday(self, navigator: TelebotPageNavigator, button: TimeOfUseSwitchButtonNode) -> None:
+    button.switch()
+    self._tou_week.saturday = not self._tou_week.saturday
+    navigator.update()
+
+  def _toggle_sunday(self, navigator: TelebotPageNavigator, button: TimeOfUseSwitchButtonNode) -> None:
+    button.switch()
+    self._tou_week.sunday = not self._tou_week.sunday
+    navigator.update()
+
+  def _handle_save(self, navigator: TelebotPageNavigator):
     try:
-      holder.write_register(self._register, self._tou_data)
-    finally:
-      holder.disconnect()
+      self.write_time_of_use(self._tou_data, self._tou_original_data)
+    except Exception as e:
+      navigator.stop(str(e))
+    else:
+      navigator.stop(self.get_time_of_use_as_text(self._tou_data))
+
+  def _handle_reset(self, navigator: TelebotPageNavigator):
+    self._reset_time_intervals()
+    self.update()
+    navigator.update()
+
+  def _handle_cancel(self, navigator: TelebotPageNavigator):
+    navigator.stop(self.get_time_of_use_as_text(self._tou_original_data))
 
   def _reset_time_intervals(self) -> None:
     """
@@ -255,25 +222,3 @@ class TimeOfUseMainPage(TelebotNavigationPage):
       # Modify attributes in-place
       curr_time.hour = i * hours_per_step
       curr_time.minute = 0
-
-  def _clear_unchanged_data(
-    self,
-    data: TimeOfUseData,
-    original_data: TimeOfUseData,
-  ):
-    # Convert parts to dicts for simple comparison
-    # Use asdict to compare the entire content, not object references
-    if asdict(data.charges) == asdict(original_data.charges):
-      data.charges.values = []
-
-    if asdict(data.times) == asdict(original_data.times):
-      data.times.values = []
-
-    if asdict(data.powers) == asdict(original_data.powers):
-      data.powers.values = []
-
-    if asdict(data.socs) == asdict(original_data.socs):
-      data.socs.values = []
-
-    if asdict(data.weeks) == asdict(original_data.weeks):
-      data.weeks.values = []

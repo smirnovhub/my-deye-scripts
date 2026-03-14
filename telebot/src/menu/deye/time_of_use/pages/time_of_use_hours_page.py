@@ -17,9 +17,9 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     page_type: TimeOfUsePage,
     next_page_type: TimeOfUsePage,
   ):
-    self.tou_times = tou_times
+    super().__init__()
+    self._tou_times = tou_times
     self._title = title
-    self._back_button = ButtonNode("Back")
     self._page_type = page_type
     self._next_page_type = next_page_type
     self._time_of_use_line_index = -1
@@ -36,28 +36,37 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     self._time_of_use_line_index = time_of_use_line_index
 
   def update(self) -> None:
-    self._buttons: List[ButtonNode] = [
+    self.clear_button_handlers()
+
+    buttons: List[ButtonNode] = [
       ButtonNode(self._title),
       BreakButtonNode(),
     ]
 
-    for index, value in enumerate(range(24)):
-      # Insert row break every 6 elements (except before the first one)
-      if index > 0 and index % 4 == 0:
-        self._buttons.append(BreakButtonNode())
+    for i in range(24):
+      if i > 0 and i % 4 == 0:
+        buttons.append(BreakButtonNode())
 
-      self._buttons.append(TimeOfUseButtonNode(
-        text = f"{value:02}",
-        data = str(value),
-        index = index,
-      ))
+      btn = TimeOfUseButtonNode(
+        text = f"{i:02}",
+        data = str(i),
+        index = i,
+      )
 
-    self._buttons.append(BreakButtonNode())
-    self._buttons.append(self._back_button)
+      self.register_button_handler(btn, self._create_hour_handler(i))
+      buttons.append(btn)
 
-  def on_button_clicked(self, navigator: TelebotPageNavigator, button: ButtonNode) -> None:
-    if button.id == self._back_button.id:
-      navigator.navigate(TimeOfUsePage.main)
-    elif isinstance(button, TimeOfUseButtonNode):
-      self.tou_times.values[self._time_of_use_line_index].hour = int(button.data)
+    buttons.append(BreakButtonNode())
+    buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
+
+    self._buttons = buttons
+
+  def _handle_back(self, navigator: TelebotPageNavigator):
+    navigator.navigate(TimeOfUsePage.main)
+
+  def _create_hour_handler(self, hour: int):
+    def handler(navigator: TelebotPageNavigator) -> None:
+      self._tou_times.values[self._time_of_use_line_index].hour = hour
       navigator.navigate(self._next_page_type, time_of_use_line_index = self._time_of_use_line_index)
+
+    return handler
