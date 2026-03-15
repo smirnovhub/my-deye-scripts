@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass, asdict
 
 from time_of_use_weeks import TimeOfUseWeeks
+from time_of_use_week import TimeOfUseWeek
 from time_of_use_charges import TimeOfUseCharges
 from time_of_use_powers import TimeOfUsePowers
 from time_of_use_socs import TimeOfUseSocs
@@ -15,6 +16,12 @@ class TimeOfUseData:
   powers: TimeOfUsePowers
   socs: TimeOfUseSocs
   weeks: TimeOfUseWeeks
+
+  @property
+  def week(self) -> TimeOfUseWeek:
+    if not self.weeks.values:
+      raise RuntimeError("Time of Use weeks values are empty")
+    return self.weeks.values[0]
 
   def validate(self, min_soc: int, max_power: int):
     items_count = 6

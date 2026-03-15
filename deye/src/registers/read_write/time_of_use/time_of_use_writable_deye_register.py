@@ -180,15 +180,14 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
         self.error(f'write(): something went wrong while writing socs in {self.description}')
 
     if value.weeks.values:
-      week = value.weeks.values[0]
-      weekly = ((int(week.enabled) << 0) | #
-                (int(week.monday) << 1) | #
-                (int(week.tuesday) << 2) | #
-                (int(week.wednesday) << 3) | #
-                (int(week.thursday) << 4) | #
-                (int(week.friday) << 5) | #
-                (int(week.saturday) << 6) | #
-                (int(week.sunday) << 7) #
+      weekly = ((int(value.week.enabled) << 0) | #
+                (int(value.week.monday) << 1) | #
+                (int(value.week.tuesday) << 2) | #
+                (int(value.week.wednesday) << 3) | #
+                (int(value.week.thursday) << 4) | #
+                (int(value.week.friday) << 5) | #
+                (int(value.week.saturday) << 6) | #
+                (int(value.week.sunday) << 7) #
                 )
 
       if interactor.write_register(self.weekly_address, [weekly]) != 1:
