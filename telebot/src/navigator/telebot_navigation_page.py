@@ -69,3 +69,6 @@ class TelebotNavigationPage(ABC):
 
   def clear_button_handlers(self) -> None:
     self._button_handlers.clear()
+
+  def get_goodbye_message(self) -> str:
+    return ""

@@ -77,6 +77,9 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     if self._ask_for_reset:
       self._ask_for_reset = False
 
+  def get_goodbye_message(self) -> str:
+    return self._get_time_of_use_as_text(self._tou_original_data)
+
   def _handle_save(self, navigator: TelebotPageNavigator) -> None:
     try:
       self._write_time_of_use(self._tou_data, self._tou_original_data)

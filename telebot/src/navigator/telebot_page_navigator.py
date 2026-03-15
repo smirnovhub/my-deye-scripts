@@ -31,6 +31,7 @@ class TelebotPageNavigator:
     self._message: Optional[telebot.types.Message] = None
     self._pages: Dict[Enum, "TelebotNavigationPage"] = {}
     self._current_page: Optional["TelebotNavigationPage"] = None
+    self._main_page: Optional["TelebotNavigationPage"] = None
 
     with TelebotPageNavigator._lock:
       TelebotPageNavigator._counter += 1
@@ -54,6 +55,7 @@ class TelebotPageNavigator:
   ) -> telebot.types.Message:
     self._chat_id = chat_id
     self._current_page = page
+    self._main_page = page
 
     try:
       page.clear_button_handlers()
@@ -77,6 +79,12 @@ class TelebotPageNavigator:
       text,
       reply_markup = keyboard,
       parse_mode = "HTML",
+    )
+
+    self._bot.clear_step_handler_by_chat_id(self._chat_id)
+    self._bot.register_next_step_handler(
+      self._message,
+      self._next_step_handler,
     )
 
     return self._message
@@ -196,6 +204,7 @@ class TelebotPageNavigator:
     self._message = None
     self._chat_id = None
     self._current_page = None
+    self._main_page = None
 
     with TelebotPageNavigator._lock:
       if self._data_prefix in TelebotPageNavigator._instances:
@@ -232,3 +241,13 @@ class TelebotPageNavigator:
       if instance:
         button_id = int(match.group(2))
         instance._handle_callback(button_id = button_id)
+
+  def _next_step_handler(self, message: telebot.types.Message):
+    if not self._main_page:
+      raise RuntimeError("Navigation has not started yet")
+
+    text = self._main_page.get_goodbye_message()
+    self.stop(text)
+
+    # If we received new command, process it
+    TelebotUtils.forward_next(self._bot, message)

@@ -12,7 +12,6 @@ from telebot_menu_item import TelebotMenuItem
 from deye_registers import DeyeRegisters
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_deye_helper import TelebotDeyeHelper
-from telebot_utils import TelebotUtils
 from time_of_use_data import TimeOfUseData
 from custom_single_registers import CustomSingleRegisters
 from deye_registers_holder import DeyeRegistersHolder
@@ -108,25 +107,3 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
       text = text,
       page = main_page,
     )
-
-    self.bot.clear_step_handler_by_chat_id(message.chat.id)
-    self.bot.register_next_step_handler(
-      message,
-      self._next_step_handler,
-      navigator,
-      original_data,
-      main_page,
-    )
-
-  def _next_step_handler(
-    self,
-    message: telebot.types.Message,
-    navigator: TelebotPageNavigator,
-    tou_data: TimeOfUseData,
-    main_page: TimeOfUseMainPage,
-  ):
-    text = main_page._get_time_of_use_as_text(tou_data)
-    navigator.stop(text)
-
-    # If we received new command, process it
-    TelebotUtils.forward_next(self.bot, message)
