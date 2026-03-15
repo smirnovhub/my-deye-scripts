@@ -11,6 +11,7 @@ from time_of_use_base_page import TimeOfUseBasePage
 from time_of_use_page import TimeOfUsePage
 from time_of_use_data import TimeOfUseData
 from deye_loggers import DeyeLoggers
+from break_button_node import BreakButtonNode
 from deye_registers import DeyeRegisters
 from telebot_page_navigator import TelebotPageNavigator
 from buttons.time_of_use_week_buttons import TimeOfUseWeekButtons
@@ -27,6 +28,7 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     self._loggers = DeyeLoggers()
     registers = DeyeRegisters()
     self._register = registers.time_of_use_register
+    self._ask_for_reset = False
 
   @property
   def page_type(self) -> Enum:
@@ -49,13 +51,33 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
       tou_data = self._tou_data,
     )
 
-    bottom_buttons: List[ButtonNode] = [
-      self.register_button_handler(ButtonNode("Save"), self._handle_save),
-      self.register_button_handler(ButtonNode("Reset"), self._handle_reset),
-      self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel),
-    ]
+    if self._ask_for_reset:
+      bottom_buttons: List[ButtonNode] = [
+        ButtonNode("Reset time intervals?"),
+        BreakButtonNode(),
+        self.register_button_handler(ButtonNode("Yes"), self._handle_reset_yes),
+        self.register_button_handler(ButtonNode("No"), self._handle_reset_no),
+      ]
+    else:
+      bottom_buttons: List[ButtonNode] = [
+        self.register_button_handler(ButtonNode("Save"), self._handle_save),
+      ]
+
+      if self._need_reset():
+        bottom_buttons.append(self.register_button_handler(ButtonNode("Reset"), self._handle_reset_ask))
+
+      bottom_buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
 
     self._buttons = week_buttons.buttons + schedule_buttons.buttons + bottom_buttons
+
+  def on_button_clicked(self, navigator: TelebotPageNavigator, button: ButtonNode) -> None:
+    super().on_button_clicked(
+      navigator = navigator,
+      button = button,
+    )
+
+    if self._ask_for_reset:
+      self._ask_for_reset = False
 
   def _handle_save(self, navigator: TelebotPageNavigator) -> None:
     try:
@@ -65,8 +87,17 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     else:
       navigator.stop(self._get_time_of_use_as_text(self._tou_data))
 
-  def _handle_reset(self, navigator: TelebotPageNavigator) -> None:
+  def _handle_reset_yes(self, navigator: TelebotPageNavigator) -> None:
+    self._ask_for_reset = False
     self._reset_time_intervals()
+    navigator.update()
+
+  def _handle_reset_no(self, navigator: TelebotPageNavigator) -> None:
+    self._ask_for_reset = False
+    navigator.update()
+
+  def _handle_reset_ask(self, navigator: TelebotPageNavigator) -> None:
+    self._ask_for_reset = True
     navigator.update()
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
@@ -98,6 +129,31 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
       holder.write_register(self._register, data)
     finally:
       holder.disconnect()
+
+  def _need_reset(self) -> bool:
+    """
+    Checks if the time intervals need to be reset to their default hourly steps.
+    """
+    values = self._tou_data.times.values
+    total_intervals = len(values)
+
+    # If there's nothing to check, no reset is needed
+    if total_intervals == 0:
+      return False
+
+    hours_per_step = 24 // total_intervals
+
+    for i in range(total_intervals):
+      curr_time = values[i]
+
+      expected_hour = i * hours_per_step
+      expected_minute = 0
+
+      # If any interval differs from the expected default, return True
+      if curr_time.hour != expected_hour or curr_time.minute != expected_minute:
+        return True
+
+    return False
 
   def _reset_time_intervals(self) -> None:
     """
