@@ -1,4 +1,5 @@
 import os
+import signal
 import time
 import threading
 import telebot
@@ -208,7 +209,8 @@ class TelebotUtils:
     Args:
         bot (telebot.TeleBot): The TeleBot instance to stop.
     """
-    bot.stop_bot()
-    time.sleep(60)
+    time.sleep(1)
+    signal.raise_signal(signal.SIGTERM)
+    time.sleep(30)
     # exit will never fire if bot has stopped in right way
     os._exit(1)

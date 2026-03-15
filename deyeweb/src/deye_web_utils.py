@@ -1,5 +1,4 @@
 import gc
-import os
 import re
 import signal
 import threading
@@ -209,6 +208,6 @@ class DeyeWebUtils:
     """
     def delayed_kill():
       time.sleep(delay)
-      os.kill(os.getpid(), signal.SIGTERM)
+      signal.raise_signal(signal.SIGTERM)
 
     threading.Thread(target = delayed_kill, daemon = True).start()
