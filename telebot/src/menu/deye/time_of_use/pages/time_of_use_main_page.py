@@ -207,7 +207,7 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     weekly = data.weeks.values[0]
 
     header = f'{sign(weekly.enabled)} Time of Use schedule:'
-    schedule = 'Gr Gen    Time     Pwr Bat\n'
+    schedule = 'Gr Gen    Time     Pwr Batt\n'
 
     charges = data.charges.values
     times = data.times.values
@@ -226,7 +226,7 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
       schedule += (f'{sign(curr_charge.grid_charge)} {sign(curr_charge.gen_charge)} '
                    f'{curr_time.hour:02d}:{curr_time.minute:02d} '
                    f'{next_time.hour:02d}:{next_time.minute:02d} '
-                   f'{curr_power:>4} {curr_soc:>3}\n')
+                   f'{curr_power:>4} {curr_soc:>3}%\n')
 
     days_of_week = 'Mon Tue Wed Thu Fri Sat Sun\n'
     days_of_week += (f'{sign(weekly.monday)}  '
