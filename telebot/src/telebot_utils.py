@@ -212,5 +212,5 @@ class TelebotUtils:
     time.sleep(1)
     signal.raise_signal(signal.SIGTERM)
     time.sleep(30)
-    # exit will never fire if bot has stopped in right way
+    # Exit will never fire if bot has stopped in right way
     os._exit(1)
