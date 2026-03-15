@@ -55,7 +55,11 @@ class TelebotPageNavigator:
     self._chat_id = chat_id
     self._current_page = page
 
-    page.update()
+    try:
+      page.update()
+    except Exception as e:
+      self._on_error(str(e))
+      raise
 
     user_choices = [TelebotUserChoice(
       text = button.text,
@@ -92,8 +96,13 @@ class TelebotPageNavigator:
 
     self._current_page = page
 
-    page.prepare(**kwargs)
-    page.update()
+    try:
+      page.prepare(**kwargs)
+      page.update()
+    except Exception as e:
+      self._on_error(str(e))
+      raise
+
     self.update(text)
 
   def update(
@@ -105,6 +114,12 @@ class TelebotPageNavigator:
 
     if not self._current_page:
       raise RuntimeError("No current page")
+
+    try:
+      self._current_page.update()
+    except Exception as e:
+      self._on_error(str(e))
+      raise
 
     user_choices = [
       TelebotUserChoice(
@@ -142,10 +157,14 @@ class TelebotPageNavigator:
     if not self._current_page:
       raise RuntimeError("No current page")
 
-    self._current_page.handle_click(
-      navigator = self,
-      button_id = button_id,
-    )
+    try:
+      self._current_page.handle_click(
+        navigator = self,
+        button_id = button_id,
+      )
+    except Exception as e:
+      self._on_error(str(e))
+      raise
 
   def stop(self, text: str = '') -> None:
     if not self._message or not self._chat_id:
@@ -178,6 +197,16 @@ class TelebotPageNavigator:
     with TelebotPageNavigator._lock:
       if self._data_prefix in TelebotPageNavigator._instances:
         del TelebotPageNavigator._instances[self._data_prefix]
+
+  def _on_error(self, message: str) -> None:
+    if not self._chat_id:
+      raise RuntimeError("Navigation has not started yet")
+
+    self._message = self._bot.send_message(
+      self._chat_id,
+      message,
+      parse_mode = "HTML",
+    )
 
   @staticmethod
   def _register_handlers(bot: telebot.TeleBot):

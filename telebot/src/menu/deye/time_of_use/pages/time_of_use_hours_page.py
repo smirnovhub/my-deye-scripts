@@ -2,14 +2,14 @@ from enum import Enum
 from typing import List
 
 from button_node import ButtonNode
+from time_of_use_base_page import TimeOfUseBasePage
 from time_of_use_data import TimeOfUseTimes
 from break_button_node import BreakButtonNode
 from time_of_use_page import TimeOfUsePage
 from time_of_use_button_node import TimeOfUseButtonNode
-from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 
-class TimeOfUseHoursPage(TelebotNavigationPage):
+class TimeOfUseHoursPage(TimeOfUseBasePage):
   def __init__(
     self,
     tou_times: TimeOfUseTimes,
@@ -33,6 +33,7 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     return self._buttons
 
   def prepare(self, time_of_use_line_index: int, **kwargs):
+    self.check_bounds(self._tou_times.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
 
   def update(self) -> None:

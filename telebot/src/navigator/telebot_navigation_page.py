@@ -1,15 +1,20 @@
+import inspect
+
 from enum import Enum
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Union
 
 from abc import ABC, abstractmethod
 from button_node import ButtonNode
 from telebot_page_navigator import TelebotPageNavigator
 
-Handler = Callable[[TelebotPageNavigator], None]
+ButtonHandler = Union[
+  Callable[[TelebotPageNavigator], None],
+  Callable[[TelebotPageNavigator, ButtonNode], None],
+]
 
 class TelebotNavigationPage(ABC):
   def __init__(self):
-    self._button_handlers: Dict[int, Handler] = {}
+    self._button_handlers: Dict[int, ButtonHandler] = {}
 
   @property
   @abstractmethod
@@ -43,10 +48,22 @@ class TelebotNavigationPage(ABC):
 
   def on_button_clicked(self, navigator: TelebotPageNavigator, button: ButtonNode) -> None:
     handler = self._button_handlers.get(button.id)
-    if handler:
+    if not handler:
+      return
+
+    # Get the number of parameters the handler accepts
+    signature = inspect.signature(handler)
+    params = list(signature.parameters.values())
+
+    # Logic to decide how many arguments to pass
+    if len(params) >= 2:
+      # Handler expects at least two arguments (navigator and button)
+      handler(navigator, button)
+    else:
+      # Handler expects only one argument (navigator)
       handler(navigator)
 
-  def register_button_handler(self, button: ButtonNode, handler: Handler) -> ButtonNode:
+  def register_button_handler(self, button: ButtonNode, handler: ButtonHandler) -> ButtonNode:
     self._button_handlers[button.id] = handler
     return button
 

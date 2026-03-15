@@ -125,7 +125,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
     tou_data: TimeOfUseData,
     main_page: TimeOfUseMainPage,
   ):
-    text = main_page.get_time_of_use_as_text(tou_data)
+    text = main_page._get_time_of_use_as_text(tou_data)
     navigator.stop(text)
 
     # If we received new command, process it

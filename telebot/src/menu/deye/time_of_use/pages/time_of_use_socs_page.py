@@ -2,14 +2,14 @@ from enum import Enum
 from typing import List
 
 from button_node import ButtonNode
+from time_of_use_base_page import TimeOfUseBasePage
 from time_of_use_data import TimeOfUseSocs
 from break_button_node import BreakButtonNode
 from time_of_use_page import TimeOfUsePage
 from time_of_use_button_node import TimeOfUseButtonNode
-from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 
-class TimeOfUseSocsPage(TelebotNavigationPage):
+class TimeOfUseSocsPage(TimeOfUseBasePage):
   def __init__(
     self,
     tou_socs: TimeOfUseSocs,
@@ -27,13 +27,14 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     return self._buttons
 
   def prepare(self, time_of_use_line_index: int, **kwargs):
+    self.check_bounds(self._tou_socs.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
 
   def update(self) -> None:
     self.clear_button_handlers()
 
     buttons: List[ButtonNode] = [
-      ButtonNode("Battery power, W:"),
+      ButtonNode("Battery SOC, %:"),
       BreakButtonNode(),
     ]
 
@@ -67,9 +68,14 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:
     navigator.navigate(TimeOfUsePage.main)
 
-  def _create_soc_handler(self, power: int):
+  def _create_soc_handler(self, soc: int):
     def handler(navigator: TelebotPageNavigator) -> None:
-      self._tou_socs.values[self._time_of_use_line_index] = power
+      if self._time_of_use_line_index < 0:
+        # Replace all elements in the list with the new value
+        self._tou_socs.values[:] = [soc] * len(self._tou_socs.values)
+      else:
+        self._tou_socs.values[self._time_of_use_line_index] = soc
+
       navigator.navigate(TimeOfUsePage.main)
 
     return handler
