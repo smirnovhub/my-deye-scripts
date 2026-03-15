@@ -44,6 +44,8 @@
     "src/menu/deye/time_of_use",
     "src/menu/deye/time_of_use/buttons",
     "src/menu/deye/time_of_use/pages",
+    "src/menu/deye/time_of_use/pages/main",
+    "src/menu/deye/time_of_use/pages/main/buttons",
     "src/menu/other",
     "src/navigator",
     "src/test",
