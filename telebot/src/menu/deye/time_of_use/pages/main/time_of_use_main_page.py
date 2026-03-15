@@ -39,8 +39,6 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     return self._buttons
 
   def update(self) -> None:
-    self.clear_button_handlers()
-
     week_buttons = TimeOfUseWeekButtons(
       root_page = self,
       tou_data = self._tou_data,

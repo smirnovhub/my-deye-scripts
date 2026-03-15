@@ -31,8 +31,6 @@ class TimeOfUsePowersPage(TimeOfUseBasePage):
     self._time_of_use_line_index = time_of_use_line_index
 
   def update(self) -> None:
-    self.clear_button_handlers()
-
     buttons: List[ButtonNode] = [
       ButtonNode("Battery power, W:"),
       BreakButtonNode(),

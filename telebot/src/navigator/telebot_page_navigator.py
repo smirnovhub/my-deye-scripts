@@ -56,6 +56,7 @@ class TelebotPageNavigator:
     self._current_page = page
 
     try:
+      page.clear_button_handlers()
       page.update()
     except Exception as e:
       self._on_error(str(e))
@@ -97,6 +98,7 @@ class TelebotPageNavigator:
     self._current_page = page
 
     try:
+      page.clear_button_handlers()
       page.prepare(**kwargs)
       page.update()
     except Exception as e:
@@ -116,6 +118,7 @@ class TelebotPageNavigator:
       raise RuntimeError("No current page")
 
     try:
+      self._current_page.clear_button_handlers()
       self._current_page.update()
     except Exception as e:
       self._on_error(str(e))
