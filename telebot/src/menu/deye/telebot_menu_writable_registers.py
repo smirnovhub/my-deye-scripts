@@ -33,6 +33,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
   def get_commands(self) -> List[telebot.types.BotCommand]:
     commands = []
     for register in self.registers.read_write_registers:
+      # Don't need these registers because we
+      # already have full time of use feature
+      if register.name == self.registers.time_of_use_power_register.name:
+        continue
+      if register.name == self.registers.time_of_use_soc_register.name:
+        continue
       command_name = self.command.command.format(register.name)
       command_description = self.command.description.format(register.description)
       commands.append(telebot.types.BotCommand(command = command_name, description = command_description))
