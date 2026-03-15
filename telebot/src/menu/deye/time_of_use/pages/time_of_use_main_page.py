@@ -207,7 +207,7 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     weekly = data.weeks.values[0]
 
     header = f'{sign(weekly.enabled)} Time of Use schedule:'
-    schedule = 'Gr Gen    Time     Pwr SOC\n'
+    schedule = 'Gr Gen    Time     Pwr Bat\n'
 
     charges = data.charges.values
     times = data.times.values
