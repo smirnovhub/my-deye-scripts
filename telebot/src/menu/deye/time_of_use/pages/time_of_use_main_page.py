@@ -1,33 +1,24 @@
 import copy
 
+from dataclasses import asdict
 from enum import Enum
 from typing import List
-
-from dataclasses import asdict
 
 from button_node import ButtonNode
 from common_utils import CommonUtils
 from time_of_use_base_page import TimeOfUseBasePage
 from time_of_use_page import TimeOfUsePage
 from time_of_use_data import TimeOfUseData
-from deye_loggers import DeyeLoggers
 from break_button_node import BreakButtonNode
-from deye_registers import DeyeRegisters
 from telebot_page_navigator import TelebotPageNavigator
 from buttons.time_of_use_week_buttons import TimeOfUseWeekButtons
 from time_of_use_schedule_buttons import TimeOfUseScheduleButtons
-from custom_single_registers import CustomSingleRegisters
-from telebot_deye_helper import TelebotDeyeHelper
-from deye_registers_holder import DeyeRegistersHolder
 
 class TimeOfUseMainPage(TimeOfUseBasePage):
   def __init__(self, tou_data: TimeOfUseData):
     super().__init__()
     self._tou_data = tou_data
     self._tou_original_data = copy.deepcopy(tou_data)
-    self._loggers = DeyeLoggers()
-    registers = DeyeRegisters()
-    self._register = registers.time_of_use_register
     self._ask_for_reset = False
 
   @property
@@ -81,12 +72,25 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     return self._get_time_of_use_as_text(self._tou_original_data)
 
   def _handle_save(self, navigator: TelebotPageNavigator) -> None:
+    text = self._get_time_of_use_as_text(self._tou_data)
+
+    if asdict(self._tou_data) == asdict(self._tou_original_data):
+      navigator.stop(text)
+      return
+
+    data = copy.deepcopy(self._tou_data)
+
+    self.clear_unchanged_data(
+      data_to_clear = data,
+      original_data = self._tou_original_data,
+    )
+
     try:
-      self._write_time_of_use(self._tou_data, self._tou_original_data)
+      self.write_time_of_use(data)
     except Exception as e:
       navigator.stop(str(e))
     else:
-      navigator.stop(self._get_time_of_use_as_text(self._tou_data))
+      navigator.stop(text)
 
   def _handle_reset_yes(self, navigator: TelebotPageNavigator) -> None:
     self._ask_for_reset = False
@@ -103,33 +107,6 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(self._get_time_of_use_as_text(self._tou_original_data))
-
-  def _write_time_of_use(
-    self,
-    tou_data: TimeOfUseData,
-    tou_original_data: TimeOfUseData,
-  ) -> None:
-    if asdict(tou_data) == asdict(tou_original_data):
-      return
-
-    data = copy.deepcopy(tou_data)
-
-    self._clear_unchanged_data(
-      data_to_clear = data,
-      original_data = tou_original_data,
-    )
-
-    # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
-      loggers = [self._loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(self._register, prefix),
-      **TelebotDeyeHelper.holder_kwargs,
-    )
-
-    try:
-      holder.write_register(self._register, data)
-    finally:
-      holder.disconnect()
 
   def _need_reset(self) -> bool:
     """
@@ -176,37 +153,13 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
       curr_time.hour = i * hours_per_step
       curr_time.minute = 0
 
-  def _clear_unchanged_data(
-    self,
-    data_to_clear: TimeOfUseData,
-    original_data: TimeOfUseData,
-  ) -> None:
-    # Convert parts to dicts for simple comparison
-    # Use asdict to compare the entire content, not object references
-    if asdict(data_to_clear.charges) == asdict(original_data.charges):
-      data_to_clear.charges.values = []
-
-    if asdict(data_to_clear.times) == asdict(original_data.times):
-      data_to_clear.times.values = []
-
-    if asdict(data_to_clear.powers) == asdict(original_data.powers):
-      data_to_clear.powers.values = []
-
-    if asdict(data_to_clear.socs) == asdict(original_data.socs):
-      data_to_clear.socs.values = []
-
-    if asdict(data_to_clear.weeks) == asdict(original_data.weeks):
-      data_to_clear.weeks.values = []
-
   def _get_time_of_use_as_text(self, data: TimeOfUseData) -> str:
     def sign(value: bool):
       on = CommonUtils.large_green_circle_emoji
       off = CommonUtils.large_red_circle_emoji
       return on if value else off
 
-    weekly = data.weeks.values[0]
-
-    header = f'{sign(weekly.enabled)} Time of Use schedule:'
+    header = f'{sign(data.week.enabled)} Time of Use schedule:'
     schedule = 'Gr Gen    Time     Pwr Batt\n'
 
     charges = data.charges.values
@@ -229,12 +182,12 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
                    f'{curr_power:>4} {curr_soc:>3}%\n')
 
     days_of_week = 'Mon Tue Wed Thu Fri Sat Sun\n'
-    days_of_week += (f'{sign(weekly.monday)}  '
-                     f'{sign(weekly.tuesday)}  '
-                     f'{sign(weekly.wednesday)}  '
-                     f'{sign(weekly.thursday)}  '
-                     f'{sign(weekly.friday)}  '
-                     f'{sign(weekly.saturday)}  '
-                     f'{sign(weekly.sunday)}')
+    days_of_week += (f'{sign(data.week.monday)}  '
+                     f'{sign(data.week.tuesday)}  '
+                     f'{sign(data.week.wednesday)}  '
+                     f'{sign(data.week.thursday)}  '
+                     f'{sign(data.week.friday)}  '
+                     f'{sign(data.week.saturday)}  '
+                     f'{sign(data.week.sunday)}')
 
     return f'{header}\n<pre>{days_of_week}</pre>\n<pre>{schedule}</pre>'

@@ -49,13 +49,13 @@ class TelebotPageNavigator:
 
   def start(
     self,
-    chat_id: int,
-    text: str,
     page: "TelebotNavigationPage",
+    text: str,
+    chat_id: int,
   ) -> telebot.types.Message:
-    self._chat_id = chat_id
-    self._current_page = page
     self._main_page = page
+    self._current_page = page
+    self._chat_id = chat_id
 
     try:
       page.clear_button_handlers()

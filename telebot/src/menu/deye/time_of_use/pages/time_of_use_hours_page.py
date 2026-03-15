@@ -3,7 +3,7 @@ from typing import List
 
 from button_node import ButtonNode
 from time_of_use_base_page import TimeOfUseBasePage
-from time_of_use_data import TimeOfUseTimes
+from time_of_use_times import TimeOfUseTimes
 from break_button_node import BreakButtonNode
 from time_of_use_page import TimeOfUsePage
 from time_of_use_button_node import TimeOfUseButtonNode

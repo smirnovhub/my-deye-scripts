@@ -15,7 +15,7 @@ class TimeOfUseWeekButtons:
   ):
     super().__init__()
     self._root_page = root_page
-    self._tou_week = tou_data.weeks.values[0]
+    self._tou_week = tou_data.week
 
     header_buttons: List[ButtonNode] = [
       self._root_page.register_button_handler(ButtonNode("Mon"), self._toggle_monday),

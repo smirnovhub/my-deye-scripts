@@ -1,6 +1,6 @@
-import copy
 import telebot
 
+from time_of_use_enable_page import TimeOfUseEnablePage
 from time_of_use_hours_page import TimeOfUseHoursPage
 from time_of_use_main_page import TimeOfUseMainPage
 from time_of_use_minutes_page import TimeOfUseMinutesPage
@@ -58,8 +58,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
       )
       return
 
-    original_data = copy.deepcopy(data)
-
+    enable_page = TimeOfUseEnablePage(data)
     main_page = TimeOfUseMainPage(data)
 
     start_hours_page = TimeOfUseHoursPage(
@@ -92,8 +91,8 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
     socs_page = TimeOfUseSocsPage(tou_socs = data.socs)
 
     navigator = TelebotPageNavigator(self.bot)
-    text = "Time of Use schedule:"
 
+    navigator.register_page(enable_page)
     navigator.register_page(main_page)
     navigator.register_page(start_hours_page)
     navigator.register_page(start_minutes_page)
@@ -102,8 +101,15 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
     navigator.register_page(powers_page)
     navigator.register_page(socs_page)
 
-    navigator.start(
-      chat_id = message.chat.id,
-      text = text,
-      page = main_page,
-    )
+    if data.week.enabled:
+      navigator.start(
+        page = main_page,
+        text = "Time of Use schedule:",
+        chat_id = message.chat.id,
+      )
+    else:
+      navigator.start(
+        page = enable_page,
+        text = "Time of Use is disabled",
+        chat_id = message.chat.id,
+      )
