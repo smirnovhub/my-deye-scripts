@@ -1,44 +1,30 @@
-import random
 import telebot
 
-from typing import Callable, Dict, List, Optional
-from dataclasses import dataclass
+from typing import Callable, Dict, List
+from dataclasses import dataclass, field
 
 from telebot_user_choice import TelebotUserChoice
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 
+@dataclass
 class SimpleButtonNode:
-  def __init__(
-    self,
-    label: str,
-    text: str = '',
-    children: Optional[List["SimpleButtonNode"]] = None,
-  ):
-    self.label: str = label
-    self.text: str = text
-    # Use a list if provided, otherwise create a new empty list
-    self.children: Optional[List["SimpleButtonNode"]] = children if children is not None else []
-
-  def set_label(self, label: str) -> None:
-    self.label = label
-
-  def __repr__(self) -> str:
-    # Added repr for easier debugging, similar to what dataclass provides
-    return f"ButtonNode(label={self.label!r}, text={self.text!r}, children_count={len(self.children) if self.children else 'None'})"
+  label: str
+  text: str = ''
+  id: str = ''
+  children: List["SimpleButtonNode"] = field(default_factory = list)
 
 @dataclass
 class StepState:
   """
-  Holds the state of a sequential selection using ButtonNode tree.
+  Holds the state of a sequential selection using SimpleButtonNode tree.
   """
   message_text: str
   current_node: SimpleButtonNode
   results: List[SimpleButtonNode]
   message_id: int
   max_per_row: int
-  final_callback: Optional[Callable[[int, List[SimpleButtonNode]], None]] = None
-  step_callback: Optional[Callable[[int, SimpleButtonNode], None]] = None
+  final_callback: Callable[[int, List[SimpleButtonNode]], None]
 
 class SequentialChoices:
   _seq_prefix = "_seq_"
@@ -51,12 +37,11 @@ class SequentialChoices:
     chat_id: int,
     text: str,
     root: SimpleButtonNode,
-    final_callback: Optional[Callable[[int, List[SimpleButtonNode]], None]] = None,
-    step_callback: Optional[Callable[[int, SimpleButtonNode], None]] = None,
+    final_callback: Callable[[int, List[SimpleButtonNode]], None],
     max_per_row: int = 5,
   ) -> telebot.types.Message:
     """
-    Starts a sequential menu using ButtonNode tree.
+    Starts a sequential menu using SimpleButtonNode tree.
     """
     if not root.children:
       return bot.send_message(chat_id, text, parse_mode = "HTML")
@@ -88,7 +73,6 @@ class SequentialChoices:
       message_id = message.message_id,
       max_per_row = max_per_row,
       final_callback = final_callback,
-      step_callback = step_callback,
     )
 
     bot.clear_step_handler_by_chat_id(chat_id)
@@ -113,7 +97,8 @@ class SequentialChoices:
       delay = TelebotConstants.buttons_remove_delay_sec,
     )
 
-    TelebotUtils.forward_next(bot, message)
+    if TelebotUtils.forward_next(bot, message):
+      return
 
   @staticmethod
   def _register_global_handler(bot: telebot.TeleBot):
@@ -138,10 +123,7 @@ class SequentialChoices:
 
       current_node = state.current_node
 
-      if current_node.children is None:
-        return
-
-      # callback_data is index of ButtonNode child
+      # callback_data is index of SimpleButtonNode child
       index_str = call.data[len(SequentialChoices._seq_prefix):]
       try:
         index = int(index_str)
@@ -152,13 +134,6 @@ class SequentialChoices:
         return
 
       child_node = current_node.children[index]
-
-      if child_node.children is None:
-        return
-
-      # Call the per-step callback if it exists
-      if state.step_callback:
-        state.step_callback(chat_id, child_node)
 
       # save the button label clicked
       state.results.append(child_node)
@@ -190,22 +165,12 @@ class SequentialChoices:
       # go to child node
       state.current_node = child_node
 
-      def get_button_choice(index: int, label: str) -> TelebotUserChoice:
-        """
-        Determines the choice object for a button node.
-        Returns a choice with a random text key for separators,
-        otherwise (label, index_string).
-        """
-        if label == TelebotUtils.row_break_str:
-          # Generate a unique text key for the separator to avoid collisions
-          random_key: str = str(random.randint(100000, 999999))
-          return TelebotUserChoice(text = random_key, data = TelebotUtils.row_break_str)
-
-        return TelebotUserChoice(text = label, data = str(index))
-
       # Use a list comprehension to create the options for the extended keyboard
       keyboard = TelebotUtils.get_keyboard_for_choices_ext(
-        options = [get_button_choice(i, b.label) for i, b in enumerate(child_node.children)],
+        options = [TelebotUserChoice(
+          text = b.label,
+          data = str(i),
+        ) for i, b in enumerate(child_node.children)],
         max_per_row = state.max_per_row,
         data_prefix = SequentialChoices._seq_prefix,
       )
