@@ -11,3 +11,9 @@ class TimeOfUseBasePage(TelebotNavigationPage):
     if not (0 <= index < count):
       class_name = self.__class__.__name__
       raise RuntimeError(f"{class_name}: index {index} is out of bounds (0 to {count - 1})")
+
+  def check_upper_bounds(self, collection: Sequence[Any], index: int) -> None:
+    count = len(collection)
+    if index >= count:
+      class_name = self.__class__.__name__
+      raise RuntimeError(f"{class_name}: index {index} should be less than {count - 1}")

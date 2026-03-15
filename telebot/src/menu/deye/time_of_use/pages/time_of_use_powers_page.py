@@ -27,7 +27,7 @@ class TimeOfUsePowersPage(TimeOfUseBasePage):
     return self._buttons
 
   def prepare(self, time_of_use_line_index: int, **kwargs):
-    self.check_bounds(self._tou_powers.values, time_of_use_line_index)
+    self.check_upper_bounds(self._tou_powers.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
 
   def update(self) -> None:
