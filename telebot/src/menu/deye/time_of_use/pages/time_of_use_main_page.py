@@ -48,9 +48,10 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
         self.register_button_handler(ButtonNode("No"), self._handle_reset_no),
       ]
     else:
-      bottom_buttons: List[ButtonNode] = [
-        self.register_button_handler(ButtonNode("Save"), self._handle_save),
-      ]
+      bottom_buttons: List[ButtonNode] = []
+
+      if self._need_save():
+        bottom_buttons.append(self.register_button_handler(ButtonNode("Save"), self._handle_save))
 
       if self._need_reset():
         bottom_buttons.append(self.register_button_handler(ButtonNode("Reset"), self._handle_reset_ask))
@@ -74,7 +75,7 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
   def _handle_save(self, navigator: TelebotPageNavigator) -> None:
     text = self._get_time_of_use_as_text(self._tou_data)
 
-    if asdict(self._tou_data) == asdict(self._tou_original_data):
+    if not self._need_save():
       navigator.stop(text)
       return
 
@@ -107,6 +108,9 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(self._get_time_of_use_as_text(self._tou_original_data))
+
+  def _need_save(self) -> bool:
+    return asdict(self._tou_data) != asdict(self._tou_original_data)
 
   def _need_reset(self) -> bool:
     """
