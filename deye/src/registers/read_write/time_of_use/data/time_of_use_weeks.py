@@ -8,6 +8,6 @@ from time_of_use_week import TimeOfUseWeek
 class TimeOfUseWeeks:
   values: List[TimeOfUseWeek]
 
-  def validate(self, items_count: int) -> None:
+  def check_bounds(self, items_count: int) -> None:
     if self.values and len(self.values) != items_count:
       raise ValueError(f'weeks count should be {items_count}')

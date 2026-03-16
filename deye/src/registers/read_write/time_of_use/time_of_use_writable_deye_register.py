@@ -127,7 +127,7 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
 
     try:
       # Just validate sizes
-      data.validate(min_soc = 0, max_power = 7777777)
+      data.check_bounds()
     except Exception as e:
       self.error(f'read(): {str(e)}')
 
@@ -138,7 +138,10 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
       self.error(f'write(): value should be of type {TimeOfUseData.__name__}')
 
     try:
-      value.validate(min_soc = self.min_soc, max_power = self.max_power)
+      value.check_bounds()
+      value.check_power(max_power = self.max_power)
+      value.check_soc(min_soc = self.min_soc)
+      value.check_time()
     except Exception as e:
       self.error(f'write(): {str(e)}')
 

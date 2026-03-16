@@ -23,14 +23,23 @@ class TimeOfUseData:
       raise RuntimeError("Time of Use weeks values are empty")
     return self.weeks.values[0]
 
-  def validate(self, min_soc: int, max_power: int):
+  def check_bounds(self):
     items_count = 6
 
-    self.charges.validate(items_count = items_count)
-    self.times.validate(items_count = items_count)
-    self.powers.validate(items_count = items_count, max_power = max_power)
-    self.socs.validate(items_count = items_count, min_soc = min_soc)
-    self.weeks.validate(items_count = 1)
+    self.charges.check_bounds(items_count = items_count)
+    self.times.check_bounds(items_count = items_count)
+    self.powers.check_bounds(items_count = items_count)
+    self.socs.check_bounds(items_count = items_count)
+    self.weeks.check_bounds(items_count = 1)
+
+  def check_power(self, max_power: int):
+    self.powers.check_power(max_power = max_power)
+
+  def check_soc(self, min_soc: int):
+    self.socs.check_soc(min_soc = min_soc)
+
+  def check_time(self) -> None:
+    self.times.check_time()
 
   def __str__(self):
     # Compact JSON in a single line

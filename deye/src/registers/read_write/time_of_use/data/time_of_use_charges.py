@@ -7,6 +7,6 @@ from time_of_use_charge import TimeOfUseCharge
 class TimeOfUseCharges:
   values: List[TimeOfUseCharge]
 
-  def validate(self, items_count: int) -> None:
+  def check_bounds(self, items_count: int) -> None:
     if self.values and len(self.values) != items_count:
       raise ValueError(f'charges count should be {items_count}')

@@ -7,10 +7,11 @@ from time_of_use_time import TimeOfUseTime
 class TimeOfUseTimes:
   values: List[TimeOfUseTime]
 
-  def validate(self, items_count: int) -> None:
+  def check_bounds(self, items_count: int) -> None:
     if self.values and len(self.values) != items_count:
       raise ValueError(f'times count should be {items_count}')
 
+  def check_time(self) -> None:
     for value in self.values:
       if not (0 <= value.hour <= 23):
         raise ValueError(f'wrong time value {value}: hour should be from 0 to 23')
