@@ -10,7 +10,6 @@ class IntDeyeRegister(BaseDeyeRegister):
   def __init__(
     self,
     address: int,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
@@ -20,7 +19,6 @@ class IntDeyeRegister(BaseDeyeRegister):
     super().__init__(
       address = address,
       quantity = quantity,
-      name = name,
       description = description,
       suffix = suffix,
       avg = avg,

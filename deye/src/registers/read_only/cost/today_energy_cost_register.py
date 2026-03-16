@@ -10,14 +10,12 @@ class TodayEnergyCostRegister(BaseEnergyCostRegister):
     self,
     energy_register: DeyeRegister,
     energy_costs: Dict[int, float],
-    name: str,
     description: str,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       energy_register = energy_register,
       energy_costs = energy_costs,
-      name = name,
       description = description,
       avg = avg,
     )

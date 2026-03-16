@@ -11,7 +11,6 @@ class LongFloatDeyeRegister(FloatDeyeRegister):
   def __init__(
     self,
     address: int,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
@@ -20,7 +19,6 @@ class LongFloatDeyeRegister(FloatDeyeRegister):
   ):
     super().__init__(
       address = address,
-      name = name,
       description = description,
       suffix = suffix,
       avg = avg,

@@ -23,7 +23,6 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
     weekly_address: int,
     min_soc: int,
     max_power: int,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
@@ -31,7 +30,6 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
     super().__init__(
       address = 0,
       quantity = 0,
-      name = name,
       description = description,
       suffix = suffix,
       avg = avg,

@@ -16,7 +16,6 @@ class BaseDeyeRegister(DeyeRegister):
     self,
     address: int,
     quantity: int,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
@@ -25,7 +24,7 @@ class BaseDeyeRegister(DeyeRegister):
     self._address = address
     self._quantity = quantity
     self._scale: int = 1
-    self._name = name
+    self._name = description.replace(" ", "_").replace("-", "_").lower()
     self._description = description
     self._suffix = suffix
     self._avg = avg
