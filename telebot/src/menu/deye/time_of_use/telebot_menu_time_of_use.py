@@ -58,48 +58,39 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
       )
       return
 
+    navigator = TelebotPageNavigator(self.bot)
+
     enable_page = TimeOfUseEnablePage(data)
     main_page = TimeOfUseMainPage(data)
 
-    start_hours_page = TimeOfUseHoursPage(
-      tou_times = data.times,
-      title = "Start hour:",
-      page_type = TimeOfUsePage.start_hours,
-      next_page_type = TimeOfUsePage.start_minutes,
-    )
-
-    start_minutes_page = TimeOfUseMinutesPage(
-      tou_times = data.times,
-      title = "Start minute:",
-      page_type = TimeOfUsePage.start_minutes,
-    )
-
-    end_hours_page = TimeOfUseHoursPage(
-      tou_times = data.times,
-      title = "End hour:",
-      page_type = TimeOfUsePage.end_hours,
-      next_page_type = TimeOfUsePage.end_minutes,
-    )
-
-    end_minutes_page = TimeOfUseMinutesPage(
-      tou_times = data.times,
-      title = "End minute:",
-      page_type = TimeOfUsePage.end_minutes,
-    )
-
-    powers_page = TimeOfUsePowersPage(tou_powers = data.powers)
-    socs_page = TimeOfUseSocsPage(tou_socs = data.socs)
-
-    navigator = TelebotPageNavigator(self.bot)
-
-    navigator.register_page(enable_page)
-    navigator.register_page(main_page)
-    navigator.register_page(start_hours_page)
-    navigator.register_page(start_minutes_page)
-    navigator.register_page(end_hours_page)
-    navigator.register_page(end_minutes_page)
-    navigator.register_page(powers_page)
-    navigator.register_page(socs_page)
+    navigator.register_pages([
+      enable_page,
+      main_page,
+      TimeOfUseHoursPage(
+        tou_times = data.times,
+        title = "Start hour:",
+        page_type = TimeOfUsePage.start_hours,
+        next_page_type = TimeOfUsePage.start_minutes,
+      ),
+      TimeOfUseMinutesPage(
+        tou_times = data.times,
+        title = "Start minute:",
+        page_type = TimeOfUsePage.start_minutes,
+      ),
+      TimeOfUseHoursPage(
+        tou_times = data.times,
+        title = "End hour:",
+        page_type = TimeOfUsePage.end_hours,
+        next_page_type = TimeOfUsePage.end_minutes,
+      ),
+      TimeOfUseMinutesPage(
+        tou_times = data.times,
+        title = "End minute:",
+        page_type = TimeOfUsePage.end_minutes,
+      ),
+      TimeOfUsePowersPage(tou_powers = data.powers),
+      TimeOfUseSocsPage(tou_socs = data.socs),
+    ])
 
     if data.week.enabled:
       navigator.start(

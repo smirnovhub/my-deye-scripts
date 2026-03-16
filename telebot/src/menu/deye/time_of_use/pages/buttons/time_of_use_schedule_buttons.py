@@ -13,39 +13,38 @@ from time_of_use_switch_button_node import TimeOfUseSwitchButtonNode
 class TimeOfUseScheduleButtons:
   def __init__(
     self,
-    root_page: TelebotNavigationPage,
+    page: TelebotNavigationPage,
     tou_data: TimeOfUseData,
   ):
     super().__init__()
-    self._root_page = root_page
     self._tou_data = tou_data
 
     header_buttons: List[ButtonNode] = [
-      self._root_page.register_button_handler(
+      page.register_button_handler(
         ButtonNode("Grid"),
         self._toggle_all_grid,
       ),
-      self._root_page.register_button_handler(
+      page.register_button_handler(
         ButtonNode("Gen"),
         self._toggle_all_gen,
       ),
       ButtonNode("Start"),
       ButtonNode("End"),
-      self._root_page.register_button_handler(
+      page.register_button_handler(
         ButtonNode("Pwr"),
         self._create_navigation_handler(TimeOfUsePage.powers),
       ),
-      self._root_page.register_button_handler(
+      page.register_button_handler(
         ButtonNode("Batt"),
         self._create_navigation_handler(TimeOfUsePage.socs),
       ),
       BreakButtonNode(),
     ]
 
-    charges = self._tou_data.charges.values
-    times = self._tou_data.times.values
-    powers = self._tou_data.powers.values
-    socs = self._tou_data.socs.values
+    charges = tou_data.charges.values
+    times = tou_data.times.values
+    powers = tou_data.powers.values
+    socs = tou_data.socs.values
 
     count = len(times)
     rows_buttons = []
@@ -87,28 +86,12 @@ class TimeOfUseScheduleButtons:
         index = i,
       )
 
-      self._root_page.register_button_handler(grid, self._create_toggle_grid_handler(i))
-      self._root_page.register_button_handler(gen, self._create_toggle_gen_handler(i))
-
-      self._root_page.register_button_handler(
-        start,
-        self._create_navigation_handler(TimeOfUsePage.start_hours, i),
-      )
-
-      self._root_page.register_button_handler(
-        end,
-        self._create_navigation_handler(TimeOfUsePage.end_hours, (i + 1) % count),
-      )
-
-      self._root_page.register_button_handler(
-        power,
-        self._create_navigation_handler(TimeOfUsePage.powers, i),
-      )
-
-      self._root_page.register_button_handler(
-        soc,
-        self._create_navigation_handler(TimeOfUsePage.socs, i),
-      )
+      page.register_button_handler(grid, self._create_toggle_grid_handler(i))
+      page.register_button_handler(gen, self._create_toggle_gen_handler(i))
+      page.register_button_handler(start, self._create_navigation_handler(TimeOfUsePage.start_hours, i))
+      page.register_button_handler(end, self._create_navigation_handler(TimeOfUsePage.end_hours, (i + 1) % count))
+      page.register_button_handler(power, self._create_navigation_handler(TimeOfUsePage.powers, i))
+      page.register_button_handler(soc, self._create_navigation_handler(TimeOfUsePage.socs, i))
 
       rows_buttons.extend([grid, gen, start, end, power, soc, BreakButtonNode()])
 
@@ -146,7 +129,7 @@ class TimeOfUseScheduleButtons:
 
     return handler
 
-  def _toggle_all_gen(self, navigator: TelebotPageNavigator, button: ButtonNode):
+  def _toggle_all_gen(self, navigator: TelebotPageNavigator):
     # Determine target state: if any is disabled, enable all. Otherwise, disable all.
     charges = self._tou_data.charges.values
     target_state = any(not c.gen_charge for c in charges)
@@ -158,7 +141,7 @@ class TimeOfUseScheduleButtons:
 
   def _create_navigation_handler(self, target_page: Enum, line_index: int = -1):
     # The handler now accepts both navigator and button_node
-    def handler(navigator: TelebotPageNavigator, button: ButtonNode) -> None:
+    def handler(navigator: TelebotPageNavigator) -> None:
       navigator.navigate(target_page, time_of_use_line_index = line_index)
 
     return handler

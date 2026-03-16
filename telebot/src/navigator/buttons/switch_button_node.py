@@ -17,6 +17,3 @@ class SwitchButtonNode(ButtonNode):
   @property
   def enabled(self) -> bool:
     return self._enabled
-
-  def switch(self) -> None:
-    self._enabled = not self._enabled

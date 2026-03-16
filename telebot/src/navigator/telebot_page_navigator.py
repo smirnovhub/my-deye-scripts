@@ -3,7 +3,7 @@ import telebot
 import threading
 
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from telebot_user_choice import TelebotUserChoice
 from telebot_utils import TelebotUtils
@@ -12,6 +12,10 @@ if TYPE_CHECKING:
   from telebot_navigation_page import TelebotNavigationPage
 
 class TelebotPageNavigator:
+  """
+  Manager class that handles navigation between different pages in a Telegram bot.
+  Maintains session state, instances, and global callback routing.
+  """
   _counter: int = 0
   _lock = threading.Lock()
   _navigator_data_prefix = "_nav_"
@@ -23,9 +27,15 @@ class TelebotPageNavigator:
   # 1 means navigator id
   # 35 means button id
   _prefix_pattern = re.compile(rf"^{_navigator_data_prefix}(\d+)_(\d+)")
-  _instance_id_template = f"{_navigator_data_prefix}{0}_"
+  _instance_id_template = f"{_navigator_data_prefix}{{0}}_"
 
   def __init__(self, bot: telebot.TeleBot):
+    """
+    Initializes the navigator and registers global handlers if not already done.
+
+    Args:
+        bot (telebot.TeleBot): The pyTelegramBotAPI instance.
+    """
     self._bot = bot
     self._chat_id: Optional[int] = None
     self._message: Optional[telebot.types.Message] = None
@@ -43,9 +53,28 @@ class TelebotPageNavigator:
         TelebotPageNavigator._handlers_registered = True
 
   def register_page(self, page: "TelebotNavigationPage") -> None:
+    """
+    Adds a page to the navigator's registry.
+
+    Args:
+        page (TelebotNavigationPage): The page instance to register.
+
+    Raises:
+        RuntimeError: If a page with the same type is already registered.
+    """
     if page.page_type in self._pages:
       raise RuntimeError(f"Page {page.page_type.name} already registered")
     self._pages[page.page_type] = page
+
+  def register_pages(self, pages: List["TelebotNavigationPage"]) -> None:
+    """
+    Registers multiple pages at once from a provided list.
+
+    Args:
+        pages (List[TelebotNavigationPage]): A list of page instances to register.
+    """
+    for page in pages:
+      self.register_page(page)
 
   def start(
     self,
@@ -53,6 +82,17 @@ class TelebotPageNavigator:
     text: str,
     chat_id: int,
   ) -> telebot.types.Message:
+    """
+    Initializes a navigation session and sends the first message.
+
+    Args:
+        page (TelebotNavigationPage): The entry point page.
+        text (str): Message text to display.
+        chat_id (int): Telegram chat ID.
+
+    Returns:
+        telebot.types.Message: The sent message object.
+    """
     self._main_page = page
     self._current_page = page
     self._chat_id = chat_id
@@ -81,6 +121,7 @@ class TelebotPageNavigator:
       parse_mode = "HTML",
     )
 
+    # Setup cleanup on any user text input
     self._bot.clear_step_handler_by_chat_id(self._chat_id)
     self._bot.register_next_step_handler(
       self._message,
@@ -95,6 +136,17 @@ class TelebotPageNavigator:
     text: str = '',
     **kwargs,
   ) -> None:
+    """
+    Switches the current page to the one specified by page_type.
+
+    Args:
+        page_type (Enum): The type of the target page.
+        text (str): Optional new text for the message.
+        **kwargs: Data to pass to the target page's prepare method.
+
+    Raises:
+        RuntimeError: If navigation hasn't started or the page is not registered.
+    """
     if not self._message or not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
@@ -102,7 +154,6 @@ class TelebotPageNavigator:
       raise RuntimeError(f"Page {page_type.name} is not registered")
 
     page = self._pages[page_type]
-
     self._current_page = page
 
     try:
@@ -119,6 +170,12 @@ class TelebotPageNavigator:
     self,
     text: str = '',
   ) -> None:
+    """
+    Refreshes the current page's content or buttons in the Telegram message.
+
+    Args:
+        text (str): Optional new text to edit the message.
+    """
     if not self._message or not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
@@ -160,11 +217,16 @@ class TelebotPageNavigator:
           reply_markup = keyboard,
         )
     except Exception:
+      # Ignore "Message is not modified" errors
       pass
 
   def _handle_callback(self, button_id: int):
-    # Logic for handling navigation
-    # Use self._data_prefix to filter or parse data
+    """
+    Internal handler for processing button clicks routed from global callback.
+
+    Args:
+        button_id (int): ID of the button that was pressed.
+    """
     if not self._current_page:
       raise RuntimeError("No current page")
 
@@ -178,6 +240,12 @@ class TelebotPageNavigator:
       raise
 
   def stop(self, text: str = '') -> None:
+    """
+    Ends the navigation session, removes the keyboard and cleans up instance memory.
+
+    Args:
+        text (str): Optional final text for the message.
+    """
     if not self._message or not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
@@ -206,11 +274,18 @@ class TelebotPageNavigator:
     self._current_page = None
     self._main_page = None
 
+    # Cleanup instance to prevent memory leak
     with TelebotPageNavigator._lock:
       if self._data_prefix in TelebotPageNavigator._instances:
         del TelebotPageNavigator._instances[self._data_prefix]
 
   def _on_error(self, message: str) -> None:
+    """
+    Sends an error message to the chat.
+
+    Args:
+        message (str): The error description.
+    """
     if not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
@@ -222,6 +297,12 @@ class TelebotPageNavigator:
 
   @staticmethod
   def _register_handlers(bot: telebot.TeleBot):
+    """
+    Registers the global callback query handler for all navigator instances.
+
+    Args:
+        bot (telebot.TeleBot): The bot instance.
+    """
     @bot.callback_query_handler(func = lambda call: call.data.startswith(TelebotPageNavigator._navigator_data_prefix))
     def _global_nav_handler(call: telebot.types.CallbackQuery):
       if not call.data:
@@ -229,7 +310,7 @@ class TelebotPageNavigator:
 
       bot.answer_callback_query(call.id)
 
-      # Fast lookup using regex match
+      # Extract navigator ID and button ID from callback data
       match = TelebotPageNavigator._prefix_pattern.match(call.data)
       if not match:
         return
@@ -243,6 +324,12 @@ class TelebotPageNavigator:
         instance._handle_callback(button_id = button_id)
 
   def _next_step_handler(self, message: telebot.types.Message):
+    """
+    Auto-stops navigation if the user sends a text message or command.
+
+    Args:
+        message (telebot.types.Message): The message received from the user.
+    """
     if not self._main_page:
       raise RuntimeError("Navigation has not started yet")
 

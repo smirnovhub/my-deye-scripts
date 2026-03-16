@@ -31,12 +31,12 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
 
   def update(self) -> None:
     week_buttons = TimeOfUseWeekButtons(
-      root_page = self,
-      tou_data = self._tou_data,
+      page = self,
+      tou_week = self._tou_data.week,
     )
 
     schedule_buttons = TimeOfUseScheduleButtons(
-      root_page = self,
+      page = self,
       tou_data = self._tou_data,
     )
 
