@@ -157,10 +157,9 @@ class SequentialChoices:
             delay = TelebotConstants.buttons_remove_delay_sec,
           )
 
-        if state.final_callback:
-          state.final_callback(chat_id, state.results)
-          del SequentialChoices._step_states[chat_id]
-          return
+        state.final_callback(chat_id, state.results)
+        del SequentialChoices._step_states[chat_id]
+        return
 
       # go to child node
       state.current_node = child_node

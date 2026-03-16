@@ -1,7 +1,7 @@
 import inspect
 
 from enum import Enum
-from typing import Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Union
 
 from abc import ABC, abstractmethod
 from button_node import ButtonNode
@@ -45,7 +45,7 @@ class TelebotNavigationPage(ABC):
     """
     pass
 
-  def prepare(self, **kwargs) -> None:
+  def prepare(self, **kwargs: Any) -> None:
     """
     Optional hook to pass data into the page before rendering.
     Can be overridden in subclasses to initialize state.
@@ -99,10 +99,10 @@ class TelebotNavigationPage(ABC):
     # Logic to decide how many arguments to pass
     if len(params) >= 2:
       # Handler expects at least two arguments (navigator and button)
-      handler(navigator, button)
+      handler(navigator, button) # type: ignore
     else:
       # Handler expects only one argument (navigator)
-      handler(navigator)
+      handler(navigator) # type: ignore
 
   def register_button_handler(self, button: ButtonNode, handler: ButtonHandler) -> ButtonNode:
     """

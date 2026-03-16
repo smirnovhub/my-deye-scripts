@@ -13,7 +13,7 @@ from time_of_use_page import TimeOfUsePage
 from time_of_use_data import TimeOfUseData
 from break_button_node import BreakButtonNode
 from telebot_page_navigator import TelebotPageNavigator
-from buttons.time_of_use_week_buttons import TimeOfUseWeekButtons
+from time_of_use_week_buttons import TimeOfUseWeekButtons
 from time_of_use_schedule_buttons import TimeOfUseScheduleButtons
 
 class TimeOfUseMainPage(TimeOfUseBasePage):
@@ -48,16 +48,16 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
       tou_data = self._tou_data,
     )
 
+    bottom_buttons: List[ButtonNode] = []
+
     if self._ask_for_reset:
-      bottom_buttons: List[ButtonNode] = [
+      bottom_buttons.extend([
         ButtonNode("Reset time intervals?"),
         BreakButtonNode(),
         self.register_button_handler(ButtonNode("Yes"), self._handle_reset_yes),
         self.register_button_handler(ButtonNode("No"), self._handle_reset_no),
-      ]
+      ])
     else:
-      bottom_buttons: List[ButtonNode] = []
-
       if self._need_save():
         bottom_buttons.append(self.register_button_handler(ButtonNode("Save"), self._handle_save))
 

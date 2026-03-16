@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import Any, List
 
 from button_node import ButtonNode
 from time_of_use_base_page import TimeOfUseBasePage
@@ -26,9 +26,13 @@ class TimeOfUsePowersPage(TimeOfUseBasePage):
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
-  def prepare(self, time_of_use_line_index: int, **kwargs):
-    self.check_upper_bounds(self._tou_powers.values, time_of_use_line_index)
-    self._time_of_use_line_index = time_of_use_line_index
+  def prepare(self, **kwargs: Any):
+    index = kwargs.get("time_of_use_line_index")
+    if index is None:
+      raise RuntimeError("time_of_use_line_index not found")
+
+    self.check_upper_bounds(self._tou_powers.values, index)
+    self._time_of_use_line_index = index
 
   def update(self) -> None:
     buttons: List[ButtonNode] = [
