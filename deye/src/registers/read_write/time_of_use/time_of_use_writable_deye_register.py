@@ -1,5 +1,4 @@
-from datetime import timedelta
-from typing import Any, List, Optional
+from typing import Any, List
 
 from time_of_use_charge import TimeOfUseCharge
 from time_of_use_charges import TimeOfUseCharges
@@ -28,7 +27,6 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
-    caching_time: Optional[timedelta] = None,
   ):
     super().__init__(
       address = 0,
@@ -37,8 +35,11 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
       description = description,
       suffix = suffix,
       avg = avg,
-      caching_time = caching_time,
     )
+
+    if self._loggers.remote_cache_server:
+      self._caching_time = self._writable_registers_caching_time
+
     self.charge_address = charge_address
     self.time_address = time_address
     self.power_address = power_address
