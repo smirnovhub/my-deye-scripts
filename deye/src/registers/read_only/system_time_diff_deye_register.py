@@ -1,6 +1,6 @@
-from typing import Any, List, Optional
+from typing import Any, List
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from deye_exceptions import DeyeValueException
 from deye_register import DeyeRegister
@@ -46,7 +46,3 @@ class SystemTimeDiffDeyeRegister(IntDeyeRegister):
   @property
   def system_time_register(self) -> DeyeRegister:
     return self._system_time_register
-
-  @property
-  def caching_time(self) -> Optional[timedelta]:
-    return self._caching_time
