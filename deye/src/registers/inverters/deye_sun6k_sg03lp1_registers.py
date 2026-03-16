@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List
 
 from datetime import timedelta
 from functools import cached_property
@@ -826,7 +826,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     )
 
   @cached_property
-  def all_registers(self) -> List[DeyeRegister]:
+  def _all_registers_internal(self) -> List[DeyeRegister]:
     return [
       self.ac_couple_frz_high_register,
       self.backup_delay_register,
@@ -909,21 +909,5 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     ]
 
   @cached_property
-  def all_registers_map(self) -> Dict[str, DeyeRegister]:
-    return {reg.name: reg for reg in self.all_registers}
-
-  @cached_property
   def test_registers(self) -> List[DeyeRegister]:
     return [self.test1_register, self.test2_register]
-
-  @cached_property
-  def read_only_registers(self) -> List[DeyeRegister]:
-    return [register for register in self.all_registers if not register.can_write]
-
-  @cached_property
-  def read_write_registers(self) -> List[DeyeRegister]:
-    return [register for register in self.all_registers if register.can_write]
-
-  @property
-  def prefix(self) -> str:
-    return self._prefix
