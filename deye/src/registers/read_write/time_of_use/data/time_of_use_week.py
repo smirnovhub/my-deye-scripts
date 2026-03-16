@@ -6,6 +6,7 @@ class TimeOfUseWeek:
   Represents the days of the week for a time-of-use schedule.
 
   Attributes:
+      enabled (bool): True if time of use schedule enabled.
       monday (bool): True if the schedule applies on Monday.
       tuesday (bool): True if the schedule applies on Tuesday.
       wednesday (bool): True if the schedule applies on Wednesday.
@@ -14,6 +15,7 @@ class TimeOfUseWeek:
       saturday (bool): True if the schedule applies on Saturday.
       sunday (bool): True if the schedule applies on Sunday.
   """
+  enabled: bool
   monday: bool
   tuesday: bool
   wednesday: bool
@@ -21,8 +23,3 @@ class TimeOfUseWeek:
   friday: bool
   saturday: bool
   sunday: bool
-
-  def __str__(self) -> str:
-    return (f'monday={self.monday}, tuesday={self.tuesday}, '
-            f'wednesday={self.wednesday}, thursday={self.thursday}, '
-            f'friday={self.friday}, saturday={self.saturday}, sunday={self.sunday}')

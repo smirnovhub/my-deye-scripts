@@ -1,4 +1,5 @@
 import random
+import threading
 
 from typing import Dict, List, Set
 
@@ -24,6 +25,7 @@ class SolarmanTestServer(SolarmanBaseServer):
     self.readed_registers: Set[int] = set()
     self.written_registers: Set[int] = set()
     self.random_values_on_read: bool = False
+    self.lock = threading.Lock()
 
   def set_random_mode(self, rnd_mode: bool) -> None:
     """
@@ -51,8 +53,9 @@ class SolarmanTestServer(SolarmanBaseServer):
     value : int
         The value to store in the register.
     """
-    self.log.info(f"{self.name}: setting register value {{{address}: {value}}}")
-    self.registers[address] = value
+    with self.lock:
+      self.log.info(f"{self.name}: setting register value {{{address}: {value}}}")
+      self.registers[address] = value
 
   def set_register_values(self, addresses: List[int], values: List[int]) -> None:
     """
@@ -74,8 +77,9 @@ class SolarmanTestServer(SolarmanBaseServer):
 
     self.log.info(f"{self.name}: setting register addresses {addresses} to values {values}")
 
-    for i, address in enumerate(addresses):
-      self.registers[address] = values[i]
+    with self.lock:
+      for i, address in enumerate(addresses):
+        self.registers[address] = values[i]
 
   def clear_registers(self) -> None:
     """
@@ -84,7 +88,8 @@ class SolarmanTestServer(SolarmanBaseServer):
     This method resets the internal register dictionary, effectively
     simulating a device with no stored values.
     """
-    self.registers.clear()
+    with self.lock:
+      self.registers.clear()
 
   def clear_registers_status(self) -> None:
     """
@@ -93,8 +98,9 @@ class SolarmanTestServer(SolarmanBaseServer):
     This method resets the sets that track which registers have been read
     or written, simulating a fresh device state for testing.
     """
-    self.readed_registers.clear()
-    self.written_registers.clear()
+    with self.lock:
+      self.readed_registers.clear()
+      self.written_registers.clear()
 
   def is_registers_readed(self, starting_address: int, quantity: int) -> bool:
     """
@@ -115,9 +121,10 @@ class SolarmanTestServer(SolarmanBaseServer):
     bool
         True if all specified registers have been read, False otherwise.
     """
-    for address in range(starting_address, starting_address + quantity):
-      if address not in self.readed_registers:
-        return False
+    with self.lock:
+      for address in range(starting_address, starting_address + quantity):
+        if address not in self.readed_registers:
+          return False
     return True
 
   def is_registers_written(self, starting_address: int, quantity: int) -> bool:
@@ -139,13 +146,15 @@ class SolarmanTestServer(SolarmanBaseServer):
     bool
         True if all specified registers have been written, False otherwise.
     """
-    for address in range(starting_address, starting_address + quantity):
-      if address not in self.written_registers:
-        return False
+    with self.lock:
+      for address in range(starting_address, starting_address + quantity):
+        if address not in self.written_registers:
+          return False
     return True
 
   def is_something_written(self) -> bool:
-    return bool(self.written_registers)
+    with self.lock:
+      return bool(self.written_registers)
 
   def get_new_registers_values(self, starting_address: int, values: List[int]) -> Dict[int, int]:
     """
@@ -193,10 +202,11 @@ class SolarmanTestServer(SolarmanBaseServer):
     List[int]
         A list of register values corresponding to the requested addresses.
     """
-    return [self.registers.get(i, 0) for i in range(
-      starting_address,
-      starting_address + quantity,
-    )]
+    with self.lock:
+      return [self.registers.get(i, 0) for i in range(
+        starting_address,
+        starting_address + quantity,
+      )]
 
   def on_read_coils(self, func: ReadCoils) -> bytes:
     if func.quantity is None:
@@ -214,8 +224,9 @@ class SolarmanTestServer(SolarmanBaseServer):
 
     new_values = self.get_new_registers_values(func.starting_address, read_values)
 
-    for address in new_values.keys():
-      self.readed_registers.add(address)
+    with self.lock:
+      for address in new_values.keys():
+        self.readed_registers.add(address)
 
     self.log.info(f'{self.name}: read registers {new_values}')
     return func.create_response_pdu(read_values)
@@ -230,10 +241,13 @@ class SolarmanTestServer(SolarmanBaseServer):
       raise ValueError("ReadHoldingRegisters request missing starting_address or values")
 
     write_values = self.get_new_registers_values(func.starting_address, func.values)
-    self.registers.update(write_values)
 
-    for address in write_values.keys():
-      self.written_registers.add(address)
+    with self.lock:
+      self.registers.update(write_values)
+
+    with self.lock:
+      for address in write_values.keys():
+        self.written_registers.add(address)
 
     self.log.info(f'{self.name}: write registers {write_values}')
     return func.create_response_pdu()

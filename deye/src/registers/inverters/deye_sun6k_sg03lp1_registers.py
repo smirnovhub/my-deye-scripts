@@ -37,7 +37,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     self._backup_delay_register = IntWritableDeyeRegister(311, 0, 30000, 'backup_delay', 'Backup Delay', 'ms', avg = DeyeRegisterAverageType.only_master)
     self._battery_bms_charge_current_limit_register = IntDeyeRegister(314, 'battery_bms_charge_current_limit', 'Battery BMS Charge Current Limit', 'A', avg = DeyeRegisterAverageType.only_master)
     self._battery_bms_discharge_current_limit_register = IntDeyeRegister(315, 'battery_bms_discharge_current_limit', 'Battery BMS Discharge Current Limit', 'A', avg = DeyeRegisterAverageType.only_master)
-    self._battery_capacity_register = IntDeyeRegister(107, 'battery_capacity', 'Battery Capacity', 'Ah', avg = DeyeRegisterAverageType.only_master, caching_time = timedelta(hours = 3))
+    self._battery_capacity_register = IntDeyeRegister(107, 'battery_capacity', 'Battery Capacity', 'Ah', avg = DeyeRegisterAverageType.only_master, caching_time = timedelta(hours = 12))
     self._battery_current_register = SignedFloatDeyeRegister(191, 'battery_current', 'Battery Current', 'A', avg = DeyeRegisterAverageType.accumulate).with_scale(100)
     self._battery_gen_charge_current_register = IntWritableDeyeRegister(227, 0, 80, 'battery_gen_charge_current', 'Battery Gen Charge Current', 'A', avg = DeyeRegisterAverageType.fake_accumulate)
     self._battery_grid_charge_current_register = IntWritableDeyeRegister(230, 0, 80, 'battery_grid_charge_current', 'Battery Grid Charge Current', 'A', avg = DeyeRegisterAverageType.fake_accumulate)
@@ -122,6 +122,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       description = 'Time Of Use',
       suffix = '',
       avg = DeyeRegisterAverageType.only_master,
+      caching_time = timedelta(hours = 12),
     )
 
     self._inverter_system_time_diff_register = SystemTimeDiffDeyeRegister(
@@ -229,7 +230,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
           # Very long caching time for writable registers to minimize requests to loggers.
           # All devices should use the same caching server, so if one device updates the register,
           # other devices will get the updated value from cache
-          register.set_caching_time(timedelta(hours = 3))
+          register.set_caching_time(timedelta(hours = 12))
 
   @property
   def prefix(self) -> str:

@@ -209,6 +209,9 @@ class DeyeWebUtils:
     """
     def delayed_kill():
       time.sleep(delay)
-      os.kill(os.getpid(), signal.SIGTERM)
+      signal.raise_signal(signal.SIGTERM)
+      time.sleep(15)
+      # Exit will never fire if bot has stopped in right way
+      os._exit(1)
 
     threading.Thread(target = delayed_kill, daemon = True).start()

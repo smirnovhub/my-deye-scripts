@@ -41,7 +41,13 @@
     "src/menu/deye/master/settings",
     "src/menu/deye/registers",
     "src/menu/deye/slave",
+    "src/menu/deye/time_of_use",
+    "src/menu/deye/time_of_use/buttons",
+    "src/menu/deye/time_of_use/pages",
+    "src/menu/deye/time_of_use/pages/buttons",
     "src/menu/other",
+    "src/navigator",
+    "src/navigator/buttons",
     "src/test",
     "src/users"
   ],
