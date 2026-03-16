@@ -565,7 +565,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def pv_total_current_register(self) -> DeyeRegister:
     return SumDeyeRegister(
-      [self.pv1_current_register, self.pv2_current_register],
+      [
+        self.pv1_current_register,
+        self.pv2_current_register,
+      ],
       'pv_total_current',
       'PV Total current',
       'A',
@@ -575,7 +578,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def pv_total_power_register(self) -> DeyeRegister:
     return SumDeyeRegister(
-      [self.pv1_power_register, self.pv2_power_register],
+      [
+        self.pv1_power_register,
+        self.pv2_power_register,
+      ],
       'pv_total_power',
       'PV Total Power',
       'W',

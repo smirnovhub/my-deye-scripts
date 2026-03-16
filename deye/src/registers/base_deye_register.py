@@ -34,6 +34,7 @@ class BaseDeyeRegister(DeyeRegister):
     self._max_value: Union[int, float] = 0
     self._caching_time = caching_time
     self._loggers = DeyeLoggers()
+    self._writable_registers_caching_time = timedelta(hours = 12)
 
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     if interactor.is_master or (self._avg != DeyeRegisterAverageType.only_master
@@ -169,7 +170,6 @@ class BaseDeyeRegister(DeyeRegister):
 
   @property
   def caching_time(self) -> Optional[timedelta]:
+    if self.can_write and self._loggers.remote_cache_server:
+      return self._writable_registers_caching_time
     return self._caching_time
-
-  def set_caching_time(self, caching_time: timedelta) -> None:
-    self._caching_time = caching_time
