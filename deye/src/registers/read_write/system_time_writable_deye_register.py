@@ -66,3 +66,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
     self._value = date
     return self._value
+
+  @property
+  def caching_time(self) -> Optional[timedelta]:
+    return self._caching_time
