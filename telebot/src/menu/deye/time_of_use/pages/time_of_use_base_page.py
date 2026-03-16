@@ -2,8 +2,8 @@ from dataclasses import asdict
 from typing import Any, Sequence
 
 from time_of_use_data import TimeOfUseData
-from deye_loggers import DeyeLoggers
-from deye_registers import DeyeRegisters
+from deye_logger import DeyeLogger
+from deye_register import DeyeRegister
 from telebot_navigation_page import TelebotNavigationPage
 from custom_single_registers import CustomSingleRegisters
 from telebot_deye_helper import TelebotDeyeHelper
@@ -12,9 +12,6 @@ from deye_registers_holder import DeyeRegistersHolder
 class TimeOfUseBasePage(TelebotNavigationPage):
   def __init__(self):
     super().__init__()
-    self._loggers = DeyeLoggers()
-    registers = DeyeRegisters()
-    self._register = registers.time_of_use_register
 
   def check_bounds(self, collection: Sequence[Any], index: int) -> None:
     count = len(collection)
@@ -28,16 +25,25 @@ class TimeOfUseBasePage(TelebotNavigationPage):
       class_name = self.__class__.__name__
       raise RuntimeError(f"{class_name}: index {index} should be less than {count - 1}")
 
-  def write_time_of_use(self, tou_data: TimeOfUseData) -> None:
+  def write_time_of_use(
+    self,
+    tou_register: DeyeRegister,
+    tou_data: TimeOfUseData,
+    master_logger: DeyeLogger,
+  ) -> None:
+    if not isinstance(tou_register.value, TimeOfUseData):
+      raise RuntimeError(f"Register value type should be {TimeOfUseData.__name__}, but "
+                         f"{type(tou_register.value).__name__} received")
+
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
-      loggers = [self._loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(self._register, prefix),
+      loggers = [master_logger],
+      register_creator = lambda prefix: CustomSingleRegisters(tou_register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.write_register(self._register, tou_data)
+      holder.write_register(tou_register, tou_data)
     finally:
       holder.disconnect()
 

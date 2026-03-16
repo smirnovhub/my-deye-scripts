@@ -5,7 +5,9 @@ from enum import Enum
 from typing import List
 
 from button_node import ButtonNode
+from deye_register import DeyeRegister
 from common_utils import CommonUtils
+from deye_loggers import DeyeLoggers
 from time_of_use_base_page import TimeOfUseBasePage
 from time_of_use_page import TimeOfUsePage
 from time_of_use_data import TimeOfUseData
@@ -15,10 +17,16 @@ from buttons.time_of_use_week_buttons import TimeOfUseWeekButtons
 from time_of_use_schedule_buttons import TimeOfUseScheduleButtons
 
 class TimeOfUseMainPage(TimeOfUseBasePage):
-  def __init__(self, tou_data: TimeOfUseData):
+  def __init__(
+    self,
+    tou_register: DeyeRegister,
+    tou_data: TimeOfUseData,
+  ):
     super().__init__()
+    self._tou_register = tou_register
     self._tou_data = tou_data
     self._tou_original_data = copy.deepcopy(tou_data)
+    self._loggers = DeyeLoggers()
     self._ask_for_reset = False
 
   @property
@@ -73,7 +81,7 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     return self._get_time_of_use_as_text(self._tou_original_data)
 
   def _handle_save(self, navigator: TelebotPageNavigator) -> None:
-    text = self._get_time_of_use_as_text(self._tou_data)
+    text = self._get_time_of_use_as_text(tou_data = self._tou_data, suffx = "saved")
 
     if not self._need_save():
       navigator.stop(text)
@@ -87,7 +95,11 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     )
 
     try:
-      self.write_time_of_use(data)
+      self.write_time_of_use(
+        tou_register = self._tou_register,
+        master_logger = self._loggers.master,
+        tou_data = data,
+      )
     except Exception as e:
       navigator.stop(str(e))
     else:
@@ -107,7 +119,7 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     navigator.update()
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(self._get_time_of_use_as_text(self._tou_original_data))
+    navigator.stop(self._get_time_of_use_as_text(tou_data = self._tou_original_data))
 
   def _need_save(self) -> bool:
     return asdict(self._tou_data) != asdict(self._tou_original_data)
@@ -157,19 +169,23 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
       curr_time.hour = i * hours_per_step
       curr_time.minute = 0
 
-  def _get_time_of_use_as_text(self, data: TimeOfUseData) -> str:
+  def _get_time_of_use_as_text(
+    self,
+    tou_data: TimeOfUseData,
+    suffx: str = "",
+  ) -> str:
     def sign(value: bool):
       on = CommonUtils.large_green_circle_emoji
       off = CommonUtils.large_red_circle_emoji
       return on if value else off
 
-    header = f'{sign(data.week.enabled)} Time of Use schedule:'
+    header = f'{sign(tou_data.week.enabled)} Time of Use schedule: {suffx}'
     schedule = 'Gr Gen    Time     Pwr Batt\n'
 
-    charges = data.charges.values
-    times = data.times.values
-    powers = data.powers.values
-    socs = data.socs.values
+    charges = tou_data.charges.values
+    times = tou_data.times.values
+    powers = tou_data.powers.values
+    socs = tou_data.socs.values
 
     count = len(times)
     for i in range(count):
@@ -186,12 +202,12 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
                    f'{curr_power:>4} {curr_soc:>3}%\n')
 
     days_of_week = 'Mon Tue Wed Thu Fri Sat Sun\n'
-    days_of_week += (f'{sign(data.week.monday)}  '
-                     f'{sign(data.week.tuesday)}  '
-                     f'{sign(data.week.wednesday)}  '
-                     f'{sign(data.week.thursday)}  '
-                     f'{sign(data.week.friday)}  '
-                     f'{sign(data.week.saturday)}  '
-                     f'{sign(data.week.sunday)}')
+    days_of_week += (f'{sign(tou_data.week.monday)}  '
+                     f'{sign(tou_data.week.tuesday)}  '
+                     f'{sign(tou_data.week.wednesday)}  '
+                     f'{sign(tou_data.week.thursday)}  '
+                     f'{sign(tou_data.week.friday)}  '
+                     f'{sign(tou_data.week.saturday)}  '
+                     f'{sign(tou_data.week.sunday)}')
 
     return f'{header}\n<pre>{days_of_week}</pre>\n<pre>{schedule}</pre>'

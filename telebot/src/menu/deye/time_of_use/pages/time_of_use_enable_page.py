@@ -4,6 +4,8 @@ from enum import Enum
 from typing import List
 
 from button_node import ButtonNode
+from deye_loggers import DeyeLoggers
+from deye_register import DeyeRegister
 from time_of_use_base_page import TimeOfUseBasePage
 from time_of_use_data import TimeOfUseData
 from break_button_node import BreakButtonNode
@@ -11,9 +13,15 @@ from time_of_use_page import TimeOfUsePage
 from telebot_page_navigator import TelebotPageNavigator
 
 class TimeOfUseEnablePage(TimeOfUseBasePage):
-  def __init__(self, tou_data: TimeOfUseData):
+  def __init__(
+    self,
+    tou_register: DeyeRegister,
+    tou_data: TimeOfUseData,
+  ):
     super().__init__()
+    self._tou_register = tou_register
     self._tou_data = tou_data
+    self._loggers = DeyeLoggers()
 
   @property
   def page_type(self) -> Enum:
@@ -43,7 +51,11 @@ class TimeOfUseEnablePage(TimeOfUseBasePage):
     data.socs.values.clear()
 
     try:
-      self.write_time_of_use(tou_data = data)
+      self.write_time_of_use(
+        tou_register = self._tou_register,
+        master_logger = self._loggers.master,
+        tou_data = data,
+      )
     except Exception as e:
       navigator.stop(str(e))
     else:

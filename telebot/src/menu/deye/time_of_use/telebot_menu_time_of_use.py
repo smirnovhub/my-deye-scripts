@@ -19,8 +19,6 @@ from deye_registers_holder import DeyeRegistersHolder
 class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.registers = DeyeRegisters()
-    self.register = self.registers.time_of_use_register
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -33,10 +31,14 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
     if self.has_updates(message):
       return
 
-    # should be local to avoid issues with locks
+    # Should be local to avoid race conditions with threads
+    registers = DeyeRegisters()
+    tou_register = registers.time_of_use_register
+
+    # Should be local to avoid issues with locks and threads
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(self.register, prefix),
+      register_creator = lambda prefix: CustomSingleRegisters(tou_register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
@@ -48,51 +50,58 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
     finally:
       holder.disconnect()
 
-    data = self.register.value
+    tou_data = tou_register.value
 
-    if not isinstance(data, TimeOfUseData):
+    if not isinstance(tou_data, TimeOfUseData):
       self.bot.send_message(
         message.chat.id,
-        f'Register type is not {TimeOfUseData.__name__}',
-        parse_mode = 'HTML',
+        f"Register value type should be {TimeOfUseData.__name__}, but "
+        f"{type(tou_register.value).__name__} received",
       )
       return
 
     navigator = TelebotPageNavigator(self.bot)
 
-    enable_page = TimeOfUseEnablePage(data)
-    main_page = TimeOfUseMainPage(data)
+    enable_page = TimeOfUseEnablePage(
+      tou_register = tou_register,
+      tou_data = tou_data,
+    )
+
+    main_page = TimeOfUseMainPage(
+      tou_register = tou_register,
+      tou_data = tou_data,
+    )
 
     navigator.register_pages([
       enable_page,
       main_page,
       TimeOfUseHoursPage(
-        tou_times = data.times,
+        tou_times = tou_data.times,
         title = "Start hour:",
         page_type = TimeOfUsePage.start_hours,
         next_page_type = TimeOfUsePage.start_minutes,
       ),
       TimeOfUseMinutesPage(
-        tou_times = data.times,
+        tou_times = tou_data.times,
         title = "Start minute:",
         page_type = TimeOfUsePage.start_minutes,
       ),
       TimeOfUseHoursPage(
-        tou_times = data.times,
+        tou_times = tou_data.times,
         title = "End hour:",
         page_type = TimeOfUsePage.end_hours,
         next_page_type = TimeOfUsePage.end_minutes,
       ),
       TimeOfUseMinutesPage(
-        tou_times = data.times,
+        tou_times = tou_data.times,
         title = "End minute:",
         page_type = TimeOfUsePage.end_minutes,
       ),
-      TimeOfUsePowersPage(tou_powers = data.powers),
-      TimeOfUseSocsPage(tou_socs = data.socs),
+      TimeOfUsePowersPage(tou_powers = tou_data.powers),
+      TimeOfUseSocsPage(tou_socs = tou_data.socs),
     ])
 
-    if data.week.enabled:
+    if tou_data.week.enabled:
       navigator.start(
         page = main_page,
         text = "Time of Use schedule:",
