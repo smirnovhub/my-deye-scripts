@@ -17,6 +17,8 @@ from deye_web_remote_command import DeyeWebRemoteCommand
 
 class DeyeWebUtils:
   _id_stack: List[int] = []
+  _lock = threading.Lock()
+
   SPACES_REGEXP = re.compile(r'\s{2,}')
 
   @staticmethod
@@ -44,7 +46,10 @@ class DeyeWebUtils:
       method = frame.f_back.f_code.co_name
 
     id = DeyeWebUtils._generate_id()
-    DeyeWebUtils._id_stack.append(id)
+
+    with DeyeWebUtils._lock:
+      DeyeWebUtils._id_stack.append(id)
+
     return DeyeWebUtils.get_comment(obj, method, f'{id} BEGIN')
 
   @staticmethod
@@ -58,10 +63,12 @@ class DeyeWebUtils:
     if frame is not None and frame.f_back is not None:
       method = frame.f_back.f_code.co_name
 
-    if not DeyeWebUtils._id_stack:
-      raise RuntimeError("No matching BEGIN for END")
+    with DeyeWebUtils._lock:
+      if not DeyeWebUtils._id_stack:
+        raise RuntimeError("No matching BEGIN for END")
 
-    id = DeyeWebUtils._id_stack.pop()
+      id = DeyeWebUtils._id_stack.pop()
+
     return DeyeWebUtils.get_comment(obj, method, f'{id} END')
 
   @staticmethod
