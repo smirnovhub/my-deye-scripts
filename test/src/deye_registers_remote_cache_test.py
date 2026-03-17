@@ -76,7 +76,7 @@ def run_cache_server():
 if __name__ == '__main__':
   logging.basicConfig(
     level = logging.INFO,
-    format = "[%(asctime)s] [%(levelname)s] %(message)s",
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
     datefmt = DeyeUtils.time_format_str,
   )
 
