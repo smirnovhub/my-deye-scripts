@@ -9,6 +9,7 @@ from typing import List
 
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
+from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from solarman_test_server import SolarmanTestServer
@@ -17,30 +18,35 @@ from deye_test_helper import DeyeTestHelper
 
 base_path = '../..'
 
-logging.basicConfig(
-  level = logging.INFO,
-  format = "[%(asctime)s] [%(levelname)s] %(message)s",
-  datefmt = DeyeUtils.time_format_str,
-)
-
 log = logging.getLogger()
-loggers = DeyeLoggers()
-registers = DeyeRegisters()
 
-if not loggers.is_test_loggers:
-  log.info('ERROR: your loggers are not test loggers')
-  sys.exit(1)
+def setup_logging() -> None:
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
+  )
 
-logger = random.choice(loggers.loggers)
+def get_random_logger() -> DeyeLogger:
+  loggers = DeyeLoggers()
+  if not loggers.is_test_loggers:
+    log.info('ERROR: your loggers are not test loggers')
+    sys.exit(1)
 
-server = SolarmanTestServer(
-  name = logger.name,
-  address = logger.address,
-  serial = logger.serial,
-  port = logger.port,
-)
+  return random.choice(loggers.loggers)
 
-def execute_command(cache_time: int) -> str:
+def run_server(logger: DeyeLogger) -> SolarmanTestServer:
+  return SolarmanTestServer(
+    name = logger.name,
+    address = logger.address,
+    serial = logger.serial,
+    port = logger.port,
+  )
+
+def execute_command(
+  logger: DeyeLogger,
+  cache_time: int,
+) -> str:
   """
   Execute the Deye command-line utility with the given cache time.
   Retries up to 10 times if 'exception' or 'error' is found in the output.
@@ -75,6 +81,8 @@ def execute_command(cache_time: int) -> str:
 
 def read_and_check(
   *,
+  logger: DeyeLogger,
+  server: SolarmanTestServer,
   register: DeyeRegister,
   cache_time: int,
   expected_value: int,
@@ -98,7 +106,10 @@ def read_and_check(
   server.clear_registers_status()
   server.set_register_value(register.address, expected_value)
 
-  output = execute_command(cache_time)
+  output = execute_command(
+    logger = logger,
+    cache_time = cache_time,
+  )
 
   if should_read_server:
     if not server.is_registers_readed(register.address, register.quantity):
@@ -114,8 +125,15 @@ def read_and_check(
     sys.exit(1)
 
 def main_test_logic():
+  setup_logging()
+
+  logger = get_random_logger()
+  server = run_server(logger)
+
   # ---- MAIN TEST LOGIC ----
   randoms: List[DeyeRegisterRandomValue] = []
+
+  registers = DeyeRegisters()
 
   for register in registers.all_registers:
     log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
@@ -139,6 +157,8 @@ def main_test_logic():
   # 1. First read (no cache yet)
   value1 = 12345
   read_and_check(
+    logger = logger,
+    server = server,
     register = register,
     cache_time = 0,
     expected_value = value1,
@@ -147,6 +167,8 @@ def main_test_logic():
 
   # 2. Second read (from cache)
   read_and_check(
+    logger = logger,
+    server = server,
     register = register,
     cache_time = 15,
     expected_value = value1,
@@ -156,6 +178,8 @@ def main_test_logic():
 
   # 3. Third read (still from cache)
   read_and_check(
+    logger = logger,
+    server = server,
     register = register,
     cache_time = 15,
     expected_value = value1,
@@ -170,6 +194,8 @@ def main_test_logic():
 
   value3 = 45678
   read_and_check(
+    logger = logger,
+    server = server,
     register = register,
     cache_time = 3,
     expected_value = value3,
@@ -178,6 +204,8 @@ def main_test_logic():
 
   # 5. Next read (from cache again)
   read_and_check(
+    logger = logger,
+    server = server,
     register = register,
     cache_time = 25,
     expected_value = value3,
