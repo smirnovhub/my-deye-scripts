@@ -1,4 +1,5 @@
 from typing import List
+from functools import cached_property
 
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
@@ -8,6 +9,6 @@ class CustomSingleRegisters(DeyeRegisters):
     super().__init__(prefix)
     self._registers: List[DeyeRegister] = [register]
 
-  @property
+  @cached_property
   def all_registers(self) -> List[DeyeRegister]:
     return self._registers
