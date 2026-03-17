@@ -31,12 +31,12 @@ class DeyeTestUtils:
       os.environ[f'DEYE_SLAVE{i}_LOGGER_SERIAL'] = str(num)
       os.environ[f'DEYE_SLAVE{i}_LOGGER_PORT'] = str(port)
 
-    os.environ['REMOTE_CACHE_SERVER_URL'] = (f"http://{DeyeTestUtils.storage_server_host}:"
-                                             f"{DeyeTestUtils.storage_server_port}/cache")
+    os.environ['REMOTE_CACHE_SERVER_URL'] = ""
 
   @staticmethod
-  def turn_off_remote_cache() -> None:
-    os.environ['REMOTE_CACHE_SERVER_URL'] = ""
+  def turn_on_remote_cache() -> None:
+    os.environ['REMOTE_CACHE_SERVER_URL'] = (f"http://{DeyeTestUtils.storage_server_host}:"
+                                             f"{DeyeTestUtils.storage_server_port}/cache")
 
   @staticmethod
   def run_storage_server() -> multiprocessing.Process:

@@ -29,7 +29,7 @@ from deye_test_utils import DeyeTestUtils
 from deye_loggers import DeyeLoggers
 from deye_test_helper import DeyeTestHelper
 
-DeyeTestUtils.setup_test_environment()
+DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
 logging.basicConfig(
   level = logging.INFO,

@@ -37,6 +37,7 @@ if __name__ == '__main__':
   )
 
   DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+  DeyeTestUtils.turn_on_remote_cache()
 
   logger = logging.getLogger()
 

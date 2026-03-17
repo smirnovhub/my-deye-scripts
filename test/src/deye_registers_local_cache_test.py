@@ -27,7 +27,6 @@ from deye_loggers import DeyeLoggers
 from deye_test_utils import DeyeTestUtils
 
 DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
-DeyeTestUtils.turn_off_remote_cache()
 
 from deye_registers_cache_test_base import main_test_logic
 
