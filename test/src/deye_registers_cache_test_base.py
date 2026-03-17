@@ -20,29 +20,6 @@ base_path = '../..'
 
 log = logging.getLogger()
 
-def setup_logging() -> None:
-  logging.basicConfig(
-    level = logging.INFO,
-    format = "[%(asctime)s] [%(levelname)s] %(message)s",
-    datefmt = DeyeUtils.time_format_str,
-  )
-
-def get_random_logger() -> DeyeLogger:
-  loggers = DeyeLoggers()
-  if not loggers.is_test_loggers:
-    log.info('ERROR: your loggers are not test loggers')
-    sys.exit(1)
-
-  return random.choice(loggers.loggers)
-
-def run_server(logger: DeyeLogger) -> SolarmanTestServer:
-  return SolarmanTestServer(
-    name = logger.name,
-    address = logger.address,
-    serial = logger.serial,
-    port = logger.port,
-  )
-
 def execute_command(
   logger: DeyeLogger,
   cache_time: int,
@@ -125,10 +102,26 @@ def read_and_check(
     sys.exit(1)
 
 def main_test_logic():
-  setup_logging()
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
+  )
 
-  logger = get_random_logger()
-  server = run_server(logger)
+  loggers = DeyeLoggers()
+
+  if not loggers.is_test_loggers:
+    log.info('ERROR: your loggers are not test loggers')
+    sys.exit(1)
+
+  logger = random.choice(loggers.loggers)
+
+  server = SolarmanTestServer(
+    name = logger.name,
+    address = logger.address,
+    serial = logger.serial,
+    port = logger.port,
+  )
 
   # ---- MAIN TEST LOGIC ----
   randoms: List[DeyeRegisterRandomValue] = []
@@ -170,7 +163,7 @@ def main_test_logic():
     logger = logger,
     server = server,
     register = register,
-    cache_time = 15,
+    cache_time = 5,
     expected_value = value1,
     should_read_server = False,
     delay_before = 1,
@@ -181,7 +174,7 @@ def main_test_logic():
     logger = logger,
     server = server,
     register = register,
-    cache_time = 15,
+    cache_time = 5,
     expected_value = value1,
     should_read_server = False,
     delay_before = 1,
@@ -207,7 +200,7 @@ def main_test_logic():
     logger = logger,
     server = server,
     register = register,
-    cache_time = 25,
+    cache_time = 10,
     expected_value = value3,
     should_read_server = False,
     delay_before = 1,
