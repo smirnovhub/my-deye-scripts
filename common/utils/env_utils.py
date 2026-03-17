@@ -85,7 +85,14 @@ class EnvUtils:
 
   @staticmethod
   def get_telegram_bot_api_test_token() -> str:
-    return os.getenv('TELEGRAM_BOT_API_TEST_TOKEN', '').strip()
+    val = os.getenv('TELEGRAM_BOT_API_TEST_TOKEN', '').strip()
+    if not val:
+      raise RuntimeError("Environment variable 'TELEGRAM_BOT_API_TEST_TOKEN' is not set")
+
+    if not re.fullmatch(r"^\d+:.+$", val):
+      raise RuntimeError("Telegram bot API token 'TELEGRAM_BOT_API_TEST_TOKEN' is invalid")
+
+    return val
 
   @staticmethod
   def get_gps_latitude() -> float:
