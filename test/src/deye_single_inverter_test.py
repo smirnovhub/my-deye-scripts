@@ -33,7 +33,8 @@ from solarman_test_server import SolarmanTestServer
 from deye_test_helper import DeyeRegisterRandomValue
 from deye_test_helper import DeyeTestHelper
 
-DeyeTestUtils.setup_test_environment()
+DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+DeyeTestUtils.turn_off_remote_cache()
 
 logging.basicConfig(
   level = logging.INFO,

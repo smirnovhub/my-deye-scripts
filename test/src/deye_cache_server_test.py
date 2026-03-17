@@ -1,18 +1,15 @@
-import json
 import os
 import sys
-import socket
-import time
 import logging
 import requests
 import unittest
 
-import uvicorn
-import multiprocessing
 import concurrent.futures
 
 from typing import Any
 from pathlib import Path
+
+from deye_test_utils import DeyeTestUtils
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -32,64 +29,20 @@ import_dirs(
   ],
 )
 
-from deye_storage import app
-from deye_storage_config import DeyeStorageConfig
 from deye_utils import DeyeUtils
-
-cache_server_host = '127.0.0.1'
-cache_server_port = 5000
+from deye_loggers import DeyeLoggers
+from deye_storage_config import DeyeStorageConfig
 
 # Configuration
-BASE_URL = f"http://{cache_server_host}:{cache_server_port}"
+BASE_URL = f"http://{DeyeTestUtils.storage_server_host}:{DeyeTestUtils.storage_server_port}"
 CACHE_URL = f"{BASE_URL}/cache"
 PING_URL = f"{BASE_URL}/ping"
 
 log = logging.getLogger()
-config = DeyeStorageConfig()
-
-def run_cache_server():
-  """Function to run the uvicorn server."""
-  # Load the config from the JSON file
-  try:
-    with open("log_config.json", "r") as f:
-      log_config = json.load(f)
-  except Exception as e:
-    print(f"Failed to load logging config: {e}")
-    sys.exit(1)
-
-  for logger_name in ["uvicorn", "uvicorn.default", "uvicorn.error", "uvicorn.access"]:
-    l = logging.getLogger(logger_name)
-    l.propagate = False
-
-  uvicorn.run(
-    app,
-    host = cache_server_host,
-    port = cache_server_port,
-    log_config = log_config,
-    proxy_headers = False,
-    forwarded_allow_ips = None,
-    use_colors = False,
-  )
-
-def wait_for_server_ready(host: str, port: int, timeout: float = 5) -> bool:
-  """
-  Wait until the server port is open.
-  """
-  log.info("Waiting for server to be ready...")
-  start_time = time.time()
-  while time.time() - start_time < timeout:
-    try:
-      with socket.create_connection((host, port), timeout = 1):
-        log.info("Server is ready!")
-        return True
-    except (ConnectionRefusedError, OSError):
-      time.sleep(0.1)
-
-  log.info("Server did not become ready in time.")
-  return False
 
 class TestDeyeCacheExtended(unittest.TestCase):
   session: requests.Session
+  config: DeyeStorageConfig
 
   @classmethod
   def setUpClass(cls):
@@ -97,6 +50,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
     Global cleanup and session initialization.
     """
     cls.session = requests.Session()
+    cls.config = DeyeStorageConfig()
     try:
       cls.session.delete(CACHE_URL)
     except requests.exceptions.ConnectionError:
@@ -206,7 +160,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
     self.assertEqual(self.session.delete(CACHE_URL).status_code, 200)
 
     # Fill cache to the limit
-    limit = config.MAX_KEYS_COUNT
+    limit = self.config.MAX_KEYS_COUNT
     for i in range(limit):
       self.assertEqual(self.session.post(f"{CACHE_URL}/dev_{i}", json = {"data": i}).status_code, 200)
 
@@ -222,14 +176,14 @@ class TestDeyeCacheExtended(unittest.TestCase):
     key = "big_storage_dev"
     # Create a large object that is below single request limit (256KB)
     # but combined with metadata might exceed storage limit
-    large_chunk = {"data": "x" * (config.MAX_JSON_SIZE - 150)}
+    large_chunk = {"data": "x" * (self.config.MAX_JSON_SIZE - 150)}
 
     # First send is fine
     self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = large_chunk).status_code, 200)
 
     # Second merge might push it over the limit if we keep adding
     # We'll send a very large update to trigger the 413 from the trial merge logic
-    huge_update = {"extra": "y" * (config.MAX_JSON_SIZE + 10)}
+    huge_update = {"extra": "y" * (self.config.MAX_JSON_SIZE + 10)}
 
     res = self.session.post(f"{CACHE_URL}/{key}", json = huge_update)
     self.assertEqual(res.status_code, 413)
@@ -249,16 +203,16 @@ class TestDeyeCacheExtended(unittest.TestCase):
 
     # 2. Define chunk size slightly below the single request limit
     # Subtracting 1000 bytes to account for JSON overhead (quotes, keys, braces)
-    chunk_size = config.MAX_JSON_SIZE - 100
+    chunk_size = self.config.MAX_JSON_SIZE - 100
     chunk_data = "x" * chunk_size
 
     # 3. Calculate how many chunks are needed to hit the storage limit
     # Example: If storage is 1MB and chunk is 250KB, the 5th request should fail
     # WE ALLOW JUST ONE REQUEST WITH EXCEEDED JSON SIZE STORAGE!
-    num_requests_to_fill = (config.MAX_JSON_STORAGE_SIZE // chunk_size) + 2
+    num_requests_to_fill = (self.config.MAX_JSON_STORAGE_SIZE // chunk_size) + 2
 
     log.info(f"Filling storage for '{key}'")
-    log.info(f"Chunk: {chunk_size}, Storage Limit: {config.MAX_JSON_STORAGE_SIZE}")
+    log.info(f"Chunk: {chunk_size}, Storage Limit: {self.config.MAX_JSON_STORAGE_SIZE}")
 
     for i in range(num_requests_to_fill):
       # Use unique keys to force the server to expand the dictionary
@@ -423,12 +377,12 @@ class TestDeyeCacheExtended(unittest.TestCase):
     Verifies that locks are cleaned up and don't leak memory.
     """
     # Create 50 unique keys (more than your MAX_KEYS_COUNT to trigger some 403s)
-    for i in range(config.MAX_KEYS_COUNT + 15):
+    for i in range(self.config.MAX_KEYS_COUNT + 15):
       self.session.post(f"{CACHE_URL}/stress_{i}", json = {"data": i})
 
     # Check stats before reset
     stat_res = self.session.options(CACHE_URL).json()
-    self.assertEqual(stat_res["keys_used"], config.MAX_KEYS_COUNT)
+    self.assertEqual(stat_res["keys_used"], self.config.MAX_KEYS_COUNT)
     self.assertGreater(stat_res["bytes_used"], 0)
 
     # Global reset
@@ -625,19 +579,21 @@ class TestDeyeCacheExtended(unittest.TestCase):
 if __name__ == "__main__":
   logging.basicConfig(
     level = logging.INFO,
-    format = "%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s",
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
     datefmt = DeyeUtils.time_format_str,
   )
 
-  log.info(f"Starting cache server at {cache_server_host}:{cache_server_port}...")
-  server_process = multiprocessing.Process(target = run_cache_server, daemon = True)
-  server_process.start()
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
-  if wait_for_server_ready(cache_server_host, cache_server_port):
-    try:
-      unittest.main(verbosity = 2)
-    finally:
-      server_process.terminate()
-      server_process.join()
-  else:
-    server_process.terminate()
+  logger = logging.getLogger()
+
+  if not DeyeLoggers().is_test_loggers:
+    logger.info('ERROR: your loggers are not test loggers')
+    sys.exit(1)
+
+  server_process = DeyeTestUtils.run_storage_server()
+
+  try:
+    unittest.main(verbosity = 2)
+  finally:
+    DeyeTestUtils.stop_storage_server(server_process)

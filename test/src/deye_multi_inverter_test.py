@@ -36,7 +36,8 @@ from float_deye_register import FloatDeyeRegister
 from deye_register_average_type import DeyeRegisterAverageType
 from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
 
-DeyeTestUtils.setup_test_environment()
+DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+DeyeTestUtils.turn_off_remote_cache()
 
 logging.basicConfig(
   level = logging.INFO,
