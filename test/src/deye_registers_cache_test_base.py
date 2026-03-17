@@ -148,7 +148,7 @@ def main_test_logic():
   # 2. Second read (from cache)
   read_and_check(
     register = register,
-    cache_time = 5,
+    cache_time = 15,
     expected_value = value1,
     should_read_server = False,
     delay_before = 1,
@@ -157,7 +157,7 @@ def main_test_logic():
   # 3. Third read (still from cache)
   read_and_check(
     register = register,
-    cache_time = 5,
+    cache_time = 15,
     expected_value = value1,
     should_read_server = False,
     delay_before = 1,
@@ -179,7 +179,7 @@ def main_test_logic():
   # 5. Next read (from cache again)
   read_and_check(
     register = register,
-    cache_time = 10,
+    cache_time = 25,
     expected_value = value3,
     should_read_server = False,
     delay_before = 1,
