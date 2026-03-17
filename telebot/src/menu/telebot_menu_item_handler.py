@@ -27,7 +27,6 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         bot (telebot.TeleBot): The Telegram bot instance
     """
     self.bot = bot
-    self.log = logging.getLogger()
     self.users = TelebotUsers()
     self.loggers = DeyeLoggers()
     self.logger = logging.getLogger()
