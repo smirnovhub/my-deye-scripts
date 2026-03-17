@@ -10,6 +10,7 @@ from deye_registers import DeyeRegisters
 
 class TelebotBaseUsers:
   _instance = None
+  _registers = DeyeRegisters()
 
   def __new__(cls, *args, **kwargs):
     if cls._instance is None:
@@ -23,7 +24,7 @@ class TelebotBaseUsers:
     return cls._instance
 
   def __init__(self):
-    self.registers = DeyeRegisters()
+    self.registers = TelebotBaseUsers._registers
     self._admin_user_id = EnvUtils.get_telegram_admin_user_id()
     self._validate_users(self.allowed_users, 'allowed users')
     self._validate_users(self.blocked_users, 'blocked users')
@@ -54,10 +55,10 @@ class TelebotBaseUsers:
 
   def _validate_users(self, users: List[TelebotUser], text: str):
     """Validate that all users in the list have unique IDs."""
-    log = logging.getLogger()
     ids = [user.id for user in users]
     duplicates = {i for i in ids if ids.count(i) > 1}
     if duplicates:
+      log = logging.getLogger()
       msg = f"ERROR: duplicated user IDs detected in {text}: {duplicates}"
       log.info(msg)
       raise ValueError(msg)

@@ -9,7 +9,7 @@ class TelebotMenuSlaveTodayStat(TelebotMenuSlaveTotalBase):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(
       bot = bot,
-      registers = TodayStatRegisters(),
+      registers_class = TodayStatRegisters,
       all_command = TelebotMenuItem.deye_all_today_stat,
       master_command = TelebotMenuItem.deye_master_today_stat,
       slave_command = TelebotMenuItem.deye_slave_today_stat,

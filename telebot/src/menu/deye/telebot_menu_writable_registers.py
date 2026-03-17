@@ -24,7 +24,6 @@ from telebot_command_choice import CommandChoice
 class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self.registers = DeyeRegisters()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -32,12 +31,14 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
   def get_commands(self) -> List[telebot.types.BotCommand]:
     commands = []
-    for register in self.registers.read_write_registers:
+    registers = DeyeRegisters()
+
+    for register in registers.read_write_registers:
       # Don't need these registers because we
       # already have full time of use feature
-      if register.name == self.registers.time_of_use_power_register.name:
+      if register.name == registers.time_of_use_power_register.name:
         continue
-      if register.name == self.registers.time_of_use_soc_register.name:
+      if register.name == registers.time_of_use_soc_register.name:
         continue
       command_name = self.command.command.format(register.name)
       command_description = self.command.description.format(register.description)
@@ -45,31 +46,28 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     return commands
 
   def register_handlers(self):
-    for register in self.registers.read_write_registers:
-      code = self.get_writable_register_handler(register)
+    registers = DeyeRegisters()
+    for register in registers.read_write_registers:
+      code = self.get_writable_register_handler(registers, register)
       exec(code, locals())
 
-  def check_callback_data(self, data: str) -> bool:
-    parts = data.split('=', 1)
-    if len(parts) != 2:
-      return False
-
-    register_name = parts[0]
-    register = self.registers.get_register_by_name(register_name)
-    return register is not None
-
-  def get_writable_register_handler(self, register: DeyeRegister) -> str:
+  def get_writable_register_handler(self, registers: DeyeRegisters, register: DeyeRegister) -> str:
     return textwrap.dedent('''\
+    from deye_registers import DeyeRegisters
     @self.bot.message_handler(commands = ['{register_name}'])
     def set_{register_name}(message):
-      self.process_read_write_register_step1(message, '{register_name}', set_{register_name}_step2)
+      self.process_read_write_register_step1(message, registers, '{register_name}', set_{register_name}_step2)
 
-    def set_{register_name}_step2(message, message_id: int):
-      self.process_read_write_register_step2(message, message_id, '{register_name}')
+    def set_{register_name}_step2(message, message_id: int, registers: DeyeRegisters):
+      self.process_read_write_register_step2(message, message_id, registers, '{register_name}')
   ''').format(register_name = register.name)
 
-  def create_keyboard_for_register(self, register: DeyeRegister) -> Optional[telebot.types.InlineKeyboardMarkup]:
-    if isinstance(register.value, datetime) and register.name == self.registers.inverter_system_time_register.name:
+  def create_keyboard_for_register(
+    self,
+    registers: DeyeRegisters,
+    register: DeyeRegister,
+  ) -> Optional[telebot.types.InlineKeyboardMarkup]:
+    if isinstance(register.value, datetime) and register.name == registers.inverter_system_time_register.name:
       time_diff = register.value - datetime.now()
       diff_seconds = int(abs(time_diff.total_seconds()))
       if diff_seconds > TelebotConstants.inverter_system_time_need_sync_difference_sec:
@@ -81,18 +79,21 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       else:
         return None
 
-    return TelebotDeyeHelper.get_keyboard_for_register(self.registers, register)
+    return TelebotDeyeHelper.get_keyboard_for_register(registers, register)
 
   def process_read_write_register_step1(
     self,
     message: telebot.types.Message,
+    registers: DeyeRegisters,
     register_name: str,
     next_step_callback,
   ):
     if not self.is_authorized(message):
       return
 
-    register = self.registers.get_register_by_name(register_name)
+    registers = DeyeRegisters()
+
+    register = registers.get_register_by_name(register_name)
     if register is None:
       self.bot.send_message(message.chat.id, f'Register {register_name} not found')
       self.bot.clear_step_handler_by_chat_id(message.chat.id)
@@ -100,7 +101,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
     if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register_name):
       available_registers = TelebotDeyeHelper.get_available_registers(
-        self.registers,
+        registers,
         self.auth_helper,
         message.from_user.id,
       )
@@ -122,15 +123,20 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
           param,
           message.from_user,
         )
-        self.process_read_write_register_step2(fake_message, message.id, register_name)
+        self.process_read_write_register_step2(
+          fake_message,
+          message.id,
+          registers,
+          register_name,
+        )
         return
 
     try:
       text = self.get_register_value(register)
-      keyboard = self.create_keyboard_for_register(register)
+      keyboard = self.create_keyboard_for_register(registers, register)
       sent = self.bot.send_message(message.chat.id, text, reply_markup = keyboard, parse_mode = 'HTML')
       self.bot.clear_step_handler_by_chat_id(message.chat.id)
-      self.bot.register_next_step_handler(message, next_step_callback, sent.message_id)
+      self.bot.register_next_step_handler(message, next_step_callback, sent.message_id, registers)
     except DeyeKnownException as e:
       self.bot.send_message(message.chat.id, str(e))
     except Exception as e:
@@ -141,6 +147,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     self,
     message: telebot.types.Message,
     message_id: int,
+    registers: DeyeRegisters,
     register_name: str,
   ):
     if not self.is_authorized(message):
@@ -162,7 +169,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     if TelebotUtils.forward_next(self.bot, message):
       return
 
-    register = self.registers.get_register_by_name(register_name)
+    register = registers.get_register_by_name(register_name)
     if register is None:
       self.bot.send_message(message.chat.id, f'Register {register_name} not found')
       self.bot.clear_step_handler_by_chat_id(message.chat.id)
