@@ -3,11 +3,10 @@ from typing import Any, Dict
 from deye_web_utils import DeyeWebUtils
 from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
-from deye_web_custom_single_registers import DeyeWebCustomSingleRegisters
 from deye_web_colors_calculator import DeyeWebColorsCalculator
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_registers_holder import DeyeRegistersHolder
-from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
+from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
 class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
@@ -26,20 +25,16 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     if register_name not in self.sections_holder.writable_registers:
       raise ValueError(f"Can't write '{register_name}'")
 
-    register = DeyeWebConstants.registers.get_register_by_name(register_name)
-    if register is None:
-      raise ValueError(f"Unknown register '{register_name}'")
-
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       name = 'deyeweb',
       loggers = [self.loggers.master],
       socket_timeout = 5,
-      register_creator = lambda prefix: DeyeWebCustomSingleRegisters(
-        register,
-        prefix,
-      ),
     )
+
+    register = holder.master_registers.get_register_by_name(register_name)
+    if register is None:
+      raise ValueError(f"Unknown register '{register_name}'")
 
     try:
       holder.write_register(register, register_value)

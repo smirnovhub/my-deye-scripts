@@ -8,7 +8,7 @@ from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
 from deye_registers_holder import DeyeRegistersHolder
 from deye_web_remote_command import DeyeWebRemoteCommand
-from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
+from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
 class DeyeWebResetCacheCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
@@ -29,7 +29,10 @@ class DeyeWebResetCacheCommandProcessor(DeyeWebBaseCommandProcessor):
 
     result['need_reload'] = 'true'
 
-    holder = DeyeRegistersHolder(name = 'deyeweb', loggers = self.loggers.loggers)
+    holder = DeyeRegistersHolder(
+      name = 'deyeweb',
+      loggers = self.loggers.loggers,
+    )
 
     try:
       holder.reset_cache()

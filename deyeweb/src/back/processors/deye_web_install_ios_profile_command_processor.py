@@ -6,7 +6,7 @@ from deye_web_constants import DeyeWebConstants
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
 from deye_web_remote_command import DeyeWebRemoteCommand
-from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
+from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
 class DeyeWebInstallIosProfileCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):

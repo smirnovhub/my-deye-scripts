@@ -1,6 +1,5 @@
 from typing import Dict, List
 
-from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
@@ -58,7 +57,8 @@ class DeyeWebConstants:
   threshold_colors = [DeyeWebColor.green, DeyeWebColor.yellow, DeyeWebColor.red]
   threshold_reversed_colors = [DeyeWebColor.red, DeyeWebColor.yellow, DeyeWebColor.green]
 
-  loggers = DeyeLoggers()
+  # Don't use these registers for reading
+  # or writing to avoid race conditions!
   registers = DeyeRegisters()
 
   register_description_replacement_rules: Dict[str, str] = {

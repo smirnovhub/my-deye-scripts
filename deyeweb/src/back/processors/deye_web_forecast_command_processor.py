@@ -11,7 +11,7 @@ from deye_web_constants import DeyeWebConstants
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_web_forecast_registers import DeyeWebForecastRegisters
 from battery_forecast_utils import BatteryForecastUtils
-from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
+from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
 class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
@@ -27,11 +27,7 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
   ) -> Dict[str, str]:
     section_id = DeyeWebUtils.short(DeyeWebSection.forecast.title)
     try:
-      return self._get_command_result_internal(
-        section_id,
-        command,
-        json_data,
-      )
+      return self._get_command_result_internal(section_id, command)
     except Exception as e:
       return {section_id: f'<p style="color: red;"><b>Error: {e}</b></p>'}
 
@@ -39,7 +35,6 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
     self,
     section_id: str,
     command: DeyeWebRemoteCommand,
-    json_data: Dict[str, Any],
   ) -> Dict[str, str]:
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
