@@ -44,7 +44,7 @@ loggers = DeyeLoggers()
 registers = DeyeRegisters()
 
 if not loggers.is_test_loggers:
-  log.info('ERROR: your loggers are not test loggers')
+  log.error('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 logger = loggers.master
@@ -95,7 +95,7 @@ for register in registers.all_registers:
   log.info(f'Write command output: {write_output}')
 
   if not server.is_registers_written(register.address, register.quantity):
-    log.info(f"No changes on the server side after writing '{register.name}'")
+    log.error(f"No changes on the server side after writing '{register.name}'")
     sys.exit(1)
 
   log.info(f'Trying to read: {register_value}')
@@ -123,7 +123,7 @@ for register in registers.all_registers:
   log.info(f'Read command output: {read_output}')
 
   if not server.is_registers_readed(register.address, register.quantity):
-    log.info(f"No request for read on the server side after reading '{register.name}'")
+    log.error(f"No request for read on the server side after reading '{register.name}'")
     sys.exit(1)
 
   reg_name = f'{logger.name}_{register.name}'
@@ -137,10 +137,10 @@ for register in registers.all_registers:
     if f'{reg_name} = {value}' in read_output:
       log.info(f"Read passed for register '{reg_name}' and value '{value}'")
     else:
-      log.info(f"Read failed for register '{reg_name}' and value '{value}'")
+      log.error(f"Read failed for register '{reg_name}' and value '{value}'")
       sys.exit(1)
   else:
-    log.info(f"Write failed for '{register.name}'")
+    log.error(f"Write failed for '{register.name}'")
     sys.exit(1)
 
 log.info('All registers have been written and read correctly. Test is ok')

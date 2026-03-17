@@ -50,10 +50,10 @@ def execute_command(
     if 'exception' not in output.lower() and 'error' not in output.lower():
       return output
 
-    log.info('An exception occurred. Retrying...')
+    log.error('An exception occurred. Retrying...')
     time.sleep(1)
 
-  log.info('Max retry count exceeded')
+  log.error('Max retry count exceeded')
   sys.exit(1)
 
 def read_and_check(
@@ -90,15 +90,15 @@ def read_and_check(
 
   if should_read_server:
     if not server.is_registers_readed(register.address, register.quantity):
-      log.info(f"No request for read on the server side after reading '{register.name}'")
+      log.error(f"No request for read on the server side after reading '{register.name}'")
       sys.exit(1)
   else:
     if server.is_registers_readed(register.address, register.quantity):
-      log.info(f"Value should be read from the cache '{register.name}'")
+      log.error(f"Value should be read from the cache '{register.name}'")
       sys.exit(1)
 
   if str(expected_value) not in output:
-    log.info(f"Register value {expected_value} not found for '{register.name}'")
+    log.error(f"Register value {expected_value} not found for '{register.name}'")
     sys.exit(1)
 
 def main_test_logic():
@@ -111,7 +111,7 @@ def main_test_logic():
   loggers = DeyeLoggers()
 
   if not loggers.is_test_loggers:
-    log.info('ERROR: your loggers are not test loggers')
+    log.error('ERROR: your loggers are not test loggers')
     sys.exit(1)
 
   logger = random.choice(loggers.loggers)

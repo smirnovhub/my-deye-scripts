@@ -43,7 +43,7 @@ log = logging.getLogger()
 loggers = DeyeLoggers()
 
 if not loggers.is_test_loggers:
-  log.info('ERROR: your loggers are not test loggers')
+  log.error('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 logger = loggers.master
@@ -101,7 +101,7 @@ for register in holder.master_registers.all_registers:
     continue
 
   if register.value != write_values[register.name]:
-    log.info(f"Register value after read {register.value} doesn't match "
+    log.error(f"Register value after read {register.value} doesn't match "
              f"value after write {write_values[register.name]} for '{register.name}'")
     sys.exit(1)
   else:

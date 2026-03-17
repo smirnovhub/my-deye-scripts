@@ -40,7 +40,7 @@ log = logging.getLogger()
 loggers = DeyeLoggers()
 
 if not loggers.is_test_loggers:
-  log.info('ERROR: your loggers are not test loggers')
+  log.error('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 if __name__ == '__main__':

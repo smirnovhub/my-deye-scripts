@@ -42,7 +42,7 @@ if __name__ == '__main__':
   logger = logging.getLogger()
 
   if not DeyeLoggers().is_test_loggers:
-    logger.info('ERROR: your loggers are not test loggers')
+    logger.error('ERROR: your loggers are not test loggers')
     sys.exit(1)
 
   server_process = DeyeTestUtils.run_storage_server()
