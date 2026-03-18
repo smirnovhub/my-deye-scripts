@@ -38,7 +38,7 @@ class EnvVar:
 class LogNameEnvVar(EnvVar):
   def __init__(self):
     super().__init__(
-      name = "DEYE_LOG_NAME",
+      name = EnvUtils.DEYE_LOG_NAME,
       default = '',
       description = 'Individual folder name for logging',
     )

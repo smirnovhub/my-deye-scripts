@@ -9,6 +9,7 @@ import logging.config
 import multiprocessing
 
 from contextlib import contextmanager
+from env_utils import EnvUtils
 
 class DeyeTestUtils:
   storage_server_host = '127.0.0.1'
@@ -16,29 +17,29 @@ class DeyeTestUtils:
 
   @staticmethod
   def setup_test_environment(log_name: str) -> None:
-    os.environ['IS_TEST_RUN'] = 'true'
-    os.environ['DEYE_LOG_NAME'] = log_name
+    os.environ[EnvUtils.IS_TEST_RUN] = 'true'
+    os.environ[EnvUtils.DEYE_LOG_NAME] = log_name
 
     num = 1
     port = 7000
 
-    os.environ['DEYE_MASTER_LOGGER_HOST'] = '127.0.0.1'
-    os.environ['DEYE_MASTER_LOGGER_SERIAL'] = str(num)
-    os.environ['DEYE_MASTER_LOGGER_PORT'] = str(port)
+    os.environ[EnvUtils.DEYE_MASTER_LOGGER_HOST] = '127.0.0.1'
+    os.environ[EnvUtils.DEYE_MASTER_LOGGER_SERIAL] = str(num)
+    os.environ[EnvUtils.DEYE_MASTER_LOGGER_PORT] = str(port)
 
     for i in range(1, 4):
       num += 1
       port += 1
-      os.environ[f'DEYE_SLAVE{i}_LOGGER_HOST'] = '127.0.0.1'
-      os.environ[f'DEYE_SLAVE{i}_LOGGER_SERIAL'] = str(num)
-      os.environ[f'DEYE_SLAVE{i}_LOGGER_PORT'] = str(port)
+      os.environ[EnvUtils.DEYE_SLAVE_LOGGER_HOST.format(i)] = '127.0.0.1'
+      os.environ[EnvUtils.DEYE_SLAVE_LOGGER_SERIAL.format(i)] = str(num)
+      os.environ[EnvUtils.DEYE_SLAVE_LOGGER_PORT.format(i)] = str(port)
 
-    os.environ['REMOTE_CACHE_SERVER_URL'] = ""
+    os.environ[EnvUtils.REMOTE_CACHE_SERVER_URL] = ""
 
   @staticmethod
   def turn_on_remote_cache() -> None:
-    os.environ['REMOTE_CACHE_SERVER_URL'] = (f"http://{DeyeTestUtils.storage_server_host}:"
-                                             f"{DeyeTestUtils.storage_server_port}/cache")
+    os.environ[EnvUtils.REMOTE_CACHE_SERVER_URL] = (f"http://{DeyeTestUtils.storage_server_host}:"
+                                                    f"{DeyeTestUtils.storage_server_port}/cache")
 
   @staticmethod
   @contextmanager
