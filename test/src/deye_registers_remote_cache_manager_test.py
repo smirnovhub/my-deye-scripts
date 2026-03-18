@@ -8,8 +8,6 @@ import logging
 
 from pathlib import Path
 
-from deye_test_utils import DeyeTestUtils
-
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
 modules_path = (current_path / base_path / 'modules').resolve()
@@ -30,6 +28,7 @@ import_dirs(
 
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
+from deye_test_utils import DeyeTestUtils
 from deye_exceptions import DeyeCacheException
 from deye_register_cache_data import DeyeRegisterCacheData
 from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
