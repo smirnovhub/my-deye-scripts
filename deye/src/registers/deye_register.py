@@ -3,6 +3,7 @@ from typing import Any, List, Optional
 from datetime import timedelta
 from abc import ABC, abstractmethod
 
+from deye_exceptions import DeyeNotImplementedException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
@@ -15,9 +16,8 @@ class DeyeRegister(ABC):
   def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     pass
 
-  @abstractmethod
   def write(self, interactor: DeyeModbusInteractor, value) -> Any:
-    pass
+    DeyeNotImplementedException(f'{type(self).__name__} write() is not implemented')
 
   @abstractmethod
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
