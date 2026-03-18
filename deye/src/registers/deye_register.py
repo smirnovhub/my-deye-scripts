@@ -16,12 +16,12 @@ class DeyeRegister(ABC):
   def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
     pass
 
-  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
-    DeyeNotImplementedException(f'{type(self).__name__} write() is not implemented')
-
   @abstractmethod
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     pass
+
+  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
+    DeyeNotImplementedException(f'{type(self).__name__} write() is not implemented')
 
   @property
   def can_write(self) -> bool:
