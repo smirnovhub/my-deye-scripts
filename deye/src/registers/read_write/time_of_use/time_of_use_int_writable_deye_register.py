@@ -31,7 +31,7 @@ class TimeOfUseIntWritableDeyeRegister(IntWritableDeyeRegister):
     # Rounding to 2 decimals ensures stable, repeatable test outcomes.
     return round(sum(data) / len(data))
 
-  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
     try:
       value = int(value)
     except Exception as e:

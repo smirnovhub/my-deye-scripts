@@ -29,7 +29,7 @@ class IntWritableDeyeRegister(IntDeyeRegister):
   def can_write(self) -> bool:
     return True
 
-  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
     try:
       value = int(value)
     except Exception:

@@ -20,7 +20,7 @@ class DeyeRegister(ABC):
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     pass
 
-  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
     DeyeNotImplementedException(f'{type(self).__name__} write() is not implemented')
 
   @property
