@@ -1,83 +1,92 @@
 from typing import Any, List, Optional
 
 from datetime import timedelta
+from abc import ABC, abstractmethod
 
 from deye_modbus_interactor import DeyeModbusInteractor
-from deye_exceptions import DeyeNotImplementedException
-from deye_exceptions import DeyeValueException
 from deye_register_average_type import DeyeRegisterAverageType
 
-class DeyeRegister:
+class DeyeRegister(ABC):
+  @abstractmethod
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
-    raise self.not_implemented('enqueue()')
+    pass
 
+  @abstractmethod
   def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
-    raise self.not_implemented('read()')
+    pass
 
+  @abstractmethod
   def write(self, interactor: DeyeModbusInteractor, value) -> Any:
-    raise self.not_implemented('write()')
+    pass
 
+  @abstractmethod
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
-    raise self.not_implemented('read_internal()')
+    pass
 
   @property
   def can_write(self) -> bool:
-    raise self.not_implemented('can_write')
+    return False
 
   @property
   def can_accumulate(self) -> bool:
-    raise self.not_implemented('can_accumulate')
+    return self.avg_type != DeyeRegisterAverageType.none and self.avg_type != DeyeRegisterAverageType.only_master
 
   @property
+  @abstractmethod
   def avg_type(self) -> DeyeRegisterAverageType:
-    raise self.not_implemented('avg_type')
+    pass
 
   @property
+  @abstractmethod
   def address(self) -> int:
-    raise self.not_implemented('address')
+    pass
 
   @property
+  @abstractmethod
   def addresses(self) -> List[int]:
-    raise self.not_implemented('addresses')
+    pass
 
   @property
+  @abstractmethod
   def quantity(self) -> int:
-    raise self.not_implemented('quantity')
+    pass
 
   @property
+  @abstractmethod
   def name(self) -> str:
-    raise self.not_implemented('name')
+    pass
 
   @property
+  @abstractmethod
   def description(self) -> str:
-    raise self.not_implemented('description')
+    pass
 
   @property
+  @abstractmethod
   def value(self) -> Any:
-    raise self.not_implemented('value')
+    pass
 
   @property
+  @abstractmethod
   def pretty_value(self) -> str:
-    raise self.not_implemented('pretty_value')
+    pass
 
   @property
+  @abstractmethod
   def suffix(self) -> str:
-    raise self.not_implemented('suffix')
+    pass
 
   @property
+  @abstractmethod
   def min_value(self) -> float:
-    raise self.not_implemented('min_value')
+    pass
 
   @property
+  @abstractmethod
   def max_value(self) -> float:
-    raise self.not_implemented('max_value')
+    pass
 
   @property
+  @abstractmethod
   def caching_time(self) -> Optional[timedelta]:
-    raise self.not_implemented('caching_time')
-
-  def error(self, message: str):
-    raise DeyeValueException(f'{type(self).__name__}.{message}')
-
-  def not_implemented(self, message: str) -> Exception:
-    return DeyeNotImplementedException(f'{type(self).__name__}.{message} is not implemented')
+    pass
