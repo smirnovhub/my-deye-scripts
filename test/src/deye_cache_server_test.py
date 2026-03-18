@@ -9,8 +9,6 @@ import concurrent.futures
 from typing import Any
 from pathlib import Path
 
-from deye_test_utils import DeyeTestUtils
-
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
 modules_path = (current_path / base_path / 'modules').resolve()
@@ -30,6 +28,7 @@ import_dirs(
 )
 
 from deye_utils import DeyeUtils
+from deye_test_utils import DeyeTestUtils
 from deye_loggers import DeyeLoggers
 from deye_storage_config import DeyeStorageConfig
 
