@@ -5,7 +5,6 @@ import threading
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-from telebot_user_choice import TelebotUserChoice
 from telebot_utils import TelebotUtils
 
 if TYPE_CHECKING:
@@ -104,13 +103,8 @@ class TelebotPageNavigator:
       self._on_error(str(e))
       raise
 
-    user_choices = [TelebotUserChoice(
-      text = button.text,
-      data = str(button.id),
-    ) for button in page.buttons]
-
-    keyboard = TelebotUtils.get_keyboard_for_choices_ext(
-      options = user_choices,
+    keyboard = TelebotUtils.get_keyboard_for_buttons(
+      buttons = page.buttons,
       data_prefix = self._data_prefix,
     )
 
@@ -189,15 +183,8 @@ class TelebotPageNavigator:
       self._on_error(str(e))
       raise
 
-    user_choices = [
-      TelebotUserChoice(
-        text = button.text,
-        data = str(button.id),
-      ) for button in self._current_page.buttons
-    ]
-
-    keyboard = TelebotUtils.get_keyboard_for_choices_ext(
-      options = user_choices,
+    keyboard = TelebotUtils.get_keyboard_for_buttons(
+      buttons = self._current_page.buttons,
       data_prefix = self._data_prefix,
     )
 

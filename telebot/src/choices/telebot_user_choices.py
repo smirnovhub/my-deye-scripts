@@ -1,5 +1,6 @@
+from button_node import ButtonNode
 import telebot
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 
 from telebot_constants import TelebotConstants
 from telebot_utils import TelebotUtils
@@ -7,6 +8,9 @@ from telebot_utils import TelebotUtils
 class UserChoices:
   # Constant for callback_data
   _choice_prefix = '_choice_'
+
+  # Global storages for buttons (by message_id)
+  _choice_buttons: Dict[int, List[ButtonNode]] = {}
 
   # Global storages for callbacks (by message_id)
   _choice_callbacks: Dict[int, Callable[[int, str], None]] = {}
@@ -120,14 +124,19 @@ class UserChoices:
     # Build a dictionary for buttons where:
     # - the key is the button text (option)
     # - the value is the callback_data for the button
-    options_dict = {option: f"{UserChoices._choice_prefix}{option}_" for option in options}
+    buttons = [ButtonNode(text = option) for option in options]
 
     # Generate the inline keyboard using the helper function
     # Buttons will be arranged in rows with up to `max_per_row` buttons per row
-    keyboard = TelebotUtils.get_keyboard_for_choices(options_dict, max_per_row)
+    keyboard = TelebotUtils.get_keyboard_for_buttons(
+      buttons = buttons,
+      data_prefix = UserChoices._choice_prefix,
+      max_per_row = max_per_row,
+    )
 
     message = bot.send_message(chat_id, text, reply_markup = keyboard, parse_mode = 'HTML')
 
+    UserChoices._choice_buttons[message.message_id] = buttons
     UserChoices._choice_callbacks[message.message_id] = callback
 
     bot.clear_step_handler_by_chat_id(message.chat.id)
@@ -237,7 +246,21 @@ class UserChoices:
 
       # Handle choice
       if call.data.startswith(UserChoices._choice_prefix):
-        choice = call.data[len(UserChoices._choice_prefix):-1] # strip prefix & trailing "_"
+        button_id_str = call.data[len(UserChoices._choice_prefix):]
+
+        try:
+          button_id = int(button_id_str)
+        except ValueError:
+          return
+
+        button: Optional[ButtonNode] = None
+        buttons = UserChoices._choice_buttons.pop(call.message.message_id, None)
+
+        for btn in buttons:
+          if btn.id == button_id:
+            button = btn
+            break
+
         callback = UserChoices._choice_callbacks.pop(call.message.message_id, None)
-        if callback:
-          callback(call.message.chat.id, choice)
+        if button and callback:
+          callback(call.message.chat.id, button.text)
