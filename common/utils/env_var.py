@@ -5,35 +5,35 @@ from env_utils import EnvUtils
 
 class EnvVar:
   def __init__(self, name: str, default: str, description: str):
-    self.__name = name
-    self.__default = default
-    self.__description = description
-    self.__value = os.getenv(name, default)
+    self._name = name
+    self._default = default
+    self._description = description
+    self._value = os.getenv(name, default)
 
   @property
   def name(self) -> str:
-    return self.__name
+    return self._name
 
   @property
   def default(self) -> str:
-    return self.__default
+    return self._default
 
   @property
   def description(self) -> str:
-    return self.__description
+    return self._description
 
   @property
   def value(self) -> str:
-    return self.__value
+    return self._value
 
   def as_filtered_value(self) -> str:
-    return re.sub(r'[^a-zA-Z0-9-]+', '-', self.__value).strip('-')
+    return re.sub(r'[^a-zA-Z0-9-]+', '-', self._value).strip('-')
 
   def as_int(self) -> int:
-    return int(self.__value)
+    return int(self._value)
 
   def as_float(self) -> float:
-    return float(self.__value)
+    return float(self._value)
 
 class LogNameEnvVar(EnvVar):
   def __init__(self):
@@ -43,4 +43,4 @@ class LogNameEnvVar(EnvVar):
       description = 'Individual folder name for logging',
     )
     # Will replace value from base class!
-    self.__value = EnvUtils.get_log_name()
+    self._value = EnvUtils.get_log_name()
