@@ -6,6 +6,7 @@ from env_utils import EnvUtils
 from deye_register import DeyeRegister
 from deye_web_utils import DeyeWebUtils
 from deye_web_color import DeyeWebColor
+from deye_loggers import DeyeLoggers
 from deye_web_constants import DeyeWebConstants
 from deye_web_style_manager import DeyeWebStyleManager
 from deye_web_formatters_config import DeyeWebFormattersConfig
@@ -16,7 +17,7 @@ from deye_registers_holder import DeyeRegistersHolder
 class DeyeWebBaseSelectionBuilder:
   def __init__(self, confirm = False):
     self.confirm = confirm
-    self.loggers = DeyeWebConstants.loggers
+    self.loggers = DeyeLoggers()
     self.selections_config = DeyeWebSelectionsConfig()
     self.formatters_config = DeyeWebFormattersConfig()
     self.style_manager = DeyeWebStyleManager()

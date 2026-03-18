@@ -26,13 +26,13 @@ from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_test_utils import DeyeTestUtils
 
-DeyeTestUtils.setup_test_environment()
+DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
 from deye_registers_cache_test_base import main_test_logic
 
 logging.basicConfig(
   level = logging.INFO,
-  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
   datefmt = DeyeUtils.time_format_str,
 )
 
@@ -40,7 +40,7 @@ log = logging.getLogger()
 loggers = DeyeLoggers()
 
 if not loggers.is_test_loggers:
-  log.info('ERROR: your loggers are not test loggers')
+  log.error('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 if __name__ == '__main__':

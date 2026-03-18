@@ -4,6 +4,7 @@ from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
 from deye_web_utils import DeyeWebUtils
+from deye_loggers import DeyeLoggers
 from deye_web_constants import DeyeWebConstants
 from deye_web_style_manager import DeyeWebStyleManager
 from deye_web_graphs_config import DeyeWebGraphsConfig
@@ -16,7 +17,7 @@ class DeyeWebBaseFormatter:
     will_affect_tab_color: bool = True,
     used_registers: Optional[List[str]] = None,
   ):
-    self.loggers = DeyeWebConstants.loggers
+    self.loggers = DeyeLoggers()
     self.graphs_config = DeyeWebGraphsConfig()
     self.style_manager = DeyeWebStyleManager()
     self.will_affect_tab_color = will_affect_tab_color

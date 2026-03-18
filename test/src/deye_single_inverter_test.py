@@ -33,11 +33,11 @@ from solarman_test_server import SolarmanTestServer
 from deye_test_helper import DeyeRegisterRandomValue
 from deye_test_helper import DeyeTestHelper
 
-DeyeTestUtils.setup_test_environment()
+DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
 logging.basicConfig(
   level = logging.INFO,
-  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
   datefmt = DeyeUtils.time_format_str,
 )
 
@@ -46,7 +46,7 @@ loggers = DeyeLoggers()
 registers = DeyeRegisters()
 
 if not loggers.is_test_loggers:
-  log.info('ERROR: your loggers are not test loggers')
+  log.error('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 logger = loggers.master
@@ -108,17 +108,17 @@ for register in registers.all_registers:
     if 'exception' not in output and 'error' not in output:
       break
 
-    log.info('An exception occurred. Retrying...')
+    log.error('An exception occurred. Retrying...')
     time.sleep(1)
 
   if not server.is_registers_readed(register.address, register.quantity):
-    log.info(f"No request for read on the server side after reading '{register.name}'")
+    log.error(f"No request for read on the server side after reading '{register.name}'")
     sys.exit(1)
 
   name = f'{logger.name}_{register.name} = {random_value.value}{suffix}'.strip()
   log.info(f"Finding '{name}'...")
   if name not in output:
-    log.info('Register or value not found. Test failed')
+    log.error('Register or value not found. Test failed')
     sys.exit(1)
   else:
     log.info('Register and value found')

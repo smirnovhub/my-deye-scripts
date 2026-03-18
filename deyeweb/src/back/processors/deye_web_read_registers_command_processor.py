@@ -8,7 +8,7 @@ from deye_registers_holder import DeyeRegistersHolder
 from deye_web_constants import DeyeWebConstants
 from deye_web_colors_calculator import DeyeWebColorsCalculator
 from deye_register_average_type import DeyeRegisterAverageType
-from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
+from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
 class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):

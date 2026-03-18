@@ -1,4 +1,6 @@
 from typing import List
+from functools import cached_property
+
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 
@@ -6,7 +8,7 @@ class DeyeWebForecastRegisters(DeyeRegisters):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
 
-  @property
+  @cached_property
   def all_registers(self) -> List[DeyeRegister]:
     return [
       self.battery_soc_register,

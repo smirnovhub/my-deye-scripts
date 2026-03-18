@@ -13,14 +13,12 @@ class SystemTimeDiffDeyeRegister(IntDeyeRegister):
   def __init__(
     self,
     system_time_register: DeyeRegister,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       address = 0,
-      name = name,
       description = description,
       suffix = suffix,
       avg = avg,

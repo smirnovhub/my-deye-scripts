@@ -16,7 +16,6 @@ class BaseDeyeRegister(DeyeRegister):
     self,
     address: int,
     quantity: int,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
@@ -25,7 +24,7 @@ class BaseDeyeRegister(DeyeRegister):
     self._address = address
     self._quantity = quantity
     self._scale: int = 1
-    self._name = name
+    self._name = description.replace(" ", "_").replace("-", "_").lower()
     self._description = description
     self._suffix = suffix
     self._avg = avg
@@ -34,6 +33,7 @@ class BaseDeyeRegister(DeyeRegister):
     self._max_value: Union[int, float] = 0
     self._caching_time = caching_time
     self._loggers = DeyeLoggers()
+    self._writable_registers_caching_time = timedelta(hours = 12)
 
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     if interactor.is_master or (self._avg != DeyeRegisterAverageType.only_master
@@ -169,7 +169,6 @@ class BaseDeyeRegister(DeyeRegister):
 
   @property
   def caching_time(self) -> Optional[timedelta]:
+    if self.can_write and self._loggers.remote_cache_server:
+      return self._writable_registers_caching_time
     return self._caching_time
-
-  def set_caching_time(self, caching_time: timedelta) -> None:
-    self._caching_time = caching_time

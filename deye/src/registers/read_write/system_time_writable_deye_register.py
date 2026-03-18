@@ -13,7 +13,6 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
   def __init__(
     self,
     address: int,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
@@ -22,7 +21,6 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
     super().__init__(
       address = address,
       quantity = 3,
-      name = name,
       description = description,
       suffix = suffix,
       avg = avg,
@@ -68,3 +66,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
     self._value = date
     return self._value
+
+  @property
+  def caching_time(self) -> Optional[timedelta]:
+    return self._caching_time

@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 
 from datetime import datetime, timedelta
 
+from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_modbus_solarman import DeyeModbusSolarman
@@ -155,6 +156,8 @@ class DeyeModbusInteractor:
             caching_time = reg.caching_time,
             values = data[offset:offset + reg.quantity],
           )
+    except Exception as e:
+      raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while reading registers') from e
     finally:
       self.solarman.disconnect()
 
@@ -167,6 +170,8 @@ class DeyeModbusInteractor:
   def write_register(self, address: int, values: List[int]) -> int:
     try:
       result = self.solarman.write_multiple_holding_registers(address, values)
+    except Exception as e:
+      raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while writing registers') from e
     finally:
       self.solarman.disconnect()
 

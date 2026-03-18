@@ -36,11 +36,11 @@ from float_deye_register import FloatDeyeRegister
 from deye_register_average_type import DeyeRegisterAverageType
 from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
 
-DeyeTestUtils.setup_test_environment()
+DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
 logging.basicConfig(
   level = logging.INFO,
-  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
   datefmt = DeyeUtils.time_format_str,
 )
 
@@ -49,11 +49,11 @@ loggers = DeyeLoggers()
 registers = DeyeRegisters()
 
 if not loggers.is_test_loggers:
-  log.info('ERROR: your loggers are not test loggers')
+  log.error('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 if not loggers.slaves:
-  log.info("ERROR: you don't have slave loggers to run this test")
+  log.error("ERROR: you don't have slave loggers to run this test")
   sys.exit(1)
 
 servers: List[SolarmanTestServer] = []
@@ -147,7 +147,7 @@ for register in registers.all_registers:
   for server in servers:
     if register.avg_type != DeyeRegisterAverageType.only_master or server.name == loggers.master.name:
       if not server.is_registers_readed(register.address, register.quantity):
-        log.info(f"No request for read on the server '{server.name}' side after reading '{register.name}'")
+        log.error(f"No request for read on the server '{server.name}' side after reading '{register.name}'")
         sys.exit(1)
 
   for i, logger in enumerate(loggers.loggers):
@@ -158,7 +158,7 @@ for register in registers.all_registers:
       name = f'{logger.name}_{register.name} = {val} {register.suffix}'.strip()
       log.info(f"Finding '{name}'...")
       if name not in output:
-        log.info('Register or value not found. Test failed')
+        log.error('Register or value not found. Test failed')
         sys.exit(1)
       else:
         log.info('Register and value found')
@@ -167,7 +167,7 @@ for register in registers.all_registers:
     all_name = f'{loggers.accumulated_registers_prefix}_{register.name} = {total_val} {register.suffix}'.strip()
     log.info(f"Finding '{all_name}'...")
     if all_name not in output:
-      log.info('Register or value not found. Test failed')
+      log.error('Register or value not found. Test failed')
       sys.exit(1)
     else:
       log.info('Register and value found')

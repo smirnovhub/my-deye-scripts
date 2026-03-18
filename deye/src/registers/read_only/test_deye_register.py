@@ -8,14 +8,12 @@ class TestDeyeRegister(BaseDeyeRegister):
     self,
     address: int,
     quantity: int,
-    name: str,
     description: str,
     suffix: str,
   ):
     super().__init__(
       address = address,
       quantity = quantity,
-      name = name,
       description = description,
       suffix = suffix,
     )

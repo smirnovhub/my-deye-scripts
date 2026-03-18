@@ -14,7 +14,7 @@ os.chdir(current_path)
 
 logging.basicConfig(
   level = logging.INFO,
-  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
   datefmt = "%Y-%m-%d %H:%M:%S",
 )
 
@@ -62,7 +62,7 @@ def run_tests(dirs: List[str]):
     log.info(f'Command output: {output}')
 
     if result.returncode != 0:
-      log.info(f'Command returned non-zero exit code: {result.returncode}. Test failed.')
+      log.error(f'Command returned non-zero exit code: {result.returncode}. Test failed.')
       sys.exit(1)
 
 dirs = [

@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from git_helper import GitHelper
 from deye_register import DeyeRegister
 from deye_web_color import DeyeWebColor
-from deye_web_constants import DeyeWebConstants
+from deye_loggers import DeyeLoggers
 from deye_registers_holder import DeyeRegistersHolder
 from deye_web_formatters_config import DeyeWebFormattersConfig
 from deye_web_remote_command import DeyeWebRemoteCommand
@@ -19,7 +19,7 @@ class DeyeWebBaseCommandProcessor:
     commands: List[DeyeWebRemoteCommand],
   ):
     self.commands = commands
-    self.loggers = DeyeWebConstants.loggers
+    self.loggers = DeyeLoggers()
     self.sections_holder = DeyeWebSectionsHolder()
     self.formatters_config = DeyeWebFormattersConfig()
     self.selections_config = DeyeWebSelectionsConfig()

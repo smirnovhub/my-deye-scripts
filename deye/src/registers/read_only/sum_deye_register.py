@@ -9,7 +9,6 @@ class SumDeyeRegister(BaseDeyeRegister):
   def __init__(
     self,
     registers: List[DeyeRegister],
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
@@ -17,7 +16,6 @@ class SumDeyeRegister(BaseDeyeRegister):
     super().__init__(
       address = 0,
       quantity = 0,
-      name = name,
       description = description,
       suffix = suffix,
       avg = avg,

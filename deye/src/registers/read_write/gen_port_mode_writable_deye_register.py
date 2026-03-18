@@ -9,14 +9,12 @@ class GenPortModeWritableDeyeRegister(IntDeyeRegister):
   def __init__(
     self,
     address: int,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       address = address,
-      name = name,
       description = description,
       suffix = suffix,
       avg = avg,

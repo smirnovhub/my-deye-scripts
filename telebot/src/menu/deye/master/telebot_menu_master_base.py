@@ -1,6 +1,6 @@
 import telebot
 
-from typing import List
+from typing import List, Type
 
 from telebot_utils import TelebotUtils
 from deye_registers import DeyeRegisters
@@ -15,14 +15,14 @@ class TelebotMenuMasterBase(TelebotMenuItemHandler):
   def __init__(
     self,
     bot: telebot.TeleBot,
-    registers: DeyeRegisters,
+    registers_class: Type[DeyeRegisters],
     all_command: TelebotMenuItem,
     master_command: TelebotMenuItem,
     slave_command: TelebotMenuItem,
     title: str = TelebotConstants.default_title,
   ):
     super().__init__(bot)
-    self.registers = registers
+    self.registers = self.registers_factory.create(registers_class)
     self.all_command = all_command
     self.master_command = master_command
     self.slave_command = slave_command

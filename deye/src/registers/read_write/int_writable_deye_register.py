@@ -10,7 +10,6 @@ class IntWritableDeyeRegister(IntDeyeRegister):
     address: int,
     min_value: int,
     max_value: int,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
@@ -18,7 +17,6 @@ class IntWritableDeyeRegister(IntDeyeRegister):
   ):
     super().__init__(
       address = address,
-      name = name,
       description = description,
       suffix = suffix,
       avg = avg,

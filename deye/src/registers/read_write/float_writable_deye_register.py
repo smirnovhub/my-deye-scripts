@@ -10,14 +10,12 @@ class FloatWritableDeyeRegister(FloatDeyeRegister):
     address: int,
     min_value: float,
     max_value: float,
-    name: str,
     description: str,
     suffix: str,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       address = address,
-      name = name,
       description = description,
       suffix = suffix,
       avg = avg,

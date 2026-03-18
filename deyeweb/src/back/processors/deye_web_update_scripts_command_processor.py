@@ -9,7 +9,7 @@ from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
 from deye_registers_holder import DeyeRegistersHolder
 from deye_web_remote_command import DeyeWebRemoteCommand
-from processors.deye_web_base_command_processor import DeyeWebBaseCommandProcessor
+from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
 class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
@@ -49,7 +49,10 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
       cache_file_path = os.path.join(tempfile.gettempdir(), DeyeWebConstants.front_cache_file_name)
       DeyeWebUtils.file_truncate(cache_file_path)
 
-      holder = DeyeRegistersHolder(name = 'deyeweb', loggers = self.loggers.loggers)
+      holder = DeyeRegistersHolder(
+        name = 'deyeweb',
+        loggers = self.loggers.loggers,
+      )
 
       try:
         holder.reset_cache()

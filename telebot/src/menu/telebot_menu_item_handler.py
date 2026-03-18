@@ -13,6 +13,7 @@ from deye_exceptions import DeyeKnownException
 from telebot_base_handler import TelebotBaseHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_remote_update_checker import TelebotRemoteUpdateChecker
+from telebot_registers_factory import TelebotRegistersFactory
 
 class TelebotMenuItemHandler(TelebotBaseHandler):
   """
@@ -26,13 +27,13 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         bot (telebot.TeleBot): The Telegram bot instance
     """
     self.bot = bot
-    self.log = logging.getLogger()
     self.users = TelebotUsers()
     self.loggers = DeyeLoggers()
     self.logger = logging.getLogger()
     self.auth_helper = TelebotAuthHelper()
     self.local_update_checker = TelebotLocalUpdateChecker()
     self.remote_update_checker = TelebotRemoteUpdateChecker()
+    self.registers_factory = TelebotRegistersFactory()
 
   @property
   def command(self) -> TelebotMenuItem:

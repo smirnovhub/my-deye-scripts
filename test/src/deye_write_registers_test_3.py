@@ -31,11 +31,11 @@ from deye_registers import DeyeRegisters
 from solarman_test_server import SolarmanTestServer
 from deye_test_helper import DeyeTestHelper
 
-DeyeTestUtils.setup_test_environment()
+DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
 logging.basicConfig(
   level = logging.INFO,
-  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
   datefmt = DeyeUtils.time_format_str,
 )
 
@@ -44,7 +44,7 @@ loggers = DeyeLoggers()
 registers = DeyeRegisters()
 
 if not loggers.is_test_loggers:
-  log.info('ERROR: your loggers are not test loggers')
+  log.error('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 servers: List[SolarmanTestServer] = []
@@ -101,12 +101,12 @@ for register in registers.all_registers:
     resp_message = 'An exception occurred: You can write only to master inverter'
 
     if resp_message.lower() not in output.lower():
-      log.info(f"Response message is incorrect. Should be: '{resp_message}'")
+      log.error(f"Response message is incorrect. Should be: '{resp_message}'")
       sys.exit(1)
 
     for server in servers:
       if server.is_something_written():
-        log.info(f"Changes on server '{server.name}' detected. We should not write to slaves")
+        log.error(f"Changes on server '{server.name}' detected. We should not write to slaves")
         sys.exit(1)
 
 log.info('No changes on server side tedected. Test is ok')

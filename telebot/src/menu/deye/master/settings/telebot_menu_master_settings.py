@@ -8,7 +8,7 @@ class TelebotMenuMasterSettings(TelebotMenuBaseSettings):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(
       bot = bot,
-      registers = MasterSettingsRegisters(),
+      registers_class = MasterSettingsRegisters,
       main_command = TelebotMenuItem.deye_master_settings,
       all_command = TelebotMenuItem.deye_all_settings,
       master_command = TelebotMenuItem.deye_master_settings,

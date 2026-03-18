@@ -1,3 +1,5 @@
+import threading
+
 from typing import Dict
 
 from simple_singleton import singleton
@@ -6,7 +8,8 @@ from deye_web_utils import DeyeWebUtils
 @singleton
 class DeyeWebStyleManager:
   def __init__(self):
-    self.styles: Dict[str, str] = {}
+    self._styles: Dict[str, str] = {}
+    self._lock = threading.Lock()
 
   def register_style(self, style_str: str) -> str:
     style_str = DeyeWebUtils.clean(style_str)
@@ -18,7 +21,9 @@ class DeyeWebStyleManager:
     if not id[0].isalpha():
       id = f's{id}'
 
-    self.styles[id] = style_str
+    with self._lock:
+      self._styles[id] = style_str
+
     return id
 
   def generate_css(self) -> str:
@@ -30,13 +35,16 @@ class DeyeWebStyleManager:
             "red-text": "color: red;"
         }
     """
-    if not self.styles:
-      return ''
+    with self._lock:
+      if not self._styles:
+        return ''
 
     parts = []
 
-    for class_name, style in self.styles.items():
-      parts.append(f".{class_name} {{ {style} }}")
+    with self._lock:
+      for class_name, style in self._styles.items():
+        parts.append(f".{class_name} {{ {style} }}")
+
     styles = " ".join(parts)
 
     return f"<style> {styles} </style>"

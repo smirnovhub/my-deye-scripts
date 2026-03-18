@@ -11,13 +11,11 @@ class BaseEnergyCostRegister(FloatDeyeRegister):
     self,
     energy_register: DeyeRegister,
     energy_costs: Dict[int, float],
-    name: str,
     description: str,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       address = 0,
-      name = name,
       description = description,
       suffix = DeyeEnergyCost().currency_code,
       avg = avg,

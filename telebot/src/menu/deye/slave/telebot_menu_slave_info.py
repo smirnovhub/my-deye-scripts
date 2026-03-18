@@ -8,7 +8,7 @@ class TelebotMenuSlaveInfo(TelebotMenuSlaveTotalBase):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(
       bot = bot,
-      registers = SlaveInfoRegisters(),
+      registers_class = SlaveInfoRegisters,
       all_command = TelebotMenuItem.deye_all_info,
       master_command = TelebotMenuItem.deye_master_info,
       slave_command = TelebotMenuItem.deye_slave_info,

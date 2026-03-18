@@ -29,11 +29,11 @@ from deye_test_utils import DeyeTestUtils
 from solarman_test_server import SolarmanTestServer
 from deye_registers_holder import DeyeRegistersHolder
 
-DeyeTestUtils.setup_test_environment()
+DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
 logging.basicConfig(
   level = logging.INFO,
-  format = "[%(asctime)s] [%(levelname)s] %(message)s",
+  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
   datefmt = DeyeUtils.time_format_str,
 )
 
@@ -41,7 +41,7 @@ log = logging.getLogger()
 loggers = DeyeLoggers()
 
 if not loggers.is_test_loggers:
-  log.info('ERROR: your loggers are not test loggers')
+  log.error('ERROR: your loggers are not test loggers')
   sys.exit(1)
 
 servers: List[SolarmanTestServer] = []
@@ -81,16 +81,16 @@ for register in holder.master_registers.all_registers:
 
   accumulated_register = holder.accumulated_registers.get_register_by_name(register.name)
   if accumulated_register is None:
-    print(f"Unable to get accumulated register '{register.name}'")
+    log.error(f"Unable to get accumulated register '{register.name}'")
     sys.exit(1)
 
   accumulated_register_type = type(accumulated_register.value).__name__
 
   if register_type != accumulated_register_type:
-    print(f"Original ({register_type}) and accumulated ({accumulated_register_type}) register "
+    log.error(f"Original ({register_type}) and accumulated ({accumulated_register_type}) register "
           f"value type doesn't match for register '{register.name}'")
     sys.exit(1)
   else:
-    print(f"Register value type '{register_type}' matched for accumulated register '{register.name}'")
+    log.info(f"Register value type '{register_type}' matched for accumulated register '{register.name}'")
 
 log.info('All accumulated registers types matched. Test is ok')
