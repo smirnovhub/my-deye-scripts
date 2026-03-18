@@ -592,9 +592,5 @@ if __name__ == "__main__":
     logger.error('ERROR: your loggers are not test loggers')
     sys.exit(1)
 
-  server_process = DeyeTestUtils.run_storage_server()
-
-  try:
+  with DeyeTestUtils.storage_server():
     unittest.main(verbosity = 2)
-  finally:
-    DeyeTestUtils.stop_storage_server(server_process)

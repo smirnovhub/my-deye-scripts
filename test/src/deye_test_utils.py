@@ -8,6 +8,8 @@ import uvicorn
 import logging.config
 import multiprocessing
 
+from contextlib import contextmanager
+
 class DeyeTestUtils:
   storage_server_host = '127.0.0.1'
   storage_server_port = 5000
@@ -39,7 +41,18 @@ class DeyeTestUtils:
                                              f"{DeyeTestUtils.storage_server_port}/cache")
 
   @staticmethod
-  def run_storage_server() -> multiprocessing.Process:
+  @contextmanager
+  def storage_server():
+    # Start the server process
+    server_process = DeyeTestUtils._run_storage_server()
+    try:
+      yield
+    finally:
+      # Stop the server process automatically when exiting the 'with' block
+      DeyeTestUtils._stop_storage_server(server_process)
+
+  @staticmethod
+  def _run_storage_server() -> multiprocessing.Process:
     logger = logging.getLogger()
     logger.info(f"Starting cache server at {DeyeTestUtils.storage_server_host}:"
                 f"{DeyeTestUtils.storage_server_port}...")
@@ -52,13 +65,13 @@ class DeyeTestUtils:
     # Check if server is alive
     if not server_process.is_alive():
       exit_code = server_process.exitcode
-      logger.error(f"Storage server died immediately with exit code {exit_code}")
+      logger.error(f"Storage server died with exit code {exit_code}")
       sys.exit(1)
 
     return server_process
 
   @staticmethod
-  def stop_storage_server(process: multiprocessing.Process) -> None:
+  def _stop_storage_server(process: multiprocessing.Process) -> None:
     logger = logging.getLogger()
     logger.info("Shutting cache server down...")
     process.terminate()
@@ -119,5 +132,5 @@ class DeyeTestUtils:
       except (ConnectionRefusedError, OSError):
         time.sleep(0.1)
 
-    logger.info("Storage server did not become ready in time.")
+    logger.error("Storage server did not become ready in time.")
     return False
