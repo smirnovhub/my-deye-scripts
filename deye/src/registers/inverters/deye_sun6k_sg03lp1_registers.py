@@ -3,7 +3,6 @@ from typing import List
 from datetime import timedelta
 from functools import cached_property
 
-from deye_loggers import DeyeLoggers
 from deye_base_registers import DeyeBaseRegisters
 from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
@@ -32,55 +31,54 @@ from system_work_mode_writable_deye_register import SystemWorkModeWritableDeyeRe
 class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   def __init__(self, prefix: str = ''):
     super().__init__(prefix)
-    self._loggers = DeyeLoggers()
     self._energy_cost = DeyeEnergyCost()
 
   @cached_property
   def ac_couple_frz_high_register(self) -> DeyeRegister:
     return FloatWritableDeyeRegister(
-      329,
-      50.5,
-      52,
-      'AC Couple Frz High',
-      'Hz',
+      address = 329,
+      min_value = 50.5,
+      max_value = 52,
+      description = 'AC Couple Frz High',
+      suffix = 'Hz',
       avg = DeyeRegisterAverageType.only_master,
     ).with_scale(100)
 
   @cached_property
   def backup_delay_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      311,
-      0,
-      30000,
-      'Backup Delay',
-      'ms',
+      address = 311,
+      min_value = 0,
+      max_value = 30000,
+      description = 'Backup Delay',
+      suffix = 'ms',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def battery_bms_charge_current_limit_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      314,
-      'Battery BMS Charge Current Limit',
-      'A',
+      address = 314,
+      description = 'Battery BMS Charge Current Limit',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def battery_bms_discharge_current_limit_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      315,
-      'Battery BMS Discharge Current Limit',
-      'A',
+      address = 315,
+      description = 'Battery BMS Discharge Current Limit',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def battery_capacity_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      107,
-      'Battery Capacity',
-      'Ah',
+      address = 107,
+      description = 'Battery Capacity',
+      suffix = 'Ah',
       avg = DeyeRegisterAverageType.only_master,
       caching_time = timedelta(hours = 12),
     )
@@ -88,102 +86,102 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def battery_current_register(self) -> DeyeRegister:
     return SignedFloatDeyeRegister(
-      191,
-      'Battery Current',
-      'A',
+      address = 191,
+      description = 'Battery Current',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.accumulate,
     ).with_scale(100)
 
   @cached_property
   def battery_gen_charge_current_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      227,
-      0,
-      80,
-      'Battery Gen Charge Current',
-      'A',
+      address = 227,
+      min_value = 0,
+      max_value = 80,
+      description = 'Battery Gen Charge Current',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
   @cached_property
   def battery_grid_charge_current_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      230,
-      0,
-      80,
-      'Battery Grid Charge Current',
-      'A',
+      address = 230,
+      min_value = 0,
+      max_value = 80,
+      description = 'Battery Grid Charge Current',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
   @cached_property
   def battery_low_batt_soc_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      219,
-      5,
-      60,
-      'Battery Low Batt SOC',
-      '%',
+      address = 219,
+      min_value = 5,
+      max_value = 60,
+      description = 'Battery Low Batt SOC',
+      suffix = '%',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def battery_max_charge_current_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      210,
-      0,
-      80,
-      'Battery Max Charge Current',
-      'A',
+      address = 210,
+      min_value = 0,
+      max_value = 80,
+      description = 'Battery Max Charge Current',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
   @cached_property
   def battery_max_discharge_current_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      211,
-      50,
-      120,
-      'Battery Max Discharge Current',
-      'A',
+      address = 211,
+      min_value = 50,
+      max_value = 120,
+      description = 'Battery Max Discharge Current',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
   @cached_property
   def battery_power_register(self) -> DeyeRegister:
     return SignedIntDeyeRegister(
-      190,
-      'Battery Power',
-      'W',
+      address = 190,
+      description = 'Battery Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def battery_restart_soc_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      218,
-      5,
-      60,
-      'Battery Restart SOC',
-      '%',
+      address = 218,
+      min_value = 5,
+      max_value = 60,
+      description = 'Battery Restart SOC',
+      suffix = '%',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def battery_soc_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      184,
-      'Battery SOC',
-      '%',
+      address = 184,
+      description = 'Battery SOC',
+      suffix = '%',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def battery_soh_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      10006,
-      'Battery SOH',
-      '%',
+      address = 10006,
+      description = 'Battery SOH',
+      suffix = '%',
       avg = DeyeRegisterAverageType.only_master,
       caching_time = timedelta(hours = 12),
     )
@@ -191,358 +189,358 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def battery_shutdown_soc_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      217,
-      5,
-      60,
-      'Battery Shutdown SOC',
-      '%',
+      address = 217,
+      min_value = 5,
+      max_value = 60,
+      description = 'Battery Shutdown SOC',
+      suffix = '%',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def battery_temperature_register(self) -> DeyeRegister:
     return TemperatureDeyeRegister(
-      182,
-      'Battery Temperature',
-      'deg',
+      address = 182,
+      description = 'Battery Temperature',
+      suffix = 'deg',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def battery_voltage_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      183,
-      'Battery Voltage',
-      'V',
+      address = 183,
+      description = 'Battery Voltage',
+      suffix = 'V',
       avg = DeyeRegisterAverageType.average,
     ).with_scale(100)
 
   @cached_property
   def ct_ratio_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      327,
-      200,
-      2000,
-      'CT Ratio',
-      '',
+      address = 327,
+      min_value = 200,
+      max_value = 2000,
+      description = 'CT Ratio',
+      suffix = '',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def gen_peak_shaving_power_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      292,
-      500,
-      6000,
-      'Gen Peak Shaving Power',
-      'W',
+      address = 292,
+      min_value = 500,
+      max_value = 6000,
+      description = 'Gen Peak Shaving Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def gen_power_register(self) -> DeyeRegister:
     return SignedIntDeyeRegister(
-      166,
-      'Gen Power',
-      'W',
+      address = 166,
+      description = 'Gen Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def grid_charging_start_soc_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      229,
-      50,
-      90,
-      'Grid Charging Start SOC',
-      '%',
+      address = 229,
+      min_value = 50,
+      max_value = 90,
+      description = 'Grid Charging Start SOC',
+      suffix = '%',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def grid_connect_voltage_high_register(self) -> DeyeRegister:
     return FloatWritableDeyeRegister(
-      287,
-      231,
-      255,
-      'Grid Connect Voltage High',
-      'V',
+      address = 287,
+      min_value = 231,
+      max_value = 255,
+      description = 'Grid Connect Voltage High',
+      suffix = 'V',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def grid_connect_voltage_low_register(self) -> DeyeRegister:
     return FloatWritableDeyeRegister(
-      288,
-      195,
-      230,
-      'Grid Connect Voltage Low',
-      'V',
+      address = 288,
+      min_value = 195,
+      max_value = 230,
+      description = 'Grid Connect Voltage Low',
+      suffix = 'V',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def grid_reconnect_voltage_high_register(self) -> DeyeRegister:
     return FloatWritableDeyeRegister(
-      433,
-      231,
-      255,
-      'Grid Reconnect Voltage High',
-      'V',
+      address = 433,
+      min_value = 231,
+      max_value = 255,
+      description = 'Grid Reconnect Voltage High',
+      suffix = 'V',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def grid_reconnect_voltage_low_register(self) -> DeyeRegister:
     return FloatWritableDeyeRegister(
-      434,
-      195,
-      230,
-      'Grid Reconnect Voltage Low',
-      'V',
+      address = 434,
+      min_value = 195,
+      max_value = 230,
+      description = 'Grid Reconnect Voltage Low',
+      suffix = 'V',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def grid_frequency_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      79,
-      'Grid Frequency',
-      'Hz',
+      address = 79,
+      description = 'Grid Frequency',
+      suffix = 'Hz',
       avg = DeyeRegisterAverageType.average,
     ).with_scale(100)
 
   @cached_property
   def grid_peak_shaving_power_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      293,
-      1000,
-      6000,
-      'Grid Peak Shaving Power',
-      'W',
+      address = 293,
+      min_value = 1000,
+      max_value = 6000,
+      description = 'Grid Peak Shaving Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def grid_power_register(self) -> DeyeRegister:
     return SignedIntDeyeRegister(
-      169,
-      'Grid Power',
-      'W',
+      address = 169,
+      description = 'Grid Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def grid_internal_ct_power_register(self) -> DeyeRegister:
     return SignedIntDeyeRegister(
-      167,
-      'Grid Internal CT Power',
-      'W',
+      address = 167,
+      description = 'Grid Internal CT Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def grid_external_ct_power_register(self) -> DeyeRegister:
     return SignedIntDeyeRegister(
-      170,
-      'Grid External CT Power',
-      'W',
+      address = 170,
+      description = 'Grid External CT Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def grid_reconnection_time_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      282,
-      60,
-      3600,
-      'Grid Reconnection Time',
-      'sec',
+      address = 282,
+      min_value = 60,
+      max_value = 3600,
+      description = 'Grid Reconnection Time',
+      suffix = 'sec',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def grid_state_code_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      194,
-      'Grid State code',
-      '',
+      address = 194,
+      description = 'Grid State code',
+      suffix = '',
     )
 
   @cached_property
   def grid_state_register(self) -> DeyeRegister:
     return GridStateDeyeRegister(
-      194,
-      'Grid State',
-      '',
+      address = 194,
+      description = 'Grid State',
+      suffix = '',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def grid_voltage_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      150,
-      'Grid Voltage',
-      'V',
+      address = 150,
+      description = 'Grid Voltage',
+      suffix = 'V',
       avg = DeyeRegisterAverageType.average,
     )
 
   @cached_property
   def gen_port_mode_register(self) -> DeyeRegister:
     return GenPortModeWritableDeyeRegister(
-      235,
-      'Gen Port Mode',
-      '',
+      address = 235,
+      description = 'Gen Port Mode',
+      suffix = '',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def inverter_ac_temperature_register(self) -> DeyeRegister:
     return TemperatureDeyeRegister(
-      91,
-      'Inverter AC Temperature',
-      'deg',
+      address = 91,
+      description = 'Inverter AC Temperature',
+      suffix = 'deg',
       avg = DeyeRegisterAverageType.average,
     )
 
   @cached_property
   def inverter_dc_temperature_register(self) -> DeyeRegister:
     return TemperatureDeyeRegister(
-      90,
-      'Inverter DC Temperature',
-      'deg',
+      address = 90,
+      description = 'Inverter DC Temperature',
+      suffix = 'deg',
       avg = DeyeRegisterAverageType.average,
     )
 
   @cached_property
   def inverter_system_time_diff_register(self) -> DeyeRegister:
     return SystemTimeDiffDeyeRegister(
-      self.inverter_system_time_register,
-      'Inverter System Time Diff',
-      'sec',
-      DeyeRegisterAverageType.average,
+      system_time_register = self.inverter_system_time_register,
+      description = 'Inverter System Time Diff',
+      suffix = 'sec',
+      avg = DeyeRegisterAverageType.average,
     )
 
   @cached_property
   def inverter_system_time_register(self) -> DeyeRegister:
     return SystemTimeWritableDeyeRegister(
-      22,
-      'Inverter System Time',
-      '',
+      address = 22,
+      description = 'Inverter System Time',
+      suffix = '',
       caching_time = timedelta(seconds = 50),
     )
 
   @cached_property
   def load_frequency_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      192,
-      'Load Frequency',
-      'Hz',
+      address = 192,
+      description = 'Load Frequency',
+      suffix = 'Hz',
       avg = DeyeRegisterAverageType.average,
     ).with_scale(100)
 
   @cached_property
   def load_power_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      178,
-      'Load Power',
-      'W',
+      address = 178,
+      description = 'Load Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def load_voltage_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      157,
-      'Load Voltage',
-      'V',
+      address = 157,
+      description = 'Load Voltage',
+      suffix = 'V',
       avg = DeyeRegisterAverageType.average,
     )
 
   @cached_property
   def pv1_current_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      110,
-      'PV1 current',
-      'A',
+      address = 110,
+      description = 'PV1 current',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def pv1_power_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      186,
-      'PV1 Power',
-      'W',
+      address = 186,
+      description = 'PV1 Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def pv1_voltage_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      109,
-      'PV1 voltage',
-      'V',
+      address = 109,
+      description = 'PV1 voltage',
+      suffix = 'V',
       avg = DeyeRegisterAverageType.average,
     )
 
   @cached_property
   def pv2_current_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      112,
-      'PV2 current',
-      'A',
+      address = 112,
+      description = 'PV2 current',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def pv2_power_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      187,
-      'PV2 Power',
-      'W',
+      address = 187,
+      description = 'PV2 Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.accumulate,
     )
 
   @cached_property
   def pv2_voltage_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      111,
-      'PV2 voltage',
-      'V',
+      address = 111,
+      description = 'PV2 voltage',
+      suffix = 'V',
       avg = DeyeRegisterAverageType.average,
     )
 
   @cached_property
   def pv_total_current_register(self) -> DeyeRegister:
     return SumDeyeRegister(
-      [
+      registers = [
         self.pv1_current_register,
         self.pv2_current_register,
       ],
-      'PV Total current',
-      'A',
+      description = 'PV Total current',
+      suffix = 'A',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def pv_total_power_register(self) -> DeyeRegister:
     return SumDeyeRegister(
-      [
+      registers = [
         self.pv1_power_register,
         self.pv2_power_register,
       ],
-      'PV Total Power',
-      'W',
+      description = 'PV Total Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def system_work_mode_register(self) -> DeyeRegister:
     return SystemWorkModeWritableDeyeRegister(
-      244,
-      'System Work Mode',
-      '',
+      address = 244,
+      description = 'System Work Mode',
+      suffix = '',
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -564,31 +562,31 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def time_of_use_power_register(self) -> DeyeRegister:
     return TimeOfUseIntWritableDeyeRegister(
-      256,
-      0,
-      6000,
-      'Time Of Use Power',
-      'W',
+      address = 256,
+      min_value = 0,
+      max_value = 6000,
+      description = 'Time Of Use Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
   @cached_property
   def time_of_use_soc_register(self) -> DeyeRegister:
     return TimeOfUseIntWritableDeyeRegister(
-      268,
-      15,
-      100,
-      'Time Of Use SOC',
-      '%',
+      address = 268,
+      min_value = 15,
+      max_value = 100,
+      description = 'Time Of Use SOC',
+      suffix = '%',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def today_battery_charged_energy_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      70,
-      'Today Battery Charged Energy',
-      'kWh',
+      address = 70,
+      description = 'Today Battery Charged Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -596,9 +594,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def today_battery_discharged_energy_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      71,
-      'Today Battery Discharged Energy',
-      'kWh',
+      address = 71,
+      description = 'Today Battery Discharged Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -606,9 +604,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def today_grid_feed_in_energy_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      77,
-      'Today Grid Feed-in Energy',
-      'kWh',
+      address = 77,
+      description = 'Today Grid Feed-in Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -616,9 +614,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def today_grid_purchased_energy_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      76,
-      'Today Grid Purchased Energy',
-      'kWh',
+      address = 76,
+      description = 'Today Grid Purchased Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -626,9 +624,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def today_gen_energy_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      62,
-      'Today Gen Energy',
-      'kWh',
+      address = 62,
+      description = 'Today Gen Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -636,9 +634,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def today_load_consumption_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      84,
-      'Today Load Consumption',
-      'kWh',
+      address = 84,
+      description = 'Today Load Consumption',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -646,9 +644,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def today_pv_production_register(self) -> DeyeRegister:
     return FloatDeyeRegister(
-      108,
-      'Today PV Production',
-      'kWh',
+      address = 108,
+      description = 'Today PV Production',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -656,45 +654,45 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def today_pv_production_cost_register(self) -> DeyeRegister:
     return TodayEnergyCostRegister(
-      self.today_pv_production_register,
-      self._energy_cost.pv_energy_costs,
-      'Today PV Production Cost',
+      energy_register = self.today_pv_production_register,
+      energy_costs = self._energy_cost.pv_energy_costs,
+      description = 'Today PV Production Cost',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def today_grid_purchased_energy_cost_register(self) -> DeyeRegister:
     return TodayEnergyCostRegister(
-      self.today_grid_purchased_energy_register,
-      self._energy_cost.grid_purchased_energy_costs,
-      'Today Grid Purchased Energy Cost',
+      energy_register = self.today_grid_purchased_energy_register,
+      energy_costs = self._energy_cost.grid_purchased_energy_costs,
+      description = 'Today Grid Purchased Energy Cost',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def today_grid_feed_in_energy_cost_register(self) -> DeyeRegister:
     return TodayEnergyCostRegister(
-      self.today_grid_feed_in_energy_register,
-      self._energy_cost.grid_feed_in_energy_costs,
-      'Today Grid Feed-in Energy Cost',
+      energy_register = self.today_grid_feed_in_energy_register,
+      energy_costs = self._energy_cost.grid_feed_in_energy_costs,
+      description = 'Today Grid Feed-in Energy Cost',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def today_gen_energy_cost_register(self) -> DeyeRegister:
     return TodayEnergyCostRegister(
-      self.today_gen_energy_register,
-      self._energy_cost.gen_energy_costs,
-      'Today Gen Energy Cost',
+      energy_register = self.today_gen_energy_register,
+      energy_costs = self._energy_cost.gen_energy_costs,
+      description = 'Today Gen Energy Cost',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def total_battery_charged_energy_register(self) -> DeyeRegister:
     return LongFloatDeyeRegister(
-      72,
-      'Total Battery Charged Energy',
-      'kWh',
+      address = 72,
+      description = 'Total Battery Charged Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -702,9 +700,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def total_battery_discharged_energy_register(self) -> DeyeRegister:
     return LongFloatDeyeRegister(
-      74,
-      'Total Battery Discharged Energy',
-      'kWh',
+      address = 74,
+      description = 'Total Battery Discharged Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -712,9 +710,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def total_grid_feed_in_energy_register(self) -> DeyeRegister:
     return LongFloatDeyeRegister(
-      81,
-      'Total Grid Feed-in Energy',
-      'kWh',
+      address = 81,
+      description = 'Total Grid Feed-in Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -722,10 +720,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def total_grid_purchased_energy_register(self) -> DeyeRegister:
     return LongFloatSplittedDeyeRegister(
-      78,
-      2,
-      'Total Grid Purchased Energy',
-      'kWh',
+      address = 78,
+      split_offset = 2,
+      description = 'Total Grid Purchased Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -733,10 +731,10 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def total_gen_energy_register(self) -> DeyeRegister:
     return LongFloatSplittedDeyeRegister(
-      92,
-      3,
-      'Total Gen Energy',
-      'kWh',
+      address = 92,
+      split_offset = 3,
+      description = 'Total Gen Energy',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -744,9 +742,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def total_load_consumption_register(self) -> DeyeRegister:
     return LongFloatDeyeRegister(
-      85,
-      'Total Load Consumption',
-      'kWh',
+      address = 85,
+      description = 'Total Load Consumption',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -754,9 +752,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def total_pv_production_register(self) -> DeyeRegister:
     return LongFloatDeyeRegister(
-      96,
-      'Total PV Production',
-      'kWh',
+      address = 96,
+      description = 'Total PV Production',
+      suffix = 'kWh',
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -764,65 +762,65 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def total_pv_production_cost_register(self) -> DeyeRegister:
     return TotalEnergyCostRegister(
-      self.total_pv_production_register,
-      self._energy_cost.pv_energy_costs,
-      'Total PV Production Cost',
+      energy_register = self.total_pv_production_register,
+      energy_costs = self._energy_cost.pv_energy_costs,
+      description = 'Total PV Production Cost',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def total_grid_purchased_energy_cost_register(self) -> DeyeRegister:
     return TotalEnergyCostRegister(
-      self.total_grid_purchased_energy_register,
-      self._energy_cost.grid_purchased_energy_costs,
-      'Total Grid Purchased Energy Cost',
+      energy_register = self.total_grid_purchased_energy_register,
+      energy_costs = self._energy_cost.grid_purchased_energy_costs,
+      description = 'Total Grid Purchased Energy Cost',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def total_grid_feed_in_energy_cost_register(self) -> DeyeRegister:
     return TotalEnergyCostRegister(
-      self.total_grid_feed_in_energy_register,
-      self._energy_cost.grid_feed_in_energy_costs,
-      'Total Grid Feed-in Energy Cost',
+      energy_register = self.total_grid_feed_in_energy_register,
+      energy_costs = self._energy_cost.grid_feed_in_energy_costs,
+      description = 'Total Grid Feed-in Energy Cost',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def total_gen_energy_cost_register(self) -> DeyeRegister:
     return TotalEnergyCostRegister(
-      self.total_gen_energy_register,
-      self._energy_cost.gen_energy_costs,
-      'Total Gen Energy Cost',
+      energy_register = self.total_gen_energy_register,
+      energy_costs = self._energy_cost.gen_energy_costs,
+      description = 'Total Gen Energy Cost',
       avg = DeyeRegisterAverageType.special,
     )
 
   @cached_property
   def zero_export_power_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
-      206,
-      0,
-      100,
-      'Zero Export Power',
-      'W',
+      address = 206,
+      min_value = 0,
+      max_value = 100,
+      description = 'Zero Export Power',
+      suffix = 'W',
       avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
   def test1_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      316,
-      'Test1',
-      '',
+      address = 316,
+      description = 'Test1',
+      suffix = '',
     )
 
   @cached_property
   def test2_register(self) -> DeyeRegister:
     return TestDeyeRegister(
-      50,
-      350,
-      'Test2',
-      '',
+      address = 50,
+      quantity = 350,
+      description = 'Test2',
+      suffix = '',
     )
 
   @cached_property
