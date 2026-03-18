@@ -87,6 +87,5 @@ class DeyeRegister(ABC):
     pass
 
   @property
-  @abstractmethod
   def caching_time(self) -> Optional[timedelta]:
-    pass
+    return None
