@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List
 
 from button_node import ButtonNode
+from button_style import ButtonStyle
 from deye_register import DeyeRegister
 from common_utils import CommonUtils
 from deye_loggers import DeyeLoggers
@@ -70,7 +71,11 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
         bottom_buttons.append(self.register_button_handler(ButtonNode("Save"), self._handle_save))
 
       if self._need_fix_intervals():
-        bottom_buttons.append(self.register_button_handler(ButtonNode("Fix"), self._handle_fix_ask))
+        bottom_buttons.append(
+          self.register_button_handler(ButtonNode(
+            "Fix",
+            style = ButtonStyle.danger,
+          ), self._handle_fix_ask))
       elif self._need_reset_intervals():
         bottom_buttons.append(self.register_button_handler(ButtonNode("Reset"), self._handle_reset_ask))
 
