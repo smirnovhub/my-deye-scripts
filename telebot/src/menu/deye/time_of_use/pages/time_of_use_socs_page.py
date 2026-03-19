@@ -77,7 +77,10 @@ class TimeOfUseSocsPage(TimeOfUseBasePage):
     if not (self._min_val <= soc <= self._max_val):
       raise ValueError(f"SOC value should be from {self._min_val} to {self._max_val}")
 
-    self._set_soc_and_go_back(navigator, soc)
+    self._set_soc_and_go_back(
+      navigator = navigator,
+      soc = soc,
+    )
 
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:
     navigator.navigate(TimeOfUsePage.main)
@@ -88,7 +91,11 @@ class TimeOfUseSocsPage(TimeOfUseBasePage):
 
     return handler
 
-  def _set_soc_and_go_back(self, navigator: TelebotPageNavigator, soc: int) -> None:
+  def _set_soc_and_go_back(
+    self,
+    navigator: TelebotPageNavigator,
+    soc: int,
+  ) -> None:
     if self._time_of_use_line_index < 0:
       # Replace all elements in the list with the new value
       self._tou_socs.values[:] = [soc] * len(self._tou_socs.values)

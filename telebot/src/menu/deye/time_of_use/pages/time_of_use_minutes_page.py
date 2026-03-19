@@ -76,7 +76,10 @@ class TimeOfUseMinutesPage(TimeOfUseBasePage):
     if minute % 5 != 0:
       raise ValueError('Minute should be a multiple of 5')
 
-    self._set_minute_and_go_back(navigator, minute)
+    self._set_minute_and_go_back(
+      navigator = navigator,
+      minute = minute,
+    )
 
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:
     navigator.navigate(TimeOfUsePage.main)
@@ -87,6 +90,10 @@ class TimeOfUseMinutesPage(TimeOfUseBasePage):
 
     return handler
 
-  def _set_minute_and_go_back(self, navigator: TelebotPageNavigator, minute: int) -> None:
+  def _set_minute_and_go_back(
+    self,
+    navigator: TelebotPageNavigator,
+    minute: int,
+  ) -> None:
     self._tou_times.values[self._time_of_use_line_index].minute = minute
     navigator.navigate(TimeOfUsePage.main)
