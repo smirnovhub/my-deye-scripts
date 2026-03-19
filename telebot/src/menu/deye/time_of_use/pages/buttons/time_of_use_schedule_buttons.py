@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List
 
 from button_node import ButtonNode
+from button_style import ButtonStyle
 from time_of_use_data import TimeOfUseData
 from time_of_use_page import TimeOfUsePage
 from break_button_node import BreakButtonNode
@@ -54,6 +55,14 @@ class TimeOfUseScheduleButtons:
       time = times[i]
       next_time = times[(i + 1) % count]
 
+      style = ButtonStyle.default
+
+      # Check if next_time is 00:00 (end of the 24h cycle)
+      is_midnight = next_time.hour == 0 and next_time.minute == 0
+
+      if not is_midnight and next_time < time:
+        style = ButtonStyle.danger
+
       grid = TimeOfUseSwitchButtonNode(
         enabled = charge.grid_charge,
         index = i,
@@ -67,11 +76,13 @@ class TimeOfUseScheduleButtons:
       start = TimeOfUseButtonNode(
         text = f"{time.hour:02d}:{time.minute:02d}",
         index = i,
+        style = style,
       )
 
       end = TimeOfUseButtonNode(
         text = f"{next_time.hour:02d}:{next_time.minute:02d}",
         index = i,
+        style = style,
       )
 
       power = TimeOfUseButtonNode(
