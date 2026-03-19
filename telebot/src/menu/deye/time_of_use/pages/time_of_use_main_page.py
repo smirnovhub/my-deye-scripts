@@ -12,6 +12,7 @@ from deye_loggers import DeyeLoggers
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
 from time_of_use_data import TimeOfUseData
+from time_of_use_times import TimeOfUseTimes
 from break_button_node import BreakButtonNode
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_week_buttons import TimeOfUseWeekButtons
@@ -166,7 +167,7 @@ class TimeOfUseMainPage(TelebotNavigationPage):
       time = times[i]
       next_time = times[(i + 1) % count]
 
-      if not TimeOfUseHelper.is_interval_correct(start = time, end = next_time):
+      if not TimeOfUseTimes.is_interval_correct(start = time, end = next_time):
         return True
 
     return False

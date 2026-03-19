@@ -4,9 +4,9 @@ from typing import List
 from button_node import ButtonNode
 from button_style import ButtonStyle
 from time_of_use_data import TimeOfUseData
-from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
 from break_button_node import BreakButtonNode
+from time_of_use_times import TimeOfUseTimes
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_switch_button_node import TimeOfUseSwitchButtonNode
@@ -57,7 +57,7 @@ class TimeOfUseScheduleButtons:
       next_time = times[(i + 1) % count]
 
       style = ButtonStyle.default
-      if not TimeOfUseHelper.is_interval_correct(start = time, end = next_time):
+      if not TimeOfUseTimes.is_interval_correct(start = time, end = next_time):
         self._is_data_correct = False
         style = ButtonStyle.danger
 

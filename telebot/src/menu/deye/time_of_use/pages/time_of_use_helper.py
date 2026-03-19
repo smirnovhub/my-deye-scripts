@@ -1,10 +1,9 @@
 from dataclasses import asdict
 from typing import Any, Sequence
 
-from time_of_use_data import TimeOfUseData
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
-from time_of_use_time import TimeOfUseTime
+from time_of_use_data import TimeOfUseData
 from custom_single_registers import CustomSingleRegisters
 from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder import DeyeRegistersHolder
@@ -65,15 +64,3 @@ class TimeOfUseHelper:
 
     if asdict(data_to_clear.weeks) == asdict(original_data.weeks):
       data_to_clear.weeks.values = []
-
-  @staticmethod
-  def is_interval_correct(
-    start: TimeOfUseTime,
-    end: TimeOfUseTime,
-  ) -> bool:
-    if start == end:
-      return False
-
-    # Check if next_time is 00:00 (end of the 24h cycle)
-    is_midnight = end.hour == 0 and end.minute == 0
-    return is_midnight or end >= start
