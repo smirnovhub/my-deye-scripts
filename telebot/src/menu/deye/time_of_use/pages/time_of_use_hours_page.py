@@ -64,12 +64,26 @@ class TimeOfUseHoursPage(TimeOfUseBasePage):
 
     self._buttons = buttons
 
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    try:
+      hour = int(text)
+    except Exception:
+      raise ValueError(f"Hour value should be from 0 to 23")
+
+    if not (0 <= hour <= 23):
+      raise ValueError(f"Hour value should be from 0 to 23")
+
+    self._set_hour_and_go_next(navigator, hour)
+
   def _handle_back(self, navigator: TelebotPageNavigator):
     navigator.navigate(TimeOfUsePage.main)
 
   def _create_hour_handler(self, hour: int):
     def handler(navigator: TelebotPageNavigator) -> None:
-      self._tou_times.values[self._time_of_use_line_index].hour = hour
-      navigator.navigate(self._next_page_type, time_of_use_line_index = self._time_of_use_line_index)
+      self._set_hour_and_go_next(navigator, hour)
 
     return handler
+
+  def _set_hour_and_go_next(self, navigator: TelebotPageNavigator, hour: int) -> None:
+    self._tou_times.values[self._time_of_use_line_index].hour = hour
+    navigator.navigate(self._next_page_type, time_of_use_line_index = self._time_of_use_line_index)

@@ -104,6 +104,9 @@ class TelebotNavigationPage(ABC):
       # Handler expects only one argument (navigator)
       handler(navigator) # type: ignore
 
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    pass
+
   def register_button_handler(self, button: ButtonNode, handler: ButtonHandler) -> ButtonNode:
     """
     Maps a button to a specific function to be called when clicked.

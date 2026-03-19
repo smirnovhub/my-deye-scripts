@@ -1,4 +1,5 @@
 import re
+import time
 import telebot
 import threading
 
@@ -95,6 +96,7 @@ class TelebotPageNavigator:
     self._main_page = page
     self._current_page = page
     self._chat_id = chat_id
+    self._text = text
 
     try:
       page.clear_button_handlers()
@@ -108,9 +110,11 @@ class TelebotPageNavigator:
       data_prefix = self._data_prefix,
     )
 
+    self._markup = keyboard
+
     self._message = self._bot.send_message(
-      self._chat_id,
-      text,
+      chat_id = self._chat_id,
+      text = text,
       reply_markup = keyboard,
       parse_mode = "HTML",
     )
@@ -120,6 +124,7 @@ class TelebotPageNavigator:
     self._bot.register_next_step_handler(
       self._message,
       self._next_step_handler,
+      self._message,
     )
 
     return self._message
@@ -188,8 +193,11 @@ class TelebotPageNavigator:
       data_prefix = self._data_prefix,
     )
 
+    self._markup = keyboard
+
     try:
       if text:
+        self._text = text
         self._bot.edit_message_text(
           text,
           chat_id = self._chat_id,
@@ -207,24 +215,46 @@ class TelebotPageNavigator:
       # Ignore "Message is not modified" errors
       pass
 
-  def _handle_callback(self, button_id: int):
-    """
-    Internal handler for processing button clicks routed from global callback.
+  def send_message(self, text: str) -> telebot.types.Message:
+    if not self._chat_id:
+      raise RuntimeError("Navigation has not started yet")
 
-    Args:
-        button_id (int): ID of the button that was pressed.
-    """
-    if not self._current_page:
-      raise RuntimeError("No current page")
+    return self._bot.send_message(
+      self._chat_id,
+      text,
+      parse_mode = "HTML",
+    )
+
+  def _resend(self, text: str) -> telebot.types.Message:
+    if not self._message or not self._chat_id or not self._text:
+      raise RuntimeError("Navigation has not started yet")
 
     try:
-      self._current_page.handle_click(
-        navigator = self,
-        button_id = button_id,
+      self._bot.edit_message_text(
+        f"{self._text}: {text}",
+        chat_id = self._chat_id,
+        message_id = self._message.message_id,
+        parse_mode = 'HTML',
       )
-    except Exception as e:
-      self._on_error(str(e))
-      raise
+    except Exception:
+      pass
+
+    self._message = self._bot.send_message(
+      chat_id = self._chat_id,
+      text = self._text,
+      reply_markup = self._markup,
+      parse_mode = "HTML",
+    )
+
+    # Setup cleanup on any user text input
+    self._bot.clear_step_handler_by_chat_id(self._chat_id)
+    self._bot.register_next_step_handler(
+      self._message,
+      self._next_step_handler,
+      self._message,
+    )
+
+    return self._message
 
   def stop(self, text: str = '') -> None:
     """
@@ -265,6 +295,25 @@ class TelebotPageNavigator:
     with TelebotPageNavigator._lock:
       if self._data_prefix in TelebotPageNavigator._instances:
         del TelebotPageNavigator._instances[self._data_prefix]
+
+  def _handle_callback(self, button_id: int):
+    """
+    Internal handler for processing button clicks routed from global callback.
+
+    Args:
+        button_id (int): ID of the button that was pressed.
+    """
+    if not self._current_page:
+      raise RuntimeError("No current page")
+
+    try:
+      self._current_page.handle_click(
+        navigator = self,
+        button_id = button_id,
+      )
+    except Exception as e:
+      self._on_error(str(e))
+      raise
 
   def _on_error(self, message: str) -> None:
     """
@@ -310,18 +359,41 @@ class TelebotPageNavigator:
         button_id = int(match.group(2))
         instance._handle_callback(button_id = button_id)
 
-  def _next_step_handler(self, message: telebot.types.Message):
+  def _next_step_handler(
+    self,
+    message: telebot.types.Message,
+    sent_message: telebot.types.Message,
+  ):
     """
     Auto-stops navigation if the user sends a text message or command.
 
     Args:
         message (telebot.types.Message): The message received from the user.
     """
-    if not self._main_page:
+    if not self._main_page or not self._current_page:
       raise RuntimeError("Navigation has not started yet")
 
-    text = self._main_page.get_goodbye_message()
-    self.stop(text)
-
     # If we received new command, process it
-    TelebotUtils.forward_next(self._bot, message)
+    if TelebotUtils.forward_next(self._bot, message):
+      text = self._main_page.get_goodbye_message()
+      self.stop(text)
+    elif message.text:
+      self._bot.register_next_step_handler(
+        sent_message,
+        self._next_step_handler,
+        sent_message,
+      )
+
+      try:
+        self._resend(message.text)
+        time.sleep(1)
+        self._current_page.on_user_input(self, message.text)
+      except Exception as e:
+        sent = self.send_message(str(e))
+        if self._chat_id:
+          TelebotUtils.remove_message_with_delay(
+            bot = self._bot,
+            chat_id = self._chat_id,
+            message_id = sent.id,
+            delay = 5,
+          )

@@ -70,6 +70,20 @@ class TelebotUtils:
     return None
 
   @staticmethod
+  def remove_message(bot: telebot.TeleBot, chat_id: int, message_id: int) -> None:
+    """
+    Safely remove a message.
+    
+    :param bot: TeleBot instance
+    :param chat_id: Chat ID where the message was sent
+    :param message_id: ID of the message to update
+    """
+    try:
+      bot.delete_message(chat_id, message_id)
+    except Exception:
+      pass
+
+  @staticmethod
   def remove_inline_buttons(bot: telebot.TeleBot, chat_id: int, message_id: int) -> None:
     """
     Safely remove inline buttons from a message.
@@ -83,6 +97,24 @@ class TelebotUtils:
     except Exception:
       # Ignore errors (e.g., already removed, message deleted, not modified)
       pass
+
+  @staticmethod
+  def remove_message_with_delay(bot: telebot.TeleBot, chat_id: int, message_id: int, delay: float) -> None:
+    """
+    Schedule removal of a message after a delay.
+
+    :param bot: TeleBot instance
+    :param chat_id: Chat ID where the message was sent
+    :param message_id: ID of the message
+    :param delay: Time in seconds before removing buttons
+    """
+    if delay < 0.01:
+      TelebotUtils.remove_message(bot, chat_id, message_id)
+      return
+
+    timer = threading.Timer(delay, lambda: TelebotUtils.remove_message(bot, chat_id, message_id))
+    timer.daemon = True # thread won't block program exit
+    timer.start()
 
   @staticmethod
   def remove_inline_buttons_with_delay(bot: telebot.TeleBot, chat_id: int, message_id: int, delay: float) -> None:

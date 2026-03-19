@@ -77,6 +77,10 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     if self._ask_for_reset:
       self._ask_for_reset = False
 
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    text = self._get_time_of_use_as_text(self._tou_original_data)
+    navigator.stop(text)
+
   def get_goodbye_message(self) -> str:
     return self._get_time_of_use_as_text(self._tou_original_data)
 

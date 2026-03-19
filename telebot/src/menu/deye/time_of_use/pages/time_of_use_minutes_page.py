@@ -64,12 +64,29 @@ class TimeOfUseMinutesPage(TimeOfUseBasePage):
 
     self._buttons = buttons
 
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    try:
+      minute = int(text)
+    except Exception:
+      raise ValueError(f"Minute value should be from 0 to 55")
+
+    if not (0 <= minute <= 55):
+      raise ValueError(f"Minute value should be from 0 to 55")
+
+    if minute % 5 != 0:
+      raise ValueError('Minute should be a multiple of 5')
+
+    self._set_minute_and_go_back(navigator, minute)
+
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:
     navigator.navigate(TimeOfUsePage.main)
 
   def _create_minute_handler(self, minute: int):
     def handler(navigator: TelebotPageNavigator) -> None:
-      self._tou_times.values[self._time_of_use_line_index].minute = minute
-      navigator.navigate(TimeOfUsePage.main)
+      self._set_minute_and_go_back(navigator, minute)
 
     return handler
+
+  def _set_minute_and_go_back(self, navigator: TelebotPageNavigator, minute: int) -> None:
+    self._tou_times.values[self._time_of_use_line_index].minute = minute
+    navigator.navigate(TimeOfUsePage.main)

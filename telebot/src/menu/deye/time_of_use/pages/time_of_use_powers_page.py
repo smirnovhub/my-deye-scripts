@@ -17,6 +17,15 @@ class TimeOfUsePowersPage(TimeOfUseBasePage):
     super().__init__()
     self._tou_powers = tou_powers
     self._time_of_use_line_index = -1
+    self.values = [
+      [0, 250, 500],
+      [1000, 1250, 1500],
+      [2000, 2500, 3000],
+      [3500, 4000, 4500],
+      [5000, 5500, 6000],
+    ]
+    self._min_val = min(x for row in self.values for x in row)
+    self._max_val = max(x for row in self.values for x in row)
 
   @property
   def page_type(self) -> Enum:
@@ -40,14 +49,7 @@ class TimeOfUsePowersPage(TimeOfUseBasePage):
       BreakButtonNode(),
     ]
 
-    values = [
-      [250, 500, 1000],
-      [1250, 1500, 2000],
-      [2500, 3000, 3500],
-      [4000, 5000, 6000],
-    ]
-
-    for row_index, row in enumerate(values):
+    for row_index, row in enumerate(self.values):
       if row_index > 0:
         buttons.append(BreakButtonNode())
 
@@ -67,17 +69,31 @@ class TimeOfUsePowersPage(TimeOfUseBasePage):
 
     self._buttons = buttons
 
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    try:
+      power = int(text)
+    except Exception:
+      raise ValueError(f"Power value should be from {self._min_val} to {self._max_val}")
+
+    if not (self._min_val <= power <= self._max_val):
+      raise ValueError(f"Power value should be from {self._min_val} to {self._max_val}")
+
+    self._set_power_and_go_back(navigator, power)
+
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:
     navigator.navigate(TimeOfUsePage.main)
 
   def _create_power_handler(self, power: int):
     def handler(navigator: TelebotPageNavigator) -> None:
-      if self._time_of_use_line_index < 0:
-        # Replace all elements in the list with the new value
-        self._tou_powers.values[:] = [power] * len(self._tou_powers.values)
-      else:
-        self._tou_powers.values[self._time_of_use_line_index] = power
-
-      navigator.navigate(TimeOfUsePage.main)
+      self._set_power_and_go_back(navigator, power)
 
     return handler
+
+  def _set_power_and_go_back(self, navigator: TelebotPageNavigator, power: int) -> None:
+    if self._time_of_use_line_index < 0:
+      # Replace all elements in the list with the new value
+      self._tou_powers.values[:] = [power] * len(self._tou_powers.values)
+    else:
+      self._tou_powers.values[self._time_of_use_line_index] = power
+
+    navigator.navigate(TimeOfUsePage.main)
