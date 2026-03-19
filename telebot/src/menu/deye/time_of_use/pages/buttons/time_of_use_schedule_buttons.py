@@ -7,7 +7,6 @@ from time_of_use_data import TimeOfUseData
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
 from break_button_node import BreakButtonNode
-from time_of_use_button_node import TimeOfUseButtonNode
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_switch_button_node import TimeOfUseSwitchButtonNode
@@ -60,39 +59,12 @@ class TimeOfUseScheduleButtons:
       if not TimeOfUseHelper.is_interval_correct(start = time, end = next_time):
         style = ButtonStyle.danger
 
-      grid = TimeOfUseSwitchButtonNode(
-        enabled = charge.grid_charge,
-        index = i,
-      )
-
-      gen = TimeOfUseSwitchButtonNode(
-        enabled = charge.gen_charge,
-        index = i,
-      )
-
-      start = TimeOfUseButtonNode(
-        text = f"{time.hour:02d}:{time.minute:02d}",
-        index = i,
-        style = style,
-      )
-
-      end = TimeOfUseButtonNode(
-        text = f"{next_time.hour:02d}:{next_time.minute:02d}",
-        index = i,
-        style = style,
-      )
-
-      power = TimeOfUseButtonNode(
-        text = str(powers[i]),
-        data = str(powers[i]),
-        index = i,
-      )
-
-      soc = TimeOfUseButtonNode(
-        text = f"{socs[i]}%",
-        data = str(socs[i]),
-        index = i,
-      )
+      grid = TimeOfUseSwitchButtonNode(enabled = charge.grid_charge)
+      gen = TimeOfUseSwitchButtonNode(enabled = charge.gen_charge)
+      start = ButtonNode(text = f"{time.hour:02d}:{time.minute:02d}", style = style)
+      end = ButtonNode(text = f"{next_time.hour:02d}:{next_time.minute:02d}", style = style)
+      power = ButtonNode(text = str(powers[i]), data = str(powers[i]))
+      soc = ButtonNode(text = f"{socs[i]}%", data = str(socs[i]))
 
       page.register_button_handler(grid, self._create_toggle_grid_handler(i))
       page.register_button_handler(gen, self._create_toggle_gen_handler(i))

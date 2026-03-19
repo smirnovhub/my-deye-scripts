@@ -8,7 +8,6 @@ from time_of_use_helper import TimeOfUseHelper
 from time_of_use_times import TimeOfUseTimes
 from break_button_node import BreakButtonNode
 from time_of_use_page import TimeOfUsePage
-from time_of_use_button_node import TimeOfUseButtonNode
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -54,14 +53,8 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
       if i > 0 and i % 4 == 0:
         buttons.append(BreakButtonNode())
 
-      btn = TimeOfUseButtonNode(
-        text = f"{i:02}",
-        data = str(i),
-        index = i,
-      )
-
-      self.register_button_handler(btn, self._create_hour_handler(i))
-      buttons.append(btn)
+      btn = ButtonNode(text = f"{i:02}", data = str(i))
+      buttons.append(self.register_button_handler(btn, self._create_hour_handler(i)))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))

@@ -6,7 +6,6 @@ from time_of_use_data import TimeOfUseSocs
 from break_button_node import BreakButtonNode
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
-from time_of_use_button_node import TimeOfUseButtonNode
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -55,14 +54,8 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
         buttons.append(BreakButtonNode())
 
       for value in row:
-        btn = TimeOfUseButtonNode(
-          text = str(value),
-          data = str(value),
-          index = row_index,
-        )
-
-        self.register_button_handler(btn, self._create_soc_handler(value))
-        buttons.append(btn)
+        btn = ButtonNode(text = str(value), data = str(value))
+        buttons.append(self.register_button_handler(btn, self._create_soc_handler(value)))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
