@@ -4,6 +4,7 @@ from typing import List
 from button_node import ButtonNode
 from button_style import ButtonStyle
 from time_of_use_data import TimeOfUseData
+from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
 from break_button_node import BreakButtonNode
 from time_of_use_button_node import TimeOfUseButtonNode
@@ -56,11 +57,7 @@ class TimeOfUseScheduleButtons:
       next_time = times[(i + 1) % count]
 
       style = ButtonStyle.default
-
-      # Check if next_time is 00:00 (end of the 24h cycle)
-      is_midnight = next_time.hour == 0 and next_time.minute == 0
-
-      if not is_midnight and next_time < time:
+      if not TimeOfUseHelper.is_interval_correct(start = time, end = next_time):
         style = ButtonStyle.danger
 
       grid = TimeOfUseSwitchButtonNode(

@@ -9,15 +9,16 @@ from button_style import ButtonStyle
 from deye_register import DeyeRegister
 from common_utils import CommonUtils
 from deye_loggers import DeyeLoggers
-from time_of_use_base_page import TimeOfUseBasePage
+from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
 from time_of_use_data import TimeOfUseData
 from break_button_node import BreakButtonNode
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_week_buttons import TimeOfUseWeekButtons
+from telebot_navigation_page import TelebotNavigationPage
 from time_of_use_schedule_buttons import TimeOfUseScheduleButtons
 
-class TimeOfUseMainPage(TimeOfUseBasePage):
+class TimeOfUseMainPage(TelebotNavigationPage):
   def __init__(
     self,
     tou_register: DeyeRegister,
@@ -108,13 +109,13 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
 
     data = copy.deepcopy(self._tou_data)
 
-    self.clear_unchanged_data(
+    TimeOfUseHelper.clear_unchanged_data(
       data_to_clear = data,
       original_data = self._tou_original_data,
     )
 
     try:
-      self.write_time_of_use(
+      TimeOfUseHelper.write_time_of_use(
         tou_register = self._tou_register,
         master_logger = self._loggers.master,
         tou_data = data,
@@ -164,10 +165,7 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
       time = times[i]
       next_time = times[(i + 1) % count]
 
-      # Check if next_time is 00:00 (end of the 24h cycle)
-      is_midnight = next_time.hour == 0 and next_time.minute == 0
-
-      if not is_midnight and next_time < time:
+      if not TimeOfUseHelper.is_interval_correct(start = time, end = next_time):
         return True
 
     return False

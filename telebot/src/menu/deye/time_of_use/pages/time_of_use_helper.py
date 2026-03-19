@@ -4,29 +4,26 @@ from typing import Any, Sequence
 from time_of_use_data import TimeOfUseData
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
-from telebot_navigation_page import TelebotNavigationPage
+from time_of_use_time import TimeOfUseTime
 from custom_single_registers import CustomSingleRegisters
 from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder import DeyeRegistersHolder
 
-class TimeOfUseBasePage(TelebotNavigationPage):
-  def __init__(self):
-    super().__init__()
-
-  def check_bounds(self, collection: Sequence[Any], index: int) -> None:
+class TimeOfUseHelper:
+  @staticmethod
+  def check_bounds(collection: Sequence[Any], index: int) -> None:
     count = len(collection)
     if not (0 <= index < count):
-      class_name = self.__class__.__name__
-      raise RuntimeError(f"{class_name}: index {index} is out of bounds (0 to {count - 1})")
+      raise RuntimeError(f"Index {index} is out of bounds (0 to {count - 1})")
 
-  def check_upper_bounds(self, collection: Sequence[Any], index: int) -> None:
+  @staticmethod
+  def check_upper_bounds(collection: Sequence[Any], index: int) -> None:
     count = len(collection)
     if index >= count:
-      class_name = self.__class__.__name__
-      raise RuntimeError(f"{class_name}: index {index} should be less than {count - 1}")
+      raise RuntimeError(f"Index {index} should be less than {count - 1}")
 
+  @staticmethod
   def write_time_of_use(
-    self,
     tou_register: DeyeRegister,
     tou_data: TimeOfUseData,
     master_logger: DeyeLogger,
@@ -47,8 +44,8 @@ class TimeOfUseBasePage(TelebotNavigationPage):
     finally:
       holder.disconnect()
 
+  @staticmethod
   def clear_unchanged_data(
-    self,
     data_to_clear: TimeOfUseData,
     original_data: TimeOfUseData,
   ) -> None:
@@ -68,3 +65,15 @@ class TimeOfUseBasePage(TelebotNavigationPage):
 
     if asdict(data_to_clear.weeks) == asdict(original_data.weeks):
       data_to_clear.weeks.values = []
+
+  @staticmethod
+  def is_interval_correct(
+    start: TimeOfUseTime,
+    end: TimeOfUseTime,
+  ) -> bool:
+    if start == end:
+      return False
+
+    # Check if next_time is 00:00 (end of the 24h cycle)
+    is_midnight = end.hour == 0 and end.minute == 0
+    return is_midnight or end >= start

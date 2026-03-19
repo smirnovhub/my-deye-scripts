@@ -2,14 +2,15 @@ from enum import Enum
 from typing import Any, List
 
 from button_node import ButtonNode
-from time_of_use_base_page import TimeOfUseBasePage
 from time_of_use_data import TimeOfUseSocs
 from break_button_node import BreakButtonNode
+from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
 from time_of_use_button_node import TimeOfUseButtonNode
 from telebot_page_navigator import TelebotPageNavigator
+from telebot_navigation_page import TelebotNavigationPage
 
-class TimeOfUseSocsPage(TimeOfUseBasePage):
+class TimeOfUseSocsPage(TelebotNavigationPage):
   def __init__(
     self,
     tou_socs: TimeOfUseSocs,
@@ -40,7 +41,7 @@ class TimeOfUseSocsPage(TimeOfUseBasePage):
     if index is None:
       raise RuntimeError("time_of_use_line_index not found")
 
-    self.check_upper_bounds(self._tou_socs.values, index)
+    TimeOfUseHelper.check_upper_bounds(self._tou_socs.values, index)
     self._time_of_use_line_index = index
 
   def update(self) -> None:

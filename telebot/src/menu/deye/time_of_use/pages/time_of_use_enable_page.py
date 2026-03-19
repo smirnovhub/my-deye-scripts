@@ -6,13 +6,14 @@ from typing import List
 from button_node import ButtonNode
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
-from time_of_use_base_page import TimeOfUseBasePage
 from time_of_use_data import TimeOfUseData
 from break_button_node import BreakButtonNode
+from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
 from telebot_page_navigator import TelebotPageNavigator
+from telebot_navigation_page import TelebotNavigationPage
 
-class TimeOfUseEnablePage(TimeOfUseBasePage):
+class TimeOfUseEnablePage(TelebotNavigationPage):
   def __init__(
     self,
     tou_register: DeyeRegister,
@@ -51,7 +52,7 @@ class TimeOfUseEnablePage(TimeOfUseBasePage):
     data.socs.values.clear()
 
     try:
-      self.write_time_of_use(
+      TimeOfUseHelper.write_time_of_use(
         tou_register = self._tou_register,
         master_logger = self._loggers.master,
         tou_data = data,
