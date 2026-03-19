@@ -231,7 +231,7 @@ class TelebotPageNavigator:
 
     try:
       self._bot.edit_message_text(
-        f"{self._text}: {text}",
+        f"{self._text} {text}",
         chat_id = self._chat_id,
         message_id = self._message.message_id,
         parse_mode = 'HTML',
