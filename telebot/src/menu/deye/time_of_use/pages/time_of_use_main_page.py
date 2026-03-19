@@ -68,17 +68,17 @@ class TimeOfUseMainPage(TelebotNavigationPage):
         self.register_button_handler(ButtonNode("No"), self._handle_reset_no),
       ])
     else:
-      if self._need_save():
+      if schedule_buttons.is_data_correct and self._need_save():
         bottom_buttons.append(self.register_button_handler(ButtonNode("Save"), self._handle_save))
 
       if self._need_fix_intervals():
         bottom_buttons.append(
           self.register_button_handler(ButtonNode(
-            "Fix",
+            "Fix times",
             style = ButtonStyle.danger,
           ), self._handle_fix_ask))
       elif self._need_reset_intervals():
-        bottom_buttons.append(self.register_button_handler(ButtonNode("Reset"), self._handle_reset_ask))
+        bottom_buttons.append(self.register_button_handler(ButtonNode("Reset times"), self._handle_reset_ask))
 
       bottom_buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
 

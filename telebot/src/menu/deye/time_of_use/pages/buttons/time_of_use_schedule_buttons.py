@@ -19,6 +19,7 @@ class TimeOfUseScheduleButtons:
   ):
     super().__init__()
     self._tou_data = tou_data
+    self._is_data_correct = True
 
     header_buttons: List[ButtonNode] = [
       page.register_button_handler(
@@ -57,6 +58,7 @@ class TimeOfUseScheduleButtons:
 
       style = ButtonStyle.default
       if not TimeOfUseHelper.is_interval_correct(start = time, end = next_time):
+        self._is_data_correct = False
         style = ButtonStyle.danger
 
       grid = TimeOfUseSwitchButtonNode(enabled = charge.grid_charge)
@@ -80,6 +82,10 @@ class TimeOfUseScheduleButtons:
   @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
+
+  @property
+  def is_data_correct(self) -> bool:
+    return self._is_data_correct
 
   def _create_toggle_grid_handler(self, line_index: int):
     # The handler now accepts both navigator and button_node
