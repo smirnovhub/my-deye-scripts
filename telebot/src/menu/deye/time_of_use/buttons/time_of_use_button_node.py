@@ -1,4 +1,5 @@
 from button_node import ButtonNode
+from button_style import ButtonStyle
 
 class TimeOfUseButtonNode(ButtonNode):
   def __init__(
@@ -6,10 +7,12 @@ class TimeOfUseButtonNode(ButtonNode):
     text: str,
     index: int,
     data: str = "",
+    style = ButtonStyle.default,
   ):
     super().__init__(
       text = text,
       data = data,
+      style = style,
     )
     self._index = index
 
