@@ -25,7 +25,7 @@ class TimeOfUseHoursPage(TimeOfUseBasePage):
     self._page_type = page_type
     self._next_page_type = next_page_type
     self._time_of_use_line_index = -1
-    self._time_pattern = re.compile(rf"(\d+):(\d+)")
+    self._time_pattern = re.compile(r"(\d+):(\d+)")
 
   @property
   def page_type(self) -> Enum:
