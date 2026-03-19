@@ -27,6 +27,7 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     self._tou_data = tou_data
     self._tou_original_data = copy.deepcopy(tou_data)
     self._loggers = DeyeLoggers()
+    self._ask_for_fix = False
     self._ask_for_reset = False
 
   @property
@@ -50,7 +51,14 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
 
     bottom_buttons: List[ButtonNode] = []
 
-    if self._ask_for_reset:
+    if self._ask_for_fix:
+      bottom_buttons.extend([
+        ButtonNode("Fix time intervals?"),
+        BreakButtonNode(),
+        self.register_button_handler(ButtonNode("Yes"), self._handle_fix_yes),
+        self.register_button_handler(ButtonNode("No"), self._handle_fix_no),
+      ])
+    elif self._ask_for_reset:
       bottom_buttons.extend([
         ButtonNode("Reset time intervals?"),
         BreakButtonNode(),
@@ -61,7 +69,9 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
       if self._need_save():
         bottom_buttons.append(self.register_button_handler(ButtonNode("Save"), self._handle_save))
 
-      if self._need_reset():
+      if self._need_fix_intervals():
+        bottom_buttons.append(self.register_button_handler(ButtonNode("Fix"), self._handle_fix_ask))
+      elif self._need_reset_intervals():
         bottom_buttons.append(self.register_button_handler(ButtonNode("Reset"), self._handle_reset_ask))
 
       bottom_buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
@@ -109,6 +119,15 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
     else:
       navigator.stop(text)
 
+  def _handle_fix_yes(self, navigator: TelebotPageNavigator) -> None:
+    self._ask_for_fix = False
+    self._fix_time_intervals()
+    navigator.update()
+
+  def _handle_fix_no(self, navigator: TelebotPageNavigator) -> None:
+    self._ask_for_fix = False
+    navigator.update()
+
   def _handle_reset_yes(self, navigator: TelebotPageNavigator) -> None:
     self._ask_for_reset = False
     self._reset_time_intervals()
@@ -116,6 +135,10 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
 
   def _handle_reset_no(self, navigator: TelebotPageNavigator) -> None:
     self._ask_for_reset = False
+    navigator.update()
+
+  def _handle_fix_ask(self, navigator: TelebotPageNavigator) -> None:
+    self._ask_for_fix = True
     navigator.update()
 
   def _handle_reset_ask(self, navigator: TelebotPageNavigator) -> None:
@@ -128,21 +151,37 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
   def _need_save(self) -> bool:
     return asdict(self._tou_data) != asdict(self._tou_original_data)
 
-  def _need_reset(self) -> bool:
+  def _need_fix_intervals(self) -> bool:
+    times = self._tou_data.times.values
+    count = len(times)
+
+    for i in range(count):
+      time = times[i]
+      next_time = times[(i + 1) % count]
+
+      # Check if next_time is 00:00 (end of the 24h cycle)
+      is_midnight = next_time.hour == 0 and next_time.minute == 0
+
+      if not is_midnight and next_time < time:
+        return True
+
+    return False
+
+  def _need_reset_intervals(self) -> bool:
     """
     Checks if the time intervals need to be reset to their default hourly steps.
     """
-    values = self._tou_data.times.values
-    total_intervals = len(values)
+    times = self._tou_data.times.values
+    count = len(times)
 
     # If there's nothing to check, no reset is needed
-    if total_intervals == 0:
+    if count == 0:
       return False
 
-    hours_per_step = 24 // total_intervals
+    hours_per_step = 24 // count
 
-    for i in range(total_intervals):
-      curr_time = values[i]
+    for i in range(count):
+      curr_time = times[i]
 
       expected_hour = i * hours_per_step
       expected_minute = 0
@@ -153,21 +192,82 @@ class TimeOfUseMainPage(TimeOfUseBasePage):
 
     return False
 
+  def _fix_time_intervals(self) -> None:
+    times = self._tou_data.times.values
+    if not times:
+      return
+
+    step_min = 5
+    count = len(times)
+
+    times[0].hour = 0
+    times[0].minute = 0
+
+    # The absolute anchor is the very first time in the list
+    start_minutes = times[0].hour * 60 + times[0].minute
+    # The end anchor is the same time but 24 hours later
+    end_minutes = start_minutes + 1440
+
+    # Prepare a list of minutes, treating each as being within the 24h window
+    minutes = []
+    for i in range(count):
+      m = times[i].hour * 60 + times[i].minute
+      # If time is less than start, it's definitely the next day (e.g., 00:00 after 20:00)
+      if m < start_minutes:
+        m += 1440
+      minutes.append(m)
+
+    # Add the target end point (start of next day) for the last interval calculation
+    minutes.append(end_minutes)
+
+    i = 0
+    while i < len(minutes) - 1:
+      t1 = minutes[i]
+
+      # Look for the next valid anchor (a point that is > t1 and > previous points)
+      j = i + 1
+      while j < len(minutes) and minutes[j] <= t1:
+        j += 1
+
+      # If we have a gap, interpolate
+      if j > i + 1:
+        steps = j - i
+        total_diff = minutes[j] - t1
+
+        for k in range(1, steps):
+          raw_val = t1 + (total_diff * k / steps)
+          # Round to nearest 5 min
+          rounded_val = int(round(raw_val / step_min) * step_min)
+
+          # Safety constraints
+          if rounded_val >= minutes[j]:
+            rounded_val = minutes[j] - step_min
+          if rounded_val <= minutes[i + k - 1]:
+            rounded_val = minutes[i + k - 1] + step_min
+
+          minutes[i + k] = rounded_val
+      i = j
+
+    # Write back (excluding the extra end_minutes we added)
+    for i in range(count):
+      total = minutes[i] % 1440
+      times[i].hour = total // 60
+      times[i].minute = total % 60
+
   def _reset_time_intervals(self) -> None:
     """
     Directly updates the hour and minute attributes of existing TimeOfUseTime objects.
     """
-    values = self._tou_data.times.values
-
-    total_intervals = len(values)
-    if total_intervals == 0:
+    times = self._tou_data.times.values
+    if not times:
       return
 
-    hours_per_step = 24 // total_intervals
+    count = len(times)
+    hours_per_step = 24 // count
 
     # Update only existing objects in the list
-    for i in range(min(total_intervals, len(values))):
-      curr_time = values[i]
+    for i in range(min(count, len(times))):
+      curr_time = times[i]
 
       # Modify attributes in-place
       curr_time.hour = i * hours_per_step
