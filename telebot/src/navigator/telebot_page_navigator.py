@@ -386,7 +386,7 @@ class TelebotPageNavigator:
 
       try:
         self._resend(message.text)
-        time.sleep(1)
+        time.sleep(0.5)
         self._current_page.on_user_input(self, message.text)
       except Exception as e:
         sent = self.send_message(str(e))
