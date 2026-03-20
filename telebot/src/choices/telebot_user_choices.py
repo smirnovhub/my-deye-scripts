@@ -256,10 +256,11 @@ class UserChoices:
         button: Optional[ButtonNode] = None
         buttons = UserChoices._choice_buttons.pop(call.message.message_id, None)
 
-        for btn in buttons:
-          if btn.id == button_id:
-            button = btn
-            break
+        if buttons:
+          for btn in buttons:
+            if btn.id == button_id:
+              button = btn
+              break
 
         callback = UserChoices._choice_callbacks.pop(call.message.message_id, None)
         if button and callback:
