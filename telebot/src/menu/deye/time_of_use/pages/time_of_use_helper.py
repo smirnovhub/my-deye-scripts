@@ -2,6 +2,7 @@ from dataclasses import asdict
 from typing import Any, Sequence
 
 from deye_logger import DeyeLogger
+from common_utils import CommonUtils
 from deye_register import DeyeRegister
 from time_of_use_data import TimeOfUseData
 from custom_single_registers import CustomSingleRegisters
@@ -64,3 +65,46 @@ class TimeOfUseHelper:
 
     if asdict(data_to_clear.weeks) == asdict(original_data.weeks):
       data_to_clear.weeks.values = []
+
+  @staticmethod
+  def get_time_of_use_as_text(
+    tou_data: TimeOfUseData,
+    suffx: str = "",
+  ) -> str:
+    def sign(value: bool):
+      on = CommonUtils.large_green_circle_emoji
+      off = CommonUtils.large_red_circle_emoji
+      return on if value else off
+
+    header = f'{sign(tou_data.week.enabled)} Time of Use schedule: {suffx}'
+    schedule = 'Gr Gen    Time     Pwr Batt\n'
+
+    charges = tou_data.charges.values
+    times = tou_data.times.values
+    powers = tou_data.powers.values
+    socs = tou_data.socs.values
+
+    count = len(times)
+    for i in range(count):
+      curr_charge = charges[i]
+      curr_time = times[i]
+      # Next time for the interval end, wrapping around to the first element
+      next_time = times[(i + 1) % count]
+      curr_power = powers[i]
+      curr_soc = socs[i]
+
+      schedule += (f'{sign(curr_charge.grid_charge)} {sign(curr_charge.gen_charge)} '
+                   f'{curr_time.hour:02d}:{curr_time.minute:02d} '
+                   f'{next_time.hour:02d}:{next_time.minute:02d} '
+                   f'{curr_power:>4} {curr_soc:>3}%\n')
+
+    days_of_week = 'Mon Tue Wed Thu Fri Sat Sun\n'
+    days_of_week += (f'{sign(tou_data.week.monday)}  '
+                     f'{sign(tou_data.week.tuesday)}  '
+                     f'{sign(tou_data.week.wednesday)}  '
+                     f'{sign(tou_data.week.thursday)}  '
+                     f'{sign(tou_data.week.friday)}  '
+                     f'{sign(tou_data.week.saturday)}  '
+                     f'{sign(tou_data.week.sunday)}')
+
+    return f'{header}\n<pre>{days_of_week}</pre>\n<pre>{schedule}</pre>'
