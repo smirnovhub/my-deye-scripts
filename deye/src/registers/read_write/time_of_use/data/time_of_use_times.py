@@ -12,6 +12,9 @@ class TimeOfUseTimes:
       raise ValueError(f'times count should be {items_count}')
 
   def check_time(self) -> None:
+    if not self.values:
+      return
+
     if self.values[0].hour != 0 or self.values[0].minute != 0:
       raise ValueError(f'wrong item value {self.values[0]}: first item time should be 00:00')
 
