@@ -14,12 +14,12 @@ class TimeOfUseTime:
   hour: int
   minute: int
 
-  def __eq__(self, other):
+  def __eq__(self, other: object):
     if not isinstance(other, TimeOfUseTime):
       raise TypeError(f"Cannot compare TimeOfUseTime with {type(other).__name__}")
     return (self.hour, self.minute) == (other.hour, other.minute)
 
-  def __lt__(self, other):
+  def __lt__(self, other: object):
     if not isinstance(other, TimeOfUseTime):
       raise TypeError(f"Cannot compare TimeOfUseTime with {type(other).__name__}")
     return (self.hour, self.minute) < (other.hour, other.minute)
