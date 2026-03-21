@@ -5,6 +5,7 @@ import threading
 from dataclasses import dataclass
 from typing import Callable, Dict
 
+from button_node import ButtonNode
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 
@@ -54,8 +55,10 @@ class CountdownWithCancel:
         on_cancel: Optional callback executed when countdown is cancelled. Receives chat_id.
     """
     # Create keyboard with one Cancel button using your helper
-    cancel_keyboard = TelebotUtils.get_keyboard_for_choices(
-      options = {"Cancel": "btn"},
+    cancel_keyboard = TelebotUtils.get_keyboard_for_buttons(
+      buttons = [
+        ButtonNode(text = "Cancel"),
+      ],
       max_per_row = 1,
       data_prefix = CountdownWithCancel._countdown_prefix,
     )

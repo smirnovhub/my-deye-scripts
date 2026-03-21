@@ -1,3 +1,4 @@
+from button_node import ButtonNode
 import telebot
 from typing import Dict
 
@@ -37,7 +38,17 @@ class CommandChoice:
     if not options:
       return bot.send_message(chat_id, text, parse_mode = "HTML")
 
-    keyboard = TelebotUtils.get_keyboard_for_choices(options, max_per_row)
+    buttons = [ButtonNode(
+      text = key,
+      data = val,
+    ) for key, val in options.items()]
+
+    keyboard = TelebotUtils.get_keyboard_for_buttons(
+      buttons = buttons,
+      max_per_row = max_per_row,
+      use_button_data_instead_of_id = True,
+    )
+
     message = bot.send_message(chat_id, text, reply_markup = keyboard, parse_mode = "HTML")
 
     bot.clear_step_handler_by_chat_id(message.chat.id)

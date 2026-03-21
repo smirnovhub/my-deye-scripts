@@ -27,11 +27,11 @@ class FloatWritableDeyeRegister(FloatDeyeRegister):
   def can_write(self) -> bool:
     return True
 
-  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
     try:
       value = float(value)
     except Exception as e:
-      self.error('write(): can\'t convert value to float')
+      self.error("write(): can't convert value to float")
 
     if value < self.min_value or value > self.max_value:
       self.error(f'write(): value should be from {self.min_value} to {self.max_value}')

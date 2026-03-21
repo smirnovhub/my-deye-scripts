@@ -2,14 +2,14 @@ from enum import Enum
 from typing import Any, List
 
 from button_node import ButtonNode
-from time_of_use_base_page import TimeOfUseBasePage
+from time_of_use_helper import TimeOfUseHelper
 from time_of_use_times import TimeOfUseTimes
 from break_button_node import BreakButtonNode
 from time_of_use_page import TimeOfUsePage
-from time_of_use_button_node import TimeOfUseButtonNode
 from telebot_page_navigator import TelebotPageNavigator
+from telebot_navigation_page import TelebotNavigationPage
 
-class TimeOfUseMinutesPage(TimeOfUseBasePage):
+class TimeOfUseMinutesPage(TelebotNavigationPage):
   def __init__(
     self,
     tou_times: TimeOfUseTimes,
@@ -35,7 +35,7 @@ class TimeOfUseMinutesPage(TimeOfUseBasePage):
     if index is None:
       raise RuntimeError("time_of_use_line_index not found")
 
-    self.check_bounds(self._tou_times.values, index)
+    TimeOfUseHelper.check_bounds(self._tou_times.values, index)
     self._time_of_use_line_index = index
 
   def update(self) -> None:
@@ -50,26 +50,44 @@ class TimeOfUseMinutesPage(TimeOfUseBasePage):
       if i > 0 and i % 4 == 0:
         buttons.append(BreakButtonNode())
 
-      btn = TimeOfUseButtonNode(
-        text = f"{minute:02}",
-        data = str(minute),
-        index = i,
-      )
-
-      self.register_button_handler(btn, self._create_minute_handler(minute))
-      buttons.append(btn)
+      btn = ButtonNode(text = f"{minute:02}", data = str(minute))
+      buttons.append(self.register_button_handler(btn, self._create_minute_handler(minute)))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
 
     self._buttons = buttons
 
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    try:
+      minute = int(text)
+    except Exception:
+      raise ValueError(f"Minute value should be from 0 to 55")
+
+    if not (0 <= minute <= 55):
+      raise ValueError(f"Minute value should be from 0 to 55")
+
+    if minute % 5 != 0:
+      raise ValueError('Minute should be a multiple of 5')
+
+    self._set_minute_and_go_back(
+      navigator = navigator,
+      minute = minute,
+    )
+
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:
     navigator.navigate(TimeOfUsePage.main)
 
   def _create_minute_handler(self, minute: int):
     def handler(navigator: TelebotPageNavigator) -> None:
-      self._tou_times.values[self._time_of_use_line_index].minute = minute
-      navigator.navigate(TimeOfUsePage.main)
+      self._set_minute_and_go_back(navigator, minute)
 
     return handler
+
+  def _set_minute_and_go_back(
+    self,
+    navigator: TelebotPageNavigator,
+    minute: int,
+  ) -> None:
+    self._tou_times.values[self._time_of_use_line_index].minute = minute
+    navigator.navigate(TimeOfUsePage.main)

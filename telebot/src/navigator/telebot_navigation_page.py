@@ -35,6 +35,10 @@ class TelebotNavigationPage(ABC):
     pass
 
   @property
+  def need_user_input(self) -> bool:
+    return True
+
+  @property
   @abstractmethod
   def buttons(self) -> List[ButtonNode]:
     """
@@ -103,6 +107,9 @@ class TelebotNavigationPage(ABC):
     else:
       # Handler expects only one argument (navigator)
       handler(navigator) # type: ignore
+
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    pass
 
   def register_button_handler(self, button: ButtonNode, handler: ButtonHandler) -> ButtonNode:
     """

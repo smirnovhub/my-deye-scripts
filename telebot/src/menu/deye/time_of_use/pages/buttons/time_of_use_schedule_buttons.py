@@ -2,10 +2,11 @@ from enum import Enum
 from typing import List
 
 from button_node import ButtonNode
+from button_style import ButtonStyle
 from time_of_use_data import TimeOfUseData
 from time_of_use_page import TimeOfUsePage
 from break_button_node import BreakButtonNode
-from time_of_use_button_node import TimeOfUseButtonNode
+from time_of_use_times import TimeOfUseTimes
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_switch_button_node import TimeOfUseSwitchButtonNode
@@ -18,6 +19,7 @@ class TimeOfUseScheduleButtons:
   ):
     super().__init__()
     self._tou_data = tou_data
+    self._is_data_correct = True
 
     header_buttons: List[ButtonNode] = [
       page.register_button_handler(
@@ -54,37 +56,17 @@ class TimeOfUseScheduleButtons:
       time = times[i]
       next_time = times[(i + 1) % count]
 
-      grid = TimeOfUseSwitchButtonNode(
-        enabled = charge.grid_charge,
-        index = i,
-      )
+      style = ButtonStyle.default
+      if not TimeOfUseTimes.is_interval_correct(start = time, end = next_time):
+        self._is_data_correct = False
+        style = ButtonStyle.danger
 
-      gen = TimeOfUseSwitchButtonNode(
-        enabled = charge.gen_charge,
-        index = i,
-      )
-
-      start = TimeOfUseButtonNode(
-        text = f"{time.hour:02d}:{time.minute:02d}",
-        index = i,
-      )
-
-      end = TimeOfUseButtonNode(
-        text = f"{next_time.hour:02d}:{next_time.minute:02d}",
-        index = i,
-      )
-
-      power = TimeOfUseButtonNode(
-        text = str(powers[i]),
-        data = str(powers[i]),
-        index = i,
-      )
-
-      soc = TimeOfUseButtonNode(
-        text = f"{socs[i]}%",
-        data = str(socs[i]),
-        index = i,
-      )
+      grid = TimeOfUseSwitchButtonNode(enabled = charge.grid_charge)
+      gen = TimeOfUseSwitchButtonNode(enabled = charge.gen_charge)
+      start = ButtonNode(text = f"{time.hour:02d}:{time.minute:02d}", style = style)
+      end = ButtonNode(text = f"{next_time.hour:02d}:{next_time.minute:02d}", style = style)
+      power = ButtonNode(text = str(powers[i]), data = str(powers[i]))
+      soc = ButtonNode(text = f"{socs[i]}%", data = str(socs[i]))
 
       page.register_button_handler(grid, self._create_toggle_grid_handler(i))
       page.register_button_handler(gen, self._create_toggle_gen_handler(i))
@@ -100,6 +82,10 @@ class TimeOfUseScheduleButtons:
   @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
+
+  @property
+  def is_data_correct(self) -> bool:
+    return self._is_data_correct
 
   def _create_toggle_grid_handler(self, line_index: int):
     # The handler now accepts both navigator and button_node

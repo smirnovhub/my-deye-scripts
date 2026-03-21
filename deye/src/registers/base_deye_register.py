@@ -106,14 +106,6 @@ class BaseDeyeRegister(DeyeRegister):
     return self.read_internal(master_interactor)
 
   @property
-  def can_write(self) -> bool:
-    return False
-
-  @property
-  def can_accumulate(self) -> bool:
-    return self._avg != DeyeRegisterAverageType.none and self._avg != DeyeRegisterAverageType.only_master
-
-  @property
   def avg_type(self) -> DeyeRegisterAverageType:
     return self._avg
 
@@ -172,3 +164,6 @@ class BaseDeyeRegister(DeyeRegister):
     if self.can_write and self._loggers.remote_cache_server:
       return self._writable_registers_caching_time
     return self._caching_time
+
+  def error(self, message: str):
+    raise DeyeValueException(f'{type(self).__name__}.{message}')

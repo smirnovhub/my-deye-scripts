@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -87,20 +87,24 @@ async def handle_front_requests():
   if builder:
     try:
       html = builder.get_front_html()
-      return HTMLResponse(content = html, status_code = 200)
+      return HTMLResponse(
+        content = html,
+        status_code = status.HTTP_200_OK,
+      )
     except Exception as e:
       logger.error(traceback.format_exc())
       return HTMLResponse(
         content = f"<h1>Frontend Error</h1><pre>{str(e)}\n{traceback.format_exc()}</pre>",
-        status_code = 500,
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
       )
 
   # Get all errors as a formatted string
   all_errors = dependency_provider.get_all_errors()
   error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items())
+  logger.error(error_text)
   return HTMLResponse(
     content = f"<h1>Frontend Error</h1><pre>{error_text}</pre>",
-    status_code = 500,
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
   )
 
 @app.post("/back", tags = ["Backend Operations"])

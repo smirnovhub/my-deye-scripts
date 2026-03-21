@@ -1,15 +1,17 @@
+import re
+
 from enum import Enum
 from typing import Any, List
 
 from button_node import ButtonNode
-from time_of_use_base_page import TimeOfUseBasePage
+from time_of_use_helper import TimeOfUseHelper
 from time_of_use_times import TimeOfUseTimes
 from break_button_node import BreakButtonNode
 from time_of_use_page import TimeOfUsePage
-from time_of_use_button_node import TimeOfUseButtonNode
 from telebot_page_navigator import TelebotPageNavigator
+from telebot_navigation_page import TelebotNavigationPage
 
-class TimeOfUseHoursPage(TimeOfUseBasePage):
+class TimeOfUseHoursPage(TelebotNavigationPage):
   def __init__(
     self,
     tou_times: TimeOfUseTimes,
@@ -23,6 +25,7 @@ class TimeOfUseHoursPage(TimeOfUseBasePage):
     self._page_type = page_type
     self._next_page_type = next_page_type
     self._time_of_use_line_index = -1
+    self._time_pattern = re.compile(r"(\d+):(\d+)")
 
   @property
   def page_type(self) -> Enum:
@@ -37,7 +40,7 @@ class TimeOfUseHoursPage(TimeOfUseBasePage):
     if index is None:
       raise RuntimeError("time_of_use_line_index not found")
 
-    self.check_bounds(self._tou_times.values, index)
+    TimeOfUseHelper.check_bounds(self._tou_times.values, index)
     self._time_of_use_line_index = index
 
   def update(self) -> None:
@@ -50,26 +53,71 @@ class TimeOfUseHoursPage(TimeOfUseBasePage):
       if i > 0 and i % 4 == 0:
         buttons.append(BreakButtonNode())
 
-      btn = TimeOfUseButtonNode(
-        text = f"{i:02}",
-        data = str(i),
-        index = i,
-      )
-
-      self.register_button_handler(btn, self._create_hour_handler(i))
-      buttons.append(btn)
+      btn = ButtonNode(text = f"{i:02}", data = str(i))
+      buttons.append(self.register_button_handler(btn, self._create_hour_handler(i)))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
 
     self._buttons = buttons
 
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    match = self._time_pattern.match(text)
+    if match:
+      hour = int(match.group(1))
+      minute = int(match.group(2))
+
+      if not (0 <= hour <= 23):
+        raise ValueError(f"Hour value should be from 0 to 23")
+
+      if not (0 <= minute <= 55):
+        raise ValueError(f"Minute value should be from 0 to 55")
+
+      if minute % 5 != 0:
+        raise ValueError('Minute should be a multiple of 5')
+
+      self._set_hour_and_minute_and_go_next(
+        navigator = navigator,
+        hour = hour,
+        minute = minute,
+      )
+    else:
+      try:
+        hour = int(text)
+      except Exception:
+        raise ValueError(f"Hour value should be from 0 to 23")
+
+      if not (0 <= hour <= 23):
+        raise ValueError(f"Hour value should be from 0 to 23")
+
+      self._set_hour_and_go_next(
+        navigator = navigator,
+        hour = hour,
+      )
+
   def _handle_back(self, navigator: TelebotPageNavigator):
     navigator.navigate(TimeOfUsePage.main)
 
   def _create_hour_handler(self, hour: int):
     def handler(navigator: TelebotPageNavigator) -> None:
-      self._tou_times.values[self._time_of_use_line_index].hour = hour
-      navigator.navigate(self._next_page_type, time_of_use_line_index = self._time_of_use_line_index)
+      self._set_hour_and_go_next(navigator, hour)
 
     return handler
+
+  def _set_hour_and_go_next(
+    self,
+    navigator: TelebotPageNavigator,
+    hour: int,
+  ) -> None:
+    self._tou_times.values[self._time_of_use_line_index].hour = hour
+    navigator.navigate(self._next_page_type, time_of_use_line_index = self._time_of_use_line_index)
+
+  def _set_hour_and_minute_and_go_next(
+    self,
+    navigator: TelebotPageNavigator,
+    hour: int,
+    minute: int,
+  ) -> None:
+    self._tou_times.values[self._time_of_use_line_index].hour = hour
+    self._tou_times.values[self._time_of_use_line_index].minute = minute
+    navigator.navigate(TimeOfUsePage.main)

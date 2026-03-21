@@ -43,11 +43,11 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
     return value
 
-  def write(self, interactor: DeyeModbusInteractor, value) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
     val = str(value)
 
     if not re.match(r'^\d{4}\-\d{2}\-\d{2}\s\d{2}\:\d{2}\:\d{2}$', val):
-      self.error('write(): value doesn\'t match date/time format')
+      self.error("write(): value doesn't match date/time format")
 
     year, month, day, hour, minute, second = [int(x) for x in re.split(r'[\-\:\s]', val)]
 

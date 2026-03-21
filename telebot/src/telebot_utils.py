@@ -4,11 +4,12 @@ import time
 import threading
 import telebot
 
-from typing import Dict, List, Optional
+from typing import List, Optional, Sequence
 
 from env_utils import EnvUtils
+from button_node import ButtonNode
+from button_style import ButtonStyle
 from telebot_constants import TelebotConstants
-from telebot_user_choice import TelebotUserChoice
 
 class TelebotUtils:
   row_break_str = '!break!'
@@ -69,6 +70,20 @@ class TelebotUtils:
     return None
 
   @staticmethod
+  def remove_message(bot: telebot.TeleBot, chat_id: int, message_id: int) -> None:
+    """
+    Safely remove a message.
+    
+    :param bot: TeleBot instance
+    :param chat_id: Chat ID where the message was sent
+    :param message_id: ID of the message to update
+    """
+    try:
+      bot.delete_message(chat_id, message_id)
+    except Exception:
+      pass
+
+  @staticmethod
   def remove_inline_buttons(bot: telebot.TeleBot, chat_id: int, message_id: int) -> None:
     """
     Safely remove inline buttons from a message.
@@ -82,6 +97,24 @@ class TelebotUtils:
     except Exception:
       # Ignore errors (e.g., already removed, message deleted, not modified)
       pass
+
+  @staticmethod
+  def remove_message_with_delay(bot: telebot.TeleBot, chat_id: int, message_id: int, delay: float) -> None:
+    """
+    Schedule removal of a message after a delay.
+
+    :param bot: TeleBot instance
+    :param chat_id: Chat ID where the message was sent
+    :param message_id: ID of the message
+    :param delay: Time in seconds before removing buttons
+    """
+    if delay < 0.01:
+      TelebotUtils.remove_message(bot, chat_id, message_id)
+      return
+
+    timer = threading.Timer(delay, lambda: TelebotUtils.remove_message(bot, chat_id, message_id))
+    timer.daemon = True # thread won't block program exit
+    timer.start()
 
   @staticmethod
   def remove_inline_buttons_with_delay(bot: telebot.TeleBot, chat_id: int, message_id: int, delay: float) -> None:
@@ -102,53 +135,37 @@ class TelebotUtils:
     timer.start()
 
   @staticmethod
-  def get_keyboard_for_choices(
-    options: Dict[str, str],
-    max_per_row: int,
+  def get_keyboard_for_buttons(
+    buttons: Sequence[ButtonNode],
     data_prefix: str = '',
+    max_per_row: int = -1,
+    use_button_data_instead_of_id = False,
   ) -> telebot.types.InlineKeyboardMarkup:
     """
     Build an inline keyboard where:
-      - keys of the dict are button texts,
-      - values of the dict are callback_data strings.
+      - buttons is a list of ButtonNode objects,
+      - button.text is button text,
+      - button.data is callback_data string.
     Buttons are arranged in rows with up to max_per_row buttons each.
-    An empty string as a key forces a line break (starts a new row).
     """
-    choices_list = [TelebotUserChoice(text = k, data = v) for k, v in options.items()]
-    return TelebotUtils.get_keyboard_for_choices_ext(
-      options = choices_list,
-      max_per_row = max_per_row,
-      data_prefix = data_prefix,
-    )
-
-  @staticmethod
-  def get_keyboard_for_choices_ext(
-    options: List[TelebotUserChoice],
-    data_prefix: str = '',
-    max_per_row: int = -1,
-  ) -> telebot.types.InlineKeyboardMarkup:
-    """
-      Build an inline keyboard where:
-        - options is a list of TelebotUserChoice objects,
-        - choice.text is button text,
-        - choice.data is callback_data string.
-      Buttons are arranged in rows with up to max_per_row buttons each.
-      """
     keyboard = telebot.types.InlineKeyboardMarkup()
     row: List[telebot.types.InlineKeyboardButton] = []
 
-    for choice in options:
+    for button in buttons:
       # Check for row break in either text or data
-      if TelebotUtils.row_break_str in (choice.text, choice.data):
+      if TelebotUtils.row_break_str in (button.text, button.data):
         # Commit the current row (if not empty) and start a new one
         if row:
           keyboard.row(*row)
           row = []
         continue
 
+      callback_data = button.data if use_button_data_instead_of_id else str(button.id)
+
       btn = telebot.types.InlineKeyboardButton(
-        text = choice.text,
-        callback_data = data_prefix + choice.data,
+        text = button.text,
+        callback_data = data_prefix + callback_data,
+        style = button.style.name if button.style != ButtonStyle.default else None,
       )
 
       row.append(btn)
