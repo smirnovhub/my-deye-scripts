@@ -46,10 +46,14 @@ class CommandChoice:
     keyboard = TelebotUtils.get_keyboard_for_buttons(
       buttons = buttons,
       max_per_row = max_per_row,
-      use_button_data_instead_of_id = True,
     )
 
-    message = bot.send_message(chat_id, text, reply_markup = keyboard, parse_mode = "HTML")
+    message = bot.send_message(
+      chat_id,
+      text,
+      reply_markup = keyboard,
+      parse_mode = "HTML",
+    )
 
     bot.clear_step_handler_by_chat_id(message.chat.id)
     bot.register_next_step_handler(
@@ -62,7 +66,11 @@ class CommandChoice:
     return message
 
   @staticmethod
-  def _user_command_choice_next_step_handler(message: telebot.types.Message, bot: telebot.TeleBot, message_id: int):
+  def _user_command_choice_next_step_handler(
+    message: telebot.types.Message,
+    bot: telebot.TeleBot,
+    message_id: int,
+  ):
     """
     Handles the user's response after an advanced choice message is sent.
     - Removes the inline keyboard from the original message.

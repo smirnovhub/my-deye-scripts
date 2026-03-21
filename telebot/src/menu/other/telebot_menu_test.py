@@ -6,8 +6,9 @@ import zipfile
 import telebot
 import datetime
 
-from typing import Dict, List, TextIO
+from typing import List, TextIO
 
+from button_node import ButtonNode
 from deye_utils import DeyeUtils
 from common_utils import CommonUtils
 from deye_file_lock import DeyeFileLock
@@ -76,15 +77,19 @@ class TelebotMenuTest(TelebotMenuItemHandler):
           return
 
       tests_names = [os.path.splitext(os.path.basename(f))[0] for f in tests_scripts]
-      options: Dict[str, str] = {self.all_tests: f'/{TelebotMenuItem.test.command} {self.all_tests}'}
-      options.update({s: f"/{TelebotMenuItem.test.command} {s}" for s in tests_names})
+      tests_names.sort()
+
+      options: List[ButtonNode] = [
+        ButtonNode(text = self.all_tests, data = f'/{TelebotMenuItem.test.command} {self.all_tests}'),
+      ]
+
+      options.extend([ButtonNode(text = s, data = f"/{TelebotMenuItem.test.command} {s}") for s in tests_names])
 
       sent = AdvancedChoice.ask_advanced_choice(
         self.bot,
         message.chat.id,
         self.intro_text,
         options,
-        lambda _, __: None,
         max_per_row = 1,
         edit_message_with_user_selection = True,
       )

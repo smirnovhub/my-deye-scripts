@@ -139,7 +139,6 @@ class TelebotUtils:
     buttons: Sequence[ButtonNode],
     data_prefix: str = '',
     max_per_row: int = -1,
-    use_button_data_instead_of_id = False,
   ) -> telebot.types.InlineKeyboardMarkup:
     """
     Build an inline keyboard where:
@@ -160,11 +159,14 @@ class TelebotUtils:
           row = []
         continue
 
-      callback_data = button.data if use_button_data_instead_of_id else str(button.id)
+      if button.data.startswith("/"):
+        callback_data = button.data
+      else:
+        callback_data = data_prefix + str(button.id)
 
       btn = telebot.types.InlineKeyboardButton(
         text = button.text,
-        callback_data = data_prefix + callback_data,
+        callback_data = callback_data,
         style = button.style.name if button.style != ButtonStyle.default else None,
       )
 

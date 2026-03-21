@@ -1,6 +1,9 @@
 import re
 import telebot
 
+from typing import List
+
+from button_node import ButtonNode
 from git_helper import GitHelper
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
@@ -61,17 +64,17 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
       self.bot.send_message(message.chat.id, str(e))
       return
 
+    options: List[ButtonNode] = [
+      ButtonNode(text = item, data = f"/revert {hash}") for item, hash in last_commits.items()
+    ]
+
     if last_commits:
       sent = AdvancedChoice.ask_advanced_choice(
-        self.bot,
-        message.chat.id,
-        f"You are currently on branch '{branch_name}'.\n"
-        'Enter commit hash to revert to:',
-        {
-          item: f"/revert {hash}"
-          for item, hash in last_commits.items()
-        },
-        callback = lambda _, __: None,
+        bot = self.bot,
+        chat_id = message.chat.id,
+        text = (f"You are currently on branch '{branch_name}'.\n"
+                "Enter commit hash to revert to:"),
+        options = options,
         max_per_row = 1,
         edit_message_with_user_selection = True,
       )
