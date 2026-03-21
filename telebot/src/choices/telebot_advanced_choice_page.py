@@ -91,3 +91,6 @@ class AdvancedChoicePage(TelebotNavigationPage):
     # Stop navigation and update message
     final_text = f"{self._text} {button.text}" if self._edit_message_with_user_selection else self._text
     navigator.stop(final_text)
+
+  def get_goodbye_message(self) -> str:
+    return f"{self._text} cancel"
