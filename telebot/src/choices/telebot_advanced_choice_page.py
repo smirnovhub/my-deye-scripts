@@ -38,7 +38,6 @@ class AdvancedChoicePage(TelebotNavigationPage):
 
   @property
   def buttons(self) -> List[ButtonNode]:
-    # Navigator will call this after update()
     return self._buttons
 
   def update(self) -> None:
@@ -49,15 +48,18 @@ class AdvancedChoicePage(TelebotNavigationPage):
     end = start + self._max_lines_per_page
     page_items = self._options[start:end]
 
-    buttons = []
+    # Add option buttons
+    for button in page_items:
+      self.register_button_handler(button, self._handle_selection)
 
     if self._total_pages > 1:
       while len(page_items) < self._max_lines_per_page:
         page_items.append(ButtonNode(" "))
 
-    # Add option buttons
+    buttons: List[ButtonNode] = []
+
     for button in page_items:
-      buttons.append(self.register_button_handler(button, self._handle_selection))
+      buttons.append(button)
       buttons.append(BreakButtonNode())
 
     # Add navigation row if needed
