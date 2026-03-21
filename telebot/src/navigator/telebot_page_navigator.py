@@ -19,7 +19,8 @@ class TelebotPageNavigator:
   _counter: int = 0
   _lock = threading.Lock()
   _navigator_data_prefix = "_nav_"
-  _instances: Dict[str, "TelebotPageNavigator"] = {}
+  _free_ids: List[int] = []
+  _instances: Dict[int, "TelebotPageNavigator"] = {}
   _handlers_registered: bool = False
 
   # Data prefix format:
@@ -27,7 +28,7 @@ class TelebotPageNavigator:
   # 1 means navigator id
   # 35 means button id
   _prefix_pattern = re.compile(rf"^{_navigator_data_prefix}(\d+)_(\d+)")
-  _instance_id_template = f"{_navigator_data_prefix}{{0}}_"
+  _prefix_template = f"{_navigator_data_prefix}{{0}}_"
 
   def __init__(self, bot: telebot.TeleBot):
     """
@@ -44,9 +45,13 @@ class TelebotPageNavigator:
     self._main_page: Optional["TelebotNavigationPage"] = None
 
     with TelebotPageNavigator._lock:
-      TelebotPageNavigator._counter += 1
-      self._data_prefix = TelebotPageNavigator._instance_id_template.format(TelebotPageNavigator._counter)
-      TelebotPageNavigator._instances[self._data_prefix] = self
+      if TelebotPageNavigator._free_ids:
+        self._id = TelebotPageNavigator._free_ids.pop()
+      else:
+        TelebotPageNavigator._counter += 1
+        self._id = TelebotPageNavigator._counter
+
+      TelebotPageNavigator._instances[self._id] = self
 
       if not TelebotPageNavigator._handlers_registered:
         TelebotPageNavigator._register_handlers(self._bot)
@@ -107,7 +112,7 @@ class TelebotPageNavigator:
 
     keyboard = TelebotUtils.get_keyboard_for_buttons(
       buttons = page.buttons,
-      data_prefix = self._data_prefix,
+      data_prefix = TelebotPageNavigator._prefix_template.format(self._id),
     )
 
     self._markup = keyboard
@@ -190,7 +195,7 @@ class TelebotPageNavigator:
 
     keyboard = TelebotUtils.get_keyboard_for_buttons(
       buttons = self._current_page.buttons,
-      data_prefix = self._data_prefix,
+      data_prefix = TelebotPageNavigator._prefix_template.format(self._id),
     )
 
     self._markup = keyboard
@@ -293,8 +298,13 @@ class TelebotPageNavigator:
 
     # Cleanup instance to prevent memory leak
     with TelebotPageNavigator._lock:
-      if self._data_prefix in TelebotPageNavigator._instances:
-        del TelebotPageNavigator._instances[self._data_prefix]
+      if self._id in TelebotPageNavigator._instances:
+        # Remove from active instances
+        del TelebotPageNavigator._instances[self._id]
+        # Return ID to the pool
+        TelebotPageNavigator._free_ids.append(self._id)
+        # Ensure the ID is not used twice by this instance
+        self._id = -1
 
   def _handle_callback(self, button_id: int):
     """
@@ -351,10 +361,9 @@ class TelebotPageNavigator:
       if not match:
         return
 
-      navigator_id = match.group(1)
-      data_prefix = TelebotPageNavigator._instance_id_template.format(navigator_id)
+      navigator_id = int(match.group(1))
 
-      instance = TelebotPageNavigator._instances.get(data_prefix)
+      instance = TelebotPageNavigator._instances.get(navigator_id)
       if instance:
         button_id = int(match.group(2))
         instance._handle_callback(button_id = button_id)
