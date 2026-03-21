@@ -377,7 +377,7 @@ class TelebotPageNavigator:
     if TelebotUtils.forward_next(self._bot, message):
       text = self._main_page.get_goodbye_message()
       self.stop(text)
-    elif message.text:
+    elif message.text and self._current_page.need_user_input:
       self._bot.register_next_step_handler(
         sent_message,
         self._next_step_handler,

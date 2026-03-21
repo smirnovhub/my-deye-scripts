@@ -35,6 +35,10 @@ class TelebotNavigationPage(ABC):
     pass
 
   @property
+  def need_user_input(self) -> bool:
+    return True
+
+  @property
   @abstractmethod
   def buttons(self) -> List[ButtonNode]:
     """
