@@ -247,7 +247,7 @@ services:
         condition: service_completed_successfully
     environment:
       DEYE_LOG_NAME: deye-proxy-slave1
-      LOGGER_HOST: ${DEYE_MASTER_LOGGER_HOST}
+      LOGGER_HOST: ${DEYE_SLAVE1_LOGGER_HOST}
       LOGGER_PORT: 8899
       PROXY_PORT: 8899
       MAX_CONCURRENT_CONNECTIONS: 10
