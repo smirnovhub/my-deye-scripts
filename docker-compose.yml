@@ -276,6 +276,9 @@ services:
     image: log-observer
     container_name: log-observer
     restart: unless-stopped
+    ports:
+      - "${LOG_OBSERVER_HTTP_MAPPING_PORT}:80"
+      - "${LOG_OBSERVER_HTTPS_MAPPING_PORT}:443"
     deploy:
       resources:
         limits:
