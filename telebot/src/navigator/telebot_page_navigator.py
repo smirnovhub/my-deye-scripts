@@ -377,23 +377,24 @@ class TelebotPageNavigator:
     if TelebotUtils.forward_next(self._bot, message):
       text = self._main_page.get_goodbye_message()
       self.stop(text)
-    elif message.text and self._current_page.need_user_input:
+    else:
       self._bot.register_next_step_handler(
         sent_message,
         self._next_step_handler,
         sent_message,
       )
 
-      try:
-        self._resend(message.text)
-        time.sleep(0.5)
-        self._current_page.on_user_input(self, message.text)
-      except Exception as e:
-        sent = self.send_message(str(e))
-        if self._chat_id:
-          TelebotUtils.remove_message_with_delay(
-            bot = self._bot,
-            chat_id = self._chat_id,
-            message_id = sent.id,
-            delay = 5,
-          )
+      if message.text and self._current_page.need_user_input:
+        try:
+          self._resend(message.text)
+          time.sleep(0.5)
+          self._current_page.on_user_input(self, message.text)
+        except Exception as e:
+          sent = self.send_message(str(e))
+          if self._chat_id:
+            TelebotUtils.remove_message_with_delay(
+              bot = self._bot,
+              chat_id = self._chat_id,
+              message_id = sent.id,
+              delay = 5,
+            )
