@@ -85,21 +85,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
       options.extend([ButtonNode(text = s, data = f"/{TelebotMenuItem.test.command} {s}") for s in tests_names])
 
-      sent = AdvancedChoice.ask_advanced_choice(
+      AdvancedChoice.ask_advanced_choice(
         bot = self.bot,
         chat_id = message.chat.id,
         text = self.intro_text,
         options = options,
         max_per_row = 1,
         edit_message_with_user_selection = True,
-      )
-
-      self.bot.clear_step_handler_by_chat_id(message.chat.id)
-      self.bot.register_next_step_handler(
-        message,
-        self.process_test_next_step,
-        sent.message_id,
-        tests_scripts = tests_scripts,
       )
 
     finally:
