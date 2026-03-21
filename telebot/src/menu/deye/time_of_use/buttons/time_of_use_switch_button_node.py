@@ -5,12 +5,15 @@ class TimeOfUseSwitchButtonNode(SwitchButtonNode):
   def __init__(
     self,
     enabled: bool,
+    text = "",
   ):
     super().__init__(
-      text = "",
+      text = text,
       enabled = enabled,
     )
 
   @property
   def text(self) -> str:
-    return CommonUtils.large_green_circle_emoji if self.enabled else CommonUtils.large_red_circle_emoji
+    txt = super().text
+    sign = CommonUtils.large_green_circle_emoji if self.enabled else CommonUtils.large_red_circle_emoji
+    return f"{sign} {txt}" if txt else sign
