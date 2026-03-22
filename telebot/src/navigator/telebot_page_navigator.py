@@ -293,13 +293,6 @@ class TelebotPageNavigator:
     except Exception:
       pass
 
-    self._bot.clear_step_handler_by_chat_id(self._chat_id)
-
-    self._message = None
-    self._chat_id = None
-    self._current_page = None
-    self._main_page = None
-
     # Cleanup instance to prevent memory leak
     with TelebotPageNavigator._lock:
       if self._id in TelebotPageNavigator._instances:
@@ -308,7 +301,16 @@ class TelebotPageNavigator:
         # Return ID to the pool
         TelebotPageNavigator._free_ids.append(self._id)
         # Ensure the ID is not used twice by this instance
-        self._id = -1
+
+      if not TelebotPageNavigator._instances:
+        self._bot.clear_step_handler_by_chat_id(self._chat_id)
+
+    self._id = -1
+    self._message = None
+    self._chat_id = None
+    self._current_page = None
+    self._main_page = None
+    self._pages.clear()
 
   def _handle_callback(self, button_id: int):
     """
