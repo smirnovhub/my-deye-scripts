@@ -30,7 +30,8 @@ class AdvancedChoicePage(TelebotNavigationPage):
     self._edit_message_with_user_selection = edit_message_with_user_selection
     self._current_page_index = 0
     self._buttons: List[ButtonNode] = []
-    self._total_pages = (len(self._options) + self._max_lines_per_page - 1) // self._max_lines_per_page
+    self._items_per_page = self._max_lines_per_page * self._max_per_row
+    self._total_pages = (len(self._options) + self._items_per_page - 1) // self._items_per_page
 
   @property
   def page_type(self) -> Enum:
@@ -48,8 +49,8 @@ class AdvancedChoicePage(TelebotNavigationPage):
     """
     Logic for building the current page of options.
     """
-    start = self._current_page_index * self._max_lines_per_page
-    end = start + self._max_lines_per_page
+    start = self._current_page_index * self._items_per_page
+    end = start + self._items_per_page
     page_items = self._options[start:end]
 
     # Add option buttons
@@ -57,16 +58,19 @@ class AdvancedChoicePage(TelebotNavigationPage):
       self.register_button_handler(button, self._handle_selection)
 
     if self._total_pages > 1:
-      while len(page_items) < self._max_lines_per_page:
+      while len(page_items) < self._items_per_page:
         page_items.append(ButtonNode(" "))
 
     buttons: List[ButtonNode] = []
 
-    for button in page_items:
+    # Process options with max_per_row logic
+    for i, button in enumerate(page_items):
       buttons.append(button)
-      buttons.append(BreakButtonNode())
+      # Add break if row is full or it is the last item
+      if (i + 1) % self._max_per_row == 0 or (i + 1) == len(page_items):
+        buttons.append(BreakButtonNode())
 
-    # Add navigation row if needed
+    # Add navigation row if multiple pages exist
     if self._total_pages > 1:
       buttons.append(self.register_button_handler(ButtonNode("Prev"), self._move_prev))
 
@@ -95,12 +99,11 @@ class AdvancedChoicePage(TelebotNavigationPage):
     navigator.update()
 
   def _handle_selection(self, navigator: TelebotPageNavigator, button: ButtonNode):
-    if self._callback:
-      self._callback(self._chat_id, button)
-
-    # Stop navigation and update message
     final_text = f"{self._text} {button.text}" if self._edit_message_with_user_selection else self._text
     navigator.stop(final_text)
+
+    if self._callback:
+      self._callback(self._chat_id, button)
 
   def get_goodbye_message(self) -> str:
     return f"{self._text} cancel"
