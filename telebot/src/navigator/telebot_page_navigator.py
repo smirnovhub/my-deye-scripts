@@ -302,7 +302,9 @@ class TelebotPageNavigator:
         TelebotPageNavigator._free_ids.append(self._id)
         # Ensure the ID is not used twice by this instance
 
-      if not TelebotPageNavigator._instances:
+      # Clear handlers if there are no navigators for this chat id
+      exists = any(nav.chat_id == self._chat_id for nav in self._instances.values())
+      if not exists:
         self._bot.clear_step_handler_by_chat_id(self._chat_id)
 
     self._id = -1
