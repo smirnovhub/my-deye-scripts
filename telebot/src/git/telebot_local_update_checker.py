@@ -5,6 +5,7 @@ import telebot
 from typing import Optional
 
 from deye_utils import DeyeUtils
+from button_node import ButtonNode
 from common_utils import CommonUtils
 from git_helper import GitHelper
 from telebot_utils import TelebotUtils
@@ -66,11 +67,13 @@ class TelebotLocalUpdateChecker:
     # Check if the local repository changed since last run
     if self._is_local_repository_changed():
       # Prompt the user to restart the bot to apply local changes
-      yes_choice = 'Yes, restart now'
-      no_choice = 'No, restart later'
+      options = [
+        ButtonNode(text = 'Yes, restart now'),
+        ButtonNode(text = 'No, restart later'),
+      ]
 
-      def on_choice(chat_id: int, choice: str):
-        if choice in ('yes', yes_choice):
+      def on_choice(chat_id: int, button: ButtonNode):
+        if "yes" in button.text:
           self._ask_for_restart(bot, chat_id)
         else:
           bot.send_message(chat_id, 'Restart cancelled')
@@ -78,13 +81,13 @@ class TelebotLocalUpdateChecker:
             bot.process_new_messages([message])
 
       UserChoices.ask_choice(
-        bot,
-        chat_id,
-        'The local repository has changed. '
+        bot = bot,
+        chat_id = chat_id,
+        text = 'The local repository has changed. '
         'For the changes to take effect, need to restart the bot. '
         '<b>Do you want to restart it now?</b>',
-        [yes_choice, no_choice],
-        on_choice,
+        options = options,
+        callback = on_choice,
         accept_wrong_choice_from_user_input = True,
       )
 

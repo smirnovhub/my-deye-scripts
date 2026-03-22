@@ -4,7 +4,7 @@ import telebot
 import threading
 
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 from telebot_utils import TelebotUtils
 
@@ -19,7 +19,8 @@ class TelebotPageNavigator:
   _counter: int = 0
   _lock = threading.Lock()
   _navigator_data_prefix = "_nav_"
-  _instances: Dict[str, "TelebotPageNavigator"] = {}
+  _free_ids: List[int] = []
+  _instances: Dict[int, "TelebotPageNavigator"] = {}
   _handlers_registered: bool = False
 
   # Data prefix format:
@@ -27,7 +28,7 @@ class TelebotPageNavigator:
   # 1 means navigator id
   # 35 means button id
   _prefix_pattern = re.compile(rf"^{_navigator_data_prefix}(\d+)_(\d+)")
-  _instance_id_template = f"{_navigator_data_prefix}{{0}}_"
+  _prefix_template = f"{_navigator_data_prefix}{{0}}_"
 
   def __init__(self, bot: telebot.TeleBot):
     """
@@ -44,9 +45,13 @@ class TelebotPageNavigator:
     self._main_page: Optional["TelebotNavigationPage"] = None
 
     with TelebotPageNavigator._lock:
-      TelebotPageNavigator._counter += 1
-      self._data_prefix = TelebotPageNavigator._instance_id_template.format(TelebotPageNavigator._counter)
-      TelebotPageNavigator._instances[self._data_prefix] = self
+      if TelebotPageNavigator._free_ids:
+        self._id = TelebotPageNavigator._free_ids.pop()
+      else:
+        TelebotPageNavigator._counter += 1
+        self._id = TelebotPageNavigator._counter
+
+      TelebotPageNavigator._instances[self._id] = self
 
       if not TelebotPageNavigator._handlers_registered:
         TelebotPageNavigator._register_handlers(self._bot)
@@ -65,6 +70,10 @@ class TelebotPageNavigator:
     if page.page_type in self._pages:
       raise RuntimeError(f"Page {page.page_type.name} already registered")
     self._pages[page.page_type] = page
+
+  @property
+  def chat_id(self) -> Optional[int]:
+    return self._chat_id
 
   def register_pages(self, pages: List["TelebotNavigationPage"]) -> None:
     """
@@ -107,7 +116,7 @@ class TelebotPageNavigator:
 
     keyboard = TelebotUtils.get_keyboard_for_buttons(
       buttons = page.buttons,
-      data_prefix = self._data_prefix,
+      data_prefix = TelebotPageNavigator._prefix_template.format(self._id),
     )
 
     self._markup = keyboard
@@ -190,7 +199,7 @@ class TelebotPageNavigator:
 
     keyboard = TelebotUtils.get_keyboard_for_buttons(
       buttons = self._current_page.buttons,
-      data_prefix = self._data_prefix,
+      data_prefix = TelebotPageNavigator._prefix_template.format(self._id),
     )
 
     self._markup = keyboard
@@ -284,17 +293,26 @@ class TelebotPageNavigator:
     except Exception:
       pass
 
-    self._bot.clear_step_handler_by_chat_id(self._chat_id)
+    # Cleanup instance to prevent memory leak
+    with TelebotPageNavigator._lock:
+      if self._id in TelebotPageNavigator._instances:
+        # Remove from active instances
+        del TelebotPageNavigator._instances[self._id]
+        # Return ID to the pool
+        TelebotPageNavigator._free_ids.append(self._id)
+        # Ensure the ID is not used twice by this instance
 
+      # Clear handlers if there are no navigators for this chat id
+      exists = any(nav.chat_id == self._chat_id for nav in self._instances.values())
+      if not exists:
+        self._bot.clear_step_handler_by_chat_id(self._chat_id)
+
+    self._id = -1
     self._message = None
     self._chat_id = None
     self._current_page = None
     self._main_page = None
-
-    # Cleanup instance to prevent memory leak
-    with TelebotPageNavigator._lock:
-      if self._data_prefix in TelebotPageNavigator._instances:
-        del TelebotPageNavigator._instances[self._data_prefix]
+    self._pages.clear()
 
   def _handle_callback(self, button_id: int):
     """
@@ -331,6 +349,13 @@ class TelebotPageNavigator:
       parse_mode = "HTML",
     )
 
+  def _on_command_button_clicked(self, command: str) -> None:
+    if not self._current_page:
+      raise RuntimeError("Navigation has not started yet")
+
+    text = self._current_page.get_stop_by_command_message(command)
+    self.stop(text)
+
   @staticmethod
   def _register_handlers(bot: telebot.TeleBot):
     """
@@ -339,6 +364,21 @@ class TelebotPageNavigator:
     Args:
         bot (telebot.TeleBot): The bot instance.
     """
+    @bot.middleware_handler(update_types = ['callback_query'])
+    def handle_callback(bot: telebot.TeleBot, call: telebot.types.CallbackQuery):
+      if not call.data:
+        return
+
+      button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data)
+      if not button or not button.callback_data or not button.callback_data.startswith("/"):
+        return
+
+      with TelebotPageNavigator._lock:
+        navigators = [inst for inst in TelebotPageNavigator._instances.values() if inst.chat_id == call.message.chat.id]
+
+      for nav in navigators:
+        nav._on_command_button_clicked(button.callback_data)
+
     @bot.callback_query_handler(func = lambda call: call.data.startswith(TelebotPageNavigator._navigator_data_prefix))
     def _global_nav_handler(call: telebot.types.CallbackQuery):
       if not call.data:
@@ -351,10 +391,11 @@ class TelebotPageNavigator:
       if not match:
         return
 
-      navigator_id = match.group(1)
-      data_prefix = TelebotPageNavigator._instance_id_template.format(navigator_id)
+      navigator_id = int(match.group(1))
 
-      instance = TelebotPageNavigator._instances.get(data_prefix)
+      with TelebotPageNavigator._lock:
+        instance = TelebotPageNavigator._instances.get(navigator_id)
+
       if instance:
         button_id = int(match.group(2))
         instance._handle_callback(button_id = button_id)
@@ -386,8 +427,9 @@ class TelebotPageNavigator:
 
       if message.text and self._current_page.need_user_input:
         try:
-          self._resend(message.text)
-          time.sleep(0.5)
+          if self._current_page.resend_message_on_user_input:
+            self._resend(message.text)
+            time.sleep(0.5)
           self._current_page.on_user_input(self, message.text)
         except Exception as e:
           sent = self.send_message(str(e))

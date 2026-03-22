@@ -19,19 +19,24 @@ services:
     depends_on:
       init-permissions:
         condition: service_completed_successfully
-      deye-proxy:
+      deye-proxy-master:
         condition: service_started
+#      deye-proxy-slave1:
+#        condition: service_started
       deye-storage:
         condition: service_started
       deye-back-server:
         condition: service_started
     environment:
-      DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
+      DEYE_MASTER_LOGGER_HOST: deye-proxy-master
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
 
-      REMOTE_CACHE_SERVER_URL: ${REMOTE_STORAGE_SERVER_URL}
+#      DEYE_SLAVE1_LOGGER_HOST: deye-proxy-slave1
+#      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
 
-      BACK_SERVER_URL: ${DEYE_WEB_BACK_SERVER_URL}
+      REMOTE_CACHE_SERVER_URL: http://deye-storage
+
+      BACK_SERVER_URL: http://deye-back-server
 
       DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
       DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
@@ -74,15 +79,20 @@ services:
     depends_on:
       init-permissions:
         condition: service_completed_successfully
-      deye-proxy:
+      deye-proxy-master:
         condition: service_started
+#      deye-proxy-slave1:
+#        condition: service_started
       deye-storage:
         condition: service_started
     environment:
-      DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
+      DEYE_MASTER_LOGGER_HOST: deye-proxy-master
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
 
-      REMOTE_CACHE_SERVER_URL: ${REMOTE_STORAGE_SERVER_URL}
+#      DEYE_SLAVE1_LOGGER_HOST: deye-proxy-slave1
+#      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
+
+      REMOTE_CACHE_SERVER_URL: http://deye-storage
 
       DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
       DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
@@ -129,15 +139,20 @@ services:
     depends_on:
       init-permissions:
         condition: service_completed_successfully
-      deye-proxy:
+      deye-proxy-master:
         condition: service_started
+#      deye-proxy-slave1:
+#        condition: service_started
       deye-storage:
         condition: service_started
     environment:
-      DEYE_MASTER_LOGGER_HOST: ${DEYE_MASTER_LOGGER_PROXY_HOST}
+      DEYE_MASTER_LOGGER_HOST: deye-proxy-master
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
 
-      REMOTE_CACHE_SERVER_URL: ${REMOTE_STORAGE_SERVER_URL}
+#      DEYE_SLAVE1_LOGGER_HOST: deye-proxy-slave1
+#      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
+
+      REMOTE_CACHE_SERVER_URL: http://deye-storage
 
       DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
       DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
@@ -195,7 +210,7 @@ services:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/deyestorage/deyestorage/data
 
-  deye-proxy:
+  deye-proxy-master:
     build:
       context: .
       dockerfile: deyeproxy/Dockerfile
@@ -203,7 +218,7 @@ services:
       init-permissions:
         condition: service_completed_successfully
     environment:
-      DEYE_LOG_NAME: deye-proxy
+      DEYE_LOG_NAME: deye-proxy-master
       LOGGER_HOST: ${DEYE_MASTER_LOGGER_HOST}
       LOGGER_PORT: 8899
       PROXY_PORT: 8899
@@ -212,7 +227,7 @@ services:
       DATA_TIMEOUT: 10
       LOG_LEVEL: INFO
     image: deye-proxy
-    container_name: deye-proxy
+    container_name: deye-proxy-master
     restart: unless-stopped
     deploy:
       resources:
@@ -222,6 +237,34 @@ services:
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/deyeproxy/deyeproxy/data
+
+#  deye-proxy-slave1:
+#    build:
+#      context: .
+#      dockerfile: deyeproxy/Dockerfile
+#    depends_on:
+#      init-permissions:
+#        condition: service_completed_successfully
+#    environment:
+#      DEYE_LOG_NAME: deye-proxy-slave1
+#      LOGGER_HOST: ${DEYE_SLAVE1_LOGGER_HOST}
+#      LOGGER_PORT: 8899
+#      PROXY_PORT: 8899
+#      MAX_CONCURRENT_CONNECTIONS: 10
+#      CONNECT_TIMEOUT: 5
+#      DATA_TIMEOUT: 10
+#      LOG_LEVEL: INFO
+#    image: deye-proxy
+#    container_name: deye-proxy-slave1
+#    restart: unless-stopped
+#    deploy:
+#      resources:
+#        limits:
+#          pids: ${GLOBAL_PIDS_LIMIT}
+#          memory: ${GLOBAL_MEMORY_LIMIT}
+#    volumes:
+#      # Mount shared folder with read-write permissions
+#      - deye_shared_volume:/home/deyeproxy/deyeproxy/data
 
   log-observer:
     build:
@@ -233,6 +276,9 @@ services:
     image: log-observer
     container_name: log-observer
     restart: unless-stopped
+    ports:
+      - "${LOG_OBSERVER_HTTP_MAPPING_PORT}:80"
+      - "${LOG_OBSERVER_HTTPS_MAPPING_PORT}:443"
     deploy:
       resources:
         limits:

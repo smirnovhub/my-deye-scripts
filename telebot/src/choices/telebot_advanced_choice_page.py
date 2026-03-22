@@ -1,0 +1,112 @@
+from enum import Enum, auto
+from typing import Callable, List, Optional
+
+from button_node import ButtonNode
+from break_button_node import BreakButtonNode
+from telebot_navigation_page import TelebotNavigationPage
+from telebot_page_navigator import TelebotPageNavigator
+
+class AdvancedChoicePageType(Enum):
+  main = auto()
+
+class AdvancedChoicePage(TelebotNavigationPage):
+  def __init__(
+    self,
+    text: str,
+    options: List[ButtonNode],
+    chat_id: int,
+    callback: Optional[Callable[[int, ButtonNode], None]] = None,
+    max_per_row: int = 5,
+    max_lines_per_page: int = 5,
+    edit_message_with_user_selection: bool = False,
+  ):
+    super().__init__()
+    self._text = text
+    self._options = options
+    self._chat_id = chat_id
+    self._callback = callback
+    self._max_per_row = max_per_row
+    self._max_lines_per_page = max_lines_per_page
+    self._edit_message_with_user_selection = edit_message_with_user_selection
+    self._current_page_index = 0
+    self._buttons: List[ButtonNode] = []
+    self._items_per_page = self._max_lines_per_page * self._max_per_row
+    self._total_pages = (len(self._options) + self._items_per_page - 1) // self._items_per_page
+
+  @property
+  def page_type(self) -> Enum:
+    return AdvancedChoicePageType.main
+
+  @property
+  def buttons(self) -> List[ButtonNode]:
+    return self._buttons
+
+  @property
+  def resend_message_on_user_input(self) -> bool:
+    return False
+
+  def update(self) -> None:
+    """
+    Logic for building the current page of options.
+    """
+    start = self._current_page_index * self._items_per_page
+    end = start + self._items_per_page
+    page_items = self._options[start:end]
+
+    # Add option buttons
+    for button in page_items:
+      self.register_button_handler(button, self._handle_selection)
+
+    if self._total_pages > 1:
+      while len(page_items) < self._items_per_page:
+        page_items.append(ButtonNode(" "))
+
+    buttons: List[ButtonNode] = []
+
+    # Process options with max_per_row logic
+    for i, button in enumerate(page_items):
+      buttons.append(button)
+      # Add break if row is full or it is the last item
+      if (i + 1) % self._max_per_row == 0 or (i + 1) == len(page_items):
+        buttons.append(BreakButtonNode())
+
+    # Add navigation row if multiple pages exist
+    if self._total_pages > 1:
+      buttons.append(self.register_button_handler(ButtonNode("Prev"), self._move_prev))
+
+      buttons.append(
+        self.register_button_handler(
+          ButtonNode(f"{self._current_page_index + 1}/{self._total_pages}"),
+          self._move_next,
+        ))
+
+      buttons.append(self.register_button_handler(ButtonNode("Next"), self._move_next))
+
+    self._buttons = buttons
+
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    final_text = f"{self._text} {text}" if self._edit_message_with_user_selection else self._text
+    navigator.stop(final_text)
+    if self._callback:
+      self._callback(self._chat_id, ButtonNode(text = text))
+
+  def _move_next(self, navigator: TelebotPageNavigator) -> None:
+    self._current_page_index = (self._current_page_index + 1) % self._total_pages
+    navigator.update()
+
+  def _move_prev(self, navigator: TelebotPageNavigator) -> None:
+    self._current_page_index = (self._current_page_index - 1) % self._total_pages
+    navigator.update()
+
+  def _handle_selection(self, navigator: TelebotPageNavigator, button: ButtonNode):
+    final_text = f"{self._text} {button.text}" if self._edit_message_with_user_selection else self._text
+    navigator.stop(final_text)
+    if self._callback:
+      self._callback(self._chat_id, button)
+
+  def get_goodbye_message(self) -> str:
+    return f"{self._text} cancel"
+
+  def get_stop_by_command_message(self, command: str) -> str:
+    _, _, param = command.partition(' ')
+    return f"{self._text} {param.replace('_', ' ')}"
