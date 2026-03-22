@@ -39,6 +39,10 @@ class TelebotNavigationPage(ABC):
     return True
 
   @property
+  def resend_message_on_user_input(self) -> bool:
+    return True
+
+  @property
   @abstractmethod
   def buttons(self) -> List[ButtonNode]:
     """
@@ -138,4 +142,7 @@ class TelebotNavigationPage(ABC):
     Returns:
         str: The closing message text.
     """
+    return ""
+
+  def get_stop_by_command_message(self, command: str) -> str:
     return ""

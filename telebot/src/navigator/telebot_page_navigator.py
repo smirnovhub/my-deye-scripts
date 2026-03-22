@@ -4,7 +4,7 @@ import telebot
 import threading
 
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 from telebot_utils import TelebotUtils
 
@@ -70,6 +70,10 @@ class TelebotPageNavigator:
     if page.page_type in self._pages:
       raise RuntimeError(f"Page {page.page_type.name} already registered")
     self._pages[page.page_type] = page
+
+  @property
+  def chat_id(self) -> Optional[int]:
+    return self._chat_id
 
   def register_pages(self, pages: List["TelebotNavigationPage"]) -> None:
     """
@@ -341,6 +345,13 @@ class TelebotPageNavigator:
       parse_mode = "HTML",
     )
 
+  def _on_command_button_clicked(self, command: str) -> None:
+    if not self._current_page:
+      raise RuntimeError("Navigation has not started yet")
+
+    text = self._current_page.get_stop_by_command_message(command)
+    self.stop(text)
+
   @staticmethod
   def _register_handlers(bot: telebot.TeleBot):
     """
@@ -349,6 +360,21 @@ class TelebotPageNavigator:
     Args:
         bot (telebot.TeleBot): The bot instance.
     """
+    @bot.middleware_handler(update_types = ['callback_query'])
+    def handle_callback(bot: telebot.TeleBot, call: telebot.types.CallbackQuery):
+      if not call.data:
+        return
+
+      button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data)
+      if not button or not button.callback_data or not button.callback_data.startswith("/"):
+        return
+
+      with TelebotPageNavigator._lock:
+        navigators = [inst for inst in TelebotPageNavigator._instances.values() if inst.chat_id == call.message.chat.id]
+
+      for nav in navigators:
+        nav._on_command_button_clicked(button.callback_data)
+
     @bot.callback_query_handler(func = lambda call: call.data.startswith(TelebotPageNavigator._navigator_data_prefix))
     def _global_nav_handler(call: telebot.types.CallbackQuery):
       if not call.data:
@@ -363,7 +389,9 @@ class TelebotPageNavigator:
 
       navigator_id = int(match.group(1))
 
-      instance = TelebotPageNavigator._instances.get(navigator_id)
+      with TelebotPageNavigator._lock:
+        instance = TelebotPageNavigator._instances.get(navigator_id)
+
       if instance:
         button_id = int(match.group(2))
         instance._handle_callback(button_id = button_id)
@@ -395,8 +423,9 @@ class TelebotPageNavigator:
 
       if message.text and self._current_page.need_user_input:
         try:
-          self._resend(message.text)
-          time.sleep(0.5)
+          if self._current_page.resend_message_on_user_input:
+            self._resend(message.text)
+            time.sleep(0.5)
           self._current_page.on_user_input(self, message.text)
         except Exception as e:
           sent = self.send_message(str(e))

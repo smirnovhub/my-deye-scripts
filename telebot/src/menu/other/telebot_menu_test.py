@@ -14,8 +14,6 @@ from common_utils import CommonUtils
 from deye_file_lock import DeyeFileLock
 from deye_file_locker import DeyeFileLocker
 from telebot_advanced_choice import AdvancedChoice
-from telebot_constants import TelebotConstants
-from telebot_fake_message import TelebotFakeMessage
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_utils import TelebotTestUtils
 from telebot_utils import TelebotUtils
@@ -58,19 +56,13 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
       pos = message.text.find(' ')
       if message.from_user and pos != -1:
-        param = message.text[pos + 1:].strip()
-        if param:
-          fake_message = TelebotFakeMessage(
-            message,
-            param,
-            message.from_user,
-          )
-
+        test_name = message.text[pos + 1:].strip()
+        if test_name:
           self.release_lock()
 
           self.process_test_next_step(
-            fake_message,
-            message.id,
+            chat_id = message.chat.id,
+            test_name = test_name,
             tests_scripts = tests_scripts,
           )
 
@@ -85,11 +77,19 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
       options.extend([ButtonNode(text = s, data = f"/{TelebotMenuItem.test.command} {s}") for s in tests_names])
 
+      def on_choice(chat_id: int, choice: ButtonNode):
+        self.process_test_next_step(
+          chat_id = chat_id,
+          test_name = choice.text,
+          tests_scripts = tests_scripts,
+        )
+
       AdvancedChoice.ask_advanced_choice(
         bot = self.bot,
         chat_id = message.chat.id,
         text = self.intro_text,
         options = options,
+        callback = on_choice,
         max_per_row = 1,
         edit_message_with_user_selection = True,
       )
@@ -99,53 +99,34 @@ class TelebotMenuTest(TelebotMenuItemHandler):
 
   def process_test_next_step(
     self,
-    message: telebot.types.Message,
-    message_id: int,
+    chat_id: int,
+    test_name: str,
     tests_scripts: List[str],
   ):
-    # If we received new command, process it
-    if TelebotUtils.forward_next(self.bot, message):
-      TelebotUtils.remove_inline_buttons_with_delay(
-        bot = self.bot,
-        chat_id = message.chat.id,
-        message_id = message_id,
-        delay = TelebotConstants.buttons_remove_delay_sec,
-      )
-      return
-
-    text = f"{self.intro_text} {message.text.replace('_', ' ')}"
-
-    try:
-      self.bot.edit_message_text(text, message.chat.id, message_id, parse_mode = 'HTML')
-    except Exception:
-      pass
-
-    test_name = message.text
     if not test_name:
-      self.bot.send_message(message.chat.id, 'Test name is empty')
+      self.bot.send_message(chat_id, 'Test name is empty')
       return
 
     if test_name != self.all_tests:
       found = False
-      t = test_name + '.py'
       for tests_script in tests_scripts:
-        if t in tests_script:
+        if test_name in tests_script:
           test_name = tests_script
           found = True
           break
 
       if not found:
-        self.bot.send_message(message.chat.id, f"Test '{test_name}' not found")
+        self.bot.send_message(chat_id, f"Test '{test_name}' not found")
         return
 
-    if not self.acquire_lock(message.chat.id):
+    if not self.acquire_lock(chat_id):
       return
 
     try:
       all_start_time = datetime.datetime.now()
       tests = tests_scripts if test_name == self.all_tests else [test_name]
 
-      failed_count = self.run_tests(message.chat.id, tests)
+      failed_count = self.run_tests(chat_id, tests)
       t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
 
       time.sleep(1)
@@ -153,7 +134,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       if failed_count == len(tests):
         self.send_results(
           tests_scripts,
-          message.chat.id,
+          chat_id,
           f'{CommonUtils.large_red_circle_emoji} '
           f'<b>All tests failed</b> after {t}. '
           'Check logs for details.',
@@ -161,7 +142,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       elif failed_count > 0:
         self.send_results(
           tests_scripts,
-          message.chat.id,
+          chat_id,
           f'{CommonUtils.large_yellow_circle_emoji} '
           f"<b>{failed_count} test(s) failed</b> and "
           f"{len(tests_scripts) - failed_count} test(s) completed successfully in {t}. "
@@ -170,7 +151,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       else:
         self.send_results(
           tests_scripts,
-          message.chat.id,
+          chat_id,
           f'{CommonUtils.large_green_circle_emoji} '
           f'All tests completed successfully in {t}.',
         )
@@ -178,7 +159,7 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
       time.sleep(1)
       self.bot.send_message(
-        message.chat.id,
+        chat_id,
         f'{CommonUtils.large_red_circle_emoji} '
         f'Tests failed after {t}. '
         f'Check log files for details: {str(e)}',

@@ -37,12 +37,12 @@ class AdvancedChoicePage(TelebotNavigationPage):
     return AdvancedChoicePageType.main
 
   @property
-  def need_user_input(self) -> bool:
-    return False
-
-  @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
+
+  @property
+  def resend_message_on_user_input(self) -> bool:
+    return False
 
   def update(self) -> None:
     """
@@ -80,6 +80,12 @@ class AdvancedChoicePage(TelebotNavigationPage):
 
     self._buttons = buttons
 
+  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    final_text = f"{self._text} {text}" if self._edit_message_with_user_selection else self._text
+    navigator.stop(final_text)
+    if self._callback:
+      self._callback(self._chat_id, ButtonNode(text = text))
+
   def _move_next(self, navigator: TelebotPageNavigator) -> None:
     self._current_page_index = (self._current_page_index + 1) % self._total_pages
     navigator.update()
@@ -98,3 +104,7 @@ class AdvancedChoicePage(TelebotNavigationPage):
 
   def get_goodbye_message(self) -> str:
     return f"{self._text} cancel"
+
+  def get_stop_by_command_message(self, command: str) -> str:
+    _, _, param = command.partition(' ')
+    return f"{self._text} {param.replace('_', ' ')}"
