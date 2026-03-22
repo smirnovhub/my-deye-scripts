@@ -111,8 +111,8 @@ class TelebotPageNavigator:
       page.clear_button_handlers()
       page.update()
     except Exception as e:
-      self._on_error(str(e))
-      raise
+      sent = self.send_message(str(e))
+      self.remove_message_with_delay(sent.message_id)
 
     keyboard = TelebotUtils.get_keyboard_for_buttons(
       buttons = page.buttons,
@@ -234,6 +234,17 @@ class TelebotPageNavigator:
       parse_mode = "HTML",
     )
 
+  def remove_message_with_delay(self, message_id: int) -> None:
+    if not self._chat_id:
+      raise RuntimeError("Navigation has not started yet")
+
+    TelebotUtils.remove_message_with_delay(
+      bot = self._bot,
+      chat_id = self._chat_id,
+      message_id = message_id,
+      delay = 5,
+    )
+
   def _resend(self, text: str) -> telebot.types.Message:
     if not self._message or not self._chat_id or not self._text:
       raise RuntimeError("Navigation has not started yet")
@@ -330,24 +341,8 @@ class TelebotPageNavigator:
         button_id = button_id,
       )
     except Exception as e:
-      self._on_error(str(e))
-      raise
-
-  def _on_error(self, message: str) -> None:
-    """
-    Sends an error message to the chat.
-
-    Args:
-        message (str): The error description.
-    """
-    if not self._chat_id:
-      raise RuntimeError("Navigation has not started yet")
-
-    self._message = self._bot.send_message(
-      self._chat_id,
-      message,
-      parse_mode = "HTML",
-    )
+      sent = self.send_message(str(e))
+      self.remove_message_with_delay(sent.message_id)
 
   def _on_command_button_clicked(self, command: str) -> None:
     if not self._current_page:
@@ -433,10 +428,4 @@ class TelebotPageNavigator:
           self._current_page.on_user_input(self, message.text)
         except Exception as e:
           sent = self.send_message(str(e))
-          if self._chat_id:
-            TelebotUtils.remove_message_with_delay(
-              bot = self._bot,
-              chat_id = self._chat_id,
-              message_id = sent.id,
-              delay = 5,
-            )
+          self.remove_message_with_delay(sent.message_id)
