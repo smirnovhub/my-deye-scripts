@@ -17,15 +17,15 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     super().__init__()
     self._tou_powers = tou_powers
     self._time_of_use_line_index = -1
-    self.values = [
+    self._values = [
       [0, 250, 500],
       [1000, 1250, 1500],
       [2000, 2500, 3000],
       [3500, 4000, 4500],
       [5000, 5500, 6000],
     ]
-    self._min_val = min(x for row in self.values for x in row)
-    self._max_val = max(x for row in self.values for x in row)
+    self._min_val = min(x for row in self._values for x in row)
+    self._max_val = max(x for row in self._values for x in row)
 
   @property
   def page_type(self) -> Enum:
@@ -49,7 +49,7 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
       BreakButtonNode(),
     ]
 
-    for row_index, row in enumerate(self.values):
+    for row_index, row in enumerate(self._values):
       if row_index > 0:
         buttons.append(BreakButtonNode())
 

@@ -7,7 +7,7 @@ from deye_utils import DeyeUtils
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_utils import TelebotUtils
 from deye_exceptions import DeyeKnownException
-from custom_single_registers import CustomSingleRegisters
+from custom_single_register import CustomSingleRegister
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from deye_registers_holder import DeyeRegister, DeyeRegistersHolder
@@ -52,7 +52,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
+      register_creator = lambda prefix: CustomSingleRegister(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 

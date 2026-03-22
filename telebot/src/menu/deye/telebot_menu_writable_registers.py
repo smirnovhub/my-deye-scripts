@@ -6,7 +6,7 @@ from typing import Any, List, Optional
 from datetime import datetime
 
 from deye_register import DeyeRegister
-from custom_single_registers import CustomSingleRegisters
+from custom_single_register import CustomSingleRegister
 from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeValueException
 from deye_base_enum import DeyeBaseEnum
@@ -187,7 +187,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
+      register_creator = lambda prefix: CustomSingleRegister(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
@@ -217,7 +217,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
+      register_creator = lambda prefix: CustomSingleRegister(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 

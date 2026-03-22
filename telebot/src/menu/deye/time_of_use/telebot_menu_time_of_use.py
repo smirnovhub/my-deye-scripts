@@ -13,8 +13,8 @@ from deye_registers import DeyeRegisters
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_deye_helper import TelebotDeyeHelper
 from time_of_use_data import TimeOfUseData
-from custom_single_registers import CustomSingleRegisters
 from deye_registers_holder import DeyeRegistersHolder
+from custom_single_registers import CustomSingleRegisters
 
 class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
@@ -34,11 +34,18 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
     # Should be local to avoid race conditions with threads
     registers = DeyeRegisters()
     tou_register = registers.time_of_use_register
+    battery_low_batt_soc_register = registers.battery_low_batt_soc_register
 
     # Should be local to avoid issues with locks and threads
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(tou_register, prefix),
+      register_creator = lambda prefix: CustomSingleRegisters(
+        [
+          tou_register,
+          battery_low_batt_soc_register,
+        ],
+        prefix,
+      ),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
@@ -98,7 +105,10 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
         page_type = TimeOfUsePage.end_minutes,
       ),
       TimeOfUsePowersPage(tou_powers = tou_data.powers),
-      TimeOfUseSocsPage(tou_socs = tou_data.socs),
+      TimeOfUseSocsPage(
+        tou_socs = tou_data.socs,
+        minimum_soc = battery_low_batt_soc_register.value - 1,
+      ),
     ])
 
     if tou_data.week.enabled:
