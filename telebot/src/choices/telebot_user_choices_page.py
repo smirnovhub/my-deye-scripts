@@ -59,16 +59,16 @@ class UserChoicePage(TelebotNavigationPage):
     self._callback(self._chat_id, button)
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
-    try:
-      text_lower = text.lower()
-      for button in self.buttons:
-        if button.text.lower() == text_lower:
-          self._callback(self._chat_id, button)
-          return
+    text_lower = text.lower()
+    for button in self.buttons:
+      if button.text.lower() == text_lower:
+        navigator.stop()
+        self._callback(self._chat_id, button)
+        return
 
-      if self._accept_wrong_choice_from_user_input:
-        self._callback(self._chat_id, ButtonNode(text = text))
-      else:
-        navigator.send_message(self._wrong_choice_text)
-    finally:
+    if self._accept_wrong_choice_from_user_input:
+      navigator.stop()
+      self._callback(self._chat_id, ButtonNode(text = text))
+    else:
+      navigator.send_message(self._wrong_choice_text)
       navigator.stop()

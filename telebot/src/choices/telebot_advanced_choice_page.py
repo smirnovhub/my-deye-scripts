@@ -101,7 +101,6 @@ class AdvancedChoicePage(TelebotNavigationPage):
   def _handle_selection(self, navigator: TelebotPageNavigator, button: ButtonNode):
     final_text = f"{self._text} {button.text}" if self._edit_message_with_user_selection else self._text
     navigator.stop(final_text)
-
     if self._callback:
       self._callback(self._chat_id, button)
 
