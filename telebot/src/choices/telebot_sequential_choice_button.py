@@ -7,6 +7,7 @@ class SequentialChoiceButton(ButtonNode):
     self,
     text: str,
     data: str = "",
+    add_cancel_button = False,
     max_children_per_row: int = 3,
     children: Optional[List["SequentialChoiceButton"]] = None,
   ):
@@ -14,8 +15,14 @@ class SequentialChoiceButton(ButtonNode):
       text = text,
       data = data,
     )
+
+    self._add_cancel_button = add_cancel_button
     self._max_children_per_row = max_children_per_row
     self._children = children if children else []
+
+  @property
+  def add_cancel_button(self) -> bool:
+    return self._add_cancel_button
 
   @property
   def max_children_per_row(self) -> int:

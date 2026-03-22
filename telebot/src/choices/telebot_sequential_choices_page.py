@@ -46,6 +46,9 @@ class SequentialChoicePage(TelebotNavigationPage):
       if (i + 1) % self._current_node.max_children_per_row == 0 or (i + 1) == len(children):
         self._buttons.append(BreakButtonNode())
 
+    if self._current_node.add_cancel_button:
+      self._buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
+
   def _handle_step(self, navigator: TelebotPageNavigator, node: ButtonNode):
     if not isinstance(node, SequentialChoiceButton):
       return
@@ -60,6 +63,9 @@ class SequentialChoicePage(TelebotNavigationPage):
       # Move deeper and refresh the current message
       self._current_node = node
       navigator.update()
+
+  def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+    navigator.stop(f"{self._text} cancel")
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     text_lower = text.lower()
