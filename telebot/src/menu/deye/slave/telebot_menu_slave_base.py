@@ -3,6 +3,7 @@ import telebot
 
 from typing import List, Type
 
+from telebot_utils import TelebotUtils
 from deye_registers import DeyeRegisters
 from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder import DeyeRegistersHolder
@@ -83,7 +84,16 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
       slave_command = self.slave_command,
     )
 
-    info = TelebotDeyeHelper.get_register_values(holder.all_registers[slave_name].all_registers)
+    registers = holder.all_registers[slave_name]
+
+    if abs(registers.inverter_system_time_diff_register.value
+           ) > TelebotConstants.inverter_system_time_need_sync_difference_sec:
+      # add line break for keyboard
+      choices[TelebotUtils.row_break_str] = TelebotUtils.row_break_str
+      # add time sync command
+      choices[TelebotConstants.sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
+
+    info = TelebotDeyeHelper.get_register_values(registers.all_registers)
 
     CommandChoice.ask_command_choice(
       self.bot,

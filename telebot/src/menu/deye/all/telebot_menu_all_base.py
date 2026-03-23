@@ -69,15 +69,17 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
       slave_command = self.slave_command,
     )
 
+    registers = holder.accumulated_registers
+
     # add button for time sync if needed
-    if abs(holder.master_registers.inverter_system_time_diff_register.value
+    if abs(registers.inverter_system_time_diff_register.value
            ) > TelebotConstants.inverter_system_time_need_sync_difference_sec:
       # add line break for keyboard
       choices[TelebotUtils.row_break_str] = TelebotUtils.row_break_str
       # add time sync command
       choices[TelebotConstants.sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
 
-    info = TelebotDeyeHelper.get_register_values(holder.accumulated_registers.all_registers)
+    info = TelebotDeyeHelper.get_register_values(registers.all_registers)
 
     CommandChoice.ask_command_choice(
       self.bot,
