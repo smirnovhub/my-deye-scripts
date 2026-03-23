@@ -23,7 +23,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     title: str = TelebotConstants.default_title,
   ):
     super().__init__(bot)
-    self.registers = self.registers_factory.create(registers_class)
+    self.registers_class = registers_class
     self.all_command = all_command
     self.master_command = master_command
     self.slave_command = slave_command
@@ -65,7 +65,10 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [logger],
-      register_creator = lambda _: self.registers,
+      register_creator = lambda prefix: self.registers_factory.create(
+        self.registers_class,
+        prefix = prefix,
+      ),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
