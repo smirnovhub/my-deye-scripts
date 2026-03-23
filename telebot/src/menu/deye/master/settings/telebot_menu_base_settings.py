@@ -30,11 +30,13 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
   def get_commands(self) -> List[telebot.types.BotCommand]:
     name = self.loggers.master.name if self.main_command == self.master_command else self.loggers.accumulated_registers_prefix
     return [
-      telebot.types.BotCommand(command = self.command.command.format(name),
-                               description = self.command.description.format(name.title())),
+      telebot.types.BotCommand(
+        command = self.command.command.format(name),
+        description = self.command.description.format(name.title()),
+      ),
     ]
 
-  def process_message(self, message: telebot.types.Message):
+  def process_message(self, message: telebot.types.Message) -> None:
     if not self.is_authorized(message):
       return
 

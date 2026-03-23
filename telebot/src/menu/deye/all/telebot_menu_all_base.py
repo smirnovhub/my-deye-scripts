@@ -40,7 +40,7 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
       )
     ]
 
-  def process_message(self, message: telebot.types.Message):
+  def process_message(self, message: telebot.types.Message) -> None:
     if not self.is_authorized(message):
       return
 

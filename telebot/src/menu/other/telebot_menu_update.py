@@ -21,7 +21,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandler):
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.update
 
-  def process_message(self, message: telebot.types.Message):
+  def process_message(self, message: telebot.types.Message) -> None:
     if not self.is_authorized(message):
       return
 

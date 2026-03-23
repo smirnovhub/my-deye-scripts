@@ -11,7 +11,7 @@ class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
   def __init__(self, bot: telebot.TeleBot):
     self.bot = bot
 
-  def register_handlers(self):
+  def register_handlers(self) -> None:
     """
     Registers a global callback handler that will intercept all button clicks.
 

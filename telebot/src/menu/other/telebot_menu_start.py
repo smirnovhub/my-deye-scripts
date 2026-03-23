@@ -19,7 +19,7 @@ class TelebotMenuStart(TelebotMenuItemHandler):
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.start
 
-  def process_message(self, message: telebot.types.Message):
+  def process_message(self, message: telebot.types.Message) -> None:
     user = message.from_user
     first_name = user.first_name if user and user.first_name else 'None'
     last_name = user.last_name if user and user.last_name else 'None'

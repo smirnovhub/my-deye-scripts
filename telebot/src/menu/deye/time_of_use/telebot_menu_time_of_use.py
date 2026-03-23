@@ -23,7 +23,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_time_of_use
 
-  def process_message(self, message: telebot.types.Message):
+  def process_message(self, message: telebot.types.Message) -> None:
     if not self.is_authorized(message):
       return
 

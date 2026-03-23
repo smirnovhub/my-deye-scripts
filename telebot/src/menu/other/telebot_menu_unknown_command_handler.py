@@ -15,7 +15,7 @@ class TelebotMenuUnknownCommandHandler(TelebotMenuItemHandler):
   def get_commands(self) -> List[telebot.types.BotCommand]:
     return []
 
-  def register_handlers(self):
+  def register_handlers(self) -> None:
     @self.bot.message_handler(func = lambda message: message.text and message.text.startswith('/'))
     def handle(message: telebot.types.Message):
       if not self.is_authorized(message):
