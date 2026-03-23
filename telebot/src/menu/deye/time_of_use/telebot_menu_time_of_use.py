@@ -1,20 +1,19 @@
 import telebot
 
+from time_of_use_page import TimeOfUsePage
 from time_of_use_enable_page import TimeOfUseEnablePage
 from time_of_use_hours_page import TimeOfUseHoursPage
 from time_of_use_main_page import TimeOfUseMainPage
 from time_of_use_minutes_page import TimeOfUseMinutesPage
-from time_of_use_page import TimeOfUsePage
 from time_of_use_powers_page import TimeOfUsePowersPage
+from time_of_use_registers import TimeOfUseRegisters
 from time_of_use_socs_page import TimeOfUseSocsPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_menu_item import TelebotMenuItem
-from deye_registers import DeyeRegisters
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_deye_helper import TelebotDeyeHelper
 from time_of_use_data import TimeOfUseData
 from deye_registers_holder import DeyeRegistersHolder
-from custom_single_registers import CustomSingleRegisters
 
 class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
@@ -31,21 +30,10 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
     if self.has_updates(message):
       return
 
-    # Should be local to avoid race conditions with threads
-    registers = DeyeRegisters()
-    tou_register = registers.time_of_use_register
-    battery_low_batt_soc_register = registers.battery_low_batt_soc_register
-
     # Should be local to avoid issues with locks and threads
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],
-      register_creator = lambda prefix: CustomSingleRegisters(
-        [
-          tou_register,
-          battery_low_batt_soc_register,
-        ],
-        prefix,
-      ),
+      register_creator = lambda prefix: TimeOfUseRegisters(prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
@@ -56,6 +44,9 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
       return
     finally:
       holder.disconnect()
+
+    tou_register = holder.master_registers.time_of_use_register
+    battery_low_batt_soc_register = holder.master_registers.battery_low_batt_soc_register
 
     tou_data = tou_register.value
 
