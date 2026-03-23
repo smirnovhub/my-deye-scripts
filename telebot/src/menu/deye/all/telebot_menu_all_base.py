@@ -50,10 +50,7 @@ class TelebotMenuAllBase(TelebotMenuItemHandler):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = self.loggers.loggers,
-      register_creator = lambda prefix: self.registers_factory.create(
-        self.registers_class,
-        prefix = prefix,
-      ),
+      register_creator = lambda prefix: self.registers_class(prefix = prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
