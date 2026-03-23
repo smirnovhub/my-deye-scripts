@@ -17,7 +17,7 @@ class TelebotProgressMessage:
     - Registers a next-step handler: if the user sends any message, the progress message will be deleted.
     - Can be hidden manually by calling `hide()`.
     """
-    self.bot = bot # TeleBot instance
+    self._bot = bot # TeleBot instance
     self._chat_id: Optional[int] = None # Chat ID (set in show())
     self._text: Optional[str] = None # Base message text (set in show())
     self._message: Optional[telebot.types.Message] = None # The sent Telegram message
@@ -42,14 +42,14 @@ class TelebotProgressMessage:
 
     self._running = True
     # Send initial message
-    self._message = self.bot.send_message(self._chat_id, self._text, parse_mode = 'HTML')
+    self._message = self._bot.send_message(self._chat_id, self._text, parse_mode = 'HTML')
     # Start animation thread
     thread = threading.Thread(target = self._animate, daemon = True)
     self._threads.append(thread)
     thread.start()
     # Register next step handler
-    self.bot.clear_step_handler_by_chat_id(self._message.chat.id)
-    self.bot.register_next_step_handler(self._message, self._on_user_response)
+    self._bot.clear_step_handler_by_chat_id(self._message.chat.id)
+    self._bot.register_next_step_handler(self._message, self._on_user_response)
 
   def _animate(self) -> None:
     """
@@ -65,14 +65,14 @@ class TelebotProgressMessage:
       try:
         time.sleep(0.5)
         text: str = self._text + ("." * dots)
-        self.bot.edit_message_text(text, self._chat_id, self._message.message_id, parse_mode = 'HTML')
+        self._bot.edit_message_text(text, self._chat_id, self._message.message_id, parse_mode = 'HTML')
         dots = (dots + 1) % 4
         count += 1
       except Exception:
         pass
 
     try:
-      self.bot.edit_message_text(f'{self._text}...', self._chat_id, self._message.message_id, parse_mode = 'HTML')
+      self._bot.edit_message_text(f'{self._text}...', self._chat_id, self._message.message_id, parse_mode = 'HTML')
     except Exception:
       pass
 
@@ -84,7 +84,7 @@ class TelebotProgressMessage:
     self.hide()
 
     # If we received new command, process it
-    TelebotUtils.forward_next(self.bot, message)
+    TelebotUtils.forward_next(self._bot, message)
 
   def hide(self) -> None:
     """
@@ -100,7 +100,7 @@ class TelebotProgressMessage:
 
     try:
       if self._chat_id is not None and self._message is not None:
-        self.bot.delete_message(self._chat_id, self._message.message_id)
+        self._bot.delete_message(self._chat_id, self._message.message_id)
     except Exception:
       pass
 
