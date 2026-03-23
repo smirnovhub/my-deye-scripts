@@ -3,7 +3,6 @@ import telebot
 import traceback
 
 from typing import List
-from abc import abstractmethod
 
 from telebot_user import TelebotUser
 from telebot_users import TelebotUsers
@@ -81,7 +80,6 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         self.bot.send_message(message.chat.id, str(e))
         self.logger.info(traceback.format_exc())
 
-  @abstractmethod
   def process_message(self, message: telebot.types.Message) -> None:
     """
     Process the incoming message for this command
@@ -94,7 +92,8 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     Raises:
         NotImplementedError: Always, if not implemented in subclass
     """
-    pass
+    raise NotImplementedError(
+      f'{self.__class__.__name__}: process_message() for command {self.command.command} is not implemented')
 
   def is_authorized(self, message: telebot.types.Message) -> bool:
     """
