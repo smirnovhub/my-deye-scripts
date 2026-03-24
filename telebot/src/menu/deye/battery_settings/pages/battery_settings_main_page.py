@@ -100,7 +100,7 @@ class BatterySettingsMainPage(TelebotNavigationPage):
         if reg.value != value:
           holder.write_register(register, value)
 
-      navigator.stop(f"{self._title}\n{self._get_data_as_text(self._batt_data.values)}")
+      navigator.stop(f"{self._title} saved\n{self._get_data_as_text(self._batt_data.values)}")
 
     except Exception as ee:
       navigator.stop(f"{self._title} {str(ee)}")
