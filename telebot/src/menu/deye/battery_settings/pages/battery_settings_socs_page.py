@@ -33,29 +33,19 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
 
   def update(self) -> None:
     buttons: List[ButtonNode] = [
-      ButtonNode(self._title),
+      ButtonNode(f"{self._title}, %:"),
       BreakButtonNode(),
     ]
 
-    if self._page_type == BatterySettingsPage.shutdown_soc:
-      self._min_value = 0
-      self._max_value = self._batt_data.low_batt_soc
-    elif self._page_type == BatterySettingsPage.low_batt_soc:
-      self._min_value = self._batt_data.shutdown_soc
-      self._max_value = self._batt_data.restart_soc
-    elif self._page_type == BatterySettingsPage.restart_soc:
-      self._min_value = self._batt_data.low_batt_soc
-      self._max_value = 100
-    else:
-      raise ValueError(f"Wrong page type {self._page_type.name}")
+    self._min_value, self._max_value = self._batt_data.get_bounds(self._page_type)
 
-    self._values = self._generate_values(
+    values = self._generate_values(
       min_value = self._min_value,
       max_value = self._max_value,
       count = 20,
     )
 
-    for index, value in enumerate(self._values):
+    for index, value in enumerate(values):
       if index > 0 and (index % self._row_length) == 0:
         buttons.append(BreakButtonNode())
 
@@ -71,10 +61,10 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     try:
       soc = int(text)
     except Exception:
-      raise ValueError(f"SOC value should be from {self._min_value} to {self._max_value}")
+      raise ValueError(f"{self._title} value should be from {self._min_value} to {self._max_value}")
 
     if not (self._min_value <= soc <= self._max_value):
-      raise ValueError(f"SOC value should be from {self._min_value} to {self._max_value}")
+      raise ValueError(f"{self._title} value should be from {self._min_value} to {self._max_value}")
 
     self._set_soc_and_go_back(
       navigator = navigator,
@@ -96,15 +86,9 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     soc: int,
   ) -> None:
     if not (self._min_value <= soc <= self._max_value):
-      raise ValueError(f"SOC value should be from {self._min_value} to {self._max_value}")
+      raise ValueError(f"{self._title} value should be from {self._min_value} to {self._max_value}")
 
-    if self._page_type == BatterySettingsPage.shutdown_soc:
-      self._batt_data.shutdown_soc = soc
-    elif self._page_type == BatterySettingsPage.low_batt_soc:
-      self._batt_data.low_batt_soc = soc
-    elif self._page_type == BatterySettingsPage.restart_soc:
-      self._batt_data.restart_soc = soc
-
+    self._batt_data.values[self._page_type] = soc
     navigator.navigate(BatterySettingsPage.main)
 
   def _generate_values(

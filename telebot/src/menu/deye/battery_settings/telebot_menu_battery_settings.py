@@ -48,16 +48,20 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandler):
     navigator = TelebotPageNavigator(self.bot)
 
     batt_data = BatterySettingsData(
-      shutdown_soc = shutdown_soc_register.value,
-      low_batt_soc = low_batt_soc_register.value,
-      restart_soc = restart_soc_register.value,
-    )
+      values = {
+        BatterySettingsPage.shutdown_soc: shutdown_soc_register.value,
+        BatterySettingsPage.low_batt_soc: low_batt_soc_register.value,
+        BatterySettingsPage.restart_soc: restart_soc_register.value,
+      })
+
+    title = "Battery settings:"
 
     main_page = BatterySettingsMainPage(
       batt_data = batt_data,
       shutdown_soc_register = shutdown_soc_register,
       low_batt_soc_register = low_batt_soc_register,
       restart_soc_register = restart_soc_register,
+      title = title,
     )
 
     navigator.register_pages([
@@ -65,22 +69,22 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandler):
       BatterySettingsSocsPage(
         page_type = BatterySettingsPage.shutdown_soc,
         batt_data = batt_data,
-        title = "Battery shutdown SOC, %:",
+        title = "Battery shutdown SOC",
       ),
       BatterySettingsSocsPage(
         page_type = BatterySettingsPage.low_batt_soc,
         batt_data = batt_data,
-        title = "Battery low batt SOC, %:",
+        title = "Battery low batt SOC",
       ),
       BatterySettingsSocsPage(
         page_type = BatterySettingsPage.restart_soc,
         batt_data = batt_data,
-        title = "Battery restart SOC, %:",
+        title = "Battery restart SOC",
       ),
     ])
 
     navigator.start(
       page = main_page,
-      text = "Battery settings:",
+      text = title,
       chat_id = message.chat.id,
     )
