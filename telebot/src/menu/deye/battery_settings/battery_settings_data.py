@@ -1,11 +1,13 @@
 from typing import Dict, Tuple
 
 from dataclasses import dataclass
+from deye_register import DeyeRegister
 from battery_settings_page import BatterySettingsPage
 
 @dataclass
 class BatterySettingsData:
   values: Dict[BatterySettingsPage, int]
+  registers: Dict[BatterySettingsPage, DeyeRegister]
 
   def get_bounds(self, page_type: BatterySettingsPage) -> Tuple[int, int]:
     # Filter: only pages that exist in our values dictionary, in Enum order

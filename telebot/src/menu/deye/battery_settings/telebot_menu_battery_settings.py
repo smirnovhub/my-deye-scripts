@@ -41,47 +41,37 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandler):
     finally:
       holder.disconnect()
 
-    shutdown_soc_register = holder.master_registers.battery_shutdown_soc_register
-    low_batt_soc_register = holder.master_registers.battery_low_batt_soc_register
-    restart_soc_register = holder.master_registers.battery_restart_soc_register
+    registers = holder.master_registers
 
     navigator = TelebotPageNavigator(self.bot)
 
     batt_data = BatterySettingsData(
       values = {
-        BatterySettingsPage.shutdown_soc: shutdown_soc_register.value,
-        BatterySettingsPage.low_batt_soc: low_batt_soc_register.value,
-        BatterySettingsPage.restart_soc: restart_soc_register.value,
-      })
+        BatterySettingsPage.shutdown_soc: registers.battery_shutdown_soc_register.value,
+        BatterySettingsPage.low_batt_soc: registers.battery_low_batt_soc_register.value,
+        BatterySettingsPage.restart_soc: registers.battery_restart_soc_register.value,
+      },
+      registers = {
+        BatterySettingsPage.shutdown_soc: registers.battery_shutdown_soc_register,
+        BatterySettingsPage.low_batt_soc: registers.battery_low_batt_soc_register,
+        BatterySettingsPage.restart_soc: registers.battery_restart_soc_register,
+      },
+    )
 
     title = "Battery settings:"
 
     main_page = BatterySettingsMainPage(
       batt_data = batt_data,
-      shutdown_soc_register = shutdown_soc_register,
-      low_batt_soc_register = low_batt_soc_register,
-      restart_soc_register = restart_soc_register,
       title = title,
     )
 
-    navigator.register_pages([
-      main_page,
-      BatterySettingsSocsPage(
-        page_type = BatterySettingsPage.shutdown_soc,
+    navigator.register_page(main_page)
+
+    for page_type in batt_data.values.keys():
+      navigator.register_page(BatterySettingsSocsPage(
+        page_type = page_type,
         batt_data = batt_data,
-        title = "Battery shutdown SOC",
-      ),
-      BatterySettingsSocsPage(
-        page_type = BatterySettingsPage.low_batt_soc,
-        batt_data = batt_data,
-        title = "Battery low batt SOC",
-      ),
-      BatterySettingsSocsPage(
-        page_type = BatterySettingsPage.restart_soc,
-        batt_data = batt_data,
-        title = "Battery restart SOC",
-      ),
-    ])
+      ))
 
     navigator.start(
       page = main_page,

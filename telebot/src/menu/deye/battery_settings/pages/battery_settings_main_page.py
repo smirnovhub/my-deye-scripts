@@ -3,30 +3,27 @@ import copy
 from enum import Enum
 from typing import List
 
-from dataclasses import asdict
 from button_node import ButtonNode
-from deye_register import DeyeRegister
+from deye_loggers import DeyeLoggers
 from break_button_node import BreakButtonNode
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
+from telebot_deye_helper import TelebotDeyeHelper
+from deye_registers_holder import DeyeRegistersHolder, Dict
+from battery_settings_registers import BatterySettingsRegisters
 
 class BatterySettingsMainPage(TelebotNavigationPage):
   def __init__(
     self,
     batt_data: BatterySettingsData,
-    shutdown_soc_register: DeyeRegister,
-    low_batt_soc_register: DeyeRegister,
-    restart_soc_register: DeyeRegister,
     title: str,
   ):
     super().__init__()
+    self._loggers = DeyeLoggers()
     self._batt_data = batt_data
-    self._batt_data_original = copy.deepcopy(batt_data)
-    self._shutdown_soc_register = shutdown_soc_register
-    self._low_batt_soc_register = low_batt_soc_register
-    self._restart_soc_register = restart_soc_register
+    self._batt_data_original_values = copy.deepcopy(batt_data.values)
     self._title = title
 
   @property
@@ -44,26 +41,9 @@ class BatterySettingsMainPage(TelebotNavigationPage):
   def update(self) -> None:
     buttons: List[ButtonNode] = []
 
-    buttons.extend(self._get_buttons(
-      page_type = BatterySettingsPage.shutdown_soc,
-      title = "Shutdown",
-    ))
-
-    buttons.append(BreakButtonNode())
-
-    buttons.extend(self._get_buttons(
-      page_type = BatterySettingsPage.low_batt_soc,
-      title = "Low Batt",
-    ))
-
-    buttons.append(BreakButtonNode())
-
-    buttons.extend(self._get_buttons(
-      page_type = BatterySettingsPage.restart_soc,
-      title = "Restart",
-    ))
-
-    buttons.append(BreakButtonNode())
+    for page in self._batt_data.values.keys():
+      buttons.extend(self._get_buttons(page_type = page, title = page.name))
+      buttons.append(BreakButtonNode())
 
     if self._need_save():
       buttons.append(self.register_button_handler(ButtonNode("Save"), self._handle_save))
@@ -71,6 +51,9 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
 
     self._buttons = buttons
+
+  def get_goodbye_message(self) -> str:
+    return f"{self._title}\n{self._get_data_as_text(self._batt_data_original_values)}"
 
   def _get_buttons(self, page_type: BatterySettingsPage, title: str) -> List[ButtonNode]:
     button = ButtonNode(text = f"{self._batt_data.values[page_type]}%")
@@ -80,23 +63,52 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     ]
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(f"{self._title} cancel")
+    navigator.stop(f"{self._title}\n{self._get_data_as_text(self._batt_data_original_values)}")
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
-    navigator.stop(f"{self._title} cancel")
+    navigator.stop(f"{self._title}\n{self._get_data_as_text(self._batt_data_original_values)}")
 
   def _create_navigation_handler(self, target_page: Enum):
-    # The handler now accepts both navigator and button_node
     def handler(navigator: TelebotPageNavigator) -> None:
       navigator.navigate(target_page)
 
     return handler
 
   def _need_save(self) -> bool:
-    return asdict(self._batt_data) != asdict(self._batt_data_original)
+    return self._batt_data.values != self._batt_data_original_values
 
   def _handle_save(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(f"{self._title} saved")
+    try:
+      holder = DeyeRegistersHolder(
+        loggers = [self._loggers.master],
+        register_creator = lambda prefix: BatterySettingsRegisters(prefix),
+        **TelebotDeyeHelper.holder_kwargs,
+      )
 
-  def get_goodbye_message(self) -> str:
-    return f"{self._title} cancel"
+      holder.read_registers()
+
+      registers = holder.master_registers
+
+      for register in self._batt_data.registers.values():
+        reg = registers.get_register_by_name(register.name)
+        if reg.value != register.value:
+          raise ValueError(f"{reg.description} was changed unexpectedly since last read")
+
+      for page, value in self._batt_data.values.items():
+        register = self._batt_data.registers[page]
+        reg = registers.get_register_by_name(register.name)
+        if reg.value != value:
+          holder.write_register(register, value)
+
+      navigator.stop(f"{self._title}\n{self._get_data_as_text(self._batt_data.values)}")
+
+    except Exception as ee:
+      navigator.stop(f"{self._title} {str(ee)}")
+    finally:
+      holder.disconnect()
+
+  def _get_data_as_text(self, values: Dict[BatterySettingsPage, int]) -> str:
+    result = "<pre>"
+    for page, value in values.items():
+      result += f"{page.title}: {value}%\n"
+    return f"{result}</pre>"

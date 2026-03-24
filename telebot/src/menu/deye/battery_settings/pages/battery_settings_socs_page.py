@@ -13,12 +13,11 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     self,
     page_type: BatterySettingsPage,
     batt_data: BatterySettingsData,
-    title: str,
   ):
     super().__init__()
     self._page_type = page_type
     self._batt_data = batt_data
-    self._title = title
+    self._title = page_type.title
     self._row_length = 4
     self._min_value = 0
     self._max_value = 0
