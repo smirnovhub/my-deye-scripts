@@ -36,6 +36,8 @@
     "src/menu",
     "src/menu/deye",
     "src/menu/deye/all",
+    "src/menu/deye/battery_settings",
+    "src/menu/deye/battery_settings/pages",
     "src/menu/deye/forecast",
     "src/menu/deye/master",
     "src/menu/deye/master/settings",
