@@ -33,12 +33,18 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
     commands = []
     registers = DeyeRegisters()
 
+    registers_to_skip: List[str] = [
+      registers.time_of_use_power_register.name,
+      registers.time_of_use_soc_register.name,
+      registers.battery_shutdown_soc_register.name,
+      registers.battery_low_batt_soc_register.name,
+      registers.battery_restart_soc_register.name,
+    ]
+
     for register in registers.read_write_registers:
       # Don't need these registers because we
-      # already have full time of use feature
-      if register.name == registers.time_of_use_power_register.name:
-        continue
-      if register.name == registers.time_of_use_soc_register.name:
+      # already have separated features for it
+      if register.name in registers_to_skip:
         continue
       command_name = self.command.command.format(register.name)
       command_description = self.command.description.format(register.description)

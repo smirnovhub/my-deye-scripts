@@ -36,6 +36,7 @@ from testable_telebot import TestableTelebot
 from telebot_menu_revert import TelebotMenuRevert
 from telebot_menu_update import TelebotMenuUpdate
 from telebot_menu_test import TelebotMenuTest
+from telebot_menu_battery_settings import TelebotMenuBatterySettings
 from telebot_menu_battery_forecast_by_percent import TelebotMenuBatteryForecastByPercent
 from telebot_menu_battery_forecast_by_time import TelebotMenuBatteryForecastByTime
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
@@ -182,6 +183,7 @@ class MyTelebot:
       TelebotMenuAllSettings(bot),
       TelebotMenuMasterSettings(bot),
       TelebotMenuTimeOfUse(bot),
+      TelebotMenuBatterySettings(bot),
       TelebotMenuBatteryForecast(bot),
       TelebotMenuBatteryForecastByPercent(bot),
       TelebotMenuBatteryForecastByTime(bot),
