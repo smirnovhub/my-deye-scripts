@@ -45,7 +45,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
       commands.append(telebot.types.BotCommand(command = command_name, description = command_description))
     return commands
 
-  def register_handlers(self):
+  def register_handlers(self) -> None:
     registers = DeyeRegisters()
     for register in registers.read_write_registers:
       code = self.get_writable_register_handler(registers, register)

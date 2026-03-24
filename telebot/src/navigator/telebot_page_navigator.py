@@ -111,8 +111,7 @@ class TelebotPageNavigator:
       page.clear_button_handlers()
       page.update()
     except Exception as e:
-      self._on_error(str(e))
-      raise
+      self.send_message_with_remove_with_delay(str(e))
 
     keyboard = TelebotUtils.get_keyboard_for_buttons(
       buttons = page.buttons,
@@ -169,8 +168,7 @@ class TelebotPageNavigator:
       page.prepare(**kwargs)
       page.update()
     except Exception as e:
-      self._on_error(str(e))
-      raise
+      self.send_message_with_remove_with_delay(str(e))
 
     self.update(text)
 
@@ -194,8 +192,7 @@ class TelebotPageNavigator:
       self._current_page.clear_button_handlers()
       self._current_page.update()
     except Exception as e:
-      self._on_error(str(e))
-      raise
+      self.send_message_with_remove_with_delay(str(e))
 
     keyboard = TelebotUtils.get_keyboard_for_buttons(
       buttons = self._current_page.buttons,
@@ -232,6 +229,19 @@ class TelebotPageNavigator:
       self._chat_id,
       text,
       parse_mode = "HTML",
+    )
+
+  def send_message_with_remove_with_delay(self, text: str) -> None:
+    if not self._chat_id:
+      raise RuntimeError("Navigation has not started yet")
+
+    sent = self.send_message(text)
+
+    TelebotUtils.remove_message_with_delay(
+      bot = self._bot,
+      chat_id = self._chat_id,
+      message_id = sent.id,
+      delay = 5,
     )
 
   def _resend(self, text: str) -> telebot.types.Message:
@@ -330,24 +340,7 @@ class TelebotPageNavigator:
         button_id = button_id,
       )
     except Exception as e:
-      self._on_error(str(e))
-      raise
-
-  def _on_error(self, message: str) -> None:
-    """
-    Sends an error message to the chat.
-
-    Args:
-        message (str): The error description.
-    """
-    if not self._chat_id:
-      raise RuntimeError("Navigation has not started yet")
-
-    self._message = self._bot.send_message(
-      self._chat_id,
-      message,
-      parse_mode = "HTML",
-    )
+      self.send_message_with_remove_with_delay(str(e))
 
   def _on_command_button_clicked(self, command: str) -> None:
     if not self._current_page:
@@ -432,11 +425,4 @@ class TelebotPageNavigator:
             time.sleep(0.5)
           self._current_page.on_user_input(self, message.text)
         except Exception as e:
-          sent = self.send_message(str(e))
-          if self._chat_id:
-            TelebotUtils.remove_message_with_delay(
-              bot = self._bot,
-              chat_id = self._chat_id,
-              message_id = sent.id,
-              delay = 5,
-            )
+          self.send_message_with_remove_with_delay(str(e))

@@ -10,7 +10,8 @@ from deye_exceptions import DeyeKnownException
 from custom_single_registers import CustomSingleRegisters
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
-from deye_registers_holder import DeyeRegister, DeyeRegistersHolder
+from deye_registers_holder import DeyeRegistersHolder
+from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_user_choices import UserChoices
@@ -24,7 +25,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_sync_time
 
-  def process_message(self, message: telebot.types.Message):
+  def process_message(self, message: telebot.types.Message) -> None:
     if not self.is_authorized(message):
       return
 

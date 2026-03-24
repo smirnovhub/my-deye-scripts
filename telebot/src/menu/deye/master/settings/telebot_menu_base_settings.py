@@ -18,7 +18,7 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
     master_command: TelebotMenuItem,
   ):
     super().__init__(bot)
-    self.registers = self.registers_factory.create(registers_class)
+    self.registers_class = registers_class
     self.main_command = main_command
     self.all_command = all_command
     self.master_command = master_command
@@ -30,11 +30,13 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
   def get_commands(self) -> List[telebot.types.BotCommand]:
     name = self.loggers.master.name if self.main_command == self.master_command else self.loggers.accumulated_registers_prefix
     return [
-      telebot.types.BotCommand(command = self.command.command.format(name),
-                               description = self.command.description.format(name.title())),
+      telebot.types.BotCommand(
+        command = self.command.command.format(name),
+        description = self.command.description.format(name.title()),
+      ),
     ]
 
-  def process_message(self, message: telebot.types.Message):
+  def process_message(self, message: telebot.types.Message) -> None:
     if not self.is_authorized(message):
       return
 
@@ -44,7 +46,7 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandler):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master] if self.main_command == self.master_command else self.loggers.loggers,
-      register_creator = lambda _: self.registers,
+      register_creator = lambda prefix: self.registers_class(prefix = prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 

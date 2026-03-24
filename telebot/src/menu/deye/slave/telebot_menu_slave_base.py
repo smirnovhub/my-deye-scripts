@@ -23,7 +23,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     title: str = TelebotConstants.default_title,
   ):
     super().__init__(bot)
-    self.registers = self.registers_factory.create(registers_class)
+    self.registers_class = registers_class
     self.all_command = all_command
     self.master_command = master_command
     self.slave_command = slave_command
@@ -44,7 +44,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
           ))
     return commands
 
-  def process_message(self, message: telebot.types.Message):
+  def process_message(self, message: telebot.types.Message) -> None:
     if not self.is_authorized(message):
       return
 
@@ -65,7 +65,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [logger],
-      register_creator = lambda _: self.registers,
+      register_creator = lambda prefix: self.registers_class(prefix = prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
@@ -84,14 +84,16 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandler):
       slave_command = self.slave_command,
     )
 
-    if abs(self.registers.inverter_system_time_diff_register.value
+    registers = holder.all_registers[slave_name]
+
+    if abs(registers.inverter_system_time_diff_register.value
            ) > TelebotConstants.inverter_system_time_need_sync_difference_sec:
       # add line break for keyboard
       choices[TelebotUtils.row_break_str] = TelebotUtils.row_break_str
       # add time sync command
       choices[TelebotConstants.sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
 
-    info = TelebotDeyeHelper.get_register_values(holder.all_registers[slave_name].all_registers)
+    info = TelebotDeyeHelper.get_register_values(registers.all_registers)
 
     CommandChoice.ask_command_choice(
       self.bot,

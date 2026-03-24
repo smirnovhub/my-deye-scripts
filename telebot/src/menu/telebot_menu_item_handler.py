@@ -13,7 +13,6 @@ from deye_exceptions import DeyeKnownException
 from telebot_base_handler import TelebotBaseHandler
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_remote_update_checker import TelebotRemoteUpdateChecker
-from telebot_registers_factory import TelebotRegistersFactory
 
 class TelebotMenuItemHandler(TelebotBaseHandler):
   """
@@ -33,7 +32,6 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     self.auth_helper = TelebotAuthHelper()
     self.local_update_checker = TelebotLocalUpdateChecker()
     self.remote_update_checker = TelebotRemoteUpdateChecker()
-    self.registers_factory = TelebotRegistersFactory()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -63,7 +61,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     """
     return self.auth_helper.is_menu_item_allowed_for_user(user, self.command)
 
-  def register_handlers(self):
+  def register_handlers(self) -> None:
     """
     Register message handlers for the bot based on the command list
 
@@ -82,7 +80,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         self.bot.send_message(message.chat.id, str(e))
         self.logger.info(traceback.format_exc())
 
-  def process_message(self, message: telebot.types.Message):
+  def process_message(self, message: telebot.types.Message) -> None:
     """
     Process the incoming message for this command
 
@@ -95,7 +93,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         NotImplementedError: Always, if not implemented in subclass
     """
     raise NotImplementedError(
-      f'{self.__class__.__name__}: process_message() for command {self.command.command} is not implemented yet')
+      f'{self.__class__.__name__}: process_message() for command {self.command.command} is not implemented')
 
   def is_authorized(self, message: telebot.types.Message) -> bool:
     """

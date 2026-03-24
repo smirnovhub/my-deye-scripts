@@ -24,7 +24,7 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     DeyeUtils.ensure_dir_exists(self.known_users_messages_path)
     DeyeUtils.ensure_dir_exists(self.unknown_users_messages_path)
 
-  def register_handlers(self):
+  def register_handlers(self) -> None:
     @self.bot.middleware_handler(update_types = ['message'])
     def handle_message(bot: telebot.TeleBot, message: telebot.types.Message):
       self.log_event(

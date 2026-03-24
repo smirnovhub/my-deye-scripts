@@ -13,19 +13,21 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
   def __init__(
     self,
     tou_socs: TimeOfUseSocs,
+    minimum_soc: int,
   ):
     super().__init__()
     self._tou_socs = tou_socs
     self._time_of_use_line_index = -1
-    self.values = [
-      [15, 20, 25, 30],
-      [35, 40, 45, 50],
-      [55, 60, 65, 70],
-      [75, 80, 85, 90],
-      [93, 95, 97, 100],
-    ]
-    self._min_val = min(x for row in self.values for x in row)
-    self._max_val = max(x for row in self.values for x in row)
+
+    self._values = self._generate_values(min_val = minimum_soc)
+
+    self._min_val = min(self._values)
+    self._max_val = max(self._values)
+
+    if minimum_soc > self._min_val:
+      self._min_val = minimum_soc
+
+    self._row_length = 4
 
   @property
   def page_type(self) -> Enum:
@@ -49,13 +51,12 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
       BreakButtonNode(),
     ]
 
-    for row_index, row in enumerate(self.values):
-      if row_index > 0:
+    for index, value in enumerate(self._values):
+      if index > 0 and (index % self._row_length) == 0:
         buttons.append(BreakButtonNode())
 
-      for value in row:
-        btn = ButtonNode(text = str(value), data = str(value))
-        buttons.append(self.register_button_handler(btn, self._create_soc_handler(value)))
+      btn = ButtonNode(text = str(value), data = str(value))
+      buttons.append(self.register_button_handler(btn, self._create_soc_handler(value)))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
@@ -90,6 +91,9 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     navigator: TelebotPageNavigator,
     soc: int,
   ) -> None:
+    if not (self._min_val <= soc <= self._max_val):
+      raise ValueError(f"SOC value should be from {self._min_val} to {self._max_val}")
+
     if self._time_of_use_line_index < 0:
       # Replace all elements in the list with the new value
       self._tou_socs.values[:] = [soc] * len(self._tou_socs.values)
@@ -97,3 +101,58 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
       self._tou_socs.values[self._time_of_use_line_index] = soc
 
     navigator.navigate(TimeOfUsePage.main)
+
+  def _generate_values(
+    self,
+    min_val: int,
+    step: int = 5,
+    target_count: int = 20,
+    transition_point: int = 90,
+    max_val: int = 100,
+  ) -> List[int]:
+    # Start with min_val
+    result: List[int] = [min_val]
+
+    # Fill Zone A: multiples of step strictly below transition_point
+    first_multiple = min_val if min_val % step == 0 else min_val + (step - min_val % step)
+    current = first_multiple
+    while current < transition_point:
+      if current > min_val:
+        result.append(current)
+      current += step
+
+    # FORCE transition_point into the sequence
+    if result[-1] != transition_point:
+      result.append(transition_point)
+
+    # Calculate how many slots are left to reach target_count
+    # max_val will be the last one, so we need (target_count - current_len) more
+    current_len = len(result)
+    needed_count = target_count - current_len
+
+    if needed_count <= 0:
+      # If we already have enough, trim and ensure max_val
+      final = result[:target_count - 1]
+      final.append(max_val)
+      return final
+
+    # Zone B: Uniformly distribute remaining integers between transition_point and max_val
+    last_val = result[-1] # This is now exactly 90
+    total_gap = max_val - last_val
+
+    for i in range(1, needed_count + 1):
+      # Linear interpolation to find the next integer
+      # (i / needed_count) ensures we land exactly on max_val at the last step
+      next_val = last_val + (total_gap * i) // needed_count
+
+      # Ensure uniqueness
+      if next_val > result[-1]:
+        result.append(int(next_val))
+      else:
+        result.append(result[-1] + 1)
+
+    # Final safeguard for length
+    if len(result) > target_count:
+      result = result[:target_count - 1] + [max_val]
+
+    return result

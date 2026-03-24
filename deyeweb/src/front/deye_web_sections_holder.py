@@ -31,7 +31,6 @@ class DeyeWebSectionsHolder:
     registers = DeyeWebConstants.registers
     self._sections: List[DeyeWebBaseSection] = [
       DeyeWebInfoSection(registers),
-      DeyeWebGridConnectVoltageLowSection(registers),
       DeyeWebTodaySection(registers),
       DeyeWebTotalSection(registers),
       DeyeWebSettingsSection(registers),
@@ -44,6 +43,7 @@ class DeyeWebSectionsHolder:
       DeyeWebGenChargeCurrentSection(registers),
       DeyeWebGridPeakShavingPowerSection(registers),
       DeyeWebGridReconnectionTimeSection(registers),
+      DeyeWebGridConnectVoltageLowSection(registers),
       DeyeWebBmsSection(registers),
       DeyeWebServiceSection(),
     ]

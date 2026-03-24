@@ -65,8 +65,8 @@ class TimeOfUseScheduleButtons:
       gen = TimeOfUseSwitchButtonNode(enabled = charge.gen_charge)
       start = ButtonNode(text = f"{time.hour:02d}:{time.minute:02d}", style = style)
       end = ButtonNode(text = f"{next_time.hour:02d}:{next_time.minute:02d}", style = style)
-      power = ButtonNode(text = str(powers[i]), data = str(powers[i]))
-      soc = ButtonNode(text = f"{socs[i]}%", data = str(socs[i]))
+      power = ButtonNode(text = str(powers[i]))
+      soc = ButtonNode(text = f"{socs[i]}%")
 
       page.register_button_handler(grid, self._create_toggle_grid_handler(i))
       page.register_button_handler(gen, self._create_toggle_gen_handler(i))
