@@ -8,7 +8,7 @@ from data_collector_registers import DataCollectorRegisters
 
 # Main logic
 def main_logic(data_dir: str, logger: logging.Logger) -> None:
-  logger.info(datetime.now())
+  logger.info(datetime.isoformat())
   return
 
   loggers = DeyeLoggers()

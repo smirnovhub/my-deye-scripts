@@ -51,7 +51,7 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
   git submodule update --init --recursive
 
 # Set working directory
-WORKDIR $APP_DIR/$REPO_NAME/datacollector
+WORKDIR $APP_DIR/$REPO_NAME/data_collector
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1
