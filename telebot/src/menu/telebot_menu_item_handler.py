@@ -78,7 +78,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         self.bot.send_message(message.chat.id, str(e))
       except Exception as e:
         self.bot.send_message(message.chat.id, str(e))
-        self.logger.info(traceback.format_exc())
+        self.logger.error(traceback.format_exc())
 
   def process_message(self, message: telebot.types.Message) -> None:
     """

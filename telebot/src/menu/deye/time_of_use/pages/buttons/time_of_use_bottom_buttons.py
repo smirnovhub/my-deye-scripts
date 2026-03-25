@@ -74,7 +74,7 @@ class TimeOfUseBottomButtons:
     return self._buttons
 
   def _handle_save(self, navigator: TelebotPageNavigator) -> None:
-    text = TimeOfUseHelper.get_time_of_use_as_text(tou_data = self._tou_data, suffx = "saved")
+    text = TimeOfUseHelper.get_time_of_use_as_text(tou_data = self._tou_data)
 
     if not self._need_save():
       navigator.stop(text)
@@ -96,6 +96,7 @@ class TimeOfUseBottomButtons:
     except Exception as e:
       navigator.stop(str(e))
     else:
+      text = TimeOfUseHelper.get_time_of_use_as_text(tou_data = self._tou_data, suffx = "saved")
       navigator.stop(text)
 
   def _handle_fix_yes(self, navigator: TelebotPageNavigator) -> None:

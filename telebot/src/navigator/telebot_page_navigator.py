@@ -1,5 +1,7 @@
+import logging
 import re
 import time
+import traceback
 import telebot
 import threading
 
@@ -43,6 +45,7 @@ class TelebotPageNavigator:
     self._pages: Dict[Enum, "TelebotNavigationPage"] = {}
     self._current_page: Optional["TelebotNavigationPage"] = None
     self._main_page: Optional["TelebotNavigationPage"] = None
+    self._logger = logging.getLogger()
 
     with TelebotPageNavigator._lock:
       if TelebotPageNavigator._free_ids:
@@ -111,6 +114,7 @@ class TelebotPageNavigator:
       page.clear_button_handlers()
       page.update()
     except Exception as e:
+      self._logger.error(traceback.format_exc())
       self.send_message_with_remove_with_delay(str(e))
 
     keyboard = TelebotUtils.get_keyboard_for_buttons(
@@ -168,6 +172,7 @@ class TelebotPageNavigator:
       page.prepare(**kwargs)
       page.update()
     except Exception as e:
+      self._logger.error(traceback.format_exc())
       self.send_message_with_remove_with_delay(str(e))
 
     self.update(text)
@@ -192,6 +197,7 @@ class TelebotPageNavigator:
       self._current_page.clear_button_handlers()
       self._current_page.update()
     except Exception as e:
+      self._logger.error(traceback.format_exc())
       self.send_message_with_remove_with_delay(str(e))
 
     keyboard = TelebotUtils.get_keyboard_for_buttons(
@@ -340,6 +346,7 @@ class TelebotPageNavigator:
         button_id = button_id,
       )
     except Exception as e:
+      self._logger.error(traceback.format_exc())
       self.send_message_with_remove_with_delay(str(e))
 
   def _on_command_button_clicked(self, command: str) -> None:
@@ -425,4 +432,5 @@ class TelebotPageNavigator:
             time.sleep(0.5)
           self._current_page.on_user_input(self, message.text)
         except Exception as e:
+          self._logger.error(traceback.format_exc())
           self.send_message_with_remove_with_delay(str(e))

@@ -118,8 +118,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   def battery_low_batt_soc_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
       address = 219,
-      min_value = 5,
-      max_value = 60,
+      min_value = 0,
+      max_value = 100,
       description = 'Battery Low Batt SOC',
       suffix = '%',
       avg = DeyeRegisterAverageType.only_master,
@@ -160,8 +160,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   def battery_restart_soc_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
       address = 218,
-      min_value = 5,
-      max_value = 60,
+      min_value = 0,
+      max_value = 100,
       description = 'Battery Restart SOC',
       suffix = '%',
       avg = DeyeRegisterAverageType.only_master,
@@ -190,8 +190,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   def battery_shutdown_soc_register(self) -> DeyeRegister:
     return IntWritableDeyeRegister(
       address = 217,
-      min_value = 5,
-      max_value = 60,
+      min_value = 0,
+      max_value = 100,
       description = 'Battery Shutdown SOC',
       suffix = '%',
       avg = DeyeRegisterAverageType.only_master,

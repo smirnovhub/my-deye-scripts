@@ -126,7 +126,6 @@ class TimeOfUseScheduleButtons:
     navigator.update()
 
   def _create_navigation_handler(self, target_page: Enum, line_index: int = -1):
-    # The handler now accepts both navigator and button_node
     def handler(navigator: TelebotPageNavigator) -> None:
       navigator.navigate(target_page, time_of_use_line_index = line_index)
 
