@@ -4,6 +4,7 @@ from enum import Enum
 from typing import List
 
 from button_node import ButtonNode
+from button_style import ButtonStyle
 from deye_loggers import DeyeLoggers
 from break_button_node import BreakButtonNode
 from battery_settings_data import BatterySettingsData
@@ -41,9 +42,15 @@ class BatterySettingsMainPage(TelebotNavigationPage):
   def update(self) -> None:
     buttons: List[ButtonNode] = []
 
-    for page in self._batt_data.values.keys():
-      buttons.extend(self._get_buttons(page_type = page, title = page.name))
-      buttons.append(BreakButtonNode())
+    value = 0
+    style = ButtonStyle.default
+
+    for page, val in self._batt_data.values.items():
+      if val < value:
+        style = ButtonStyle.danger
+
+      buttons.extend(self._get_buttons(page_type = page, title = page.name, style = style))
+      value = val
 
     if self._need_save():
       buttons.append(self.register_button_handler(ButtonNode("Save"), self._handle_save))
@@ -55,11 +62,17 @@ class BatterySettingsMainPage(TelebotNavigationPage):
   def get_goodbye_message(self) -> str:
     return f"{self._title}\n{self._get_data_as_text(self._batt_data_original_values)}"
 
-  def _get_buttons(self, page_type: BatterySettingsPage, title: str) -> List[ButtonNode]:
-    button = ButtonNode(text = f"{self._batt_data.values[page_type]}%")
+  def _get_buttons(
+    self,
+    page_type: BatterySettingsPage,
+    title: str,
+    style: ButtonStyle,
+  ) -> List[ButtonNode]:
+    button = ButtonNode(text = f"{self._batt_data.values[page_type]}%", style = style)
     return [
-      self.register_button_handler(ButtonNode(title), self._create_navigation_handler(page_type)),
+      self.register_button_handler(ButtonNode(text = title, style = style), self._create_navigation_handler(page_type)),
       self.register_button_handler(button, self._create_navigation_handler(page_type)),
+      BreakButtonNode(),
     ]
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
