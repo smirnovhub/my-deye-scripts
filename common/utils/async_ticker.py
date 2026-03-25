@@ -64,7 +64,7 @@ class AsyncTicker:
     """
     Wait for the given time using an absolute end time to prevent drift.
     """
-    check_time_sec = 0.5
+    check_time_sec = 1.0
     # Calculate the exact timestamp when we should finish
     end_time = time.monotonic() + wait_time
 
