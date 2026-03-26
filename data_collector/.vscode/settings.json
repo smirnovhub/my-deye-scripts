@@ -10,6 +10,7 @@
     "../common",
     "../common/blackout",
     "../common/blackout/enum",
+    "../common/graphs",
     "../common/utils",
     "../deye/src",
     "../deye/src/commandline",
@@ -29,11 +30,7 @@
     "../deye/src/solarman/cache",
     "../deye/src/solarman/server",
     "../deye/src/utils",
-    "src",
-    "src/processors",
-    "src/processors/change",
-    "src/processors/monitoring",
-    "src/registers"
+    "src"
   ],
   "python.analysis.useImportHeuristic": true,
   "python.languageServer": "Pylance",
