@@ -74,9 +74,9 @@ def _read_registers(loggers: DeyeLoggers, logger: logging.Logger) -> DeyeRegiste
     )
 
     try:
-      logger.error("Reading registers...")
+      logger.info("Reading registers...")
       holder.read_registers()
-      logger.error("Registers read successful.")
+      logger.info("Registers read successful.")
       return holder
     except Exception as e:
       last_exception = e
