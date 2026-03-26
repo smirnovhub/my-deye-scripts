@@ -25,6 +25,7 @@ class EnvUtils:
   DEYE_WEB_GRAPHS_BASE_URL = "DEYE_WEB_GRAPHS_BASE_URL"
 
   REMOTE_CACHE_SERVER_URL = "REMOTE_CACHE_SERVER_URL"
+  REMOTE_GRAPH_SERVER_URL = "REMOTE_GRAPH_SERVER_URL"
 
   MIKROTIK_SERVER_URL = "MIKROTIK_SERVER_URL"
   SCHEDULER_SERVER_URL = "SCHEDULER_SERVER_URL"
@@ -71,6 +72,10 @@ class EnvUtils:
   @staticmethod
   def get_remote_cache_server_url() -> str:
     return os.getenv(EnvUtils.REMOTE_CACHE_SERVER_URL, '').strip()
+
+  @staticmethod
+  def get_remote_graph_server_url() -> str:
+    return os.getenv(EnvUtils.REMOTE_GRAPH_SERVER_URL, '').strip()
 
   @staticmethod
   def get_mikrotik_server_url() -> str:
