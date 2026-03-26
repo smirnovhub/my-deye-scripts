@@ -15,7 +15,7 @@ from data_collector_config import DataCollectorConfig
 def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
   loggers = DeyeLoggers()
 
-  holder = _read_registers(loggers)
+  holder = _read_registers(loggers, logger)
 
   now = datetime.now()
 
@@ -59,7 +59,7 @@ def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
 
     f.flush()
 
-def _read_registers(loggers: DeyeLoggers) -> DeyeRegistersHolder:
+def _read_registers(loggers: DeyeLoggers, logger: logging.Logger) -> DeyeRegistersHolder:
   retry_attempts = 5
   retry_delay_sec = 6
   last_exception = None
@@ -74,11 +74,13 @@ def _read_registers(loggers: DeyeLoggers) -> DeyeRegistersHolder:
     )
 
     try:
+      logger.error("Reading registers...")
       holder.read_registers()
+      logger.error("Registers read successful.")
       return holder
-
     except Exception as e:
       last_exception = e
+      logger.error(f"An exception occurred: {e}. Retrying...")
     finally:
       holder.disconnect()
 
@@ -87,6 +89,7 @@ def _read_registers(loggers: DeyeLoggers) -> DeyeRegistersHolder:
 
   # Raise exception if all attempts failed
   if last_exception:
+    logger.error("All retry attempts were unsuccessful.")
     raise last_exception
   else:
     raise Exception("Unknown error")
