@@ -141,7 +141,6 @@ class DeyeGraphManager:
       target_name_norm = graph_name.lower().replace("_", " ").strip()
 
       # Find the actual parameter name in the CSV to keep original casing in title
-      # We normalize all unique parameters in the file to find a match
       available_params: List[str] = df['parameter'].unique().tolist()
       actual_graph_name = None
 
@@ -153,9 +152,14 @@ class DeyeGraphManager:
       if not actual_graph_name:
         raise RuntimeError(f"parameter '{graph_name}' not found in data")
 
-      # Create figure and axis
-      plt.figure(figsize = (10, 6))
+      # Create figure and axis with A4 proportions
+      plt.figure(figsize = (11.69, 8.27))
       ax = plt.gca()
+
+      # Make plot border (spines) thicker
+      spine_width = 1.3
+      for spine in ax.spines.values():
+        spine.set_linewidth(spine_width)
 
       # Get unit of measurement using the correctly cased parameter name
       sample_data = df[df['parameter'] == actual_graph_name]
@@ -163,7 +167,7 @@ class DeyeGraphManager:
       if not sample_data.empty and 'unit' in df.columns:
         unit_val = sample_data['unit'].iloc[0]
         if pd.notna(unit_val):
-          unit_label = f" [{unit_val}]"
+          unit_label = f", {unit_val.replace('deg', '°C')}"
 
       if inverter == "combined":
         # Logic for comparing multiple physical inverters on one plot
@@ -171,8 +175,8 @@ class DeyeGraphManager:
         for unit in physical_units:
           unit_data = df[(df['inverter'] == unit) & (df['parameter'] == actual_graph_name)]
           if not unit_data.empty:
-            plt.plot(unit_data['timestamp'], unit_data['value'], label = unit)
-        plt.title(f"Comparison: {actual_graph_name}{unit_label} ({graph_date})")
+            plt.plot(unit_data['timestamp'], unit_data['value'], label = unit, linewidth = 1.0)
+        plt.title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
       else:
         # Logic for a single inverter
         plot_data = df[(df['inverter'] == inverter) & (df['parameter'] == actual_graph_name)]
@@ -180,13 +184,17 @@ class DeyeGraphManager:
           plt.close()
           raise RuntimeError(f"plot data for {inverter} is empty")
 
-        plt.plot(plot_data['timestamp'], plot_data['value'], label = actual_graph_name, color = 'orange')
-        plt.title(f"{inverter.upper()}: {actual_graph_name}{unit_label} ({graph_date})")
+        plt.plot(plot_data['timestamp'], plot_data['value'], label = inverter, color = 'orange', linewidth = 1.0)
+        plt.title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
 
       # Configure X-axis time format and grid intervals
       time_min: datetime = df['timestamp'].min()
       time_max: datetime = df['timestamp'].max()
       time_delta = (time_max - time_min).total_seconds()
+
+      # English comment: Raise error if there is not enough data to form an interval
+      if pd.isna(time_min) or pd.isna(time_max) or time_min == time_max:
+        raise RuntimeError(f"not enough data points for {graph_date} to build a time interval")
 
       left_limit: float = mdates.date2num(time_min)
       right_limit: float = mdates.date2num(time_max)
@@ -195,40 +203,76 @@ class DeyeGraphManager:
       ax.set_xlim(left_limit, right_limit)
 
       # Define intervals based on time span
-      if time_delta < 3 * 3600:
-        # Major: 0, 15, 30, 45
-        ax.xaxis.set_major_locator(mdates.MinuteLocator(byminute = [0, 15, 30, 45]))
-        # Minor: 5, 10, 20, 25, 35, 40, 50, 55 (excluding major points)
+      if time_delta < 3600:
+        major_locator = mdates.MinuteLocator(byminute = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55])
+        ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval = 1))
+      elif time_delta < 3 * 3600:
+        major_locator = mdates.MinuteLocator(byminute = [0, 15, 30, 45])
         ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [5, 10, 20, 25, 35, 40, 50, 55]))
       elif time_delta < 7 * 3600:
-        # Major: 0, 30
-        ax.xaxis.set_major_locator(mdates.MinuteLocator(byminute = [0, 30]))
-        # Minor: 10, 20, 40, 50 (excluding 0 and 30)
+        major_locator = mdates.MinuteLocator(byminute = [0, 30])
         ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [10, 20, 40, 50]))
       else:
-        # Major: Every 2 hours (at 00 minutes)
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval = 2))
-        # Minor: Only at 30 minutes, or every hour except the major ones
-        # Here we use an interval of 1 hour for minor, but it will overlap.
-        # Better: set minor specifically to 1-hour steps or 30-min steps
-        ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [0, 30]))
-        # Note: Even with overlap, 'major' usually takes visual precedence
-        # if you draw it AFTER or with higher Z-order, but let's be precise:
+        major_locator = mdates.HourLocator(interval = 1)
+        ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [30]))
 
+      # Add start and end times, but filter standard ticks that are too close (15 min threshold)
+      if time_delta < 3600:
+        min_dist = 5 / (24 * 60) # 5 minutes threshold for short spans
+      else:
+        min_dist = 15 / (24 * 60) # 15 minutes threshold for long spans
+
+      std_ticks = major_locator.tick_values(time_min, time_max) # type: ignore
+      final_ticks = [t for t in std_ticks if abs(t - left_limit) > min_dist and abs(t - right_limit) > min_dist]
+      final_ticks.extend([left_limit, right_limit])
+
+      ax.set_xticks(sorted(final_ticks))
       ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 
       # Generation time watermark
       gen_time = datetime.now().strftime("Generated: %Y-%m-%d %H:%M:%S")
-      plt.figtext(0.99, 0.01, gen_time, fontsize = 7, color = 'black', ha = 'right', va = 'bottom')
+      ax.set_xlabel(gen_time, fontsize = 7, color = 'black', loc = 'right', labelpad = 15)
 
       # Basic styling
-      plt.grid(True, which = 'major', linestyle = '--', alpha = 0.7)
-      plt.grid(True, which = 'minor', linestyle = ':', alpha = 0.4)
+      plt.grid(True, which = 'major', linestyle = '--', alpha = 0.84)
+      plt.grid(True, which = 'minor', linestyle = ':', alpha = 0.6)
       plt.legend(loc = 'upper left', fontsize = 10, framealpha = 0.8)
-      plt.xticks(rotation = 0)
+
+      plt.xticks(rotation = 90, fontsize = 9)
+      plt.yticks(rotation = 0, fontsize = 9)
+
+      # --- Y-axis limits logic ---
+      # Get all y-values to find absolute min and max for the current plot
+      all_y_values = []
+      for line in ax.get_lines():
+        all_y_values.extend(line.get_ydata()) # type: ignore
+
+      if all_y_values:
+        y_min_val = min(all_y_values)
+        y_max_val = max(all_y_values)
+
+        # Get default ticks that Matplotlib calculated
+        std_y_ticks = ax.get_yticks()
+
+        # Set threshold for Y-axis (e.g., 5% of range) to avoid overlapping
+        y_range = y_max_val - y_min_val if y_max_val != y_min_val else 1
+        y_threshold = y_range * 0.05
+
+        # Filter out standard ticks too close to our boundaries
+        final_y_ticks = [
+          t for t in std_y_ticks if abs(t - y_min_val) > y_threshold and abs(t - y_max_val) > y_threshold
+        ]
+
+        final_y_ticks.extend([y_min_val, y_max_val])
+        ax.set_yticks(sorted(final_y_ticks))
+
+      # --- Prevention of Y-min and X-min collision ---
+      # If the lowest Y-label is too close to the X-axis,
+      # Matplotlib usually handles it, but we can pad the Y-axis slightly
+      ax.set_ylim(y_min_val - (y_range * 0.02), y_max_val + (y_range * 0.02))
 
       # Layout adjustment to prevent clipping
-      plt.tight_layout(rect = (0, 0.021, 1, 1))
+      plt.tight_layout()
 
       # Save to memory buffer
       buf = io.BytesIO()
