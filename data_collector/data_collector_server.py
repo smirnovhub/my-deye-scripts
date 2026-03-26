@@ -25,10 +25,10 @@ from data_collector_config import DataCollectorConfig
 
 config = DataCollectorConfig()
 
-DATA_DIR = f"data/{config.LOG_NAME}"
+LOG_DIR = f"data/{config.LOG_NAME}"
 
 logger = LogUtils.setup_hourly_overwrite_file_logger(
-  log_dir = DATA_DIR,
+  log_dir = LOG_DIR,
   log_file_template = "data-collector-{0}.log",
 )
 
@@ -37,7 +37,7 @@ async def run_ticker(ticker: AsyncTicker):
   try:
     async for _ in ticker:
       try:
-        main_logic(data_dir = DATA_DIR, logger = logger)
+        main_logic(config = config, logger = logger)
       except Exception:
         callstack = traceback.format_exc()
         logger.error(f"Error during task execution: {callstack}")
@@ -49,7 +49,7 @@ async def run_ticker(ticker: AsyncTicker):
 
 async def main():
   ticker = AsyncTicker(
-    period = timedelta(minutes = 3),
+    period = timedelta(seconds = config.DATA_COLLECTING_INTERVAL),
     align_with_period = True,
   )
 
