@@ -33,6 +33,7 @@ class TelebotMenuItem(Enum):
   deye_sync_time = ('sync_time', 'Sync inverter time')
   deye_time_of_use = ('time_of_use', 'Time of Use')
   deye_battery_settings = ('battery_settings', 'Battery settings')
+  deye_graphs = ('graphs', 'Graphs')
   deye_writable_registers = ('{0}', '{0}')
 
   unknown_command_echo = ('', '')
