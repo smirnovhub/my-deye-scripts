@@ -1,23 +1,20 @@
-from io import BytesIO
-
 import telebot
-import requests
-
-from typing import List
-from datetime import date
-from urllib.parse import urljoin
 
 from env_utils import EnvUtils
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
-from http_session_singleton import HttpSessionSingleton
+from telebot_page_navigator import TelebotPageNavigator
 from telebot_progress_message import TelebotProgressMessage
+from deye_graphs_data_provider import DeyeGraphsDataProvider
+from deye_graphs_main_page import DeyeGraphsMainPage
+from deye_graphs_graph_name_page import DeyeGraphsGraphNamePage
+from deye_graphs_inverter_page import DeyeGraphsInverterPage
 
 class TelebotMenuGraphs(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self._progress = TelebotProgressMessage(bot)
-    self._session = HttpSessionSingleton().session
+    self._provider = DeyeGraphsDataProvider()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -39,7 +36,7 @@ class TelebotMenuGraphs(TelebotMenuItemHandler):
       return
 
     try:
-      is_available = self._is_graph_server_available(server_url)
+      is_available = self._provider.is_graph_server_available()
     except Exception:
       is_available = False
 
@@ -48,60 +45,37 @@ class TelebotMenuGraphs(TelebotMenuItemHandler):
       return
 
     try:
-      graph_dates = self._get_graph_dates(server_url)
+      graph_dates = self._provider.load_graph_dates()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
 
-    self._progress.show(message.chat.id, "Retrieving data")
-
-    try:
-      graph_png = self._get_graph_png(server_url)
-    except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+    if not graph_dates:
+      self.bot.send_message(message.chat.id, "Graph list is empty")
       return
-    finally:
-      self._progress.hide()
 
-    # Use BytesIO to create a file-like object in memory
-    file_data = BytesIO(graph_png)
-    file_data.name = 'image.png'
+    navigator = TelebotPageNavigator(self.bot)
+    title = "Deye graphs:"
+    main_page = DeyeGraphsMainPage(
+      provider = self._provider,
+      title = title,
+    )
 
-    # Send the file as a document
-    self.bot.send_document(message.chat.id, file_data)
+    navigator.register_pages([
+      main_page,
+      DeyeGraphsInverterPage(
+        provider = self._provider,
+        title = title,
+      ),
+      DeyeGraphsGraphNamePage(
+        provider = self._provider,
+        progress = self._progress,
+        title = title,
+      ),
+    ])
 
-    #self.bot.send_message(message.chat.id, f"dates = {graph_dates}")
-
-  def _is_graph_server_available(self, server_url: str) -> bool:
-    ping_endpoint = urljoin(server_url, "/ping")
-    response = self._session.get(ping_endpoint, timeout = 3)
-    response.raise_for_status()
-    return response.status_code == requests.codes.ok
-
-  def _get_graph_dates(self, server_url: str) -> List[date]:
-    url = urljoin(server_url, '/graphs')
-    response = self._session.get(url)
-
-    if response.status_code != requests.codes.ok:
-      raise RuntimeError(f"Graphs server {server_url} returned error {response.status_code}: {response.text}")
-
-    # Check if the response body is valid JSON
-    data = response.json()
-
-    if not isinstance(data, dict):
-      raise RuntimeError(f"Graphs server {server_url} returned wrong type for skip regulation date")
-
-    if 'dates' not in data:
-      raise RuntimeError("No field 'dates' in graphs server response")
-
-    return [date.fromisoformat(d) for d in data['dates']]
-
-  def _get_graph_png(self, server_url: str) -> bytes:
-    url = urljoin(server_url, '/graphs/png/2026-03-27/combined/battery_power')
-    response = self._session.get(url)
-
-    if response.status_code != requests.codes.ok:
-      raise RuntimeError(f"Graphs server {server_url} returned error {response.status_code}: {response.text}")
-
-    # Check if the response body is valid JSON
-    return response.content
+    navigator.start(
+      page = main_page,
+      text = title,
+      chat_id = message.chat.id,
+    )

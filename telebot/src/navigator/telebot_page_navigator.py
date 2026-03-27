@@ -75,6 +75,10 @@ class TelebotPageNavigator:
     self._pages[page.page_type] = page
 
   @property
+  def bot(self) -> telebot.TeleBot:
+    return self._bot
+
+  @property
   def chat_id(self) -> Optional[int]:
     return self._chat_id
 
