@@ -73,9 +73,11 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         navigator.stop(f"{self._title} chat id is not set")
         return
 
+      navigator.stop(f"{self._title} done")
+
       self._progress.show(
         chat_id = navigator.chat_id,
-        text = "Retrieving data",
+        text = "Creating graph",
       )
 
       try:
@@ -93,7 +95,5 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         navigator.bot.send_document(navigator.chat_id, file_data)
       finally:
         self._progress.hide()
-
-      navigator.stop(f"{self._title} done")
 
     return handler
