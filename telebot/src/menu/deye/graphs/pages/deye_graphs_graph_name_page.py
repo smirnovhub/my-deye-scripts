@@ -53,7 +53,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
       title = graph.description.replace("Inverter ", "")
 
       btn = ButtonNode(title)
-      buttons.append(self.register_button_handler(btn, self._create_graph_handler(graph_name = graph.name, )))
+      buttons.append(self.register_button_handler(btn, self._create_graph_handler(graph = graph)))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
@@ -69,7 +69,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(f"{self._title} cancel")
 
-  def _create_graph_handler(self, graph_name: str):
+  def _create_graph_handler(self, graph: DeyeGraphData):
     def handler(navigator: TelebotPageNavigator) -> None:
       chat_id = navigator.chat_id
       bot = navigator.bot
@@ -79,7 +79,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         navigator.stop(f"{self._title} chat id is not set")
         return
 
-      navigator.stop(f"{self._title} done")
+      navigator.stop(f"{self._title} {graph.description}")
 
       progress.show(
         chat_id = chat_id,
@@ -90,12 +90,12 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         png = self._provider.get_graph_png(
           graph_date = self._provider.selected_date,
           graph_type = self._provider.selected_inverter,
-          graph_name = graph_name,
+          graph_name = graph.name,
         )
 
         # Use BytesIO to create a file-like object in memory
         file_data = BytesIO(png)
-        file_data.name = f"{self._provider.selected_date}_{graph_name}.png"
+        file_data.name = f"{self._provider.selected_date}_{graph.name}.png"
 
         # Send the file as a document
         bot.send_document(chat_id, file_data)
