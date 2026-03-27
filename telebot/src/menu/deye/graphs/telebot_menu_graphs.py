@@ -4,7 +4,6 @@ from env_utils import EnvUtils
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_page_navigator import TelebotPageNavigator
-from telebot_progress_message import TelebotProgressMessage
 from deye_graphs_data_provider import DeyeGraphsDataProvider
 from deye_graphs_main_page import DeyeGraphsMainPage
 from deye_graphs_graph_name_page import DeyeGraphsGraphNamePage
@@ -13,7 +12,6 @@ from deye_graphs_inverter_page import DeyeGraphsInverterPage
 class TelebotMenuGraphs(TelebotMenuItemHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
-    self._progress = TelebotProgressMessage(bot)
     self._provider = DeyeGraphsDataProvider()
 
   @property
@@ -69,7 +67,6 @@ class TelebotMenuGraphs(TelebotMenuItemHandler):
       ),
       DeyeGraphsGraphNamePage(
         provider = self._provider,
-        progress = self._progress,
         title = title,
       ),
     ])

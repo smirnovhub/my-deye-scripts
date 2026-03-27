@@ -15,12 +15,10 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
   def __init__(
     self,
     provider: DeyeGraphsDataProvider,
-    progress: TelebotProgressMessage,
     title: str,
   ):
     super().__init__()
     self._provider = provider
-    self._progress = progress
     self._title = title
 
   @property
@@ -69,14 +67,18 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
 
   def _create_graph_handler(self, graph_name: str):
     def handler(navigator: TelebotPageNavigator) -> None:
-      if not navigator.chat_id:
+      chat_id = navigator.chat_id
+      bot = navigator.bot
+      progress = TelebotProgressMessage(bot)
+
+      if not chat_id:
         navigator.stop(f"{self._title} chat id is not set")
         return
 
       navigator.stop(f"{self._title} done")
 
-      self._progress.show(
-        chat_id = navigator.chat_id,
+      progress.show(
+        chat_id = chat_id,
         text = "Creating graph",
       )
 
@@ -92,8 +94,8 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         file_data.name = f"{graph_name}.png"
 
         # Send the file as a document
-        navigator.bot.send_document(navigator.chat_id, file_data)
+        bot.send_document(chat_id, file_data)
       finally:
-        self._progress.hide()
+        progress.hide()
 
     return handler
