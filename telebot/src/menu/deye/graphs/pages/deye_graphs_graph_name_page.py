@@ -90,15 +90,18 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
       )
 
       try:
+        selected_date = self._provider.selected_date
+        selected_inverter = self._provider.selected_inverter
+
         png = self._provider.get_graph_png(
-          graph_date = self._provider.selected_date,
-          graph_type = self._provider.selected_inverter,
+          graph_date = selected_date,
+          graph_type = selected_inverter,
           graph_name = graph.name,
         )
 
         # Use BytesIO to create a file-like object in memory
         file_data = BytesIO(png)
-        file_data.name = f"{self._provider.selected_date}_{graph.name}.png"
+        file_data.name = f"{selected_date}-{selected_inverter}-{graph.name}.png"
 
         # Send the file as a document
         bot.send_document(chat_id, file_data)
