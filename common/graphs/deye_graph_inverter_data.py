@@ -2,8 +2,9 @@ from typing import List
 from dataclasses import dataclass
 
 from deye_graph_data import DeyeGraphData
+from mashumaro.mixins.json import DataClassJSONMixin
 
 @dataclass
-class DeyeGraphInverterData:
+class DeyeGraphInverterData(DataClassJSONMixin):
   inverter: str
   graphs: List[DeyeGraphData]
