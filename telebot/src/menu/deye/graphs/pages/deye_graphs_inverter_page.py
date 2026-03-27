@@ -40,17 +40,19 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       if (index % 2) == 0:
         buttons.append(BreakButtonNode())
 
-      btn = ButtonNode(inverter.inverter)
       buttons.append(
         self.register_button_handler(
-          btn, self._create_navigation_handler(
+          ButtonNode(inverter.inverter.title()),
+          self._create_navigation_handler(
             target_page = DeyeGraphsPage.graph_name,
             inverter = inverter.inverter,
-          )))
+          ),
+        ))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
     buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
+
     self._buttons = buttons
 
   def get_goodbye_message(self) -> str:

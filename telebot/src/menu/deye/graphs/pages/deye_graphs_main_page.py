@@ -69,16 +69,18 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
       if (index % 2) == 0:
         buttons.append(BreakButtonNode())
 
-      btn = ButtonNode(graph_date.isoformat())
       buttons.append(
         self.register_button_handler(
-          btn, self._create_navigation_handler(
+          ButtonNode(graph_date.isoformat()),
+          self._create_navigation_handler(
             target_page = DeyeGraphsPage.inverter,
             graph_date = graph_date,
-          )))
+          ),
+        ))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
+
     self._buttons = buttons
 
   def get_goodbye_message(self) -> str:

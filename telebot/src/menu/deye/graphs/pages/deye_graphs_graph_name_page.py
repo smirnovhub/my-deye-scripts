@@ -52,12 +52,15 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
 
       title = graph.description.replace("Inverter ", "")
 
-      btn = ButtonNode(title)
-      buttons.append(self.register_button_handler(btn, self._create_graph_handler(graph = graph)))
+      buttons.append(self.register_button_handler(
+        ButtonNode(title),
+        self._create_graph_handler(graph = graph),
+      ))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
     buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
+
     self._buttons = buttons
 
   def get_goodbye_message(self) -> str:
