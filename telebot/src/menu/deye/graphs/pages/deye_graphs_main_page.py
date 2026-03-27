@@ -1,6 +1,6 @@
-from datetime import date
 from enum import Enum
 from typing import List
+from datetime import date, timedelta
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -36,6 +36,34 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
       ButtonNode("Select graph date:"),
       BreakButtonNode(),
     ]
+
+    today_buttons: List[ButtonNode] = []
+    today = date.today()
+    yesterday = today - timedelta(days = 1)
+
+    if today in self._provider.dates:
+      today_buttons.append(
+        self.register_button_handler(
+          ButtonNode("Today"),
+          self._create_navigation_handler(
+            target_page = DeyeGraphsPage.inverter,
+            graph_date = today,
+          ),
+        ))
+
+    if yesterday in self._provider.dates:
+      today_buttons.append(
+        self.register_button_handler(
+          ButtonNode("Yesterday"),
+          self._create_navigation_handler(
+            target_page = DeyeGraphsPage.inverter,
+            graph_date = yesterday,
+          ),
+        ))
+
+    if today_buttons:
+      buttons.extend(today_buttons)
+      buttons.append(BreakButtonNode())
 
     for index, graph_date in enumerate(self._provider.dates):
       if (index % 2) == 0:
