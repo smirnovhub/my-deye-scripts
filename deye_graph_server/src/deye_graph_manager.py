@@ -138,6 +138,8 @@ class DeyeGraphManager:
     fig: Optional[Figure] = None
     buf: Optional[io.BytesIO] = None
 
+    graph_line_width = 1.5
+
     try:
       # Load data and ensure timestamp is parsed
       df = pd.read_csv(file_path, parse_dates = ['timestamp'])
@@ -181,7 +183,13 @@ class DeyeGraphManager:
         for unit in physical_units:
           unit_data = df[(df['inverter'] == unit) & (df['parameter'] == actual_graph_name)]
           if not unit_data.empty:
-            ax.plot(unit_data['timestamp'], unit_data['value'], label = unit, linewidth = 1.0)
+            ax.plot(
+              unit_data['timestamp'],
+              unit_data['value'],
+              label = unit,
+              linewidth = graph_line_width,
+            )
+
         ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
       else:
         # Logic for a single inverter
@@ -189,7 +197,14 @@ class DeyeGraphManager:
         if plot_data.empty:
           raise RuntimeError(f"plot data for {inverter} is empty")
 
-        ax.plot(plot_data['timestamp'], plot_data['value'], label = inverter, color = 'orange', linewidth = 1.0)
+        ax.plot(
+          plot_data['timestamp'],
+          plot_data['value'],
+          label = inverter,
+          color = 'orange',
+          linewidth = graph_line_width,
+        )
+
         ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
 
       # Configure X-axis time format and grid intervals
