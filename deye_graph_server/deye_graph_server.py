@@ -114,7 +114,7 @@ def get_graphs():
 async def get_graphs_by_date(graph_date: str):
   target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
   inverters = graph_manager.get_inverters_by_date(target_date)
-  return {"inverters": asdict(inverters)}
+  return asdict(inverters)
 
 @app.get("/graphs/png/{graph_date}/{inverter}/{graph_name}", tags = ["Graphs Operations"])
 async def get_graphs_png(graph_date: str, inverter: str, graph_name: str):
