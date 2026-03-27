@@ -26,7 +26,7 @@ RUN apt-get update && \
 
 # Install required Python packages
 RUN pip install --no-cache-dir --break-system-packages fastapi uvicorn \
-  uvloop pandas matplotlib
+  uvloop pandas matplotlib mashumaro
 
 # Create user without password, with home directory
 RUN useradd -m -u 5395 -s /usr/sbin/nologin $USER_NAME
