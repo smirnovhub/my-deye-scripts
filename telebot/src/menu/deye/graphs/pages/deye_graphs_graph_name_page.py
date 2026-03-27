@@ -95,7 +95,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
 
         # Use BytesIO to create a file-like object in memory
         file_data = BytesIO(png)
-        file_data.name = f"{graph_name}.png"
+        file_data.name = f"{self._provider.selected_date}_{graph_name}.png"
 
         # Send the file as a document
         bot.send_document(chat_id, file_data)
