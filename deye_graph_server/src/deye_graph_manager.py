@@ -1,18 +1,20 @@
 import os
 import io
+import gc
 import logging
 
-import pandas as pd
 import matplotlib
 # Use Agg backend for non-interactive PNG generation
 # Should be BEFORE import matplotlib.pyplot as plt
 matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib.figure import Figure
 
 import pandas as pd
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from datetime import date, datetime
 
 from deye_graph_data import DeyeGraphData
@@ -133,6 +135,9 @@ class DeyeGraphManager:
     if not os.path.exists(file_path):
       raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
 
+    fig: Optional[Figure] = None
+    buf: Optional[io.BytesIO] = None
+
     try:
       # Load data and ensure timestamp is parsed
       df = pd.read_csv(file_path, parse_dates = ['timestamp'])
@@ -153,8 +158,9 @@ class DeyeGraphManager:
         raise RuntimeError(f"parameter '{graph_name}' not found in data")
 
       # Create figure and axis with A4 proportions
-      plt.figure(figsize = (11.69, 8.27))
-      ax = plt.gca()
+      # Use Figure object directly to avoid global state memory leaks
+      fig = Figure(figsize = (11.69, 8.27))
+      ax = fig.add_subplot(111)
 
       # Make plot border (spines) thicker
       spine_width = 1.3
@@ -175,24 +181,23 @@ class DeyeGraphManager:
         for unit in physical_units:
           unit_data = df[(df['inverter'] == unit) & (df['parameter'] == actual_graph_name)]
           if not unit_data.empty:
-            plt.plot(unit_data['timestamp'], unit_data['value'], label = unit, linewidth = 1.0)
-        plt.title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
+            ax.plot(unit_data['timestamp'], unit_data['value'], label = unit, linewidth = 1.0)
+        ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
       else:
         # Logic for a single inverter
         plot_data = df[(df['inverter'] == inverter) & (df['parameter'] == actual_graph_name)]
         if plot_data.empty:
-          plt.close()
           raise RuntimeError(f"plot data for {inverter} is empty")
 
-        plt.plot(plot_data['timestamp'], plot_data['value'], label = inverter, color = 'orange', linewidth = 1.0)
-        plt.title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
+        ax.plot(plot_data['timestamp'], plot_data['value'], label = inverter, color = 'orange', linewidth = 1.0)
+        ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
 
       # Configure X-axis time format and grid intervals
       time_min: datetime = df['timestamp'].min()
       time_max: datetime = df['timestamp'].max()
       time_delta = (time_max - time_min).total_seconds()
 
-      # English comment: Raise error if there is not enough data to form an interval
+      # Raise error if there is not enough data to form an interval
       if pd.isna(time_min) or pd.isna(time_max) or time_min == time_max:
         raise RuntimeError(f"not enough data points for {graph_date} to build a time interval")
 
@@ -234,12 +239,13 @@ class DeyeGraphManager:
       ax.set_xlabel(gen_time, fontsize = 7, color = 'black', loc = 'right', labelpad = 15)
 
       # Basic styling
-      plt.grid(True, which = 'major', linestyle = '--', alpha = 0.84)
-      plt.grid(True, which = 'minor', linestyle = ':', alpha = 0.6)
-      plt.legend(loc = 'upper left', fontsize = 10, framealpha = 0.8)
+      ax.grid(True, which = 'major', linestyle = '--', alpha = 0.84)
+      ax.grid(True, which = 'minor', linestyle = ':', alpha = 0.6)
+      ax.legend(loc = 'upper left', fontsize = 10, framealpha = 0.8)
 
-      plt.xticks(rotation = 90, fontsize = 9)
-      plt.yticks(rotation = 0, fontsize = 9)
+      # Applying tick parameters via axis object
+      ax.tick_params(axis = 'x', rotation = 90, labelsize = 9)
+      ax.tick_params(axis = 'y', rotation = 0, labelsize = 9)
 
       # --- Y-axis limits logic ---
       # Get all y-values to find absolute min and max for the current plot
@@ -272,17 +278,22 @@ class DeyeGraphManager:
       ax.set_ylim(y_min_val - (y_range * 0.02), y_max_val + (y_range * 0.02))
 
       # Layout adjustment to prevent clipping
-      plt.tight_layout()
+      fig.tight_layout()
 
       # Save to memory buffer
       buf = io.BytesIO()
-      plt.savefig(buf, format = 'png', dpi = 300)
+      fig.savefig(buf, format = 'png', dpi = 300)
       buf.seek(0)
-      plt.close()
 
       return buf.getvalue()
-
     except Exception as e:
-      plt.close()
       self._logger.error(f"Error generating graph for {graph_date}/{inverter}/{graph_name}: {e}")
       raise
+    finally:
+      # Explicitly clean up figure and call garbage collector
+      if fig:
+        fig.clear()
+      if buf:
+        buf.close()
+      plt.close('all')
+      gc.collect()
