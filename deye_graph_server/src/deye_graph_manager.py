@@ -14,7 +14,7 @@ from matplotlib.figure import Figure
 
 import pandas as pd
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 from datetime import date, datetime
 
 from deye_graph_data import DeyeGraphData
@@ -31,6 +31,17 @@ class DeyeGraphManager:
     self._config = config
     self._logger = logger
     self._data_path = "data/deye-collected-data"
+    self._trim_config: Dict[str, float] = {
+      "gen power": 7.0,
+      "pv1 voltage": 50.0,
+      "pv2 voltage": 50.0,
+      "pv1 current": 0.2,
+      "pv2 current": 0.2,
+      "pv1 power": 15.0,
+      "pv2 power": 15.0,
+      "pv total current": 0.2,
+      "pv total power": 30.0,
+    }
 
   def check_data_dir_exist(self) -> None:
     base_dir = Path(self._data_path)
@@ -146,6 +157,14 @@ class DeyeGraphManager:
 
       # Normalize the input graph_name for comparison (lowercase and no underscores)
       target_name_norm = graph_name.lower().replace("_", " ").strip()
+      trim_threshold = self._trim_config.get(target_name_norm)
+
+      if trim_threshold is not None:
+        df = self._trim_by_parameter(
+          df = df,
+          graph_name = target_name_norm,
+          threshold = trim_threshold,
+        )
 
       # Find the actual parameter name in the CSV to keep original casing in title
       available_params: List[str] = df['parameter'].unique().tolist()
@@ -312,3 +331,71 @@ class DeyeGraphManager:
         buf.close()
       plt.close('all')
       gc.collect()
+
+  def _trim_by_parameter(
+    self,
+    df: pd.DataFrame,
+    graph_name: str,
+    threshold: float,
+  ) -> pd.DataFrame:
+    df_working = df.copy()
+    df_working['temp_norm'] = df_working['parameter'].str.lower().str.replace("_", " ").str.strip()
+
+    target_rows = df_working[df_working['temp_norm'] == graph_name]
+
+    if not target_rows.empty:
+      condition = target_rows['value'] >= threshold
+      if condition.any():
+        # Physical limits of data in file
+        file_min_t = df_working['timestamp'].min()
+        file_max_t = df_working['timestamp'].max()
+
+        # Actual activity bounds
+        t_start = target_rows.loc[condition.idxmax(), 'timestamp']
+        t_end = target_rows.loc[condition[::-1].idxmax(), 'timestamp']
+
+        # Define available rounding intervals in minutes
+        trim_intervals = [60, 30, 15, 5]
+
+        # --- LEFT BOUNDARY (Floor to nearest interval) ---
+        for mins in trim_intervals:
+          # Calculate total minutes from the start of the day
+          total_mins = t_start.hour * 60 + t_start.minute
+          # Find the nearest boundary to the left (multiple of mins)
+          rounded_mins = (total_mins // mins) * mins
+          potential_t = t_start.replace(
+            hour = rounded_mins // 60,
+            minute = rounded_mins % 60,
+            second = 0,
+            microsecond = 0,
+          )
+
+          if potential_t >= file_min_t:
+            t_start = potential_t
+            break
+
+        # --- RIGHT BOUNDARY (Ceil to nearest interval) ---
+        for mins in trim_intervals:
+          total_mins = t_end.hour * 60 + t_end.minute
+          # Find the nearest boundary to the right (multiple of mins)
+          rounded_mins = ((total_mins // mins) + 1) * mins
+
+          # Handle midnight transition (if 1440 mins)
+          if rounded_mins >= 1440:
+            potential_t = file_max_t
+          else:
+            potential_t = t_end.replace(
+              hour = rounded_mins // 60,
+              minute = rounded_mins % 60,
+              second = 0,
+              microsecond = 0,
+            )
+
+          if potential_t <= file_max_t:
+            t_end = potential_t
+            break
+
+        # Slice the entire dataframe
+        df_working = df_working[(df_working['timestamp'] >= t_start) & (df_working['timestamp'] <= t_end)]
+
+    return df_working.drop(columns = ['temp_norm'])
