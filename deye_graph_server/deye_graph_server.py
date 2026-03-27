@@ -108,7 +108,7 @@ def ping():
 @app.get("/graphs", tags = ["Graphs Operations"])
 def get_graphs():
   dates = graph_manager.get_available_dates()
-  return {"dates": [d.isoformat() for d in dates]}
+  return {"dates": sorted([d.isoformat() for d in dates], reverse = True)}
 
 @app.get("/graphs/{graph_date}", tags = ["Graphs Operations"])
 async def get_graphs_by_date(graph_date: str):

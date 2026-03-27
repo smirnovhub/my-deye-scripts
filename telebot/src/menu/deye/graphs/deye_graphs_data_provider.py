@@ -83,7 +83,7 @@ class DeyeGraphsDataProvider:
     if 'dates' not in data:
       raise RuntimeError("No field 'dates' in graphs server response")
 
-    self._dates = [date.fromisoformat(d) for d in data['dates']]
+    self._dates = sorted([date.fromisoformat(d) for d in data['dates']], reverse = True)
     return self._dates
 
   def load_graph_inverters(self, graph_date: date) -> List[DeyeGraphInverterData]:
