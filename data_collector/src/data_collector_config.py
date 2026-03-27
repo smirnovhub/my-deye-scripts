@@ -8,7 +8,7 @@ class DataCollectorConfig:
   def __init__(self):
     self.__log_name = LogNameEnvVar()
     self.__data_collecting_interval = EnvVar("DATA_COLLECTING_INTERVAL", "180", "Data collecting interval, sec")
-    self.__data_retention_days = EnvVar("DATA_RETENTION_DAYS", "7", "Data retention time, days")
+    self.__data_retention_days = EnvVar("DATA_RETENTION_DAYS", "10", "Data retention time, days")
 
     self.__all_vars: List[EnvVar] = [
       self.__log_name,
@@ -30,8 +30,8 @@ class DataCollectorConfig:
   @property
   def DATA_RETENTION_DAYS(self) -> int:
     value = self.__data_retention_days.as_int()
-    if not (1 <= value <= 30):
-      raise ValueError(f"{self.__data_collecting_interval.name} should be from 1 to 30 days")
+    if not (1 <= value <= 365):
+      raise ValueError(f"{self.__data_collecting_interval.name} should be from 1 to 365 days")
     return value
 
   def _get_max_var_length(self) -> int:
