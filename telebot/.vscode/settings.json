@@ -41,6 +41,7 @@
     "src/menu/deye/battery_settings/pages",
     "src/menu/deye/forecast",
     "src/menu/deye/graphs",
+    "src/menu/deye/graphs/pages",
     "src/menu/deye/master",
     "src/menu/deye/master/settings",
     "src/menu/deye/registers",
