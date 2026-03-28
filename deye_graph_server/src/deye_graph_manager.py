@@ -32,17 +32,6 @@ class DeyeGraphManager:
     self._config = config
     self._logger = logger
     self._data_path = "data/deye-collected-data"
-    self._trim_config: Dict[str, float] = {
-      "gen power": 7.0,
-      "pv1 voltage": 50.0,
-      "pv2 voltage": 50.0,
-      "pv1 current": 0.2,
-      "pv2 current": 0.2,
-      "pv1 power": 15.0,
-      "pv2 power": 15.0,
-      "pv total current": 0.2,
-      "pv total power": 30.0,
-    }
 
   def check_data_dir_exist(self) -> None:
     base_dir = Path(self._data_path)
@@ -158,13 +147,15 @@ class DeyeGraphManager:
 
       # Normalize the input graph_name for comparison (lowercase and no underscores)
       target_name_norm = graph_name.lower().replace("_", " ").strip()
-      trim_threshold = self._trim_config.get(target_name_norm)
 
-      if trim_threshold is not None:
+      thresholds = self._get_thresholds()
+      threshold = thresholds.get(target_name_norm)
+
+      if threshold is not None:
         df = self._trim_by_parameter(
           df = df,
           graph_name = target_name_norm,
-          threshold = trim_threshold,
+          threshold = threshold,
         )
 
       # Find the actual parameter name in the CSV to keep original casing in title
@@ -339,7 +330,7 @@ class DeyeGraphManager:
     graph_name: str,
     threshold: float,
   ) -> pd.DataFrame:
-    df_working = df.copy()
+    df_working: pd.DataFrame = df.copy()
     df_working['temp_norm'] = df_working['parameter'].str.lower().str.replace("_", " ").str.strip()
 
     target_rows = df_working[df_working['temp_norm'] == graph_name]
@@ -419,3 +410,13 @@ class DeyeGraphManager:
 
     # Grab the bytes from the buffer
     return buffer.getvalue()
+
+  def _get_thresholds(self) -> Dict[str, float]:
+    try:
+      file_path = os.path.join(self._data_path, "thresholds.csv")
+      df = pd.read_csv(file_path)
+      df['parameter'] = df['parameter'].str.lower().str.replace("_", " ").str.strip()
+      return dict(zip(df['parameter'], df['threshold']))
+    except Exception as e:
+      self._logger.error(f"Error loading thresholds.csv: {e}")
+      raise
