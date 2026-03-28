@@ -2,9 +2,11 @@ import os
 import signal
 import time
 import threading
+
+import requests
 import telebot
 
-from typing import List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from env_utils import EnvUtils
 from button_node import ButtonNode
@@ -182,6 +184,33 @@ class TelebotUtils:
       keyboard.row(*row)
 
     return keyboard
+
+  @staticmethod
+  def get_response_message(response: requests.Response) -> str:
+    """
+    Extract 'result' or 'detail' from the JSON response and always return a string.
+    """
+    try:
+      # Check if the response body is valid JSON
+      data: Dict[str, Any] = response.json()
+
+      # If the response is a list or not a dictionary, we can't access keys
+      if not isinstance(data, dict):
+        return str(data)
+
+      # Priority: 'result' -> 'detail' -> empty string
+      # We use str() to ensure the return type is always a string
+      if 'result' in data and data['result'] is not None:
+        return str(data['result'])
+
+      if 'detail' in data and data['detail'] is not None:
+        return str(data['detail'])
+
+      return str(data)
+
+    except (requests.exceptions.JSONDecodeError, ValueError):
+      # Fallback if the body is not valid JSON (e.g., empty or HTML)
+      return "Wrong json response"
 
   @staticmethod
   def make_callback_query_filter(prefix: str):

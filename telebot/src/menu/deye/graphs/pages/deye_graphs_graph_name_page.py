@@ -1,5 +1,4 @@
 from enum import Enum
-from io import BytesIO
 from typing import List
 
 from button_node import ButtonNode
@@ -93,18 +92,16 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         selected_date = self._provider.selected_date
         selected_inverter = self._provider.selected_inverter
 
-        png = self._provider.get_graph_png(
+        png_file = self._provider.get_graph_png(
           graph_date = selected_date,
-          graph_type = selected_inverter,
+          inverter = selected_inverter,
           graph_name = graph.name,
         )
 
-        # Use BytesIO to create a file-like object in memory
-        file_data = BytesIO(png)
-        file_data.name = f"{selected_date}-{selected_inverter}-{graph.name}.png"
-
         # Send the file as a document
-        bot.send_document(chat_id, file_data)
+        bot.send_document(chat_id = chat_id, document = png_file)
+      except Exception as e:
+        bot.send_message(chat_id = chat_id, text = str(e))
       finally:
         progress.hide()
 
