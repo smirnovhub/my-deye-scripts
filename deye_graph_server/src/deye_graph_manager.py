@@ -19,6 +19,7 @@ from typing import Dict, List, Optional
 from datetime import date, datetime
 
 from deye_graph_data import DeyeGraphData
+from deye_file_with_lock import DeyeFileWithLock
 from deye_graph_inverters import DeyeGraphInverters
 from deye_graph_inverter_data import DeyeGraphInverterData
 from src.deye_graph_server_config import DeyeGraphServerConfig
@@ -72,7 +73,9 @@ class DeyeGraphManager:
 
     try:
       # Load daily data
-      df = pd.read_csv(file_path)
+      with DeyeFileWithLock(file_path, "r") as f:
+        df = pd.read_csv(f)
+
       result: List[DeyeGraphInverterData] = []
 
       # Get list of physical units (master, slave1, slave2, etc.)
@@ -143,7 +146,8 @@ class DeyeGraphManager:
 
     try:
       # Load data and ensure timestamp is parsed
-      df = pd.read_csv(file_path, parse_dates = ['timestamp'])
+      with DeyeFileWithLock(file_path, "r") as f:
+        df = pd.read_csv(f, parse_dates = ['timestamp'])
 
       # Normalize the input graph_name for comparison (lowercase and no underscores)
       target_name_norm = graph_name.lower().replace("_", " ").strip()
@@ -414,7 +418,8 @@ class DeyeGraphManager:
   def _get_thresholds(self) -> Dict[str, float]:
     try:
       file_path = os.path.join(self._data_path, "thresholds.csv")
-      df = pd.read_csv(file_path)
+      with DeyeFileWithLock(file_path, "r") as f:
+        df = pd.read_csv(f)
       df['parameter'] = df['parameter'].str.lower().str.replace("_", " ").str.strip()
       return dict(zip(df['parameter'], df['threshold']))
     except Exception as e:
