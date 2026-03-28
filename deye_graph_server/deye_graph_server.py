@@ -154,7 +154,7 @@ async def get_graphs_csv(graph_date: str):
     content = zip_bytes,
     media_type = "application/zip",
     headers = {
-      "Content-Disposition": f"attachment; filename={graph_date}.zip",
+      "Content-Disposition": f'attachment; filename="{graph_date}.zip"',
     },
   )
 
