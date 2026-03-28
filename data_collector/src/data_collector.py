@@ -81,7 +81,7 @@ def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
 
   # Write thresholds
   with open(thresholds_file_path, "w", encoding = "utf-8") as f:
-    f.write("parameter,threshold")
+    f.write("parameter,threshold\n")
     f.write(thresholds_str)
     f.flush()
 
