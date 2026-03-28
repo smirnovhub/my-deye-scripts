@@ -2,6 +2,7 @@ import os
 import time
 import logging
 
+from typing import Dict
 from pathlib import Path
 from datetime import datetime
 
@@ -11,7 +12,21 @@ from data_collector_registers import DataCollectorRegisters
 from deye_register_average_type import DeyeRegisterAverageType
 from data_collector_config import DataCollectorConfig
 
-# Main logic
+DATA_PATH = "data/deye-collected-data"
+
+def _get_thresholds(holder: DeyeRegistersHolder) -> Dict[str, float]:
+  return {
+    holder.master_registers.gen_power_register.description: 7.0,
+    holder.master_registers.pv1_voltage_register.description: 50.0,
+    holder.master_registers.pv2_voltage_register.description: 50.0,
+    holder.master_registers.pv1_current_register.description: 0.2,
+    holder.master_registers.pv2_current_register.description: 0.2,
+    holder.master_registers.pv1_power_register.description: 15.0,
+    holder.master_registers.pv2_power_register.description: 15.0,
+    holder.master_registers.pv_total_current_register.description: 0.2,
+    holder.master_registers.pv_total_power_register.description: 30.0,
+  }
+
 def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
   loggers = DeyeLoggers()
 
@@ -22,7 +37,7 @@ def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
   current_date = now.strftime("%Y-%m-%d")
   timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
 
-  data_file_path = f"data/deye-collected-data/{current_date}.csv"
+  data_file_path = os.path.join(DATA_PATH, f"{current_date}.csv")
 
   data_dir = Path(data_file_path)
   data_dir.parent.mkdir(parents = True, exist_ok = True)
@@ -57,6 +72,17 @@ def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
 
         f.write(f"{timestamp},{inverter},{register.description},{register.pretty_value},{register.suffix}\n")
 
+    f.flush()
+
+  thresholds = _get_thresholds(holder)
+  thresholds_str = "\n".join([f"{key},{value}" for key, value in thresholds.items()])
+
+  thresholds_file_path = os.path.join(DATA_PATH, "thresholds.csv")
+
+  # Write thresholds
+  with open(thresholds_file_path, "w", encoding = "utf-8") as f:
+    f.write("parameter,threshold")
+    f.write(thresholds_str)
     f.flush()
 
 def _read_registers(loggers: DeyeLoggers, logger: logging.Logger) -> DeyeRegistersHolder:
