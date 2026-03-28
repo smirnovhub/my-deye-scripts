@@ -10,6 +10,7 @@
     "../common",
     "../common/blackout",
     "../common/blackout/enum",
+    "../common/exceptions",
     "../common/graphs",
     "../common/locker",
     "../common/utils",
