@@ -24,7 +24,6 @@ class TelebotLocalUpdateChecker:
   File-based locking is used to safely read/write state files.
   """
   def __init__(self):
-    self.locker = DeyeFileWithLock()
     self.git_helper = GitHelper()
     self.logger = logging.getLogger()
 
@@ -147,15 +146,13 @@ class TelebotLocalUpdateChecker:
     Raises:
         Exception: If the file cannot be opened or read.
     """
-    try:
-      sfile = self.locker.open_file(self.ask_file_name, 'r')
-      str_val = sfile.readline().strip()
-      return float(str_val) if str_val else 0
-    except Exception:
-      self.logger.info('Error while loading last local update ask time')
-      raise
-    finally:
-      self.locker.close_file()
+    with DeyeFileWithLock(self.ask_file_name, "r") as f:
+      try:
+        str_val = f.readline().strip()
+        return float(str_val) if str_val else 0
+      except Exception:
+        self.logger.info('Error while loading last local update ask time')
+        raise
 
   def _save_last_local_update_ask_time(self, time: float):
     """
@@ -167,14 +164,12 @@ class TelebotLocalUpdateChecker:
     Raises:
         Exception: If the file cannot be opened or written.
     """
-    try:
-      sfile = self.locker.open_file(self.ask_file_name, 'w')
-      sfile.write(str(int(time)))
-    except Exception:
-      self.logger.info('Error while saving last local update ask time')
-      raise
-    finally:
-      self.locker.close_file()
+    with DeyeFileWithLock(self.ask_file_name, "w") as f:
+      try:
+        f.write(str(int(time)))
+      except Exception:
+        self.logger.info('Error while saving last local update ask time')
+        raise
 
   def _load_last_commit_hash(self) -> str:
     """
@@ -186,14 +181,12 @@ class TelebotLocalUpdateChecker:
     Raises:
         Exception: If the file cannot be opened or read.
     """
-    try:
-      sfile = self.locker.open_file(self.hash_file_name, 'r')
-      return str(sfile.readline().strip())
-    except Exception:
-      self.logger.info('Error while loading last commit hash')
-      raise
-    finally:
-      self.locker.close_file()
+    with DeyeFileWithLock(self.hash_file_name, "r") as f:
+      try:
+        return str(f.readline().strip())
+      except Exception:
+        self.logger.info('Error while loading last commit hash')
+        raise
 
   def _save_last_commit_hash(self, hash: str):
     """
@@ -205,11 +198,9 @@ class TelebotLocalUpdateChecker:
     Raises:
         Exception: If the file cannot be opened or written.
     """
-    try:
-      sfile = self.locker.open_file(self.hash_file_name, 'w')
-      sfile.write(hash)
-    except Exception:
-      self.logger.info('Error while saving last commit hash')
-      raise
-    finally:
-      self.locker.close_file()
+    with DeyeFileWithLock(self.hash_file_name, "w") as f:
+      try:
+        f.write(hash)
+      except Exception:
+        self.logger.info('Error while saving last commit hash')
+        raise
