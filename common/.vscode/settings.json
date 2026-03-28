@@ -11,6 +11,7 @@
     "blackout/enum",
     "common",
     "graphs",
+    "locker",
     "utils"
   ],
   "python.analysis.useImportHeuristic": true,
