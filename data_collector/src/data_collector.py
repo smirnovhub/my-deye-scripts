@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
+from deye_file_with_lock import DeyeFileWithLock
 from deye_registers_holder import DeyeRegistersHolder
 from data_collector_registers import DataCollectorRegisters
 from deye_register_average_type import DeyeRegisterAverageType
@@ -53,7 +54,7 @@ def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
       logger = logger,
     )
 
-  with open(data_file_path, "a", encoding = "utf-8") as f:
+  with DeyeFileWithLock(data_file_path, "a", encoding = "utf-8") as f:
     if write_header:
       f.write(header)
 
@@ -80,7 +81,7 @@ def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
   thresholds_file_path = os.path.join(DATA_PATH, "thresholds.csv")
 
   # Write thresholds
-  with open(thresholds_file_path, "w", encoding = "utf-8") as f:
+  with DeyeFileWithLock(thresholds_file_path, "w", encoding = "utf-8") as f:
     f.write("parameter,threshold\n")
     f.write(thresholds_str)
     f.flush()

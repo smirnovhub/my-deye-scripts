@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 
 from typing import IO, Any, Optional
 
@@ -14,23 +15,41 @@ class DeyeFileWithLock:
   on Unix-like systems using `fcntl`. It supports both shared (read) and
   exclusive (write) locks, with optional retry logic and timeout handling.
 
-  Parameters:
-      verbose (bool, optional): If True, prints lock acquisition/release
-                                messages to the console. Defaults to False.
-
   Features:
       - Acquire exclusive or shared locks with automatic retries.
       - Open files in read, write, or append modes while holding appropriate locks.
       - Release locks automatically when closing the file.
       - Raise `DeyeFileLockingException` if a lock cannot be acquired within the timeout.
   """
-  def __init__(self, verbose: bool = False):
-    self.sfile: Optional[IO[Any]] = None
-    self.path: Optional[str] = None
-    self.lock_name: Optional[str] = None
-    self.verbose: bool = verbose
+  def __init__(
+    self,
+    path: str,
+    mode: str,
+    encoding: str = "utf-8",
+    timeout: int = 15,
+  ):
+    self._sfile: Optional[IO[Any]] = None
+    self._path: str = path
+    self._mode: str = mode
+    self._encoding = encoding
+    self._timeout: int = timeout
+    self._lock_name: Optional[str] = None
+    self._logger = logging.getLogger()
 
-  def _acquire_lock_with_retry(self, file_obj: Optional[IO[Any]], lock_type: int, timeout: int = 15) -> None:
+  def __enter__(self) -> IO[Any]:
+    # Initialize file opening and locking when entering the context
+    return self.open_file(self._path, self._mode, self._timeout)
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    # Ensure the file is closed and lock is released when exiting the context
+    self.close_file()
+
+  def _acquire_lock_with_retry(
+    self,
+    file_obj: Optional[IO[Any]],
+    lock_type: int,
+    timeout: int = 15,
+  ) -> None:
     """
     Acquire a file lock with retries up to the specified timeout.
 
@@ -47,32 +66,38 @@ class DeyeFileWithLock:
 
     start_time = time.time()
     warning_printed = False
-    self.lock_name = "exclusive" if lock_type == DeyeFileLock.LOCK_EX else "shared"
+    self._lock_name = "exclusive" if lock_type == DeyeFileLock.LOCK_EX else "shared"
 
     while True:
       try:
         DeyeFileLock.flock(file_obj, lock_type | DeyeFileLock.LOCK_NB)
-        if self.verbose:
-          elapsed = round(time.time() - start_time, 1)
-          if warning_printed:
-            print(f"Acquired {self.lock_name} lock on {self.path} after {elapsed} sec")
-          else:
-            print(f"Acquired {self.lock_name} lock on {self.path}")
+
+        elapsed = round(time.time() - start_time, 1)
+        if warning_printed:
+          self._logger.info(f"Acquired {self._lock_name} lock on {self._path} after {elapsed} sec")
+        else:
+          self._logger.info(f"Acquired {self._lock_name} lock on {self._path}")
+
         return
       except BlockingIOError:
-        if self.verbose and not warning_printed:
-          print(f"{self.lock_name} lock is busy, waiting up to {timeout} seconds...")
+        if not warning_printed:
+          self._logger.info(f"{self._lock_name} lock is busy, waiting up to {timeout} seconds...")
           warning_printed = True
+
         if time.time() - start_time >= timeout:
-          if self.verbose:
-            print(f"{self.lock_name}: timeout while waiting for lock on {self.path}")
-          if self.sfile:
-            self.sfile.close()
-            self.sfile = None
-          raise DeyeLockTimeoutException(f"{self.lock_name}: Timeout while waiting for lock on {self.path}")
+          self._logger.error(f"{self._lock_name}: timeout while waiting for lock on {self._path}")
+          if self._sfile:
+            self._sfile.close()
+            self._sfile = None
+          raise DeyeLockTimeoutException(f"{self._lock_name}: Timeout while waiting for lock on {self._path}")
         time.sleep(0.25)
 
-  def open_file(self, path: str, mode: str, timeout: int = 15) -> IO[Any]:
+  def open_file(
+    self,
+    path: str,
+    mode: str,
+    timeout: int = 15,
+  ) -> IO[Any]:
     """
     Open a file with proper locking applied based on the access mode.
 
@@ -89,35 +114,32 @@ class DeyeFileWithLock:
     Raises:
         DeyeFileLockingException: If the lock cannot be acquired within the timeout.
     """
-    self.path = path
+    self._path = path
 
     if "w" in mode or "a" in mode:
       # Write/append mode: open file for read/write (a+) and lock exclusively
-      self.sfile = open(path, "a+", encoding = "utf-8")
-      self._acquire_lock_with_retry(self.sfile, DeyeFileLock.LOCK_EX, timeout)
+      self._sfile = open(path, "a+", encoding = self._encoding)
+      self._acquire_lock_with_retry(self._sfile, DeyeFileLock.LOCK_EX, timeout)
 
       # Position file pointer according to mode
       if "w" in mode:
-        self.sfile.seek(0)
-        self.sfile.truncate(0) # Truncate file after acquiring lock
+        self._sfile.seek(0)
+        self._sfile.truncate(0) # Truncate file after acquiring lock
       elif "a" in mode:
-        self.sfile.seek(0, os.SEEK_END) # Move pointer to end for append
+        self._sfile.seek(0, os.SEEK_END) # Move pointer to end for append
     else:
       # Read or read/write without explicit write intent: shared lock
-      self.sfile = open(path, mode, encoding = "utf-8")
-      self._acquire_lock_with_retry(self.sfile, DeyeFileLock.LOCK_SH, timeout)
+      self._sfile = open(path, mode, encoding = self._encoding)
+      self._acquire_lock_with_retry(self._sfile, DeyeFileLock.LOCK_SH, timeout)
 
-    return self.sfile
+    return self._sfile
 
   def close_file(self) -> None:
     """
     Release the lock and close the file if it is open.
-
-    Prints verbose messages if enabled.
     """
-    if self.sfile:
-      DeyeFileLock.flock(self.sfile, DeyeFileLock.LOCK_UN)
-      self.sfile.close()
-      self.sfile = None
-      if self.verbose:
-        print(f"Released {self.lock_name} lock on {self.path}")
+    if self._sfile:
+      DeyeFileLock.flock(self._sfile, DeyeFileLock.LOCK_UN)
+      self._sfile.close()
+      self._sfile = None
+      self._logger.info(f"Released {self._lock_name} lock on {self._path}")

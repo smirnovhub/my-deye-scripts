@@ -25,7 +25,6 @@ class KeyValueStore:
   def __init__(self, filename: str, default = None):
     self._default = default
     self._filename = filename
-    self._locker = DeyeFileWithLock()
 
     DeyeUtils.ensure_file_exists(filename)
 
@@ -41,10 +40,7 @@ class KeyValueStore:
         key (str): The key under which to store the value.
         value (Any): The Python object to store.
     """
-    try:
-      f = self._locker.open_file(self._filename, "a+")
-      if f is None:
-        return
+    with DeyeFileWithLock(self._filename, "a+") as f:
       f.seek(0)
       try:
         data = json.load(f)
@@ -55,8 +51,6 @@ class KeyValueStore:
       f.truncate(0)
       json.dump(data, f, ensure_ascii = False, indent = 2)
       f.flush()
-    finally:
-      self._locker.close_file()
 
   def get(self, key: str):
     """
@@ -72,14 +66,9 @@ class KeyValueStore:
         Any: The value associated with the key, or the default value
               if the key is missing.
     """
-    try:
-      f = self._locker.open_file(self._filename, "r")
-      if f is None:
-        return None
+    with DeyeFileWithLock(self._filename, "r") as f:
       try:
         data = json.load(f)
       except json.JSONDecodeError:
         data = {}
       return data.get(key, self._default)
-    finally:
-      self._locker.close_file()
