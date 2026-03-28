@@ -17,12 +17,12 @@ DATA_PATH = "data/deye-collected-data"
 def _get_thresholds(holder: DeyeRegistersHolder) -> Dict[str, float]:
   return {
     holder.master_registers.gen_power_register.description: 7.0,
-    holder.master_registers.pv1_voltage_register.description: 50.0,
-    holder.master_registers.pv2_voltage_register.description: 50.0,
     holder.master_registers.pv1_current_register.description: 0.2,
-    holder.master_registers.pv2_current_register.description: 0.2,
     holder.master_registers.pv1_power_register.description: 15.0,
+    holder.master_registers.pv1_voltage_register.description: 50.0,
+    holder.master_registers.pv2_current_register.description: 0.2,
     holder.master_registers.pv2_power_register.description: 15.0,
+    holder.master_registers.pv2_voltage_register.description: 50.0,
     holder.master_registers.pv_total_current_register.description: 0.2,
     holder.master_registers.pv_total_power_register.description: 30.0,
   }
