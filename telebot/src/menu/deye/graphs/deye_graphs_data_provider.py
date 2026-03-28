@@ -1,8 +1,7 @@
-import re
-
 from typing import List, Optional
 from datetime import date
-from urllib.parse import urljoin
+from email.message import Message
+from urllib.parse import urljoin, unquote
 from http import HTTPStatus
 from io import BytesIO
 
@@ -130,10 +129,25 @@ class DeyeGraphsDataProvider:
     content_disposition = response.headers.get("Content-Disposition", "")
 
     filename = "file.raw"
-    name_match = re.findall('filename=(.+)', content_disposition)
-    if name_match:
-      # Remove quotes if they exist around the filename
-      filename = name_match[0].strip('"')
+
+    if content_disposition:
+      msg = Message()
+      msg["Content-Disposition"] = content_disposition
+
+      # RFC 6266: filename* has a high priprity
+      filename_ext = msg.get_param("filename*", header = "Content-Disposition")
+
+      if filename_ext:
+        if isinstance(filename_ext, tuple):
+          charset, _, value = filename_ext
+          filename = unquote(value, encoding = charset or "utf-8", errors = "replace")
+        else:
+          filename = unquote(filename_ext)
+      else:
+        filename_simple = msg.get_param("filename", header = "Content-Disposition")
+        if filename_simple:
+          if isinstance(filename_simple, str):
+            filename = filename_simple
 
     file = BytesIO(response.content)
     file.name = filename
