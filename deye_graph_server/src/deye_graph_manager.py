@@ -2,6 +2,7 @@ import os
 import io
 import gc
 import logging
+import zipfile
 
 import matplotlib
 # Use Agg backend for non-interactive PNG generation
@@ -399,3 +400,22 @@ class DeyeGraphManager:
         df_working = df_working[(df_working['timestamp'] >= t_start) & (df_working['timestamp'] <= t_end)]
 
     return df_working.drop(columns = ['temp_norm'])
+
+  def get_zipped_csv(self, graph_date: date) -> bytes:
+    # Construct file path from date
+    file_name = f"{graph_date.isoformat()}.csv"
+    file_path = os.path.join(self._data_path, file_name)
+
+    if not os.path.exists(file_path):
+      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
+
+    # Create an in-memory byte stream
+    buffer = io.BytesIO()
+
+    # Create the ZIP archive within the buffer
+    with zipfile.ZipFile(buffer, "w", compression = zipfile.ZIP_DEFLATED) as zf:
+      # arcname prevents including the full directory structure in the zip
+      zf.write(file_path, arcname = file_name)
+
+    # Grab the bytes from the buffer
+    return buffer.getvalue()

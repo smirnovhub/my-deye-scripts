@@ -1,6 +1,6 @@
-import asyncio
 import os
 import sys
+import asyncio
 import logging
 import uvicorn
 
@@ -70,7 +70,10 @@ app = FastAPI(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
-gzip.DEFAULT_EXCLUDED_CONTENT_TYPES = ("image/png", )
+gzip.DEFAULT_EXCLUDED_CONTENT_TYPES = (
+  "image/png",
+  "application/zip",
+)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -133,6 +136,26 @@ async def get_graphs_png(graph_date: str, inverter: str, graph_name: str):
   return Response(
     content = image_bytes,
     media_type = "image/png",
+  )
+
+@app.get("/graphs/csv/{graph_date}", tags = ["Graphs Operations"])
+async def get_graphs_csv(graph_date: str):
+  target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
+
+  loop = asyncio.get_running_loop()
+
+  zip_bytes = await loop.run_in_executor(
+    None,
+    graph_manager.get_zipped_csv,
+    target_date,
+  )
+
+  return Response(
+    content = zip_bytes,
+    media_type = "application/zip",
+    headers = {
+      "Content-Disposition": f"attachment; filename={graph_date}.zip",
+    },
   )
 
 if __name__ == "__main__":
