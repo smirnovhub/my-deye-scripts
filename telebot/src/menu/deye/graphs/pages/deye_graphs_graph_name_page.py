@@ -98,6 +98,8 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
           graph_name = graph.name,
         )
 
+        progress.hide()
+
         # Send the file as a document
         bot.send_document(chat_id = chat_id, document = png_file)
       except Exception as e:
