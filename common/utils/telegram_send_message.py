@@ -1,8 +1,8 @@
 import logging
-import requests
 
 from http import HTTPStatus
 from env_utils import EnvUtils
+from http_session_singleton import HttpSessionSingleton
 
 class Telegram:
   @staticmethod
@@ -47,7 +47,8 @@ class Telegram:
     url = Telegram.get_api_url(token)
 
     try:
-      response = requests.post(url, data = payload, timeout = 5)
+      session = HttpSessionSingleton().session
+      response = session.post(url, data = payload, timeout = 5)
       if response.status_code != HTTPStatus.OK:
         logger.info(f"Failed to send {message_type} telegram message: {response.text}")
     except Exception as e:
