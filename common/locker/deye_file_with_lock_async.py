@@ -71,9 +71,9 @@ class DeyeFileWithLockAsync:
       self._lock_name = "exclusive"
       self._sfile = open(path, "a+", encoding = self._encoding)
 
-      await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_EX, timeout)
+      wait_time = await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_EX, timeout)
 
-      self._logger.info(f"Acquired {self._lock_name} lock on {self._path}")
+      self._logger.info(f"Acquired {self._lock_name} lock on {self._path} in {wait_time:.3f}s")
 
       # Position file pointer according to mode
       if "w" in mode:

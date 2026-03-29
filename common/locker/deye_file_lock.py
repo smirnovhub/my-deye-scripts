@@ -18,7 +18,7 @@ class DeyeFileLock:
     flags: int,
     retry_interval: float = 0.1,
     timeout: float = 10.0,
-  ):
+  ) -> float:
     """
     Asynchronous version of flock using non-blocking mode and asyncio.sleep.
     
@@ -27,11 +27,14 @@ class DeyeFileLock:
         flags: Combination of LOCK_EX, LOCK_SH, LOCK_NB, LOCK_UN.
         retry_interval: Time to wait between attempts in seconds.
         timeout: Maximum time to wait for the lock before raising TimeoutError.
+      
+    Returns:
+        The time spent waiting for the lock (in seconds).
     """
     # If it's an unlock operation, do it immediately (it's always non-blocking)
     if flags & DeyeFileLock.LOCK_UN:
       DeyeFileLock.flock(file, flags)
-      return
+      return 0
 
     # Force Non-Blocking flag for the retry loop logic
     nb_flags = flags | DeyeFileLock.LOCK_NB
@@ -43,7 +46,8 @@ class DeyeFileLock:
       try:
         # Try to acquire the lock in non-blocking mode
         DeyeFileLock.flock(file, nb_flags)
-        return # Lock acquired successfully
+        # Lock acquired successfully
+        return loop.time() - start_time
       except (OSError, IOError, PermissionError):
         # If the user explicitly asked for non-blocking WITHOUT retries
         if flags & DeyeFileLock.LOCK_NB:
