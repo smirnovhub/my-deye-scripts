@@ -31,7 +31,7 @@ RUN apt-get update && \
   echo $TIMEZONE > /etc/timezone
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages six requests
+RUN pip install --no-cache-dir --break-system-packages six requests aiohttp
 
 # Copy some useful health scripts like pids guard, etc.
 COPY --chmod=755 health/*.sh /usr/local/bin/
