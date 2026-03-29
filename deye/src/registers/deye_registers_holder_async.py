@@ -111,8 +111,7 @@ class DeyeRegistersHolderAsync:
     try:
       # asyncio.gather aggregates results and raises the first exception encountered
       await asyncio.wait_for(
-        asyncio.gather(*tasks),
-        return_exceptions = True,
+        asyncio.gather(*tasks, return_exceptions = True),
         timeout = 10.0,
       )
     except asyncio.TimeoutError:
