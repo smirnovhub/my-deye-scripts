@@ -17,6 +17,7 @@ from telebot_logging_handler import TelebotLoggingHandler
 from telebot_menu_start import TelebotMenuStart
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_menu_all_info import TelebotMenuAllInfo
+from telebot_menu_graphs import TelebotMenuGraphs
 from telebot_menu_sync_time import TelebotMenuSyncTime
 from telebot_menu_restart import TelebotMenuRestart
 from telebot_local_update_checker import TelebotLocalUpdateChecker
@@ -182,6 +183,7 @@ class MyTelebot:
       TelebotMenuSlaveTotalStat(bot),
       TelebotMenuAllSettings(bot),
       TelebotMenuMasterSettings(bot),
+      TelebotMenuGraphs(bot),
       TelebotMenuTimeOfUse(bot),
       TelebotMenuBatterySettings(bot),
       TelebotMenuBatteryForecast(bot),

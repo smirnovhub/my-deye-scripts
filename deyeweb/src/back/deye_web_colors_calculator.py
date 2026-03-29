@@ -61,11 +61,8 @@ class DeyeWebColorsCalculator:
     return result
 
   def save_colors(self, colors: Dict[str, DeyeWebColor]) -> None:
-    locker = DeyeFileWithLock()
-    try:
-      f = locker.open_file(self.fname, 'w')
-      data_to_save = {k: v.name for k, v in colors.items()}
-
+    data_to_save = {k: v.name for k, v in colors.items()}
+    with DeyeFileWithLock(self.fname, "w") as f:
       json.dump(
         data_to_save,
         f,
@@ -74,26 +71,17 @@ class DeyeWebColorsCalculator:
 
       # Flush to physical storage
       f.flush()
-    except Exception:
-      pass
-    finally:
-      locker.close_file()
 
   def load_colors(self) -> Dict[str, DeyeWebColor]:
-    locker = DeyeFileWithLock()
-    try:
-      f = locker.open_file(self.fname, 'r')
+    with DeyeFileWithLock(self.fname, "r") as f:
       content = f.read()
-      if not content:
-        return {}
 
-      js = json.loads(content)
-      saved_colors = cast(Dict[str, str], js)
-      return self._restore_colors(saved_colors)
-    except Exception:
+    if not content:
       return {}
-    finally:
-      locker.close_file()
+
+    js = json.loads(content)
+    saved_colors = cast(Dict[str, str], js)
+    return self._restore_colors(saved_colors)
 
   def _restore_colors(self, obj: Dict[str, str]) -> Dict[str, DeyeWebColor]:
     # Mapping string names back to Enum members

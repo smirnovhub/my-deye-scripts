@@ -62,17 +62,27 @@ class AsyncTicker:
 
   async def _wait_with_cancellation(self, wait_time: float) -> None:
     """
-    Wait for the given time in small intervals, so that stop_event or cancel can be processed immediately.
+    Wait for the given time using an absolute end time to prevent drift.
     """
-    check_time_sec = 0.5
-    remaining = wait_time
+    check_time_sec = 1.0
+    # Calculate the exact timestamp when we should finish
+    end_time = time.monotonic() + wait_time
 
-    while remaining > 0:
-      interval = min(check_time_sec, remaining)
+    while True:
+      now = time.monotonic()
+      remaining = end_time - now
+
+      if remaining <= 0:
+        break
+
+      # Sleep for the check interval or the actual remaining time
+      timeout = min(check_time_sec, remaining)
+
       try:
-        await asyncio.wait_for(self._stop_event.wait(), timeout = interval)
-        # stop_event was set → exit immediately
+        # Wait for the event with a calculated timeout
+        await asyncio.wait_for(self._stop_event.wait(), timeout = timeout)
+        # Event was set, exit the loop
         break
       except (asyncio.TimeoutError, asyncio.exceptions.TimeoutError):
-        # Timeout expired, continue waiting
-        remaining -= interval
+        # Continue to the next iteration to re-calculate remaining time
+        continue

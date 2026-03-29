@@ -1,8 +1,10 @@
-from deye_exceptions import DeyeNotImplementedException
+from abc import ABC, abstractmethod
 
-class DeyeBaseLocker:
+class DeyeBaseLocker(ABC):
+  @abstractmethod
   def acquire(self, timeout: int = 15) -> None:
-    raise DeyeNotImplementedException('acquire')
+    pass
 
+  @abstractmethod
   def release(self) -> None:
-    raise DeyeNotImplementedException('release')
+    pass

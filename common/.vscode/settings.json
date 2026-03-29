@@ -10,6 +10,9 @@
     "blackout",
     "blackout/enum",
     "common",
+    "exceptions",
+    "graphs",
+    "locker",
     "utils"
   ],
   "python.analysis.useImportHeuristic": true,

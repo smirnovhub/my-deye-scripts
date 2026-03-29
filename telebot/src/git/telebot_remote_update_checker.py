@@ -20,7 +20,6 @@ class TelebotRemoteUpdateChecker:
   File-based locking is used to safely read/write the timestamp of the last update check.
   """
   def __init__(self):
-    self.locker = DeyeFileWithLock()
     self.git_helper = GitHelper()
     self.logger = logging.getLogger()
     data_dir = TelebotUtils.get_data_dir()
@@ -93,15 +92,13 @@ class TelebotRemoteUpdateChecker:
     Raises:
         Exception: If the file cannot be opened or read.
     """
-    try:
-      sfile = self.locker.open_file(self.ask_file_name, 'r')
-      str_val = sfile.readline().strip()
-      return float(str_val) if str_val else 0
-    except Exception:
-      self.logger.info('Error while loading last remote update ask time')
-      raise
-    finally:
-      self.locker.close_file()
+    with DeyeFileWithLock(self.ask_file_name, "r") as f:
+      try:
+        str_val = f.readline().strip()
+        return float(str_val) if str_val else 0
+      except Exception:
+        self.logger.info('Error while loading last remote update ask time')
+        raise
 
   def _save_last_remote_update_ask_time(self, time: float):
     """
@@ -113,11 +110,9 @@ class TelebotRemoteUpdateChecker:
     Raises:
         Exception: If the file cannot be opened or written.
     """
-    try:
-      sfile = self.locker.open_file(self.ask_file_name, 'w')
-      sfile.write(str(int(time)))
-    except Exception:
-      self.logger.info('Error while saving last remote update ask time')
-      raise
-    finally:
-      self.locker.close_file()
+    with DeyeFileWithLock(self.ask_file_name, "w") as f:
+      try:
+        f.write(str(int(time)))
+      except Exception:
+        self.logger.info('Error while saving last remote update ask time')
+        raise
