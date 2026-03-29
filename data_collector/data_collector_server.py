@@ -22,6 +22,7 @@ from log_utils import LogUtils
 from async_ticker import AsyncTicker
 from data_collector import main_logic
 from data_collector_config import DataCollectorConfig
+from http_session_singleton_async import HttpSessionSingletonAsync
 
 config = DataCollectorConfig()
 
@@ -37,7 +38,7 @@ async def run_ticker(ticker: AsyncTicker):
   try:
     async for _ in ticker:
       try:
-        main_logic(config = config, logger = logger)
+        await main_logic(config = config, logger = logger)
       except Exception:
         callstack = traceback.format_exc()
         logger.error(f"Error during task execution: {callstack}")
@@ -79,6 +80,8 @@ async def main():
     logger.info("Stopping ticker...")
     ticker_task.cancel()
     await asyncio.gather(ticker_task, return_exceptions = True)
+
+    await HttpSessionSingletonAsync.close_session()
 
     logger.info("Data collector server stopped.")
     logger.info('-------------------------------------')
