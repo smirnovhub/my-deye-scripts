@@ -4,7 +4,7 @@ from typing import List
 from button_node import ButtonNode
 from deye_graph_data import DeyeGraphData
 from break_button_node import BreakButtonNode
-from pages.deye_graphs_page import DeyeGraphsPage
+from deye_graphs_page import DeyeGraphsPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 from deye_graphs_data_provider import DeyeGraphsDataProvider
