@@ -68,8 +68,12 @@ class DeyeFileWithLockAsync:
 
     if "w" in mode or "a" in mode:
       # Write/append mode: open file for read/write (a+) and lock exclusively
+      self._lock_name = "exclusive"
       self._sfile = open(path, "a+", encoding = self._encoding)
+
       await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_EX, timeout)
+
+      self._logger.info(f"Acquired {self._lock_name} lock on {self._path}")
 
       # Position file pointer according to mode
       if "w" in mode:
@@ -79,8 +83,12 @@ class DeyeFileWithLockAsync:
         self._sfile.seek(0, os.SEEK_END) # Move pointer to end for append
     else:
       # Read or read/write without explicit write intent: shared lock
+      self._lock_name = "shared"
       self._sfile = open(path, mode, encoding = self._encoding)
+
       await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_SH, timeout)
+
+      self._logger.info(f"Acquired {self._lock_name} lock on {self._path}")
 
     return self._sfile
 
