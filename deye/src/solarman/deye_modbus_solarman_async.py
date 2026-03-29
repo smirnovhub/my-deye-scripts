@@ -25,6 +25,8 @@ class DeyeModbusSolarmanAsync:
         **self._kwargs,
       )
 
+      await self._modbus.connect()
+
     return await self._modbus.read_holding_registers(address, quantity)
 
   async def write_multiple_holding_registers(self, address: int, values: List[int]) -> int:
@@ -35,6 +37,8 @@ class DeyeModbusSolarmanAsync:
         port = self._logger.port,
         **self._kwargs,
       )
+
+      await self._modbus.connect()
 
     return await self._modbus.write_multiple_holding_registers(address, values)
 
