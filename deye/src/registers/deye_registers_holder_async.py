@@ -196,14 +196,14 @@ class DeyeRegistersHolderAsync:
 
     if EnvUtils.is_tests_on():
       retry_timeout = DeyeUtils.get_test_retry_timeout()
-      return self._write_register_with_retry_internal(
+      return await self._write_register_with_retry_internal(
         register,
         value,
         retry_timeout = retry_timeout,
         on_retry = log_retry,
       )
     else:
-      return self._write_register_internal(register, value)
+      return await self._write_register_internal(register, value)
 
   async def _write_register_internal(self, register: DeyeRegister, value) -> Any:
     if self._master_interactor == None:
