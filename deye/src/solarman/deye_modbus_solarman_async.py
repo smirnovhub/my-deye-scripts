@@ -18,27 +18,33 @@ class DeyeModbusSolarmanAsync:
       self._log.info(f"{self._logger.name}: reading data from inverter for address = {address}, quantity = {quantity}")
 
     if self._modbus is None:
-      self._modbus = PySolarmanV5Async(
+      # We need a local variable "modbus" to handle the
+      # case when the connect() method throws an exception
+      modbus = PySolarmanV5Async(
         self._logger.address,
         self._logger.serial,
         port = self._logger.port,
         **self._kwargs,
       )
 
-      await self._modbus.connect()
+      await modbus.connect()
+      self._modbus = modbus
 
     return await self._modbus.read_holding_registers(address, quantity)
 
   async def write_multiple_holding_registers(self, address: int, values: List[int]) -> int:
     if self._modbus is None:
-      self._modbus = PySolarmanV5Async(
+      # We need a local variable "modbus" to handle the
+      # case when the connect() method throws an exception
+      modbus = PySolarmanV5Async(
         self._logger.address,
         self._logger.serial,
         port = self._logger.port,
         **self._kwargs,
       )
 
-      await self._modbus.connect()
+      await modbus.connect()
+      self._modbus = modbus
 
     return await self._modbus.write_multiple_holding_registers(address, values)
 
