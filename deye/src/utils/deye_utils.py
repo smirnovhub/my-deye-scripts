@@ -3,6 +3,7 @@ import re
 import sys
 import queue
 import struct
+import asyncio
 import logging
 import requests
 
@@ -251,7 +252,7 @@ class DeyeUtils:
       return DeyeQueueIsEmptyException(f'{message}: Queue is empty (get() timed out)')
     except NoSocketAvailableError as e:
       return DeyeNoSocketAvailableException(f'{message}: {e.__class__.__name__} ({str(e).strip(".")})')
-    except requests.exceptions.Timeout:
+    except (requests.exceptions.Timeout, asyncio.TimeoutError, TimeoutError):
       return DeyeConnectionErrorException(f'{message}: Connection timed out')
     except requests.exceptions.ConnectionError as e:
       text = DeyeUtils.get_exception_text(e)
