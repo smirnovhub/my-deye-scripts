@@ -204,6 +204,7 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
         # Update the persistent JSON cache
         await self._cache_manager.save_to_cache({reg.address: reg})
 
+      self._registers_to_write.clear()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while writing registers') from e
     finally:
