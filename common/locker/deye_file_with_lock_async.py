@@ -86,9 +86,9 @@ class DeyeFileWithLockAsync:
       self._lock_name = "shared"
       self._sfile = open(path, mode, encoding = self._encoding)
 
-      await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_SH, timeout)
+      wait_time = await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_SH, timeout)
 
-      self._logger.info(f"Acquired {self._lock_name} lock on {self._path}")
+      self._logger.info(f"Acquired {self._lock_name} lock on {self._path} in {wait_time:.3f}s")
 
     return self._sfile
 
