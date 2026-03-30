@@ -35,7 +35,7 @@ RUN apt-get update && \
   echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages six requests
+RUN pip install --no-cache-dir --break-system-packages six requests aiohttp
 
 # Set working directory
 WORKDIR $APP_DIR
@@ -163,7 +163,7 @@ RUN apt-get update && \
 
 # Install required Python packages
 RUN pip install --no-cache-dir --break-system-packages \
-  six requests fastapi uvicorn uvloop
+  six requests fastapi uvicorn uvloop aiohttp
 
 # Copy some useful health scripts like pids guard, etc.
 COPY --chmod=755 health/*.sh /usr/local/bin/
