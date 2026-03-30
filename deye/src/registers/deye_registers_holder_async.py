@@ -1,5 +1,4 @@
 import os
-import time
 import asyncio
 import logging
 
@@ -85,64 +84,72 @@ class DeyeRegistersHolderAsync:
     registers = next(iter(self.all_registers.values())).all_registers
 
     tasks: List[asyncio.Task[None]] = []
-    task_to_interactor: Dict[asyncio.Task[None], DeyeModbusInteractorAsync] = {}
 
-    # Enqueue and create tasks for all interactors
-    for interactor in self._interactors:
-      try:
-        for register in registers:
-          register.enqueue(interactor)
-
-        # Create an asyncio task for the interactor's processing logic
-        # Using create_task starts execution immediately in the event loop
-        coro = interactor.process_enqueued_registers()
-        task = asyncio.create_task(coro, name = interactor.name)
-
-        tasks.append(task)
-        task_to_interactor[task] = interactor
-      except Exception as e:
-        raise DeyeUtils.get_reraised_exception(
-          e, f'{type(self).__name__}: error while enqueueing {interactor.name}') from e
-
-    if not tasks:
-      return
-
-    # Wait for all interactor tasks with a global timeout
     try:
-      # asyncio.gather aggregates results and raises the first exception encountered
-      await asyncio.wait_for(
-        asyncio.gather(*tasks, return_exceptions = True),
-        timeout = 10.0,
-      )
-    except asyncio.TimeoutError:
-      # Identify which interactors failed to respond in time
-      unfinished = [t.get_name() for t in tasks if not t.done()]
+      # Enqueue and create tasks for all interactors
+      for interactor in self._interactors:
+        try:
+          for register in registers:
+            register.enqueue(interactor)
 
-      # Cancel pending tasks to avoid background leaks
+          # Create an asyncio task for the interactor's processing logic
+          # Using create_task starts execution immediately in the event loop
+          coro = interactor.process_enqueued_registers()
+          task = asyncio.create_task(coro, name = interactor.name)
+
+          tasks.append(task)
+        except Exception as e:
+          raise DeyeUtils.get_reraised_exception(
+            e, f'{type(self).__name__}: error while enqueueing {interactor.name}') from e
+
+      if not tasks:
+        return
+
+      # Wait for all interactor tasks with a global timeout
+      try:
+        # asyncio.gather aggregates results and raises the first exception encountered
+        await asyncio.wait_for(
+          asyncio.gather(*tasks, return_exceptions = True),
+          timeout = 10.0,
+        )
+      except asyncio.TimeoutError:
+        # Identify which interactors failed to respond in time
+        unfinished = [t.get_name() for t in tasks if not t.done()]
+
+        # Cancel pending tasks to avoid background leaks
+        for t in tasks:
+          if not t.done():
+            t.cancel()
+
+        raise TimeoutError(f"Some interactors timed out: {', '.join(unfinished)}")
+      except Exception as e:
+        # Propagation of errors occurred during register processing
+        raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while reading registers') from e
+
+      # Check results after gather is finished
+      for task in tasks:
+        # Important: Check if task is NOT cancelled before calling .exception()
+        if task.cancelled():
+          continue
+
+        exc = task.exception()
+
+        # Reraise with context so we know which inverter failed
+        if isinstance(exc, Exception):
+          interactor_name = task.get_name()
+          raise DeyeUtils.get_reraised_exception(
+            exc,
+            f"{type(self).__name__}: interactor '{interactor_name}' failed",
+          ) from exc
+    finally:
+      # Mandatory cleanup to prevent background task leaks
       for t in tasks:
-        if not t.done():
+        if not t.done() and not t.cancelled():
           t.cancel()
 
-      raise TimeoutError(f"Some interactors timed out: {', '.join(unfinished)}")
-    except Exception as e:
-      # Propagation of errors occurred during register processing
-      raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while reading registers') from e
-
-    # Check results after gather is finished
-    for task in tasks:
-      # Important: Check if task is NOT cancelled before calling .exception()
-      if task.cancelled():
-        continue
-
-      exc = task.exception()
-
-      # Reraise with context so we know which inverter failed
-      if isinstance(exc, Exception):
-        interactor_name = task.get_name()
-        raise DeyeUtils.get_reraised_exception(
-          exc,
-          f"{type(self).__name__}: interactor '{interactor_name}' failed",
-        ) from exc
+      if tasks:
+        # Give the loop a chance to finish cancellation of tasks
+        await asyncio.gather(*tasks, return_exceptions = True)
 
     # Process individual interactor registers
     for interactor in self._interactors:
@@ -182,7 +189,7 @@ class DeyeRegistersHolderAsync:
         last_exception = e
         if on_retry:
           on_retry(retry_attempt, total_attempts, e)
-        time.sleep(retry_delay)
+        await asyncio.sleep(retry_delay)
         retry_attempt += 1
         total_retry_time += retry_delay
     else:
@@ -236,7 +243,7 @@ class DeyeRegistersHolderAsync:
         last_exception = e
         if on_retry:
           on_retry(retry_attempt, total_attempts, e)
-        time.sleep(retry_delay)
+        await asyncio.sleep(retry_delay)
         retry_attempt += 1
         total_retry_time += retry_delay
     else:
