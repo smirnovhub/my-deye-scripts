@@ -28,6 +28,7 @@ from log_utils import LogUtils
 from common_utils import CommonUtils
 from backserver_config import BackServerConfig
 from deye_web_dependency_provider import DeyeWebDependencyProvider
+from http_session_singleton_async import HttpSessionSingletonAsync
 
 config = BackServerConfig()
 
@@ -59,6 +60,8 @@ async def lifespan_handler(app: FastAPI):
 
   # This code runs on shutdown
   logger.info("Deye BackServer is shutting down...")
+
+  await HttpSessionSingletonAsync.close_session()
 
   for handler in logging.getLogger().handlers:
     handler.flush()
