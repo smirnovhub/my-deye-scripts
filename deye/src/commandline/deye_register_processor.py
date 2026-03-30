@@ -1,6 +1,6 @@
 import argparse
 
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional, Type, cast
 
 from datetime import datetime
 from deye_logger import DeyeLogger
@@ -11,12 +11,13 @@ from deye_base_enum import DeyeBaseEnum
 from deye_utils import DeyeUtils
 from deye_exceptions import DeyeKnownException
 from deye_modbus_interactor import DeyeModbusInteractor
+from deye_modbus_interactor_sync import DeyeModbusInteractorSync
 from deye_register_average_type import DeyeRegisterAverageType
 
 class DeyeRegisterProcessor:
   def __init__(self):
-    self.interactors: List[DeyeModbusInteractor] = []
-    self.master_interactor: Optional[DeyeModbusInteractor] = None
+    self.interactors: List[DeyeModbusInteractorSync] = []
+    self.master_interactor: Optional[DeyeModbusInteractorSync] = None
     self.registers = DeyeRegisters()
 
   def get_arg_name(self, register: DeyeRegister, action: str) -> str:
@@ -104,10 +105,11 @@ class DeyeRegisterProcessor:
               e, f'Error while reading register {register.name} from {interactor.name}') from e
 
     if len(self.interactors) > 1:
+      base_interactors = cast(List[DeyeModbusInteractor], self.interactors)
       for register in self.get_registers_to_process(args):
         try:
           if register.can_accumulate:
-            register.read(self.interactors)
+            register.read(base_interactors)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             suffix = f' {register.suffix}'.rstrip()
 
@@ -150,7 +152,7 @@ class DeyeRegisterProcessor:
   def enqueue_registers(self, args: argparse.Namespace, loggers: List[DeyeLogger]):
     for logger in loggers:
       try:
-        interactor = DeyeModbusInteractor(
+        interactor = DeyeModbusInteractorSync(
           logger = logger,
           socket_timeout = args.connection_timeout,
           caching_time = args.caching_time,

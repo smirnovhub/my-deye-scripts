@@ -132,9 +132,9 @@ class DeyeRegistersHolder:
         raise DeyeUtils.get_reraised_exception(
           e, f'{type(self).__name__}: error while reading {interactor.name} registers') from e
 
+    base_interactors = cast(List[DeyeModbusInteractor], self._interactors)
     for register in self.accumulated_registers.all_registers:
       try:
-        base_interactors = cast(List[DeyeModbusInteractor], self._interactors)
         register.read(base_interactors)
       except Exception as e:
         raise DeyeUtils.get_reraised_exception(
