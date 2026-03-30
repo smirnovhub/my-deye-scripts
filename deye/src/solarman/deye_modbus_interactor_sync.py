@@ -1,11 +1,8 @@
-import logging
-
-from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+from typing import Dict
+from datetime import datetime
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
-from deye_loggers import DeyeLoggers
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_modbus_solarman import DeyeModbusSolarman
 from deye_register_cache_data import DeyeRegisterCacheData
@@ -14,16 +11,17 @@ from deye_registers_local_cache_manager import DeyeRegistersLocalCacheManager
 from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
 
 class DeyeModbusInteractorSync(DeyeModbusInteractor):
-  def __init__(self, logger: DeyeLogger, **kwargs):
-    self._logger = logger
-    self._loggers = DeyeLoggers()
-    self._log = logging.getLogger()
+  def __init__(
+    self,
+    logger: DeyeLogger,
+    **kwargs,
+  ):
+    super().__init__(
+      logger = logger,
+      **kwargs,
+    )
+
     self._solarman = DeyeModbusSolarman(logger, **kwargs)
-    self._registers: Dict[int, DeyeRegisterCacheData] = dict()
-    self._registers_to_write: List[DeyeRegisterCacheData] = []
-    self._verbose = bool(kwargs.get('verbose', False))
-    self._default_caching_time = max(0, int(kwargs.get('caching_time', 3)))
-    self._max_register_count = 120
 
     # Initialize cache manager
     self._cache_manager: DeyeRegistersBaseCacheManager
@@ -38,33 +36,6 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
         name = self._logger.name,
         serial = self._logger.serial,
       )
-
-  @property
-  def name(self) -> str:
-    return self._logger.name
-
-  @property
-  def is_master(self) -> bool:
-    return self._logger.name == self._loggers.master.name
-
-  def clear_registers_queue(self) -> None:
-    self._registers.clear()
-
-  def enqueue_register(
-    self,
-    address: int,
-    quantity: int,
-    caching_time: Optional[timedelta],
-  ) -> None:
-    cache_time = self._default_caching_time
-    if cache_time > 0 and caching_time:
-      cache_time = int(caching_time.total_seconds())
-
-    self._registers[address] = DeyeRegisterCacheData(
-      address = address,
-      quantity = quantity,
-      caching_time = cache_time,
-    )
 
   def process_enqueued_registers(self) -> None:
     if not self._registers:
@@ -118,34 +89,9 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     if not registers:
       return {}
 
+    groups = self._get_register_groups(registers)
+
     results: Dict[int, DeyeRegisterCacheData] = {}
-    sorted_addrs = sorted(registers.keys())
-
-    groups: List[List[DeyeRegisterCacheData]] = []
-    current_group: List[DeyeRegisterCacheData] = []
-
-    for addr in sorted_addrs:
-      reg = registers[addr]
-      if not current_group:
-        current_group.append(reg)
-        continue
-
-      group_start = current_group[0].address
-      block_end = reg.address + reg.quantity
-
-      if (block_end - group_start) <= self._max_register_count:
-        current_group.append(reg)
-      else:
-        groups.append(current_group)
-        current_group = [reg]
-
-    if current_group:
-      groups.append(current_group)
-
-    if self._verbose:
-      simple_groups = [[reg.address for reg in group] for group in groups]
-      grp = str(simple_groups).replace("], ", "],\n  ").replace("[[", "[\n  [").replace("]]", "]\n]")
-      self._log.info(f'register groups to read from {self.name}:\n{grp}')
 
     try:
       for group in groups:
@@ -169,22 +115,6 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
       self._solarman.disconnect()
 
     return results
-
-  def read_register(self, address: int, quantity: int) -> List[int]:
-    reg = self._registers.get(address)
-    return reg.values[:quantity] if reg else [0] * quantity
-
-  def write_register(self, address: int, values: List[int]) -> int:
-    # Create a new data object for the updated register
-    updated_register = DeyeRegisterCacheData(
-      address = address,
-      quantity = len(values),
-      caching_time = self._default_caching_time,
-      values = values,
-    )
-
-    self._registers_to_write.append(updated_register)
-    return len(values)
 
   def write_registers_to_inverter(self) -> None:
     if not self._registers_to_write:
@@ -212,6 +142,3 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
 
   def reset_cache(self) -> None:
     self._cache_manager.reset_cache()
-
-  def disconnect(self) -> None:
-    self.clear_registers_queue()
