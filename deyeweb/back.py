@@ -19,6 +19,7 @@ import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 from env_utils import EnvUtils
 from log_utils import LogUtils
+from http_session_singleton_async import HttpSessionSingletonAsync
 from deye_web_dependency_provider import DeyeWebDependencyProvider
 
 #import logging
@@ -111,6 +112,8 @@ async def main():
 
   # Return json to php
   print(json_str)
+
+  await HttpSessionSingletonAsync.close_session()
 
   for handler in logging.getLogger().handlers:
     handler.flush()
