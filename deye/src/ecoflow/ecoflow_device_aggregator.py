@@ -30,18 +30,18 @@ class EcoflowDeviceAggregator:
     cache_file,
     **kwargs,
   ):
-    self.devices = EcoflowDevices()
-    self.interactor = EcoflowPowerStreamInteractor(
+    self._devices = EcoflowDevices()
+    self._interactor = EcoflowPowerStreamInteractor(
       access_key = access_key,
       secret_key = secret_key,
       **kwargs,
     )
 
-    self.name = kwargs.get('name', 'ecoflow')
-    self.verbose = kwargs.get('verbose', False)
-    self.power_cache = KeyValueStore(cache_file, -1)
-    self.logger = logging.getLogger()
-    self.logger.setLevel(logging.INFO)
+    self._name = kwargs.get('name', 'ecoflow')
+    self._verbose = kwargs.get('verbose', False)
+    self._power_cache = KeyValueStore(cache_file, -1)
+    self._logger = logging.getLogger()
+    self._logger.setLevel(logging.INFO)
 
   @property
   def max_power(self) -> int:
@@ -51,7 +51,7 @@ class EcoflowDeviceAggregator:
     Returns:
       int: Sum of max_power across all devices.
     """
-    return sum(device.max_power for device in self.devices.devices)
+    return sum(device.max_power for device in self._devices.devices)
 
   @property
   def max_real_power(self) -> int:
@@ -61,7 +61,7 @@ class EcoflowDeviceAggregator:
     Returns:
       int: Sum of max_real_power across all devices.
     """
-    return sum(device.max_real_power for device in self.devices.devices)
+    return sum(device.max_real_power for device in self._devices.devices)
 
   def reset_power_cache_for_offline_devices(self, online_devices: List[EcoflowDevice]):
     """
@@ -74,9 +74,9 @@ class EcoflowDeviceAggregator:
       online_devices (List[EcoflowDevice]): List of devices currently online.
     """
     online_serials = {device.serial for device in online_devices}
-    for device in self.devices.devices:
+    for device in self._devices.devices:
       if device.serial not in online_serials:
-        self.power_cache.set(device.serial, -1)
+        self._power_cache.set(device.serial, -1)
 
   def try_set_power(self, device: EcoflowDevice, power: int):
     """
@@ -93,28 +93,28 @@ class EcoflowDeviceAggregator:
     """
     power = int(round(max(0, min(power, device.max_power))))
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: setting power {power} W for {device.name}...')
+    if self._verbose:
+      self._logger.info(f'{self._name}: setting power {power} W for {device.name}...')
 
-    old_power = self.power_cache.get(device.serial)
+    old_power = self._power_cache.get(device.serial)
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: got power {old_power} W from cache for {device.name}')
+    if self._verbose:
+      self._logger.info(f'{self._name}: got power {old_power} W from cache for {device.name}')
 
     if old_power == power:
-      if self.verbose:
-        self.logger.info(f'{self.name}: new power ({power} W) for {device.name} is the same as old power. do nothing')
+      if self._verbose:
+        self._logger.info(f'{self._name}: new power ({power} W) for {device.name} is the same as old power. do nothing')
       return
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: changing power for {device.name} to {power} W...')
+    if self._verbose:
+      self._logger.info(f'{self._name}: changing power for {device.name} to {power} W...')
 
-    self.interactor.set_power(device, power)
+    self._interactor.set_power(device, power)
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: writing power {power} W to cache for {device.name}...')
+    if self._verbose:
+      self._logger.info(f'{self._name}: writing power {power} W to cache for {device.name}...')
 
-    self.power_cache.set(device.serial, power)
+    self._power_cache.set(device.serial, power)
 
   def get_cached_total_power(self) -> int:
     """
@@ -127,8 +127,8 @@ class EcoflowDeviceAggregator:
          positive cached power.
     """
     total_power = 0
-    for device in self.devices.devices:
-      power = self.power_cache.get(device.serial)
+    for device in self._devices.devices:
+      power = self._power_cache.get(device.serial)
       if power > 0:
         total_power += power
 
@@ -148,11 +148,11 @@ class EcoflowDeviceAggregator:
       power_delta (int): Total change in power in watts. Can be positive
                  (increase) or negative (decrease).
     """
-    online_devices = self.interactor.get_online_devices(self.devices)
+    online_devices = self._interactor.get_online_devices(self._devices)
 
     if not online_devices:
-      if self.verbose:
-        self.logger.info(f'{self.name}: no online devices for change_power()')
+      if self._verbose:
+        self._logger.info(f'{self._name}: no online devices for change_power()')
       return
 
     total_power = self.get_cached_total_power()
@@ -160,7 +160,7 @@ class EcoflowDeviceAggregator:
     if total_power < 0:
       total_power = 0
       for device in online_devices:
-        total_power += self.interactor.get_power(device)
+        total_power += self._interactor.get_power(device)
 
     power = int((total_power + power_delta) / len(online_devices))
 
@@ -179,11 +179,11 @@ class EcoflowDeviceAggregator:
     Args:
       power (int): Total power to distribute among online devices in watts.
     """
-    online_devices = self.interactor.get_online_devices(self.devices)
+    online_devices = self._interactor.get_online_devices(self._devices)
 
     if not online_devices:
-      if self.verbose:
-        self.logger.info(f'{self.name}: no online devices for set_power()')
+      if self._verbose:
+        self._logger.info(f'{self._name}: no online devices for set_power()')
       return
 
     power = int(power / len(online_devices))
@@ -199,11 +199,11 @@ class EcoflowDeviceAggregator:
 
     Offline devices have their cached power reset to prevent stale values.
     """
-    online_devices = self.interactor.get_online_devices(self.devices)
+    online_devices = self._interactor.get_online_devices(self._devices)
 
     if not online_devices:
-      if self.verbose:
-        self.logger.info(f'{self.name}: no online devices for set_max_power()')
+      if self._verbose:
+        self._logger.info(f'{self._name}: no online devices for set_max_power()')
         self.reset_power_cache_for_offline_devices(online_devices)
       return
 
@@ -222,11 +222,13 @@ class EcoflowDeviceAggregator:
     Returns:
       int: Total power in watts across all online devices.
     """
-    online_devices = self.interactor.get_online_devices(self.devices)
+    online_devices = self._interactor.get_online_devices(self._devices)
 
     if not online_devices:
-      if self.verbose:
-        self.logger.info(f'{self.name}: no online devices for get_power()')
+      if self._verbose:
+        self._logger.info(f'{self._name}: no online devices for get_power()')
       return 0
 
-    return sum(self.interactor.get_power(device) for device in online_devices)
+    powers = [self._interactor.get_power(device) for device in online_devices]
+
+    return sum(powers)

@@ -37,18 +37,18 @@ class EcoflowPowerStreamInteractor:
     secret_key: str,
     **kwargs,
   ):
-    self.access_key = access_key
-    self.secret_key = secret_key
-    self.name = kwargs.get('name', 'ecoflow')
-    self.verbose = kwargs.get('verbose', False)
-    self.quota_url = 'https://api.ecoflow.com/iot-open/sign/device/quota'
-    self.device_url = 'https://api.ecoflow.com/iot-open/sign/device/list'
-    self.set_permanent_watts_cmd = 'WN511_SET_PERMANENT_WATTS_PACK'
-    self.permanent_watts_field = '20_1.permanentWatts'
-    self.power_scale = 10
-    self.session = HttpSessionSingleton().session
-    self.logger = logging.getLogger()
-    self.logger.setLevel(logging.INFO)
+    self._access_key = access_key
+    self._secret_key = secret_key
+    self._name = kwargs.get('name', 'ecoflow')
+    self._verbose = kwargs.get('verbose', False)
+    self._quota_url = 'https://api.ecoflow.com/iot-open/sign/device/quota'
+    self._device_url = 'https://api.ecoflow.com/iot-open/sign/device/list'
+    self._set_permanent_watts_cmd = 'WN511_SET_PERMANENT_WATTS_PACK'
+    self._permanent_watts_field = '20_1.permanentWatts'
+    self._power_scale = 10
+    self._session = HttpSessionSingleton().session
+    self._logger = logging.getLogger()
+    self._logger.setLevel(logging.INFO)
 
   def get_device_status(self, device: EcoflowDevice, payload: Dict[str, Any]) -> EcoflowDeviceStatus:
     """
@@ -84,35 +84,35 @@ class EcoflowPowerStreamInteractor:
     Returns:
       List[EcoflowDevice]: Devices that are online according to the API.
     """
-    if self.verbose:
-      self.logger.info(f'{self.name}: getting devices list...')
+    if self._verbose:
+      self._logger.info(f'{self._name}: getting devices list...')
 
     response = EcoflowUtils.get_request(
-      self.session,
-      self.device_url,
-      self.access_key,
-      self.secret_key,
+      self._session,
+      self._device_url,
+      self._access_key,
+      self._secret_key,
     )
 
     if response.status_code != HTTPStatus.OK:
-      if self.verbose:
-        self.logger.info(f'{self.name}: server returned http error {response.status_code} while getting devices list')
+      if self._verbose:
+        self._logger.info(f'{self._name}: server returned http error {response.status_code} while getting devices list')
       raise EcoflowHttpErrorException(
-        f'{self.name}: server returned http error {response.status_code} while getting devices list')
+        f'{self._name}: server returned http error {response.status_code} while getting devices list')
 
     json = response.json()
     self.check_error(json, 'getting devices list')
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: get_online_devices() result {json}')
+    if self._verbose:
+      self._logger.info(f'{self._name}: get_online_devices() result {json}')
 
     online_devices = []
 
     for device in devices.devices:
       device_status = self.get_device_status(device, json)
       if device_status == EcoflowDeviceStatus.online:
-        if self.verbose:
-          self.logger.info(f'{self.name}: device {device.name} status is {device_status.name}')
+        if self._verbose:
+          self._logger.info(f'{self._name}: device {device.name} status is {device_status.name}')
         online_devices.append(device)
 
     return online_devices
@@ -130,17 +130,17 @@ class EcoflowPowerStreamInteractor:
     Returns:
       int: Current power in watts (rounded from API value).
     """
-    quotas = [self.permanent_watts_field]
+    quotas = [self._permanent_watts_field]
     params = {'quotas': quotas}
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: getting power for {device.name}...')
+    if self._verbose:
+      self._logger.info(f'{self._name}: getting power for {device.name}...')
 
     response = EcoflowUtils.post_request(
-      self.session,
-      self.quota_url,
-      self.access_key,
-      self.secret_key,
+      self._session,
+      self._quota_url,
+      self._access_key,
+      self._secret_key,
       {
         'sn': device.serial,
         'params': params
@@ -148,22 +148,22 @@ class EcoflowPowerStreamInteractor:
     )
 
     if response.status_code != HTTPStatus.OK:
-      if self.verbose:
-        self.logger.info(
-          f'{self.name}: server returned http error {response.status_code} while getting power for {device.name}')
+      if self._verbose:
+        self._logger.info(
+          f'{self._name}: server returned http error {response.status_code} while getting power for {device.name}')
       raise EcoflowHttpErrorException(
-        f'{self.name}: server returned http error {response.status_code} while getting power for {device.name}')
+        f'{self._name}: server returned http error {response.status_code} while getting power for {device.name}')
 
     json = response.json()
     self.check_error(json, device.name)
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: get_power() result {json}')
+    if self._verbose:
+      self._logger.info(f'{self._name}: get_power() result {json}')
 
-    power = int(round(json['data'][self.permanent_watts_field] / self.power_scale))
+    power = int(round(json['data'][self._permanent_watts_field] / self._power_scale))
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: current power for {device.name} is {power} W')
+    if self._verbose:
+      self._logger.info(f'{self._name}: current power for {device.name} is {power} W')
 
     return power
 
@@ -180,35 +180,35 @@ class EcoflowPowerStreamInteractor:
     """
     power = max(0, min(power, device.max_power))
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: set new power for {device.name} to {power} W')
+    if self._verbose:
+      self._logger.info(f'{self._name}: set new power for {device.name} to {power} W')
 
-    params = {'permanentWatts': power * self.power_scale}
+    params = {'permanentWatts': power * self._power_scale}
 
     response = EcoflowUtils.put_request(
-      self.session,
-      self.quota_url,
-      self.access_key,
-      self.secret_key,
+      self._session,
+      self._quota_url,
+      self._access_key,
+      self._secret_key,
       {
         'sn': device.serial,
-        'cmdCode': self.set_permanent_watts_cmd,
+        'cmdCode': self._set_permanent_watts_cmd,
         'params': params
       },
     )
 
     if response.status_code != HTTPStatus.OK:
-      if self.verbose:
-        self.logger.info(
-          f'{self.name}: server returned http error {response.status_code} while setting power for {device.name}')
+      if self._verbose:
+        self._logger.info(
+          f'{self._name}: server returned http error {response.status_code} while setting power for {device.name}')
       raise EcoflowHttpErrorException(
-        f'{self.name}: server returned http error {response.status_code} while setting power for {device.name}')
+        f'{self._name}: server returned http error {response.status_code} while setting power for {device.name}')
 
     json = response.json()
     self.check_error(json, device.name)
 
-    if self.verbose:
-      self.logger.info(f'{self.name}: set_power() result {json}')
+    if self._verbose:
+      self._logger.info(f'{self._name}: set_power() result {json}')
 
   def check_error(self, json: Dict[str, Any], device_name: str):
     """
@@ -222,13 +222,13 @@ class EcoflowPowerStreamInteractor:
       EcoflowException: If API response contains error code or invalid format.
     """
     if 'code' not in json:
-      raise EcoflowResponseErrorException(f'{self.name}: response missing \'code\' field for {device_name}')
+      raise EcoflowResponseErrorException(f'{self._name}: response missing \'code\' field for {device_name}')
 
     try:
       code = int(json['code'])
     except Exception:
-      raise EcoflowResponseErrorException(f'{self.name}: invalid \'code\' value ({json["code"]}) for {device_name}')
+      raise EcoflowResponseErrorException(f'{self._name}: invalid \'code\' value ({json["code"]}) for {device_name}')
 
     if code != 0:
       message = f': {json["message"]}' if 'message' in json else ''
-      raise EcoflowResponseErrorException(f'{self.name}: server returned error code {code} for {device_name}{message}')
+      raise EcoflowResponseErrorException(f'{self._name}: server returned error code {code} for {device_name}{message}')
