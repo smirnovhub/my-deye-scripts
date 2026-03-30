@@ -2,7 +2,7 @@ import logging
 
 from typing import List
 
-from key_value_store import KeyValueStore
+from key_value_store_async import KeyValueStoreAsync
 from ecoflow_device import EcoflowDevice
 from ecoflow_devices import EcoflowDevices
 from ecoflow_powerstream_interactor_async import EcoflowPowerStreamInteractorAsync
@@ -39,7 +39,7 @@ class EcoflowDeviceAggregatorAsync:
 
     self._name = kwargs.get('name', 'ecoflow')
     self._verbose = kwargs.get('verbose', False)
-    self._power_cache = KeyValueStore(cache_file, -1)
+    self._power_cache = KeyValueStoreAsync(cache_file, -1)
     self._logger = logging.getLogger()
     self._logger.setLevel(logging.INFO)
 
@@ -63,7 +63,7 @@ class EcoflowDeviceAggregatorAsync:
     """
     return sum(device.max_real_power for device in self._devices.devices)
 
-  def reset_power_cache_for_offline_devices(self, online_devices: List[EcoflowDevice]):
+  async def reset_power_cache_for_offline_devices(self, online_devices: List[EcoflowDevice]):
     """
     Reset cached power values to -1 for all devices that are currently offline.
 
@@ -76,7 +76,7 @@ class EcoflowDeviceAggregatorAsync:
     online_serials = {device.serial for device in online_devices}
     for device in self._devices.devices:
       if device.serial not in online_serials:
-        self._power_cache.set(device.serial, -1)
+        await self._power_cache.set(device.serial, -1)
 
   async def try_set_power(self, device: EcoflowDevice, power: int):
     """
@@ -96,7 +96,7 @@ class EcoflowDeviceAggregatorAsync:
     if self._verbose:
       self._logger.info(f'{self._name}: setting power {power} W for {device.name}...')
 
-    old_power = self._power_cache.get(device.serial)
+    old_power = await self._power_cache.get(device.serial)
 
     if self._verbose:
       self._logger.info(f'{self._name}: got power {old_power} W from cache for {device.name}')
@@ -114,9 +114,9 @@ class EcoflowDeviceAggregatorAsync:
     if self._verbose:
       self._logger.info(f'{self._name}: writing power {power} W to cache for {device.name}...')
 
-    self._power_cache.set(device.serial, power)
+    await self._power_cache.set(device.serial, power)
 
-  def get_cached_total_power(self) -> int:
+  async def get_cached_total_power(self) -> int:
     """
     Compute the total cached power across all devices.
 
@@ -128,7 +128,7 @@ class EcoflowDeviceAggregatorAsync:
     """
     total_power = 0
     for device in self._devices.devices:
-      power = self._power_cache.get(device.serial)
+      power = await self._power_cache.get(device.serial)
       if power > 0:
         total_power += power
 
@@ -155,7 +155,7 @@ class EcoflowDeviceAggregatorAsync:
         self._logger.info(f'{self._name}: no online devices for change_power()')
       return
 
-    total_power = self.get_cached_total_power()
+    total_power = await self.get_cached_total_power()
 
     if total_power < 0:
       total_power = 0
@@ -164,7 +164,7 @@ class EcoflowDeviceAggregatorAsync:
 
     power = int((total_power + power_delta) / len(online_devices))
 
-    self.reset_power_cache_for_offline_devices(online_devices)
+    await self.reset_power_cache_for_offline_devices(online_devices)
 
     for device in online_devices:
       await self.try_set_power(device, power)
@@ -188,7 +188,7 @@ class EcoflowDeviceAggregatorAsync:
 
     power = int(power / len(online_devices))
 
-    self.reset_power_cache_for_offline_devices(online_devices)
+    await self.reset_power_cache_for_offline_devices(online_devices)
 
     for device in online_devices:
       await self.try_set_power(device, power)
@@ -204,10 +204,10 @@ class EcoflowDeviceAggregatorAsync:
     if not online_devices:
       if self._verbose:
         self._logger.info(f'{self._name}: no online devices for set_max_power()')
-        self.reset_power_cache_for_offline_devices(online_devices)
+        await self.reset_power_cache_for_offline_devices(online_devices)
       return
 
-    self.reset_power_cache_for_offline_devices(online_devices)
+    await self.reset_power_cache_for_offline_devices(online_devices)
 
     for device in online_devices:
       await self.try_set_power(device, device.max_power)
