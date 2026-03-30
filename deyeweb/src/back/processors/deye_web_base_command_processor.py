@@ -1,7 +1,6 @@
 from typing import Any, Dict, List
 from abc import ABC, abstractmethod
 
-from git_helper import GitHelper
 from deye_register import DeyeRegister
 from deye_web_color import DeyeWebColor
 from deye_loggers import DeyeLoggers
@@ -26,7 +25,6 @@ class DeyeWebBaseCommandProcessor(ABC):
     self.selections_config = DeyeWebSelectionsConfig()
     self.selections_builder_config = DeyeWebSelectionsBuilderConfig()
     self.style_manager = DeyeWebStyleManager()
-    self.git_helper = GitHelper()
 
   def is_acceptable(self, command: DeyeWebRemoteCommand) -> bool:
     return command in self.commands
