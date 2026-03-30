@@ -1,8 +1,9 @@
 import os
 import re
+import sys
 import queue
 import struct
-import sys
+import logging
 import requests
 
 from pathlib import Path
@@ -238,6 +239,11 @@ class DeyeUtils:
   def get_reraised_exception(exception: Exception, message: str) -> Exception:
     if isinstance(exception, DeyeKnownException):
       return exception
+
+    logger = logging.getLogger()
+
+    # Log with the original exception context
+    logger.error(f"{message}: {str(exception)}", exc_info = exception)
 
     try:
       raise exception
