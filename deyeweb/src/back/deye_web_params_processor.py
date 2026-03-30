@@ -22,7 +22,7 @@ class DeyeWebParamsProcessor:
       DeyeWebInstallIosProfileCommandProcessor(),
     ]
 
-  def get_params(self, json_data: Dict[str, Any]) -> Dict[str, str]:
+  async def get_params(self, json_data: Dict[str, Any]) -> Dict[str, str]:
     command_value = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_command_field)
 
     try:
@@ -34,4 +34,4 @@ class DeyeWebParamsProcessor:
     if processor is None:
       raise ValueError(f"Unknown command: '{command_value}'")
 
-    return processor.get_command_result(command, json_data)
+    return await processor.get_command_result(command, json_data)

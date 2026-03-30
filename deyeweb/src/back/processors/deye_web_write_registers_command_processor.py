@@ -5,14 +5,14 @@ from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
 from deye_web_colors_calculator import DeyeWebColorsCalculator
 from deye_web_remote_command import DeyeWebRemoteCommand
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
 class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
     super().__init__([DeyeWebRemoteCommand.write_register])
 
-  def get_command_result(
+  async def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
     json_data: Dict[str, Any],
@@ -26,7 +26,7 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
       raise ValueError(f"Can't write '{register_name}'")
 
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       name = 'deyeweb',
       loggers = [self.loggers.master],
       socket_timeout = 5,
@@ -37,7 +37,7 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
       raise ValueError(f"Unknown register '{register_name}'")
 
     try:
-      holder.write_register(register, register_value)
+      await holder.write_register(register, register_value)
     finally:
       holder.disconnect()
 

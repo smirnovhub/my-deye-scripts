@@ -4,7 +4,7 @@ from deye_web_utils import DeyeWebUtils
 from deye_web_color import DeyeWebColor
 from deye_web_custom_registers import DeyeWebCustomRegisters
 from deye_web_remote_command import DeyeWebRemoteCommand
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_web_constants import DeyeWebConstants
 from deye_web_colors_calculator import DeyeWebColorsCalculator
 from deye_register_average_type import DeyeRegisterAverageType
@@ -14,7 +14,7 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
     super().__init__([DeyeWebRemoteCommand.read_registers])
 
-  def get_command_result(
+  async def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
     json_data: Dict[str, Any],
@@ -23,7 +23,7 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
 
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       name = 'deyeweb',
       loggers = self.loggers.loggers,
       caching_time = 5,
@@ -35,7 +35,7 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
     finally:
       holder.disconnect()
 

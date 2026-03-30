@@ -1,10 +1,11 @@
 from typing import Any, Dict, List
+from abc import ABC, abstractmethod
 
 from git_helper import GitHelper
 from deye_register import DeyeRegister
 from deye_web_color import DeyeWebColor
 from deye_loggers import DeyeLoggers
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_web_formatters_config import DeyeWebFormattersConfig
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_web_sections_holder import DeyeWebSectionsHolder
@@ -13,7 +14,7 @@ from deye_register_average_type import DeyeRegisterAverageType
 from deye_web_selections_builder_config import DeyeWebSelectionsBuilderConfig
 from deye_web_style_manager import DeyeWebStyleManager
 
-class DeyeWebBaseCommandProcessor:
+class DeyeWebBaseCommandProcessor(ABC):
   def __init__(
     self,
     commands: List[DeyeWebRemoteCommand],
@@ -30,17 +31,18 @@ class DeyeWebBaseCommandProcessor:
   def is_acceptable(self, command: DeyeWebRemoteCommand) -> bool:
     return command in self.commands
 
-  def get_command_result(
+  @abstractmethod
+  async def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
     json_data: Dict[str, Any],
   ) -> Dict[str, str]:
-    raise NotImplementedError('get_command_result() is not implemented')
+    pass
 
   def make_register_value(
     self,
     inverter: str,
-    holder: DeyeRegistersHolder,
+    holder: DeyeRegistersHolderAsync,
     register: DeyeRegister,
     colors: Dict[str, DeyeWebColor],
   ) -> str:

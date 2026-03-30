@@ -12,7 +12,7 @@ from deye_web_style_manager import DeyeWebStyleManager
 from deye_web_formatters_config import DeyeWebFormattersConfig
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_web_selections_config import DeyeWebSelectionsConfig
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 
 class DeyeWebBaseSelectionBuilder:
   def __init__(self, confirm = False):
@@ -25,7 +25,7 @@ class DeyeWebBaseSelectionBuilder:
     js = EnvUtils.get_deye_web_register_value_corrections_json()
     self.register_value_corrections: Dict[str, float] = json.loads(js)
 
-  def build_selections(self, holder: DeyeRegistersHolder, register: DeyeRegister) -> Dict[str, str]:
+  def build_selections(self, holder: DeyeRegistersHolderAsync, register: DeyeRegister) -> Dict[str, str]:
     selections = self.selections_config.get_selections_for_register(register.name)
     if not selections:
       return {}
@@ -39,7 +39,7 @@ class DeyeWebBaseSelectionBuilder:
 
   def build_selections_html(
     self,
-    holder: DeyeRegistersHolder,
+    holder: DeyeRegistersHolderAsync,
     register: DeyeRegister,
     selections: List[float],
     disabled: bool = False,
