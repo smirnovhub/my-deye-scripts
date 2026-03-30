@@ -39,6 +39,7 @@ async def main():
   logger = LogUtils.setup_hourly_overwrite_file_logger(
     log_dir = data_dir,
     log_file_template = "deye-web-back-{0}.log",
+    log_to_console = False,
   )
 
   dependency_provider = DeyeWebDependencyProvider()
