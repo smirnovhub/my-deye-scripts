@@ -19,7 +19,6 @@ from deye_exceptions import (
   DeyeNoSocketAvailableException,
   DeyeOSErrorException,
   DeyeQueueIsEmptyException,
-  DeyeUnknownException,
   DeyeValueException,
 )
 
@@ -241,11 +240,6 @@ class DeyeUtils:
     if isinstance(exception, DeyeKnownException):
       return exception
 
-    logger = logging.getLogger()
-
-    # Log with the original exception context
-    logger.error(f"{message}: {str(exception)}", exc_info = exception)
-
     try:
       raise exception
     except queue.Empty:
@@ -261,7 +255,10 @@ class DeyeUtils:
       text = DeyeUtils.get_exception_text(e)
       return DeyeOSErrorException(f'{message}: OS error ({text})')
     except Exception as e:
-      return DeyeUnknownException(f'{message}: {str(e)}')
+      logger = logging.getLogger()
+      # Log with the original exception context
+      logger.error(f"{message}: {str(exception)}", exc_info = exception)
+      return e
 
   @staticmethod
   def get_exception_text(exc: OSError) -> str:
