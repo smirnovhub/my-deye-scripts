@@ -50,9 +50,9 @@ class DeyeWebConstants:
   result_callstack_field = 'callstack'
 
   add_html_comments = False
-  user_short_html_ids = False
-  clean_html_code = False
-  print_call_stack_on_exception = True
+  user_short_html_ids = True
+  clean_html_code = True
+  print_call_stack_on_exception = False
 
   threshold_colors = [DeyeWebColor.green, DeyeWebColor.yellow, DeyeWebColor.red]
   threshold_reversed_colors = [DeyeWebColor.red, DeyeWebColor.yellow, DeyeWebColor.green]
