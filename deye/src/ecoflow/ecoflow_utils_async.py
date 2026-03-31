@@ -109,7 +109,7 @@ class EcoflowUtilsAsync:
         aiohttp.ClientResponse: Response object returned by the requests library.
     """
     headers = EcoflowUtilsAsync.get_headers(key, secret, params)
-    return await session.put(url, params = params, headers = headers)
+    return await session.put(url, json = params, headers = headers)
 
   @staticmethod
   async def get_request(
@@ -132,7 +132,7 @@ class EcoflowUtilsAsync:
         aiohttp.ClientResponse: Response object returned by the requests library.
     """
     headers = EcoflowUtilsAsync.get_headers(key, secret, params)
-    return await session.get(url, params = params, headers = headers)
+    return await session.get(url, json = params, headers = headers)
 
   @staticmethod
   async def post_request(
@@ -155,4 +155,4 @@ class EcoflowUtilsAsync:
         aiohttp.ClientResponse: Response object returned by the requests library.
     """
     headers = EcoflowUtilsAsync.get_headers(key, secret, params)
-    return await session.post(url, params = params, headers = headers)
+    return await session.post(url, json = params, headers = headers)
