@@ -110,7 +110,7 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
             values = data[offset:offset + reg.quantity],
           )
     except Exception as e:
-      raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while reading registers') from e
+      raise DeyeUtils.get_reraised_exception(e, f'error while reading registers: {self.name}') from e
     finally:
       self._solarman.disconnect()
 
@@ -136,7 +136,7 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
 
       self._registers_to_write.clear()
     except Exception as e:
-      raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while writing registers') from e
+      raise DeyeUtils.get_reraised_exception(e, f'error while writing registers: {self.name}') from e
     finally:
       self._solarman.disconnect()
 
