@@ -1,4 +1,3 @@
-import requests
 import hashlib
 import hmac
 import random
@@ -87,72 +86,3 @@ class EcoflowUtils:
     headers['sign'] = EcoflowUtils.hmac_sha256(sign_str, secret)
 
     return headers
-
-  @staticmethod
-  def put_request(
-    session: requests.Session,
-    url: str,
-    key: str,
-    secret: str,
-    params: Optional[Dict[str, Any]] = None,
-  ) -> requests.Response:
-    """
-    Send an HTTP PUT request with signed headers and optional JSON body.
-
-    Args:
-        url (str): URL to send the request to.
-        key (str): API access key.
-        secret (str): API secret for signing.
-        params (dict, optional): Optional JSON body to include. Defaults to None.
-
-    Returns:
-        requests.Response: Response object returned by the requests library.
-    """
-    headers = EcoflowUtils.get_headers(key, secret, params)
-    return session.put(url, headers = headers, json = params, timeout = 10)
-
-  @staticmethod
-  def get_request(
-    session: requests.Session,
-    url: str,
-    key: str,
-    secret: str,
-    params: Optional[Dict[str, Any]] = None,
-  ) -> requests.Response:
-    """
-    Send an HTTP GET request with signed headers and optional JSON body.
-
-    Args:
-        url (str): URL to send the request to.
-        key (str): API access key.
-        secret (str): API secret for signing.
-        params (dict, optional): Optional JSON body to include. Defaults to None.
-
-    Returns:
-        requests.Response: Response object returned by the requests library.
-    """
-    headers = EcoflowUtils.get_headers(key, secret, params)
-    return session.get(url, headers = headers, json = params, timeout = 10)
-
-  @staticmethod
-  def post_request(
-    session: requests.Session,
-    url: str,
-    key: str,
-    secret: str,
-    params: Optional[Dict[str, Any]] = None,
-  ) -> requests.Response:
-    """
-    Send an HTTP POST request with signed headers and optional JSON body.
-
-    Args:
-        url (str): URL to send the request to.
-        key (str): API access key.
-        secret (str): API secret for signing.
-        params (dict, optional): Optional JSON body to include. Defaults to None.
-
-    Returns:
-        requests.Response: Response object returned by the requests library.
-    """
-    headers = EcoflowUtils.get_headers(key, secret, params)
-    return session.post(url, headers = headers, json = params, timeout = 10)
