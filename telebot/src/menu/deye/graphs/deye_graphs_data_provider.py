@@ -66,19 +66,18 @@ class DeyeGraphsDataProvider:
 
   def is_graph_server_available(self) -> bool:
     ping_endpoint = urljoin(self._server_url, "/ping")
-    response = self._session.get(ping_endpoint, timeout = 3)
-    response.raise_for_status()
-    return response.status_code == HTTPStatus.OK
+    with self._session.get(ping_endpoint, timeout = 3) as response:
+      response.raise_for_status()
+      return response.status_code == HTTPStatus.OK
 
   def load_graph_dates(self) -> List[date]:
     url = urljoin(self._server_url, "/graphs")
-    response = self._session.get(url, timeout = 5)
+    with self._session.get(url, timeout = 5) as response:
+      if response.status_code != HTTPStatus.OK:
+        raise RuntimeError(TelebotUtils.get_response_message(response))
 
-    if response.status_code != HTTPStatus.OK:
-      raise RuntimeError(TelebotUtils.get_response_message(response))
-
-    # Check if the response body is valid JSON
-    data = response.json()
+      # Check if the response body is valid JSON
+      data = response.json()
 
     if not isinstance(data, dict):
       raise RuntimeError(f"Graphs server {self._server_url} returned wrong json type")
@@ -91,13 +90,12 @@ class DeyeGraphsDataProvider:
 
   def load_graph_inverters(self, graph_date: date) -> List[DeyeGraphInverterData]:
     url = urljoin(self._server_url, f"/graphs/{graph_date.isoformat()}")
-    response = self._session.get(url, timeout = 5)
+    with self._session.get(url, timeout = 5) as response:
+      if response.status_code != HTTPStatus.OK:
+        raise RuntimeError(TelebotUtils.get_response_message(response))
 
-    if response.status_code != HTTPStatus.OK:
-      raise RuntimeError(TelebotUtils.get_response_message(response))
-
-    self._inverters = DeyeGraphInverters.from_json(response.text).inverters
-    return self._inverters
+      self._inverters = DeyeGraphInverters.from_json(response.text).inverters
+      return self._inverters
 
   def get_graph_png(
     self,
@@ -106,14 +104,13 @@ class DeyeGraphsDataProvider:
     graph_name: str,
   ) -> BytesIO:
     url = urljoin(self._server_url, f"/graphs/png/{graph_date.isoformat()}/{inverter}/{graph_name}")
-    response = self._session.get(url)
+    with self._session.get(url) as response:
+      if response.status_code != HTTPStatus.OK:
+        raise RuntimeError(TelebotUtils.get_response_message(response))
 
-    if response.status_code != HTTPStatus.OK:
-      raise RuntimeError(TelebotUtils.get_response_message(response))
+      file = BytesIO(response.content)
 
-    file = BytesIO(response.content)
     file.name = f"{graph_date}-{inverter}-{graph_name}.png"
-
     return file
 
   def get_graph_raw_data(
@@ -121,12 +118,12 @@ class DeyeGraphsDataProvider:
     graph_date: date,
   ) -> BytesIO:
     url = urljoin(self._server_url, f"/graphs/csv/{graph_date.isoformat()}")
-    response = self._session.get(url)
+    with self._session.get(url) as response:
+      if response.status_code != HTTPStatus.OK:
+        raise RuntimeError(TelebotUtils.get_response_message(response))
 
-    if response.status_code != HTTPStatus.OK:
-      raise RuntimeError(TelebotUtils.get_response_message(response))
-
-    content_disposition = response.headers.get("Content-Disposition", "")
+      content = response.content
+      content_disposition = response.headers.get("Content-Disposition", "")
 
     filename = "file.raw"
 
@@ -149,7 +146,7 @@ class DeyeGraphsDataProvider:
           if isinstance(filename_simple, str):
             filename = filename_simple
 
-    file = BytesIO(response.content)
+    file = BytesIO(content)
     file.name = filename
 
     return file
