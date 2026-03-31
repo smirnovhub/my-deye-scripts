@@ -4,11 +4,11 @@ import logging
 import traceback
 import uvicorn
 
-from typing import Dict, Any
+from typing import Awaitable, Callable, Dict, Any
 
 from pathlib import Path
 
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -77,6 +77,16 @@ app = FastAPI(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
+
+@app.middleware("http")
+async def add_no_cache_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]):
+  response = await call_next(request)
+  # Set headers to prevent caching
+  response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+  response.headers["Pragma"] = "no-cache"
+  response.headers["Expires"] = "0"
+  return response
+
 dependency_provider = DeyeWebDependencyProvider()
 
 @app.get("/front", tags = ["Frontend Operations"])
