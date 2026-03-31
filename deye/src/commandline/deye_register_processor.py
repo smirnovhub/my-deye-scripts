@@ -1,4 +1,3 @@
-import logging
 import argparse
 
 from typing import Any, List, Optional, Type, cast
@@ -20,12 +19,6 @@ class DeyeRegisterProcessor:
     self.interactors: List[DeyeModbusInteractorSync] = []
     self.master_interactor: Optional[DeyeModbusInteractorSync] = None
     self.registers = DeyeRegisters()
-
-    logging.basicConfig(
-      level = logging.INFO,
-      format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-      datefmt = DeyeUtils.time_format_str,
-    )
 
   def get_arg_name(self, register: DeyeRegister, action: str) -> str:
     return f'--{action}-{register.name.replace("_", "-")}'
@@ -143,6 +136,8 @@ class DeyeRegisterProcessor:
               register.write(self.master_interactor, val)
             else:
               register.write(self.master_interactor, value)
+
+            self.master_interactor.write_registers_to_inverter()
 
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             suffix = f' {register.suffix}'.rstrip()
