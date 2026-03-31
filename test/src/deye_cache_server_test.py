@@ -64,9 +64,9 @@ class TestDeyeCacheExtended(unittest.TestCase):
 
   def test_ping(self):
     """Test health check endpoint."""
-    response = self.session.get(PING_URL)
-    self.assertEqual(response.status_code, 200)
-    self.assertEqual(response.json(), {"status": "success"})
+    with self.session.get(PING_URL) as response:
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json(), {"status": "success"})
 
   def test_complex_nested_merge(self):
     """
@@ -217,19 +217,19 @@ class TestDeyeCacheExtended(unittest.TestCase):
       # Use unique keys to force the server to expand the dictionary
       # If keys were identical, the server would just overwrite data
       payload = {f"register_group_{i}": chunk_data}
-      response = self.session.post(f"{CACHE_URL}/{key}", json = payload)
+      with self.session.post(f"{CACHE_URL}/{key}", json = payload) as response:
+        if i < num_requests_to_fill - 1:
+          # These requests should be accepted (under total limit)
+          self.assertEqual(response.status_code, 200,
+                           f"Batch {i} failed prematurely with status {response.status_code}")
+        else:
+          # The final request must trigger the storage limit protection (413)
+          # It passes the 'MAX_JSON_SIZE' check but fails the 'trial merge' check
+          self.assertEqual(response.status_code, 413, "Server failed to block cumulative storage overflow")
 
-      if i < num_requests_to_fill - 1:
-        # These requests should be accepted (under total limit)
-        self.assertEqual(response.status_code, 200, f"Batch {i} failed prematurely with status {response.status_code}")
-      else:
-        # The final request must trigger the storage limit protection (413)
-        # It passes the 'MAX_JSON_SIZE' check but fails the 'trial merge' check
-        self.assertEqual(response.status_code, 413, "Server failed to block cumulative storage overflow")
-
-        # Check for the specific error message
-        detail = response.json().get("detail", "")
-        self.assertIn("JSON storage size exceeded", detail)
+          # Check for the specific error message
+          detail = response.json().get("detail", "")
+          self.assertIn("JSON storage size exceeded", detail)
 
   def test_concurrent_updates(self):
     """
@@ -303,9 +303,9 @@ class TestDeyeCacheExtended(unittest.TestCase):
     key = "malformed_test"
 
     # Send empty body with JSON content-type
-    response = self.session.post(f"{CACHE_URL}/{key}", headers = {"Content-Type": "application/json"})
-    # FastAPI should return 422 Unprocessable Entity for missing body
-    self.assertEqual(response.status_code, 422)
+    with self.session.post(f"{CACHE_URL}/{key}", headers = {"Content-Type": "application/json"}) as response:
+      # FastAPI should return 422 Unprocessable Entity for missing body
+      self.assertEqual(response.status_code, 422)
 
   def test_deep_merge_array_handling(self):
     """
@@ -334,15 +334,15 @@ class TestDeyeCacheExtended(unittest.TestCase):
     for i in range(20, 0, -1):
       current = {f"L{i}": current}
 
-    response = self.session.post(f"{CACHE_URL}/{key}", json = current)
-    self.assertEqual(response.status_code, 200)
+    with self.session.post(f"{CACHE_URL}/{key}", json = current) as response:
+      self.assertEqual(response.status_code, 200)
 
-    res = self.session.get(f"{CACHE_URL}/{key}").json()
-    # Verify we can reach the deepest value
-    val = res
-    for i in range(1, 21):
-      val = val[f"L{i}"]
-    self.assertEqual(val, "bottom")
+    with self.session.get(f"{CACHE_URL}/{key}").json() as res:
+      # Verify we can reach the deepest value
+      val = res
+      for i in range(1, 21):
+        val = val[f"L{i}"]
+      self.assertEqual(val, "bottom")
 
   def test_type_swapping_in_nesting(self):
     """
