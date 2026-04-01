@@ -4,11 +4,11 @@ import logging
 import traceback
 import uvicorn
 
-from typing import Awaitable, Callable, Dict, Any
+from typing import Dict, Any
 
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, status
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -78,31 +78,30 @@ app = FastAPI(
 
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
 
-@app.middleware("http")
-async def add_no_cache_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]):
-  response = await call_next(request)
-  # Set headers to prevent caching
-  response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-  response.headers["Pragma"] = "no-cache"
-  response.headers["Expires"] = "0"
-  return response
-
 dependency_provider = DeyeWebDependencyProvider()
 
 @app.get("/front", tags = ["Frontend Operations"])
 async def handle_front_requests():
+  headers = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+  }
+
   builder = dependency_provider.front_builder
   if builder:
     try:
       html = builder.get_front_html()
       return HTMLResponse(
         content = html,
+        headers = headers,
         status_code = status.HTTP_200_OK,
       )
     except Exception as e:
       logger.error(traceback.format_exc())
       return HTMLResponse(
         content = f"<h1>Frontend Error</h1><pre>{str(e)}\n{traceback.format_exc()}</pre>",
+        headers = headers,
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
       )
 
@@ -112,6 +111,7 @@ async def handle_front_requests():
   logger.error(error_text)
   return HTMLResponse(
     content = f"<h1>Frontend Error</h1><pre>{error_text}</pre>",
+    headers = headers,
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
   )
 
