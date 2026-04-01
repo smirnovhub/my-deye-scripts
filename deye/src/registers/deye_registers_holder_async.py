@@ -251,8 +251,8 @@ class DeyeRegistersHolderAsync:
         raise last_exception
 
   async def reset_cache(self) -> None:
-    for interactor in self._interactors:
-      await interactor.reset_cache()
+    tasks = [interactor.reset_cache() for interactor in self._interactors]
+    await asyncio.gather(*tasks)
 
   def disconnect(self) -> None:
     last_exception = None
