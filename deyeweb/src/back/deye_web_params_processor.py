@@ -24,6 +24,15 @@ class DeyeWebParamsProcessor:
 
   async def get_params(self, json_data: Dict[str, Any]) -> Dict[str, str]:
     command_value = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_command_field)
+    app_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_app_id_field)
+    if not app_id:
+      raise ValueError("App ID value is empty")
+
+    # Verify that the frontend application ID matches the current backend instance ID
+    # Prevent requests from being processed by the wrong or mismatched backend instance
+    id = await DeyeWebUtils.get_app_id_async()
+    if app_id != id:
+      raise ValueError("App ID mismatch")
 
     try:
       command = DeyeWebRemoteCommand[command_value]
