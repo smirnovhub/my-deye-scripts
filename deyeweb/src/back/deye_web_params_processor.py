@@ -15,7 +15,7 @@ from deye_web_write_registers_command_processor import DeyeWebWriteRegistersComm
 
 class DeyeWebParamsProcessor:
   def __init__(self):
-    self.processors: List[DeyeWebBaseCommandProcessor] = [
+    self._processors: List[DeyeWebBaseCommandProcessor] = [
       DeyeWebReadRegistersCommandProcessor(),
       DeyeWebWriteRegistersCommandProcessor(),
       DeyeWebForecastCommandProcessor(),
@@ -37,7 +37,7 @@ class DeyeWebParamsProcessor:
 
     # Verify that the frontend application ID matches the current backend instance ID
     # Prevent requests from being processed by the wrong or mismatched backend instance
-    id = await DeyeWebUtils.get_app_id_async()
+    id = await DeyeWebUtils.get_app_id()
     if app_id != id:
       logger.error(f"App ID mismatch: received {app_id}, but expected {id}")
       raise ValueError("App ID mismatch")
@@ -47,7 +47,7 @@ class DeyeWebParamsProcessor:
     except KeyError:
       raise ValueError(f"Invalid command: '{command_value}'")
 
-    processor = next((p for p in self.processors if p.is_acceptable(command)), None)
+    processor = next((p for p in self._processors if p.is_acceptable(command)), None)
     if processor is None:
       raise ValueError(f"Unknown command: '{command_value}'")
 

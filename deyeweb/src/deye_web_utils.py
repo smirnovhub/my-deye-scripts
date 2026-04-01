@@ -15,7 +15,6 @@ from typing import Any, Dict, List
 from collections import Counter
 
 from deye_file_lock import DeyeFileLock
-from deye_file_with_lock import DeyeFileWithLock
 from deye_file_with_lock_async import DeyeFileWithLockAsync
 from deye_web_constants import DeyeWebConstants
 from deye_web_remote_command import DeyeWebRemoteCommand
@@ -208,25 +207,7 @@ class DeyeWebUtils:
     return f"sendCommand('{command.name}', '{id}');"
 
   @staticmethod
-  def get_app_id() -> str:
-    with DeyeFileWithLock(DeyeWebUtils._APP_ID_FILE_NAME, "a+") as f:
-      f.seek(0)
-      app_id = str(f.read()).strip()
-      if app_id:
-        return app_id
-
-      app_id = str(secrets.randbits(32))
-
-      f.seek(0)
-      f.truncate(0)
-      f.write(app_id)
-      f.flush()
-
-    logging.getLogger().info(f"New unique App ID generated: {app_id}")
-    return app_id
-
-  @staticmethod
-  async def get_app_id_async() -> str:
+  async def get_app_id() -> str:
     async with DeyeFileWithLockAsync(DeyeWebUtils._APP_ID_FILE_NAME, "a+") as f:
       f.seek(0)
       app_id = str(f.read()).strip()

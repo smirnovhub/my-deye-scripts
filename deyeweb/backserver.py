@@ -91,7 +91,7 @@ async def handle_front_requests():
   builder = dependency_provider.front_builder
   if builder:
     try:
-      html = builder.get_front_html()
+      html = await builder.get_front_html()
       return HTMLResponse(
         content = html,
         headers = headers,

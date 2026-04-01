@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import traceback
+import asyncio
 
 from pathlib import Path
 
@@ -19,7 +20,7 @@ from env_utils import EnvUtils
 from log_utils import LogUtils
 from deye_web_dependency_provider import DeyeWebDependencyProvider
 
-def main():
+async def main():
   log_name = EnvUtils.get_log_name()
   data_dir = f"data/{log_name}"
 
@@ -33,7 +34,7 @@ def main():
 
   if builder:
     try:
-      html = builder.get_front_html()
+      html = await builder.get_front_html()
       print(html)
     except Exception as e:
       logger.error(traceback.format_exc())
@@ -56,4 +57,4 @@ def main():
   #  f.write(DeyeWebUtils.get_deye_class_objects_count())
 
 if __name__ == "__main__":
-  main()
+  asyncio.run(main())
