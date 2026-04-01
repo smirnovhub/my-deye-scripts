@@ -20,7 +20,7 @@ class DeyeWebReadRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
     json_data: Dict[str, Any],
   ) -> Dict[str, str]:
     # Will throw is there is no session id
-    session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
+    session_id = DeyeWebUtils.get_session_id(json_data)
 
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolderAsync(

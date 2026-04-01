@@ -126,6 +126,16 @@ class DeyeWebUtils:
     return value
 
   @staticmethod
+  def get_session_id(json_data: Dict[str, Any]) -> str:
+    session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
+    session_id = re.sub(r'[^a-zA-Z0-9-]+', '-', session_id).strip('-')
+
+    if not session_id:
+      raise ValueError(f"Field '{DeyeWebConstants.json_session_id_field}' is empty")
+
+    return session_id
+
+  @staticmethod
   def get_deye_class_objects_count() -> str:
     # Get all live objects
     all_objects = gc.get_objects()
