@@ -209,35 +209,39 @@ class DeyeWebUtils:
 
   @staticmethod
   def get_app_id() -> str:
-    if os.path.exists(DeyeWebUtils._APP_ID_FILE_NAME):
-      with DeyeFileWithLock(DeyeWebUtils._APP_ID_FILE_NAME, "r") as f:
-        return str(f.read()).strip()
+    with DeyeFileWithLock(DeyeWebUtils._APP_ID_FILE_NAME, "a+") as f:
+      f.seek(0)
+      app_id = str(f.read()).strip()
+      if app_id:
+        return app_id
 
-    id = str(secrets.randbits(32))
-    with DeyeFileWithLock(DeyeWebUtils._APP_ID_FILE_NAME, "w") as f:
-      f.write(id)
+      app_id = str(secrets.randbits(32))
+
+      f.seek(0)
+      f.truncate(0)
+      f.write(app_id)
       f.flush()
 
-    logger = logging.getLogger()
-    logger.info(f"New unique App ID generated: {id}")
-
-    return id
+    logging.getLogger().info(f"New unique App ID generated: {app_id}")
+    return app_id
 
   @staticmethod
   async def get_app_id_async() -> str:
-    if os.path.exists(DeyeWebUtils._APP_ID_FILE_NAME):
-      async with DeyeFileWithLockAsync(DeyeWebUtils._APP_ID_FILE_NAME, "r") as f:
-        return str(f.read()).strip()
+    async with DeyeFileWithLockAsync(DeyeWebUtils._APP_ID_FILE_NAME, "a+") as f:
+      f.seek(0)
+      app_id = str(f.read()).strip()
+      if app_id:
+        return app_id
 
-    id = str(secrets.randbits(32))
-    async with DeyeFileWithLockAsync(DeyeWebUtils._APP_ID_FILE_NAME, "w") as f:
-      f.write(id)
+      app_id = str(secrets.randbits(32))
+
+      f.seek(0)
+      f.truncate(0)
+      f.write(app_id)
       f.flush()
 
-    logger = logging.getLogger()
-    logger.info(f"New unique App ID generated: {id}")
-
-    return id
+    logging.getLogger().info(f"New unique App ID generated: {app_id}")
+    return app_id
 
   @staticmethod
   def shutdown_with_delay(delay: int = 1) -> None:
