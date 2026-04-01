@@ -26,6 +26,7 @@ from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_exceptions import DeyeKnownException
 from deye_register_processor import DeyeRegisterProcessor
+from http_session_singleton_async import HttpSessionSingletonAsync
 
 class DeyeArgumentParser(argparse.ArgumentParser):
   def error(self, message):
@@ -139,6 +140,7 @@ async def main():
     sys.exit(1)
   finally:
     processor.disconnect()
+    await HttpSessionSingletonAsync.close_session()
 
   disconnect = perf_counter() - current
 
