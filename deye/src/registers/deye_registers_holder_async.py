@@ -143,13 +143,13 @@ class DeyeRegistersHolderAsync:
           ) from exc
     finally:
       # Mandatory cleanup to prevent background task leaks
-      for t in tasks:
-        if not t.done() and not t.cancelled():
-          t.cancel()
+      pending = [t for t in tasks if not t.done()]
+      for t in pending:
+        t.cancel()
 
-      if tasks:
+      if pending:
         # Give the loop a chance to finish cancellation of tasks
-        await asyncio.gather(*tasks, return_exceptions = True)
+        await asyncio.gather(*pending, return_exceptions = True)
 
     # Process individual interactor registers
     for interactor in self._interactors:
