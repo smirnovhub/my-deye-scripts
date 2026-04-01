@@ -210,7 +210,7 @@ class DeyeWebUtils:
     fname = os.path.join(tempfile.gettempdir(), 'deyeweb_appid.txt')
     if os.path.exists(fname):
       with DeyeFileWithLock(fname, "r") as f:
-        return f.read()
+        return str(f.read()).strip()
 
     id = str(secrets.randbits(32))
     with DeyeFileWithLock(fname, "w") as f:
@@ -224,7 +224,7 @@ class DeyeWebUtils:
     fname = os.path.join(tempfile.gettempdir(), 'deyeweb_appid.txt')
     if os.path.exists(fname):
       async with DeyeFileWithLockAsync(fname, "r") as f:
-        return f.read()
+        return str(f.read()).strip()
 
     id = str(secrets.randbits(32))
     async with DeyeFileWithLockAsync(fname, "w") as f:
