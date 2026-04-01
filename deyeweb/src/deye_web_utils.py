@@ -2,16 +2,20 @@ import gc
 import os
 import re
 import signal
+import tempfile
 import threading
 import time
 import zlib
 import random
 import inspect
+import secrets
 
 from typing import Any, Dict, List
 from collections import Counter
 
 from deye_file_lock import DeyeFileLock
+from deye_file_with_lock import DeyeFileWithLock
+from deye_file_with_lock_async import DeyeFileWithLockAsync
 from deye_web_constants import DeyeWebConstants
 from deye_web_remote_command import DeyeWebRemoteCommand
 
@@ -200,6 +204,34 @@ class DeyeWebUtils:
          Format: "sendCommand('<command_name>', '<id>');"
     """
     return f"sendCommand('{command.name}', '{id}');"
+
+  @staticmethod
+  def get_app_id() -> str:
+    fname = os.path.join(tempfile.gettempdir(), 'deyeweb_appid.txt')
+    if os.path.exists(fname):
+      with DeyeFileWithLock(fname, "r") as f:
+        return f.read()
+
+    id = str(secrets.randbits(32))
+    with DeyeFileWithLock(fname, "w") as f:
+      f.write(id)
+      f.flush()
+
+    return id
+
+  @staticmethod
+  async def get_app_id_async() -> str:
+    fname = os.path.join(tempfile.gettempdir(), 'deyeweb_appid.txt')
+    if os.path.exists(fname):
+      async with DeyeFileWithLockAsync(fname, "r") as f:
+        return f.read()
+
+    id = str(secrets.randbits(32))
+    async with DeyeFileWithLockAsync(fname, "w") as f:
+      f.write(id)
+      f.flush()
+
+    return id
 
   @staticmethod
   def shutdown_with_delay(delay: int = 1) -> None:

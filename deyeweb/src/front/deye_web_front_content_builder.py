@@ -15,13 +15,17 @@ class DeyeWebFrontContentBuilder:
     self.style_manager = DeyeWebStyleManager()
 
   def get_front_html(self) -> str:
-    result = """
+    app_id = DeyeWebUtils.get_app_id()
+    app_id_script = f'<script>const DEYEWEB_APP_ID = "{app_id}";</script>'
+
+    result = f"""
           <!DOCTYPE html>
           <html>
 
           <head>
             <title>Deye Web</title>
             <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+            {app_id_script}
             <link href="css/style.css" rel="stylesheet" type="text/css">
             <link href="css/spinner.css" rel="stylesheet" type="text/css">
           </head>
