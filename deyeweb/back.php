@@ -10,7 +10,7 @@ try {
   // Prepare JSON payload
   $json = file_get_contents('php://input');
   $jsonArray = parseAndValidateJson($json);
-  $payload = prepareJsonPayload($jsonArray);
+  $payload = json_encode($jsonArray);
 
   $command = PYTHON_CMD . ' ' . escapeshellarg(__DIR__ . '/back.py') . ' 2>&1';
 
