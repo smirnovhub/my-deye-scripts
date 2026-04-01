@@ -337,9 +337,9 @@ class TestDeyeCacheExtended(unittest.TestCase):
     with self.session.post(f"{CACHE_URL}/{key}", json = current) as response:
       self.assertEqual(response.status_code, 200)
 
-    with self.session.get(f"{CACHE_URL}/{key}").json() as res:
+    with self.session.get(f"{CACHE_URL}/{key}") as res:
       # Verify we can reach the deepest value
-      val = res
+      val = res.json()
       for i in range(1, 21):
         val = val[f"L{i}"]
       self.assertEqual(val, "bottom")
