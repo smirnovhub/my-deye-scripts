@@ -1,4 +1,5 @@
 import gc
+import logging
 import os
 import re
 import signal
@@ -23,7 +24,8 @@ class DeyeWebUtils:
   _id_stack: List[int] = []
   _lock = threading.Lock()
 
-  SPACES_REGEXP = re.compile(r'\s{2,}')
+  _SPACES_REGEXP = re.compile(r'\s{2,}')
+  _APP_ID_FILE_NAME = os.path.join(tempfile.gettempdir(), 'deyeweb_appid.txt')
 
   @staticmethod
   def _generate_id() -> int:
@@ -85,7 +87,7 @@ class DeyeWebUtils:
   @staticmethod
   def clean(string: str) -> str:
     if DeyeWebConstants.clean_html_code:
-      string = DeyeWebUtils.SPACES_REGEXP.sub(' ', string)
+      string = DeyeWebUtils._SPACES_REGEXP.sub(' ', string)
       string = string.replace('> ', '>')
       string = string.replace(' <', '<')
     elif DeyeWebConstants.add_html_comments:
@@ -207,29 +209,33 @@ class DeyeWebUtils:
 
   @staticmethod
   def get_app_id() -> str:
-    fname = os.path.join(tempfile.gettempdir(), 'deyeweb_appid.txt')
-    if os.path.exists(fname):
-      with DeyeFileWithLock(fname, "r") as f:
+    if os.path.exists(DeyeWebUtils._APP_ID_FILE_NAME):
+      with DeyeFileWithLock(DeyeWebUtils._APP_ID_FILE_NAME, "r") as f:
         return str(f.read()).strip()
 
     id = str(secrets.randbits(32))
-    with DeyeFileWithLock(fname, "w") as f:
+    with DeyeFileWithLock(DeyeWebUtils._APP_ID_FILE_NAME, "w") as f:
       f.write(id)
       f.flush()
+
+    logger = logging.getLogger()
+    logger.info(f"New unique App ID generated: {id}")
 
     return id
 
   @staticmethod
   async def get_app_id_async() -> str:
-    fname = os.path.join(tempfile.gettempdir(), 'deyeweb_appid.txt')
-    if os.path.exists(fname):
-      async with DeyeFileWithLockAsync(fname, "r") as f:
+    if os.path.exists(DeyeWebUtils._APP_ID_FILE_NAME):
+      async with DeyeFileWithLockAsync(DeyeWebUtils._APP_ID_FILE_NAME, "r") as f:
         return str(f.read()).strip()
 
     id = str(secrets.randbits(32))
-    async with DeyeFileWithLockAsync(fname, "w") as f:
+    async with DeyeFileWithLockAsync(DeyeWebUtils._APP_ID_FILE_NAME, "w") as f:
       f.write(id)
       f.flush()
+
+    logger = logging.getLogger()
+    logger.info(f"New unique App ID generated: {id}")
 
     return id
 

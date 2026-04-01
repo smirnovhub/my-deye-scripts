@@ -122,7 +122,7 @@ async def handle_back_requests(json_data: Dict[str, Any]):
     return get_error_result("Params processor module not available")
 
   try:
-    return await processor.get_params(json_data = json_data)
+    return await processor.get_params(json_data = json_data, logger = logger)
   except Exception as e:
     logger.error(traceback.format_exc())
     known_exception_class = dependency_provider.known_exception

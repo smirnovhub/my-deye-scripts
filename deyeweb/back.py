@@ -83,7 +83,7 @@ async def main():
     # Lazy load back params processor
     params_processor = dependency_provider.back_params_processor
     if params_processor:
-      result = await params_processor.get_params(json_data)
+      result = await params_processor.get_params(json_data, logger = logger)
     else:
       all_errors = dependency_provider.get_all_errors()
       error_text = "\n".join(f"{name}: {err}" for name, err in all_errors.items())

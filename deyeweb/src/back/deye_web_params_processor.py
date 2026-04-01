@@ -1,3 +1,5 @@
+import logging
+
 from typing import Any, Dict, List
 
 from deye_web_utils import DeyeWebUtils
@@ -22,16 +24,22 @@ class DeyeWebParamsProcessor:
       DeyeWebInstallIosProfileCommandProcessor(),
     ]
 
-  async def get_params(self, json_data: Dict[str, Any]) -> Dict[str, str]:
+  async def get_params(
+    self,
+    json_data: Dict[str, Any],
+    logger: logging.Logger,
+  ) -> Dict[str, str]:
     command_value = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_command_field)
     app_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_app_id_field)
     if not app_id:
+      logger.error("App ID value is empty")
       raise ValueError("App ID value is empty")
 
     # Verify that the frontend application ID matches the current backend instance ID
     # Prevent requests from being processed by the wrong or mismatched backend instance
     id = await DeyeWebUtils.get_app_id_async()
     if app_id != id:
+      logger.error(f"App ID mismatch: received {app_id}, but expected {id}")
       raise ValueError("App ID mismatch")
 
     try:
