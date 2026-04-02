@@ -124,106 +124,114 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
   logger.info(f"{client_ip}:{client_port} Client wants connect "
               f"to {config.LOGGER_HOST}:{config.LOGGER_PORT}...")
 
-  with logger_lock:
+  acquired = logger_lock.acquire(timeout = config.CLIENT_WAIT_TIMEOUT)
+
+  if not acquired:
+    logger.error(f"{client_ip}:{client_port} Could not acquire lock within "
+                 f"{config.CLIENT_WAIT_TIMEOUT}s. Connection rejected.")
+    client_sock.close()
+    return
+
+  try:
+    session_start = time.time()
+    wait_duration = session_start - start_wait
+
     if shutdown_event.is_set():
       client_sock.close()
       return
 
     logger_sock: Optional[socket.socket] = None
 
-    session_start = time.time()
-    wait_duration = session_start - start_wait
-
     logger.info(f"{client_ip}:{client_port} Lock acquired "
                 f"(waited {wait_duration:.2f}s). Connecting to logger...")
 
+    # Open connection to the real hardware
+    logger_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    logger_sock.settimeout(config.CONNECT_TIMEOUT)
+    logger_sock.connect((config.LOGGER_HOST, config.LOGGER_PORT))
+
+    logger_ip, logger_port = logger_sock.getpeername()
+
+    logger.info(f"{client_ip}:{client_port} Bridge established: "
+                f"{client_ip}:{client_port} <-> {logger_ip}:{logger_port}")
+
+    stop_event = threading.Event()
+
+    # Start forwarding threads
+    # Using threads to handle full-duplex communication
+    c2l = threading.Thread(
+      target = forward_data,
+      daemon = True,
+      args = (
+        client_sock,
+        logger_sock,
+        config.CLIENT_IDLE_TIMEOUT,
+        stop_event,
+        f"{client_ip}:{client_port} Client -> Logger",
+      ),
+      name = "ClientToLoggerThread",
+    )
+
+    l2c = threading.Thread(
+      target = forward_data,
+      daemon = True,
+      args = (
+        logger_sock,
+        client_sock,
+        config.LOGGER_IDLE_TIMEOUT,
+        stop_event,
+        f"{client_ip}:{client_port} Logger -> Client",
+      ),
+      name = "LoggerToClientThread",
+    )
+
+    c2l.start()
+    l2c.start()
+
+    wait_interval = 1.0
+    elapsed_time = 0.0
+
+    while not stop_event.is_set() and not shutdown_event.is_set():
+      if stop_event.wait(timeout = wait_interval):
+        break
+
+      elapsed_time += wait_interval
+      if elapsed_time >= config.SESSION_TIMEOUT:
+        logger.error(f"{client_ip}:{client_port} Session timed out after {config.SESSION_TIMEOUT}s")
+
+        stop_event.set()
+
+        try:
+          if logger_sock:
+            logger_sock.shutdown(socket.SHUT_RDWR)
+        except Exception:
+          pass
+
+        try:
+          client_sock.shutdown(socket.SHUT_RDWR)
+        except Exception:
+          pass
+
+        c2l.join(timeout = 1.5)
+        l2c.join(timeout = 1.5)
+
+        break
+
+    stop_event.set()
+
+  except socket.timeout:
+    logger.error(f"{client_ip}:{client_port} Connection to logger timed out")
+  except ConnectionRefusedError:
+    logger.error(f"{client_ip}:{client_port} Logger refused connection")
+  except OSError as e:
+    if e.errno == errno.EHOSTUNREACH:
+      logger.error(f"{client_ip}:{client_port} No route to host")
+    else:
+      logger.error(f"{client_ip}:{client_port} Unexpected error: {type(e).__name__}: {e}")
+  except Exception as ee:
+    logger.error(f"{client_ip}:{client_port} Unexpected error: {type(ee).__name__}: {ee}")
+  finally:
     try:
-      # Open connection to the real hardware
-      logger_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      logger_sock.settimeout(config.CONNECT_TIMEOUT)
-      logger_sock.connect((config.LOGGER_HOST, config.LOGGER_PORT))
-
-      logger_ip, logger_port = logger_sock.getpeername()
-
-      logger.info(f"{client_ip}:{client_port} Bridge established: "
-                  f"{client_ip}:{client_port} <-> {logger_ip}:{logger_port}")
-
-      stop_event = threading.Event()
-
-      # Start forwarding threads
-      # Using threads to handle full-duplex communication
-      c2l = threading.Thread(
-        target = forward_data,
-        daemon = True,
-        args = (
-          client_sock,
-          logger_sock,
-          config.CLIENT_IDLE_TIMEOUT,
-          stop_event,
-          f"{client_ip}:{client_port} Client -> Logger",
-        ),
-        name = "ClientToLoggerThread",
-      )
-
-      l2c = threading.Thread(
-        target = forward_data,
-        daemon = True,
-        args = (
-          logger_sock,
-          client_sock,
-          config.LOGGER_IDLE_TIMEOUT,
-          stop_event,
-          f"{client_ip}:{client_port} Logger -> Client",
-        ),
-        name = "LoggerToClientThread",
-      )
-
-      c2l.start()
-      l2c.start()
-
-      wait_interval = 1.0
-      elapsed_time = 0.0
-
-      while not stop_event.is_set() and not shutdown_event.is_set():
-        if stop_event.wait(timeout = wait_interval):
-          break
-
-        elapsed_time += wait_interval
-        if elapsed_time >= config.SESSION_TIMEOUT:
-          logger.error(f"{client_ip}:{client_port} Session timed out after {config.SESSION_TIMEOUT}s")
-
-          stop_event.set()
-
-          try:
-            if logger_sock:
-              logger_sock.shutdown(socket.SHUT_RDWR)
-          except Exception:
-            pass
-
-          try:
-            client_sock.shutdown(socket.SHUT_RDWR)
-          except Exception:
-            pass
-
-          c2l.join(timeout = 1.5)
-          l2c.join(timeout = 1.5)
-
-          break
-
-      stop_event.set()
-
-    except socket.timeout:
-      logger.error(f"{client_ip}:{client_port} Connection to logger timed out")
-    except ConnectionRefusedError:
-      logger.error(f"{client_ip}:{client_port} Logger refused connection")
-    except OSError as e:
-      if e.errno == errno.EHOSTUNREACH:
-        logger.error(f"{client_ip}:{client_port} No route to host")
-      else:
-        logger.error(f"{client_ip}:{client_port} Unexpected error: {type(e).__name__}: {e}")
-    except Exception as ee:
-      logger.error(f"{client_ip}:{client_port} Unexpected error: {type(ee).__name__}: {ee}")
-    finally:
       # Cleanup: ensure both sockets are closed and lock is released
       if logger_sock:
         logger_sock.close()
@@ -236,6 +244,10 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
       logger.info(f"{client_ip}:{client_port} Session finished "
                   f"(duration {session_duration:.2f}s). Lock released")
       logger.info('-----------------------------------------------------------------------')
+    except Exception as e:
+      logger.error(str(e))
+    finally:
+      logger_lock.release()
 
 def handle_exit(sig, frame):
   """

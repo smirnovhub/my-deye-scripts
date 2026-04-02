@@ -12,6 +12,14 @@ class DeyeProxyConfig:
     self.__proxy_port = EnvVar("PROXY_PORT", "8899", "Local port to listen on")
     self.__max_connections = EnvVar("MAX_CONCURRENT_CONNECTIONS", "10", "Max simultaneous connections")
 
+    # Maximum time (in seconds) a client is allowed to wait for acquiring the
+    # global lock before starting a session.
+    # If the lock is not acquired within this period, the client connection is
+    # terminated to prevent excessive queue buildup and resource exhaustion.
+    # This timeout should be slightly higher than SESSION_TIMEOUT to account for
+    # the maximum possible duration of an active session plus cleanup overhead.
+    self.__client_wait_timeout = EnvVar("CLIENT_WAIT_TIMEOUT", "15", "Timeout for client queue wait")
+
     # Maximum time (in seconds) allowed to establish the TCP connection to the logger.
     # If the connection attempt does not complete within this time, a socket.timeout
     # exception is raised and the session is aborted.
@@ -42,6 +50,7 @@ class DeyeProxyConfig:
       self.__logger_port,
       self.__proxy_port,
       self.__max_connections,
+      self.__client_wait_timeout,
       self.__connect_timeout,
       self.__client_idle_timeout,
       self.__logger_idle_timeout,
@@ -74,6 +83,10 @@ class DeyeProxyConfig:
   @property
   def MAX_CONCURRENT_CONNECTIONS(self) -> int:
     return self.__max_connections.as_int()
+
+  @property
+  def CLIENT_WAIT_TIMEOUT(self) -> int:
+    return self.__client_wait_timeout.as_int()
 
   @property
   def CONNECT_TIMEOUT(self) -> float:
