@@ -69,7 +69,6 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       self.bot.send_message(
         message.chat.id,
         f'Register type is not {datetime.__name__}',
-        parse_mode = 'HTML',
       )
       return
 
@@ -97,7 +96,6 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       self.bot.send_message(
         message.chat.id,
         'The inverter time is already synced',
-        parse_mode = 'HTML',
       )
 
   def _on_confirmation(

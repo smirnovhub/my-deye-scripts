@@ -264,7 +264,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
 
       def on_user_confirmation(chat_id: int, result: bool):
         if not result:
-          self.bot.send_message(message.chat.id, 'Nothing changed', parse_mode = 'HTML')
+          self.bot.send_message(message.chat.id, 'Nothing changed')
         else:
           try:
             holder.write_register(register, value)
