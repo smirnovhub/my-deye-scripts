@@ -85,6 +85,22 @@ function onLoad() {
   window.scrollTo(0, 0);
 }
 
+/**
+ * Retrieves the application identifier from the global scope.
+ * This ID is injected by the backend during the initial page load.
+ * * @returns {string} The unique application ID or an empty string if not found.
+ */
+function getAppId() {
+  // Check if the constant exists in the global scope
+  if (typeof DEYEWEB_APP_ID !== 'undefined') {
+    return DEYEWEB_APP_ID;
+  }
+
+  // Log a warning if the ID is missing
+  console.warn('DEYEWEB_APP_ID is not defined. Backend requests might fail.');
+  return '';
+}
+
 function getSessionId() {
   var sessionId = localStorage.getItem('session_id');
   if (!sessionId) {
@@ -266,6 +282,7 @@ async function update() {
       {
         'command': 'read_registers',
         'session_id': getSessionId(),
+        'app_id': getAppId(),
       }
     );
 
@@ -310,6 +327,7 @@ async function write_register(
         'register_name': register_name,
         'register_value': register_value,
         'session_id': getSessionId(),
+        'app_id': getAppId(),
       }
     );
 
@@ -338,6 +356,7 @@ async function sendCommand(command, field_id) {
       {
         'command': command,
         'session_id': getSessionId(),
+        'app_id': getAppId(),
       }
     );
 

@@ -1,22 +1,24 @@
 import argparse
+import asyncio
 
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional, Type, cast
 
 from datetime import datetime
+
+from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
-from raising_thread import RaisingThread
 from deye_base_enum import DeyeBaseEnum
-from deye_utils import DeyeUtils
 from deye_exceptions import DeyeKnownException
 from deye_modbus_interactor import DeyeModbusInteractor
+from deye_modbus_interactor_async import DeyeModbusInteractorAsync
 from deye_register_average_type import DeyeRegisterAverageType
 
 class DeyeRegisterProcessor:
   def __init__(self):
-    self.interactors: List[DeyeModbusInteractor] = []
-    self.master_interactor: Optional[DeyeModbusInteractor] = None
+    self.interactors: List[DeyeModbusInteractorAsync] = []
+    self.master_interactor: Optional[DeyeModbusInteractorAsync] = None
     self.registers = DeyeRegisters()
 
   def get_arg_name(self, register: DeyeRegister, action: str) -> str:
@@ -82,7 +84,7 @@ class DeyeRegisterProcessor:
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, 'Error while checking parameters') from e
 
-  def process_parameters(self, args: argparse.Namespace):
+  async def process_parameters(self, args: argparse.Namespace):
     if len(self.interactors) < 2 or args.only_accumulated == False:
       for interactor in self.interactors:
         for register in self.get_registers_to_process(args):
@@ -104,10 +106,11 @@ class DeyeRegisterProcessor:
               e, f'Error while reading register {register.name} from {interactor.name}') from e
 
     if len(self.interactors) > 1:
+      base_interactors = cast(List[DeyeModbusInteractor], self.interactors)
       for register in self.get_registers_to_process(args):
         try:
           if register.can_accumulate:
-            register.read(self.interactors)
+            register.read(base_interactors)
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             suffix = f' {register.suffix}'.rstrip()
 
@@ -135,6 +138,8 @@ class DeyeRegisterProcessor:
             else:
               register.write(self.master_interactor, value)
 
+            await self.master_interactor.write_registers_to_inverter()
+
             addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
             suffix = f' {register.suffix}'.rstrip()
 
@@ -150,7 +155,7 @@ class DeyeRegisterProcessor:
   def enqueue_registers(self, args: argparse.Namespace, loggers: List[DeyeLogger]):
     for logger in loggers:
       try:
-        interactor = DeyeModbusInteractor(
+        interactor = DeyeModbusInteractorAsync(
           logger = logger,
           socket_timeout = args.connection_timeout,
           caching_time = args.caching_time,
@@ -195,20 +200,74 @@ class DeyeRegisterProcessor:
 
     return result
 
-  def process_registers(self):
+  async def process_registers(self):
+    tasks: List[asyncio.Task[None]] = []
+
     try:
-      tasks: List[RaisingThread] = []
+      # Enqueue and create tasks for all interactors
       for interactor in self.interactors:
-        tasks.append(RaisingThread(target = interactor.process_enqueued_registers))
+        try:
+          # Create an asyncio task for the interactor's processing logic
+          # Using create_task starts execution immediately in the event loop
+          coro = interactor.process_enqueued_registers()
+          task = asyncio.create_task(coro, name = interactor.name)
 
+          tasks.append(task)
+        except Exception as e:
+          raise DeyeUtils.get_reraised_exception(
+            e,
+            f'{type(self).__name__}: error while processing enqueued '
+            f'registers {interactor.name}',
+          ) from e
+
+      if not tasks:
+        return
+
+      # Wait for all interactor tasks with a global timeout
+      try:
+        # asyncio.gather aggregates results and raises the first exception encountered
+        await asyncio.wait_for(
+          asyncio.gather(*tasks, return_exceptions = True),
+          timeout = 10.0,
+        )
+      except asyncio.TimeoutError:
+        # Identify which interactors failed to respond in time
+        unfinished = [t.get_name() for t in tasks if not t.done()]
+
+        # Cancel pending tasks to avoid background leaks
+        for t in tasks:
+          if not t.done():
+            t.cancel()
+
+        raise TimeoutError(f"Some interactors timed out: {', '.join(unfinished)}")
+      except Exception as e:
+        # Propagation of errors occurred during register processing
+        raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while reading registers') from e
+
+      # Check results after gather is finished
       for task in tasks:
-        task.start()
+        # Important: Check if task is NOT cancelled before calling .exception()
+        if task.cancelled():
+          continue
 
-      for task in tasks:
-        task.join()
+        exc = task.exception()
 
-    except Exception as e:
-      raise DeyeUtils.get_reraised_exception(e, 'Error while reading registers') from e
+        # Reraise with context so we know which inverter failed
+        if isinstance(exc, Exception):
+          interactor_name = task.get_name()
+          raise DeyeUtils.get_reraised_exception(
+            exc,
+            f"{type(self).__name__}: interactor '{interactor_name}' failed",
+          ) from exc
+    finally:
+      # Mandatory cleanup to prevent background task leaks
+      pending = [t for t in tasks if not t.done()]
+      for t in pending:
+        t.cancel()
+
+      if pending:
+        # Give the loop a chance to finish cancellation of tasks
+        await asyncio.gather(*pending, return_exceptions = True)
 
   def disconnect(self):
     for interactor in self.interactors:

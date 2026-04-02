@@ -1,9 +1,9 @@
 from typing import List
 
 from deye_register import DeyeRegister
-from deye_registers_holder import DeyeRegistersHolder
 from deye_web_constants import DeyeWebConstants
 from deye_grid_state import DeyeGridState
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_web_base_selection_builder import DeyeWebBaseSelectionBuilder
 
 class DeyeWebGridConnectVoltageLowSelectionBuilder(DeyeWebBaseSelectionBuilder):
@@ -12,7 +12,7 @@ class DeyeWebGridConnectVoltageLowSelectionBuilder(DeyeWebBaseSelectionBuilder):
 
   def build_selections_html(
     self,
-    holder: DeyeRegistersHolder,
+    holder: DeyeRegistersHolderAsync,
     register: DeyeRegister,
     selections: List[float],
     disabled: bool = False,
@@ -49,7 +49,7 @@ class DeyeWebGridConnectVoltageLowSelectionBuilder(DeyeWebBaseSelectionBuilder):
         {warning}
       """
 
-  def is_grid_power_too_high(self, holder: DeyeRegistersHolder) -> bool:
+  def is_grid_power_too_high(self, holder: DeyeRegistersHolderAsync) -> bool:
     if holder.accumulated_registers.grid_state_register.value == DeyeGridState.off_grid:
       return False
 

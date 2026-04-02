@@ -2,10 +2,6 @@ FROM php:8.4-apache AS baseweb
 
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
-ENV REPO_NAME=${REPO_NAME}
-# Set a default value for the backend URL (if backend used)
-# If set we will use apache proxy instead of regular php backend
-ENV BACK_SERVER_URL=http://172.17.17.27
 
 # Set remote branch name
 ARG BRANCH=master
@@ -35,7 +31,7 @@ RUN apt-get update && \
   echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages six requests
+RUN pip install --no-cache-dir --break-system-packages six requests aiohttp
 
 # Set working directory
 WORKDIR $APP_DIR
@@ -163,7 +159,7 @@ RUN apt-get update && \
 
 # Install required Python packages
 RUN pip install --no-cache-dir --break-system-packages \
-  six requests fastapi uvicorn uvloop
+  six requests fastapi uvicorn uvloop aiohttp
 
 # Copy some useful health scripts like pids guard, etc.
 COPY --chmod=755 health/*.sh /usr/local/bin/

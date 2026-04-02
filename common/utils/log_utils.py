@@ -9,8 +9,14 @@ class LogUtils:
     log_dir: str,
     log_file_template: str,
     log_level: int = logging.INFO,
+    log_to_console = True,
   ) -> logging.Logger:
     logger = logging.getLogger()
+
+    # Clear existing handlers to prevent duplicate logs
+    if logger.hasHandlers():
+      logger.handlers.clear()
+
     logger.setLevel(log_level)
 
     formatter = logging.Formatter(
@@ -26,8 +32,9 @@ class LogUtils:
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    console = logging.StreamHandler(sys.stdout)
-    console.setFormatter(formatter)
-    logger.addHandler(console)
+    if log_to_console:
+      console = logging.StreamHandler(sys.stdout)
+      console.setFormatter(formatter)
+      logger.addHandler(console)
 
     return logger

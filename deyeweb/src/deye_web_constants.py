@@ -42,6 +42,7 @@ class DeyeWebConstants:
 
   spacing_between_elements = 12
 
+  json_app_id_field = 'app_id'
   json_session_id_field = 'session_id'
   json_command_field = 'command'
   json_register_name_field = 'register_name'

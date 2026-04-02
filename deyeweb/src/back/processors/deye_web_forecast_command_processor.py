@@ -6,7 +6,7 @@ from deye_utils import DeyeUtils
 from deye_web_color import DeyeWebColor
 from battery_forecast_utils import BatteryForecastType
 from deye_web_remote_command import DeyeWebRemoteCommand
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_web_constants import DeyeWebConstants
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_web_forecast_registers import DeyeWebForecastRegisters
@@ -20,24 +20,24 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
       DeyeWebRemoteCommand.get_forecast_by_time,
     ])
 
-  def get_command_result(
+  async def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
     json_data: Dict[str, Any],
   ) -> Dict[str, str]:
     section_id = DeyeWebUtils.short(DeyeWebSection.forecast.title)
     try:
-      return self._get_command_result_internal(section_id, command)
+      return await self._get_command_result_internal(section_id, command)
     except Exception as e:
       return {section_id: f'<p style="color: red;"><b>Error: {e}</b></p>'}
 
-  def _get_command_result_internal(
+  async def _get_command_result_internal(
     self,
     section_id: str,
     command: DeyeWebRemoteCommand,
   ) -> Dict[str, str]:
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       name = 'deyeweb',
       loggers = self.loggers.loggers,
       caching_time = 5,
@@ -46,7 +46,7 @@ class DeyeWebForecastCommandProcessor(DeyeWebBaseCommandProcessor):
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
     finally:
       holder.disconnect()
 

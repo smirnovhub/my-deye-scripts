@@ -4,18 +4,20 @@ import tempfile
 
 from typing import Any, Dict
 
+from git_helper import GitHelper
 from deye_web_constants import DeyeWebConstants
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
 class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
     super().__init__([DeyeWebRemoteCommand.update_scripts])
+    self._git_helper = GitHelper()
 
-  def get_command_result(
+  async def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
     json_data: Dict[str, Any],
@@ -32,15 +34,15 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
       return result
 
     try:
-      current_branch_name = self.git_helper.get_current_branch_name()
+      current_branch_name = await self._git_helper.get_current_branch_name_async()
 
       if current_branch_name == 'HEAD':
         return get_result('Unable to update: the repository is not currently on a branch')
 
-      pull_result = self.git_helper.pull()
+      pull_result = await self._git_helper.pull_async()
 
       if 'up to date' in pull_result.lower():
-        last_commit = self.git_helper.get_last_commit_hash_and_comment()
+        last_commit = await self._git_helper.get_last_commit_hash_and_comment_async()
         return get_result('<p style="color: green;">'
                           "Already up to date.<br>"
                           f"You are currently on branch '{current_branch_name}':<br>"
@@ -49,13 +51,13 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
       cache_file_path = os.path.join(tempfile.gettempdir(), DeyeWebConstants.front_cache_file_name)
       DeyeWebUtils.file_truncate(cache_file_path)
 
-      holder = DeyeRegistersHolder(
+      holder = DeyeRegistersHolderAsync(
         name = 'deyeweb',
         loggers = self.loggers.loggers,
       )
 
       try:
-        holder.reset_cache()
+        await holder.reset_cache()
       finally:
         holder.disconnect()
 

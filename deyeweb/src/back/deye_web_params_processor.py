@@ -1,3 +1,5 @@
+import logging
+
 from typing import Any, Dict, List
 
 from deye_web_utils import DeyeWebUtils
@@ -13,7 +15,7 @@ from deye_web_write_registers_command_processor import DeyeWebWriteRegistersComm
 
 class DeyeWebParamsProcessor:
   def __init__(self):
-    self.processors: List[DeyeWebBaseCommandProcessor] = [
+    self._processors: List[DeyeWebBaseCommandProcessor] = [
       DeyeWebReadRegistersCommandProcessor(),
       DeyeWebWriteRegistersCommandProcessor(),
       DeyeWebForecastCommandProcessor(),
@@ -22,7 +24,22 @@ class DeyeWebParamsProcessor:
       DeyeWebInstallIosProfileCommandProcessor(),
     ]
 
-  def get_params(self, json_data: Dict[str, Any]) -> Dict[str, str]:
+  async def get_params(
+    self,
+    json_data: Dict[str, Any],
+    logger: logging.Logger,
+  ) -> Dict[str, str]:
+    app_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_app_id_field)
+    if not app_id:
+      raise ValueError("App ID value is empty")
+
+    # Verify that the frontend application ID matches the current backend instance ID
+    # Prevent requests from being processed by the wrong or mismatched backend instance
+    id = await DeyeWebUtils.get_app_id()
+    if app_id != id:
+      logger.error(f"App ID mismatch: expected {id}, but received {app_id}")
+      raise ValueError("App ID mismatch")
+
     command_value = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_command_field)
 
     try:
@@ -30,8 +47,8 @@ class DeyeWebParamsProcessor:
     except KeyError:
       raise ValueError(f"Invalid command: '{command_value}'")
 
-    processor = next((p for p in self.processors if p.is_acceptable(command)), None)
+    processor = next((p for p in self._processors if p.is_acceptable(command)), None)
     if processor is None:
       raise ValueError(f"Unknown command: '{command_value}'")
 
-    return processor.get_command_result(command, json_data)
+    return await processor.get_command_result(command, json_data)

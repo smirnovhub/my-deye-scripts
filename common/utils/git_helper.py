@@ -1,9 +1,9 @@
 import os
 import re
+import asyncio
 import subprocess
 
 from typing import Dict, List, Optional, Tuple
-from subprocess import CompletedProcess
 
 from deye_exceptions import DeyeValueException
 from git_exceptions import GitException
@@ -57,6 +57,12 @@ class GitHelper:
       'pull',
     )
 
+  async def pull_async(self) -> str:
+    return await self._run_git_command_and_get_result_async(
+      ["pull"],
+      'pull',
+    )
+
   def revert_to_revision(self, commit_hash: str) -> str:
     return self._run_git_command_and_get_result(
       ['reset', '--hard', commit_hash],
@@ -65,6 +71,12 @@ class GitHelper:
 
   def get_current_branch_name(self) -> str:
     return self._run_git_command_and_get_result(
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      'rev-parse --abbrev-ref HEAD',
+    )
+
+  async def get_current_branch_name_async(self) -> str:
+    return await self._run_git_command_and_get_result_async(
       ["rev-parse", "--abbrev-ref", "HEAD"],
       'rev-parse --abbrev-ref HEAD',
     )
@@ -127,6 +139,18 @@ class GitHelper:
 
   def get_last_commit_hash_and_comment(self) -> str:
     last_commit = self._run_git_command_and_get_result(
+      ["log", "-1", "--pretty=format:%h %ad %s", "--date=short"],
+      'log -1',
+    )
+
+    match = re.search(r"(.*)Merge pull request #(\d+)", last_commit)
+    if match:
+      last_commit = f"{match.group(1)}PR #{match.group(2)}"
+
+    return last_commit
+
+  async def get_last_commit_hash_and_comment_async(self) -> str:
+    last_commit = await self._run_git_command_and_get_result_async(
       ["log", "-1", "--pretty=format:%h %ad %s", "--date=short"],
       'log -1',
     )
@@ -251,19 +275,73 @@ class GitHelper:
         capture_output = True,
         text = True,
       )
-      self._check_git_result_and_raise(result)
+
+      self._check_git_result_and_raise(
+        returncode = result.returncode,
+        stdout = result.stdout,
+        stderr = result.stderr,
+      )
+
       return result.stdout.strip()
     except GitException as e:
       raise GitException(f'git {command_name} failed: {str(e)}')
     except Exception as e:
       raise GitException(f'git {command_name} failed: {str(e)}')
 
-  def _check_git_result_and_raise(self, result: CompletedProcess):
-    if result.returncode == 0:
+  async def _run_git_command_and_get_result_async(
+    self,
+    commands: List[str],
+    command_name: str,
+    cwd: Optional[str] = None,
+  ) -> str:
+    try:
+      # Create subprocess asynchronously
+      process = await asyncio.create_subprocess_exec(
+        "git",
+        "-C",
+        self._current_dir,
+        *commands,
+        cwd = cwd,
+        stdout = asyncio.subprocess.PIPE,
+        stderr = asyncio.subprocess.PIPE,
+      )
+
+      # Wait for process completion and capture output
+      stdout_bytes, stderr_bytes = await process.communicate()
+      await process.wait()
+
+      # Decode output to text
+      stdout = stdout_bytes.decode().strip() if stdout_bytes else ""
+      stderr = stderr_bytes.decode().strip() if stderr_bytes else ""
+
+      self._check_git_result_and_raise(
+        returncode = process.returncode,
+        stdout = stdout,
+        stderr = stderr,
+      )
+
+      return stdout
+
+    except GitException as e:
+      raise GitException(f"git {command_name} failed: {str(e)}")
+    except Exception as e:
+      raise GitException(f"git {command_name} failed: {str(e)}")
+
+  def _check_git_result_and_raise(
+    self,
+    returncode: Optional[int],
+    stdout: str,
+    stderr: str,
+  ):
+    # Handle the case where the process didn't return a code (safety check)
+    if returncode is None:
+      raise GitException("Process did not exit correctly (no return code)")
+
+    if returncode == 0:
       return
 
-    stdout = result.stdout.lower()
-    stderr = result.stderr.lower()
+    stdout = stdout.lower()
+    stderr = stderr.lower()
     output = stdout + stderr
 
     if 'no stash entries found' in output:
@@ -277,9 +355,9 @@ class GitHelper:
       newline_index = stderr.find('\n', index)
 
       if newline_index != -1:
-        error_text = result.stderr[index:newline_index].strip()
+        error_text = stderr[index:newline_index].strip()
       else:
-        error_text = result.stderr[index:].strip()
+        error_text = stderr[index:].strip()
 
       raise GitException(error_text)
 

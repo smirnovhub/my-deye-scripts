@@ -43,21 +43,6 @@ function parseAndValidateJson(string $json): array
 }
 
 /**
- * Prepares the array for transmission by injecting session metadata.
- *
- * Enriches the provided data with the current session identifier 
- * and converts the final structure into a JSON-formatted string.
- *
- * @param array $jsonArray
- * @return string
- */
-function prepareJsonPayload(array $jsonArray): string
-{
-  $jsonArray['session_id'] = session_id();
-  return json_encode($jsonArray);
-}
-
-/**
  * Reads the output from a process pipe with a timeout.
  *
  * @param resource $pipe The pipe to read from (stdout of process).

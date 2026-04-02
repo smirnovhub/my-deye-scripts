@@ -11,17 +11,21 @@ from deye_web_remote_command import DeyeWebRemoteCommand
 
 class DeyeWebFrontContentBuilder:
   def __init__(self):
-    self.sections_holder = DeyeWebSectionsHolder()
-    self.style_manager = DeyeWebStyleManager()
+    self._sections_holder = DeyeWebSectionsHolder()
+    self._style_manager = DeyeWebStyleManager()
 
-  def get_front_html(self) -> str:
-    result = """
+  async def get_front_html(self) -> str:
+    app_id = await DeyeWebUtils.get_app_id()
+    app_id_script = f'<script>const DEYEWEB_APP_ID = "{app_id}";</script>'
+
+    result = f"""
           <!DOCTYPE html>
           <html>
 
           <head>
             <title>Deye Web</title>
             <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+            {app_id_script}
             <link href="css/style.css" rel="stylesheet" type="text/css">
             <link href="css/spinner.css" rel="stylesheet" type="text/css">
           </head>
@@ -32,17 +36,17 @@ class DeyeWebFrontContentBuilder:
       """.strip()
 
     try:
-      style_id = self.style_manager.register_style("background-color: red; color: white; text-align: center;")
+      style_id = self._style_manager.register_style("background-color: red; color: white; text-align: center;")
 
-      result += self.build_tab_header(self.sections_holder.sections)
+      result += self._build_tab_header(self._sections_holder.sections)
       result += f"""
           <div class="remote_data {style_id}" id="error_field"
             data-remote_field="{DeyeWebConstants.result_error_field}">
           </div>
         """
 
-      result += self.build_tab_content(self.sections_holder.sections, self.style_manager)
-      result += self.style_manager.generate_css()
+      result += self._build_tab_content(self._sections_holder.sections, self._style_manager)
+      result += self._style_manager.generate_css()
     except Exception as e:
       result += f'{str(e)}\n{traceback.format_exc()}'
 
@@ -65,14 +69,14 @@ class DeyeWebFrontContentBuilder:
 
     return DeyeWebUtils.clean(result)
 
-  def build_tab_header(self, sections: List[DeyeWebBaseSection]) -> str:
+  def _build_tab_header(self, sections: List[DeyeWebBaseSection]) -> str:
     menu = ''
     for section in sections:
       menu += section.build_tab_header()
 
     arrow_size = 50
 
-    style_id = self.style_manager.register_style(f"padding-bottom: 5px;")
+    style_id = self._style_manager.register_style(f"padding-bottom: 5px;")
 
     return f"""
       <div class="scroll-wrapper">
@@ -86,7 +90,7 @@ class DeyeWebFrontContentBuilder:
       </div>
     """
 
-  def build_tab_content(
+  def _build_tab_content(
     self,
     sections: List[DeyeWebBaseSection],
     style_manager: DeyeWebStyleManager,

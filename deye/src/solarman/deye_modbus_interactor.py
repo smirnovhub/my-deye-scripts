@@ -1,50 +1,37 @@
+import logging
+
 from typing import Dict, List, Optional
+from datetime import timedelta
 
-from datetime import datetime, timedelta
-
-from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
-from deye_modbus_solarman import DeyeModbusSolarman
 from deye_register_cache_data import DeyeRegisterCacheData
-from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
-from deye_registers_local_cache_manager import DeyeRegistersLocalCacheManager
-from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
 
 class DeyeModbusInteractor:
-  def __init__(self, logger: DeyeLogger, **kwargs):
-    self.logger = logger
-    self.loggers = DeyeLoggers()
-    self.solarman = DeyeModbusSolarman(logger, **kwargs)
-    self.registers: Dict[int, DeyeRegisterCacheData] = dict()
-    self.verbose = bool(kwargs.get('verbose', False))
-    self.default_caching_time = max(0, int(kwargs.get('caching_time', 3)))
-    self.max_register_count = 120
+  def __init__(
+    self,
+    logger: DeyeLogger,
+    **kwargs,
+  ):
+    if type(self) is DeyeModbusInteractor:
+      raise TypeError("DeyeModbusInteractor cannot be instantiated directly")
 
-    # Initialize cache manager
-    self.cache_manager: DeyeRegistersBaseCacheManager
-    if self.loggers.remote_cache_server:
-      self.cache_manager = DeyeRegistersRemoteCacheManager(
-        name = self.logger.name,
-        serial = self.logger.serial,
-        remote_cache_server = self.loggers.remote_cache_server,
-      )
-    else:
-      self.cache_manager = DeyeRegistersLocalCacheManager(
-        name = self.logger.name,
-        serial = self.logger.serial,
-      )
+    self._logger = logger
+    self._loggers = DeyeLoggers()
+    self._log = logging.getLogger()
+    self._registers: Dict[int, DeyeRegisterCacheData] = dict()
+    self._registers_to_write: List[DeyeRegisterCacheData] = []
+    self._verbose = bool(kwargs.get('verbose', False))
+    self._default_caching_time = max(0, int(kwargs.get('caching_time', 3)))
+    self._max_register_count = 120
 
   @property
   def name(self) -> str:
-    return self.logger.name
+    return self._logger.name
 
   @property
   def is_master(self) -> bool:
-    return self.logger.name == self.loggers.master.name
-
-  def clear_registers_queue(self) -> None:
-    self.registers.clear()
+    return self._logger.name == self._loggers.master.name
 
   def enqueue_register(
     self,
@@ -52,70 +39,40 @@ class DeyeModbusInteractor:
     quantity: int,
     caching_time: Optional[timedelta],
   ) -> None:
-    cache_time = self.default_caching_time
+    cache_time = self._default_caching_time
     if cache_time > 0 and caching_time:
       cache_time = int(caching_time.total_seconds())
 
-    self.registers[address] = DeyeRegisterCacheData(
+    self._registers[address] = DeyeRegisterCacheData(
       address = address,
       quantity = quantity,
       caching_time = cache_time,
     )
 
-  def process_enqueued_registers(self) -> None:
-    if not self.registers:
-      return
+  def read_register(self, address: int, quantity: int) -> List[int]:
+    reg = self._registers.get(address)
+    return reg.values[:quantity] if reg else [0] * quantity
 
-    if self.default_caching_time < 1:
-      # Do NOT use any caching on read
-      self.registers = self.read_from_inverter(self.registers)
-      self.cache_manager.save_to_cache(self.registers)
-      return
+  def write_register(self, address: int, values: List[int]) -> int:
+    # Create a new data object for the updated register
+    updated_register = DeyeRegisterCacheData(
+      address = address,
+      quantity = len(values),
+      caching_time = self._default_caching_time,
+      values = values,
+    )
 
-    now = datetime.now()
+    self._registers_to_write.append(updated_register)
+    return len(values)
 
-    cached_registers: Dict[int, DeyeRegisterCacheData] = {}
-
-    # Reset cache during the first 5 minutes of the day
-    if now.hour == 0 and now.minute < 5:
-      if self.verbose:
-        print(f'{self.name} resetting cache because midnight')
-      self.cache_manager.reset_cache()
-    else:
-      cached_registers = self.cache_manager.get_cached_registers(self.registers)
-
-    if self.verbose:
-      registers_caching_time = {addr: reg.caching_time for addr, reg in self.registers.items()}
-      print(f'{self.name} registers cache times: {registers_caching_time}')
-      cached_data_map = {addr: reg.values for addr, reg in cached_registers.items()}
-      print(f'{self.name} cached registers: {cached_data_map}')
-
-    # Create a new dictionary containing only registers NOT found in cache
-    uncached_registers = {addr: val for addr, val in self.registers.items() if addr not in cached_registers}
-
-    if self.verbose:
-      print(f'{self.name} uncached registers: {list(uncached_registers.keys())}')
-
-    if uncached_registers:
-      polled_registers = self.read_from_inverter(uncached_registers)
-      self.cache_manager.save_to_cache(polled_registers)
-      self.registers = {**cached_registers, **polled_registers}
-    else:
-      self.registers = cached_registers
-
-  def read_from_inverter(
+  def _get_register_groups(
     self,
     registers: Dict[int, DeyeRegisterCacheData],
-  ) -> Dict[int, DeyeRegisterCacheData]:
-    """Reads registers from inverter and returns a NEW dictionary with NEW objects."""
-    if not registers:
-      return {}
-
-    results: Dict[int, DeyeRegisterCacheData] = {}
-    sorted_addrs = sorted(registers.keys())
-
+  ) -> List[List[DeyeRegisterCacheData]]:
     groups: List[List[DeyeRegisterCacheData]] = []
     current_group: List[DeyeRegisterCacheData] = []
+
+    sorted_addrs = sorted(registers.keys())
 
     for addr in sorted_addrs:
       reg = registers[addr]
@@ -126,7 +83,7 @@ class DeyeModbusInteractor:
       group_start = current_group[0].address
       block_end = reg.address + reg.quantity
 
-      if (block_end - group_start) <= self.max_register_count:
+      if (block_end - group_start) <= self._max_register_count:
         current_group.append(reg)
       else:
         groups.append(current_group)
@@ -135,66 +92,13 @@ class DeyeModbusInteractor:
     if current_group:
       groups.append(current_group)
 
-    if self.verbose:
+    if self._verbose:
       simple_groups = [[reg.address for reg in group] for group in groups]
       grp = str(simple_groups).replace("], ", "],\n  ").replace("[[", "[\n  [").replace("]]", "]\n]")
-      print(f'register groups to read from {self.name}:\n{grp}')
+      self._log.info(f'register groups to read from {self.name}:\n{grp}')
 
-    try:
-      for group in groups:
-        start = group[0].address
-        last_item = group[-1]
-        count = (last_item.address + last_item.quantity) - start
-
-        data = self.solarman.read_holding_registers(address = start, quantity = count)
-
-        for reg in group:
-          offset = reg.address - start
-          results[reg.address] = DeyeRegisterCacheData(
-            address = reg.address,
-            quantity = reg.quantity,
-            caching_time = reg.caching_time,
-            values = data[offset:offset + reg.quantity],
-          )
-    except Exception as e:
-      raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while reading registers') from e
-    finally:
-      self.solarman.disconnect()
-
-    return results
-
-  def read_register(self, address: int, quantity: int) -> List[int]:
-    reg = self.registers.get(address)
-    return reg.values[:quantity] if reg else [0] * quantity
-
-  def write_register(self, address: int, values: List[int]) -> int:
-    try:
-      result = self.solarman.write_multiple_holding_registers(address, values)
-    except Exception as e:
-      raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while writing registers') from e
-    finally:
-      self.solarman.disconnect()
-
-    # Create a new data object for the updated register
-    updated_register = DeyeRegisterCacheData(
-      address = address,
-      quantity = len(values),
-      caching_time = self.default_caching_time,
-      values = values,
-    )
-
-    # Update the local dictionary with the new object
-    # This ensures subsequent reads within this session get the new value
-    self.registers[address] = updated_register
-
-    # Update the persistent JSON cache
-    self.cache_manager.save_to_cache({address: updated_register})
-
-    return result
-
-  def reset_cache(self) -> None:
-    self.cache_manager.reset_cache()
+    return groups
 
   def disconnect(self) -> None:
-    self.clear_registers_queue()
-    self.cache_manager.close()
+    self._registers.clear()
+    self._registers_to_write.clear()

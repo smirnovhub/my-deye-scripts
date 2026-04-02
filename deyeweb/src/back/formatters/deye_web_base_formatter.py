@@ -9,7 +9,7 @@ from deye_web_constants import DeyeWebConstants
 from deye_web_style_manager import DeyeWebStyleManager
 from deye_web_graphs_config import DeyeWebGraphsConfig
 from deye_web_value_formatter import DeyeWebValueFormatter
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 
 class DeyeWebBaseFormatter:
   def __init__(
@@ -65,7 +65,7 @@ class DeyeWebBaseFormatter:
   def format_register(
     self,
     inverter: str,
-    holder: DeyeRegistersHolder,
+    holder: DeyeRegistersHolderAsync,
     register: DeyeRegister,
   ) -> str:
     registers = holder.all_registers[inverter]

@@ -17,8 +17,8 @@ class DeyeWebColorsCalculator:
     sections_holder: DeyeWebSectionsHolder,
     session_id: str,
   ):
-    self.sections_holder = sections_holder
-    self.fname = os.path.join(tempfile.gettempdir(), f'deye_web_colors_{session_id}.json')
+    self._sections_holder = sections_holder
+    self._fname = os.path.join(tempfile.gettempdir(), f'deye_web_colors_{session_id}.json')
 
   def get_sections_colors(
     self,
@@ -28,7 +28,7 @@ class DeyeWebColorsCalculator:
     all_colors: Dict[str, DeyeWebColor] = {}
     result: Dict[str, str] = {}
 
-    for section in self.sections_holder.sections:
+    for section in self._sections_holder.sections:
       color = DeyeWebColor.gray
 
       if isinstance(section, DeyeWebRegistersSection):
@@ -45,7 +45,7 @@ class DeyeWebColorsCalculator:
 
       all_colors[section.section.id] = color
 
-    for section in self.sections_holder.sections:
+    for section in self._sections_holder.sections:
       color = all_colors[section.section.id]
       id = DeyeWebUtils.short(DeyeWebConstants.tab_color_template.format(section.section.id))
       if color == DeyeWebColor.gray:
@@ -62,7 +62,7 @@ class DeyeWebColorsCalculator:
 
   def save_colors(self, colors: Dict[str, DeyeWebColor]) -> None:
     data_to_save = {k: v.name for k, v in colors.items()}
-    with DeyeFileWithLock(self.fname, "w") as f:
+    with DeyeFileWithLock(self._fname, "w") as f:
       json.dump(
         data_to_save,
         f,
@@ -73,7 +73,7 @@ class DeyeWebColorsCalculator:
       f.flush()
 
   def load_colors(self) -> Dict[str, DeyeWebColor]:
-    with DeyeFileWithLock(self.fname, "r") as f:
+    with DeyeFileWithLock(self._fname, "r") as f:
       content = f.read()
 
     if not content:

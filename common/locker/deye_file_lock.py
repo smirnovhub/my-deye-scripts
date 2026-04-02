@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from typing import IO, Any
@@ -10,6 +11,54 @@ class DeyeFileLock:
   LOCK_UN = 0x8 # Unlock
 
   inverter_lock_file_name_template = 'inverter{0}.lock'
+
+  @staticmethod
+  async def flock_async(
+    file: IO[Any],
+    flags: int,
+    retry_interval: float = 0.1,
+    timeout: float = 10.0,
+  ) -> float:
+    """
+    Asynchronous version of flock using non-blocking mode and asyncio.sleep.
+    
+    Parameters:
+        file: Open file object.
+        flags: Combination of LOCK_EX, LOCK_SH, LOCK_NB, LOCK_UN.
+        retry_interval: Time to wait between attempts in seconds.
+        timeout: Maximum time to wait for the lock before raising TimeoutError.
+      
+    Returns:
+        The time spent waiting for the lock (in seconds).
+    """
+    # If it's an unlock operation, do it immediately (it's always non-blocking)
+    if flags & DeyeFileLock.LOCK_UN:
+      DeyeFileLock.flock(file, flags)
+      return 0
+
+    # Force Non-Blocking flag for the retry loop logic
+    nb_flags = flags | DeyeFileLock.LOCK_NB
+
+    loop = asyncio.get_running_loop()
+    start_time = loop.time()
+
+    while True:
+      try:
+        # Try to acquire the lock in non-blocking mode
+        DeyeFileLock.flock(file, nb_flags)
+        # Lock acquired successfully
+        return loop.time() - start_time
+      except (OSError, IOError, PermissionError):
+        # If the user explicitly asked for non-blocking WITHOUT retries
+        if flags & DeyeFileLock.LOCK_NB:
+          raise
+
+        # Check for timeout
+        if (loop.time() - start_time) >= timeout:
+          raise TimeoutError(f"System was unable to acquire file lock within {timeout}s")
+
+        # Wait and let other async tasks run
+        await asyncio.sleep(retry_interval)
 
   if os.name == 'nt':
     import msvcrt

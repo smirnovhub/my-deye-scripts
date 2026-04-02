@@ -71,8 +71,7 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     self.reg_100_json = {self.reg_100.address: self.reg_100}
 
   def tearDown(self):
-    # Always close the session to prevent ResourceWarnings
-    self.cache_manager.close()
+    pass
 
   def test_endpoint_construction(self):
     """
@@ -107,7 +106,6 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     # Should not raise exception, should return empty dict
     results = ghost_manager.get_cached_registers(self.reg_100_json)
     self.assertEqual(results, {})
-    ghost_manager.close()
 
   def test_remote_ttl_enforcement_mixed_data(self):
     """
@@ -179,7 +177,6 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     manager = DeyeRegistersRemoteCacheManager(test_inverter_name, test_inverter_serial, "http://127.0.0.1:1")
     with self.assertRaises(DeyeCacheException):
       manager.get_cached_registers(self.reg_100_json)
-      manager.close()
 
   def test_unknown_host_raises_exception(self):
     """
@@ -189,7 +186,6 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     manager = DeyeRegistersRemoteCacheManager(test_inverter_name, test_inverter_serial, "http://some.unknown.host")
     with self.assertRaises(DeyeCacheException):
       manager.get_cached_registers(self.reg_100_json)
-      manager.close()
 
 if __name__ == "__main__":
   logging.basicConfig(

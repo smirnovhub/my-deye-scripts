@@ -3,7 +3,7 @@ from deye_registers import DeyeRegisters
 from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
 from deye_web_utils import DeyeWebUtils
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_web_threshold_formatter import DeyeWebThresholdFormatter
 
 class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
@@ -40,7 +40,7 @@ class DeyeWebBatteryPowerFormatter(DeyeWebThresholdFormatter):
   def format_register(
     self,
     inverter: str,
-    holder: DeyeRegistersHolder,
+    holder: DeyeRegistersHolderAsync,
     register: DeyeRegister,
   ) -> str:
     value = self.get_formatted_value(register)

@@ -7,15 +7,15 @@ from pathlib import Path
 from datetime import datetime
 
 from deye_loggers import DeyeLoggers
-from deye_file_with_lock import DeyeFileWithLock
-from deye_registers_holder import DeyeRegistersHolder
+from deye_file_with_lock_async import DeyeFileWithLockAsync
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from data_collector_registers import DataCollectorRegisters
 from deye_register_average_type import DeyeRegisterAverageType
 from data_collector_config import DataCollectorConfig
 
 DATA_PATH = "data/deye-collected-data"
 
-def _get_thresholds(holder: DeyeRegistersHolder) -> Dict[str, float]:
+def _get_thresholds(holder: DeyeRegistersHolderAsync) -> Dict[str, float]:
   return {
     holder.master_registers.gen_power_register.description: 7.0,
     holder.master_registers.pv1_current_register.description: 0.2,
@@ -28,10 +28,10 @@ def _get_thresholds(holder: DeyeRegistersHolder) -> Dict[str, float]:
     holder.master_registers.pv_total_power_register.description: 30.0,
   }
 
-def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
+async def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
   loggers = DeyeLoggers()
 
-  holder = _read_registers(loggers, logger)
+  holder = await _read_registers(loggers, logger)
 
   now = datetime.now()
 
@@ -54,7 +54,7 @@ def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
       logger = logger,
     )
 
-  with DeyeFileWithLock(data_file_path, "a", encoding = "utf-8") as f:
+  async with DeyeFileWithLockAsync(data_file_path, "a", encoding = "utf-8") as f:
     if write_header:
       f.write(header)
 
@@ -81,18 +81,18 @@ def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> None:
   thresholds_file_path = os.path.join(DATA_PATH, "thresholds.csv")
 
   # Write thresholds
-  with DeyeFileWithLock(thresholds_file_path, "w", encoding = "utf-8") as f:
+  async with DeyeFileWithLockAsync(thresholds_file_path, "w", encoding = "utf-8") as f:
     f.write("parameter,threshold\n")
     f.write(thresholds_str)
     f.flush()
 
-def _read_registers(loggers: DeyeLoggers, logger: logging.Logger) -> DeyeRegistersHolder:
+async def _read_registers(loggers: DeyeLoggers, logger: logging.Logger) -> DeyeRegistersHolderAsync:
   retry_attempts = 5
   retry_delay_sec = 6
   last_exception = None
 
   for attempt in range(retry_attempts):
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       loggers = loggers.loggers,
       register_creator = lambda prefix: DataCollectorRegisters(prefix),
       name = 'data_collector',
@@ -102,7 +102,7 @@ def _read_registers(loggers: DeyeLoggers, logger: logging.Logger) -> DeyeRegiste
 
     try:
       logger.info("Reading registers...")
-      holder.read_registers()
+      await holder.read_registers()
       logger.info("Registers read successful.")
       return holder
     except Exception as e:

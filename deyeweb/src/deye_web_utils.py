@@ -1,17 +1,21 @@
 import gc
+import logging
 import os
 import re
 import signal
+import tempfile
 import threading
 import time
 import zlib
 import random
 import inspect
+import secrets
 
 from typing import Any, Dict, List
 from collections import Counter
 
 from deye_file_lock import DeyeFileLock
+from deye_file_with_lock_async import DeyeFileWithLockAsync
 from deye_web_constants import DeyeWebConstants
 from deye_web_remote_command import DeyeWebRemoteCommand
 
@@ -19,7 +23,8 @@ class DeyeWebUtils:
   _id_stack: List[int] = []
   _lock = threading.Lock()
 
-  SPACES_REGEXP = re.compile(r'\s{2,}')
+  _SPACES_REGEXP = re.compile(r'\s{2,}')
+  _APP_ID_FILE_NAME = os.path.join(tempfile.gettempdir(), 'deyeweb_appid.txt')
 
   @staticmethod
   def _generate_id() -> int:
@@ -81,7 +86,7 @@ class DeyeWebUtils:
   @staticmethod
   def clean(string: str) -> str:
     if DeyeWebConstants.clean_html_code:
-      string = DeyeWebUtils.SPACES_REGEXP.sub(' ', string)
+      string = DeyeWebUtils._SPACES_REGEXP.sub(' ', string)
       string = string.replace('> ', '>')
       string = string.replace(' <', '<')
     elif DeyeWebConstants.add_html_comments:
@@ -119,6 +124,16 @@ class DeyeWebUtils:
       raise TypeError(f"Field '{field_name}' must be a string")
 
     return value
+
+  @staticmethod
+  def get_session_id(json_data: Dict[str, Any]) -> str:
+    session_id = DeyeWebUtils.get_json_field(json_data, DeyeWebConstants.json_session_id_field)
+    session_id = re.sub(r'[^a-zA-Z0-9-]+', '-', session_id).strip('-')
+
+    if not session_id:
+      raise ValueError(f"Field '{DeyeWebConstants.json_session_id_field}' is empty")
+
+    return session_id
 
   @staticmethod
   def get_deye_class_objects_count() -> str:
@@ -200,6 +215,24 @@ class DeyeWebUtils:
          Format: "sendCommand('<command_name>', '<id>');"
     """
     return f"sendCommand('{command.name}', '{id}');"
+
+  @staticmethod
+  async def get_app_id() -> str:
+    async with DeyeFileWithLockAsync(DeyeWebUtils._APP_ID_FILE_NAME, "a+") as f:
+      f.seek(0)
+      app_id = str(f.read()).strip()
+      if app_id:
+        return app_id
+
+      app_id = str(secrets.randbits(32))
+
+      f.seek(0)
+      f.truncate(0)
+      f.write(app_id)
+      f.flush()
+
+    logging.getLogger().info(f"New unique App ID generated: {app_id}")
+    return app_id
 
   @staticmethod
   def shutdown_with_delay(delay: int = 1) -> None:

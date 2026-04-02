@@ -1,6 +1,5 @@
 import os
 import sys
-import asyncio
 import logging
 import traceback
 import uvicorn
@@ -13,7 +12,6 @@ from fastapi import FastAPI, status
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware
 
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 current_path = Path(__file__).parent.resolve()
@@ -30,6 +28,7 @@ from log_utils import LogUtils
 from common_utils import CommonUtils
 from backserver_config import BackServerConfig
 from deye_web_dependency_provider import DeyeWebDependencyProvider
+from http_session_singleton_async import HttpSessionSingletonAsync
 
 config = BackServerConfig()
 
@@ -62,6 +61,8 @@ async def lifespan_handler(app: FastAPI):
   # This code runs on shutdown
   logger.info("Deye BackServer is shutting down...")
 
+  await HttpSessionSingletonAsync.close_session()
+
   for handler in logging.getLogger().handlers:
     handler.flush()
 
@@ -76,25 +77,31 @@ app = FastAPI(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size = 1024)
-dependency_provider = DeyeWebDependencyProvider()
 
-# Better to define the executor outside to reuse threads
-executor = ThreadPoolExecutor(max_workers = 15)
+dependency_provider = DeyeWebDependencyProvider()
 
 @app.get("/front", tags = ["Frontend Operations"])
 async def handle_front_requests():
+  headers = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+  }
+
   builder = dependency_provider.front_builder
   if builder:
     try:
-      html = builder.get_front_html()
+      html = await builder.get_front_html()
       return HTMLResponse(
         content = html,
+        headers = headers,
         status_code = status.HTTP_200_OK,
       )
     except Exception as e:
       logger.error(traceback.format_exc())
       return HTMLResponse(
         content = f"<h1>Frontend Error</h1><pre>{str(e)}\n{traceback.format_exc()}</pre>",
+        headers = headers,
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
       )
 
@@ -104,6 +111,7 @@ async def handle_front_requests():
   logger.error(error_text)
   return HTMLResponse(
     content = f"<h1>Frontend Error</h1><pre>{error_text}</pre>",
+    headers = headers,
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
   )
 
@@ -114,11 +122,7 @@ async def handle_back_requests(json_data: Dict[str, Any]):
     return get_error_result("Params processor module not available")
 
   try:
-    loop = asyncio.get_running_loop()
-    return await asyncio.wait_for(
-      loop.run_in_executor(executor, processor.get_params, json_data),
-      timeout = config.BACK_EXECUTION_TIMEOUT,
-    )
+    return await processor.get_params(json_data = json_data, logger = logger)
   except Exception as e:
     logger.error(traceback.format_exc())
     known_exception_class = dependency_provider.known_exception

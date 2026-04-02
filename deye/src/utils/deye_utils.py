@@ -1,8 +1,10 @@
 import os
 import re
+import sys
 import queue
 import struct
-import sys
+import asyncio
+import logging
 import requests
 
 from pathlib import Path
@@ -17,7 +19,6 @@ from deye_exceptions import (
   DeyeNoSocketAvailableException,
   DeyeOSErrorException,
   DeyeQueueIsEmptyException,
-  DeyeUnknownException,
   DeyeValueException,
 )
 
@@ -245,7 +246,7 @@ class DeyeUtils:
       return DeyeQueueIsEmptyException(f'{message}: Queue is empty (get() timed out)')
     except NoSocketAvailableError as e:
       return DeyeNoSocketAvailableException(f'{message}: {e.__class__.__name__} ({str(e).strip(".")})')
-    except requests.exceptions.Timeout:
+    except (requests.exceptions.Timeout, asyncio.TimeoutError, TimeoutError):
       return DeyeConnectionErrorException(f'{message}: Connection timed out')
     except requests.exceptions.ConnectionError as e:
       text = DeyeUtils.get_exception_text(e)
@@ -254,7 +255,10 @@ class DeyeUtils:
       text = DeyeUtils.get_exception_text(e)
       return DeyeOSErrorException(f'{message}: OS error ({text})')
     except Exception as e:
-      return DeyeUnknownException(f'{message}: {str(e)}')
+      logger = logging.getLogger()
+      # Log with the original exception context
+      logger.error(f"{message}: {str(exception)}", exc_info = exception)
+      return e
 
   @staticmethod
   def get_exception_text(exc: OSError) -> str:

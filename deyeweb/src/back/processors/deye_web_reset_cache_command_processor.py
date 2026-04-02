@@ -6,7 +6,7 @@ from typing import Any, Dict
 from deye_web_constants import DeyeWebConstants
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 
@@ -14,7 +14,7 @@ class DeyeWebResetCacheCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
     super().__init__([DeyeWebRemoteCommand.reset_cache])
 
-  def get_command_result(
+  async def get_command_result(
     self,
     command: DeyeWebRemoteCommand,
     json_data: Dict[str, Any],
@@ -29,13 +29,13 @@ class DeyeWebResetCacheCommandProcessor(DeyeWebBaseCommandProcessor):
 
     result['need_reload'] = 'true'
 
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       name = 'deyeweb',
       loggers = self.loggers.loggers,
     )
 
     try:
-      holder.reset_cache()
+      await holder.reset_cache()
     except Exception as e:
       result[id] = f'<p style="color: red;">{str(e)}</p>'
       result['need_reload'] = 'false'

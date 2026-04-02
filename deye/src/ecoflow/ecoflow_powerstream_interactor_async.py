@@ -1,4 +1,4 @@
-import requests
+import aiohttp
 import logging
 
 from typing import Any, Dict, List, Optional
@@ -8,14 +8,14 @@ from ecoflow_utils import EcoflowUtils
 from ecoflow_device import EcoflowDevice
 from ecoflow_devices import EcoflowDevices
 from ecoflow_device_status import EcoflowDeviceStatus
-from http_session_singleton import HttpSessionSingleton
+from http_session_singleton_async import HttpSessionSingletonAsync
 
 from ecoflow_exceptions import (
   EcoflowHttpErrorException,
   EcoflowResponseErrorException,
 )
 
-class EcoflowPowerStreamInteractor:
+class EcoflowPowerStreamInteractorAsync:
   """
   Interacts with Ecoflow devices over the Ecoflow cloud API.
 
@@ -47,7 +47,6 @@ class EcoflowPowerStreamInteractor:
     self._set_permanent_watts_cmd = 'WN511_SET_PERMANENT_WATTS_PACK'
     self._permanent_watts_field = '20_1.permanentWatts'
     self._power_scale = 10
-    self._session = HttpSessionSingleton().session
     self._logger = logging.getLogger()
     self._logger.setLevel(logging.INFO)
 
@@ -72,7 +71,7 @@ class EcoflowPowerStreamInteractor:
 
     return EcoflowDeviceStatus.unknown
 
-  def get_online_devices(self, devices: EcoflowDevices) -> List[EcoflowDevice]:
+  async def get_online_devices(self, devices: EcoflowDevices) -> List[EcoflowDevice]:
     """
     Return a list of devices that are currently online.
 
@@ -88,19 +87,18 @@ class EcoflowPowerStreamInteractor:
     if self._verbose:
       self._logger.info(f'{self._name}: getting devices list...')
 
-    with self._get_request(
+    async with await self._get_request(
         self._device_url,
         self._access_key,
         self._secret_key,
     ) as response:
-      if response.status_code != HTTPStatus.OK:
+      if response.status != HTTPStatus.OK:
         if self._verbose:
-          self._logger.info(
-            f'{self._name}: server returned http error {response.status_code} while getting devices list')
+          self._logger.info(f'{self._name}: server returned http error {response.status} while getting devices list')
         raise EcoflowHttpErrorException(
-          f'{self._name}: server returned http error {response.status_code} while getting devices list')
+          f'{self._name}: server returned http error {response.status} while getting devices list')
 
-      js = response.json()
+      js = await response.json()
 
     self._check_error(js, 'getting devices list')
 
@@ -118,7 +116,7 @@ class EcoflowPowerStreamInteractor:
 
     return online_devices
 
-  def get_power(self, device: EcoflowDevice) -> int:
+  async def get_power(self, device: EcoflowDevice) -> int:
     """
     Retrieve the current permanent power setting of a device.
 
@@ -137,7 +135,7 @@ class EcoflowPowerStreamInteractor:
     if self._verbose:
       self._logger.info(f'{self._name}: getting power for {device.name}...')
 
-    with self._post_request(
+    async with await self._post_request(
         self._quota_url,
         self._access_key,
         self._secret_key,
@@ -146,14 +144,14 @@ class EcoflowPowerStreamInteractor:
         'params': params
       },
     ) as response:
-      if response.status_code != HTTPStatus.OK:
+      if response.status != HTTPStatus.OK:
         if self._verbose:
           self._logger.info(
-            f'{self._name}: server returned http error {response.status_code} while getting power for {device.name}')
+            f'{self._name}: server returned http error {response.status} while getting power for {device.name}')
         raise EcoflowHttpErrorException(
-          f'{self._name}: server returned http error {response.status_code} while getting power for {device.name}')
+          f'{self._name}: server returned http error {response.status} while getting power for {device.name}')
 
-      js = response.json()
+      js = await response.json()
 
     self._check_error(js, device.name)
 
@@ -167,7 +165,7 @@ class EcoflowPowerStreamInteractor:
 
     return power
 
-  def set_power(self, device: EcoflowDevice, power: int):
+  async def set_power(self, device: EcoflowDevice, power: int):
     """
     Set a new permanent power limit for a device.
 
@@ -185,7 +183,7 @@ class EcoflowPowerStreamInteractor:
 
     params = {'permanentWatts': power * self._power_scale}
 
-    with self._put_request(
+    async with await self._put_request(
         self._quota_url,
         self._access_key,
         self._secret_key,
@@ -195,14 +193,14 @@ class EcoflowPowerStreamInteractor:
         'params': params
       },
     ) as response:
-      if response.status_code != HTTPStatus.OK:
+      if response.status != HTTPStatus.OK:
         if self._verbose:
           self._logger.info(
-            f'{self._name}: server returned http error {response.status_code} while setting power for {device.name}')
+            f'{self._name}: server returned http error {response.status} while setting power for {device.name}')
         raise EcoflowHttpErrorException(
-          f'{self._name}: server returned http error {response.status_code} while setting power for {device.name}')
+          f'{self._name}: server returned http error {response.status} while setting power for {device.name}')
 
-      js = response.json()
+      js = await response.json()
 
     self._check_error(js, device.name)
 
@@ -232,13 +230,13 @@ class EcoflowPowerStreamInteractor:
       message = f': {js["message"]}' if 'message' in js else ''
       raise EcoflowResponseErrorException(f'{self._name}: server returned error code {code} for {device_name}{message}')
 
-  def _put_request(
+  async def _put_request(
     self,
     url: str,
     key: str,
     secret: str,
     params: Optional[Dict[str, Any]] = None,
-  ) -> requests.Response:
+  ) -> aiohttp.ClientResponse:
     """
     Send an HTTP PUT request with signed headers and optional JSON body.
 
@@ -249,18 +247,19 @@ class EcoflowPowerStreamInteractor:
         params (dict, optional): Optional JSON body to include. Defaults to None.
 
     Returns:
-        requests.Response: Response object returned by the requests library.
+        aiohttp.ClientResponse: Response object returned by the requests library.
     """
+    session = await HttpSessionSingletonAsync.get_session()
     headers = EcoflowUtils.get_headers(key, secret, params)
-    return self._session.put(url, headers = headers, json = params, timeout = 10)
+    return await session.put(url, json = params, headers = headers)
 
-  def _get_request(
+  async def _get_request(
     self,
     url: str,
     key: str,
     secret: str,
     params: Optional[Dict[str, Any]] = None,
-  ) -> requests.Response:
+  ) -> aiohttp.ClientResponse:
     """
     Send an HTTP GET request with signed headers and optional JSON body.
 
@@ -271,18 +270,19 @@ class EcoflowPowerStreamInteractor:
         params (dict, optional): Optional JSON body to include. Defaults to None.
 
     Returns:
-        requests.Response: Response object returned by the requests library.
+        aiohttp.ClientResponse: Response object returned by the requests library.
     """
+    session = await HttpSessionSingletonAsync.get_session()
     headers = EcoflowUtils.get_headers(key, secret, params)
-    return self._session.get(url, headers = headers, json = params, timeout = 10)
+    return await session.get(url, json = params, headers = headers)
 
-  def _post_request(
+  async def _post_request(
     self,
     url: str,
     key: str,
     secret: str,
     params: Optional[Dict[str, Any]] = None,
-  ) -> requests.Response:
+  ) -> aiohttp.ClientResponse:
     """
     Send an HTTP POST request with signed headers and optional JSON body.
 
@@ -293,7 +293,8 @@ class EcoflowPowerStreamInteractor:
         params (dict, optional): Optional JSON body to include. Defaults to None.
 
     Returns:
-        requests.Response: Response object returned by the requests library.
+        aiohttp.ClientResponse: Response object returned by the requests library.
     """
+    session = await HttpSessionSingletonAsync.get_session()
     headers = EcoflowUtils.get_headers(key, secret, params)
-    return self._session.post(url, headers = headers, json = params, timeout = 10)
+    return await session.post(url, json = params, headers = headers)
