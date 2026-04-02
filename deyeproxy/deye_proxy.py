@@ -296,6 +296,7 @@ def main() -> None:
   logger.info(f"Target logger       : {config.LOGGER_HOST}:{config.LOGGER_PORT}")
   logger.info(f"Listening on        : {actual_ip}:{config.PROXY_PORT}")
   logger.info(f"Max connections     : {config.MAX_CONCURRENT_CONNECTIONS}")
+  logger.info(f"Client wait timeout : {config.CLIENT_WAIT_TIMEOUT}")
   logger.info(f"Connect timeout     : {config.CONNECT_TIMEOUT}s")
   logger.info(f"Client idle timeout : {config.CLIENT_IDLE_TIMEOUT}s")
   logger.info(f"Logger idle timeout : {config.LOGGER_IDLE_TIMEOUT}s")
