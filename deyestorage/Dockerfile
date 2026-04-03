@@ -43,7 +43,7 @@ COPY --chown=$USER_NAME:$USER_NAME deyestorage/ ./deyestorage/
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1
 
-# Expose proxy port
+# Expose server port
 EXPOSE $SERVER_PORT
 
 # Set working directory
