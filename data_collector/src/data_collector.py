@@ -86,6 +86,8 @@ async def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> Non
     f.write(thresholds_str)
     f.flush()
 
+  logger.info("-------------------------------------")
+
 async def _read_registers(loggers: DeyeLoggers, logger: logging.Logger) -> DeyeRegistersHolderAsync:
   retry_attempts = 5
   retry_delay_sec = 6
