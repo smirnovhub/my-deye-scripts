@@ -18,7 +18,7 @@ class DeyeFileLock:
     flags: int,
     retry_interval: float = 0.1,
     timeout: float = 10.0,
-  ) -> float:
+  ) -> None:
     """
     Asynchronous version of flock using non-blocking mode and asyncio.sleep.
     
@@ -27,14 +27,11 @@ class DeyeFileLock:
         flags: Combination of LOCK_EX, LOCK_SH, LOCK_NB, LOCK_UN.
         retry_interval: Time to wait between attempts in seconds.
         timeout: Maximum time to wait for the lock before raising TimeoutError.
-      
-    Returns:
-        The time spent waiting for the lock (in seconds).
     """
     # If it's an unlock operation, do it immediately (it's always non-blocking)
     if flags & DeyeFileLock.LOCK_UN:
       DeyeFileLock.flock(file, flags)
-      return 0
+      return
 
     # Force Non-Blocking flag for the retry loop logic
     nb_flags = flags | DeyeFileLock.LOCK_NB
@@ -47,7 +44,7 @@ class DeyeFileLock:
         # Try to acquire the lock in non-blocking mode
         DeyeFileLock.flock(file, nb_flags)
         # Lock acquired successfully
-        return loop.time() - start_time
+        return
       except (OSError, IOError, PermissionError):
         # If the user explicitly asked for non-blocking WITHOUT retries
         if flags & DeyeFileLock.LOCK_NB:
@@ -69,7 +66,7 @@ class DeyeFileLock:
     lock_path = os.path.join(tempfile.gettempdir(), 'deye')
 
     @staticmethod
-    def flock(file: IO[Any], flags: int):
+    def flock(file: IO[Any], flags: int) -> None:
       """
       Cross-platform file lock implementation for Windows.
 
@@ -107,7 +104,7 @@ class DeyeFileLock:
     lock_path = '/var/lock/deye'
 
     @staticmethod
-    def flock(file: IO[Any], flags: int):
+    def flock(file: IO[Any], flags: int) -> None:
       """
       Cross-platform file lock implementation for Unix (Linux/macOS).
 
