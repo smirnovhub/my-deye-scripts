@@ -2,14 +2,14 @@ import telebot
 
 from env_utils import EnvUtils
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_page_navigator import TelebotPageNavigator
 from deye_graphs_data_provider import DeyeGraphsDataProvider
 from deye_graphs_main_page import DeyeGraphsMainPage
 from deye_graphs_graph_name_page import DeyeGraphsGraphNamePage
 from deye_graphs_inverter_page import DeyeGraphsInverterPage
 
-class TelebotMenuGraphs(TelebotMenuItemSyncHandler):
+class TelebotMenuGraphs(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self._provider = DeyeGraphsDataProvider()

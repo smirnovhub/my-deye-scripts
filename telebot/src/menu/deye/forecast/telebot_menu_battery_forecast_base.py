@@ -8,12 +8,12 @@ from forecast_registers import ForecastRegisters
 from telebot_command_choice import CommandChoice
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from battery_forecast_utils import BatteryForecastUtils
 from battery_forecast_utils import BatteryForecastType
 from battery_forecast_utils import BatteryForecastOrderType
 
-class TelebotMenuBatteryForecastBase(TelebotMenuItemSyncHandler):
+class TelebotMenuBatteryForecastBase(TelebotMenuItemHandlerSync):
   def __init__(
     self,
     bot: telebot.TeleBot,

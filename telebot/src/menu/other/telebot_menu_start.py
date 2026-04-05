@@ -6,11 +6,11 @@ from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_file_lock import DeyeFileLock
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telegram_send_message import Telegram
 from telebot_utils import TelebotUtils
 
-class TelebotMenuStart(TelebotMenuItemSyncHandler):
+class TelebotMenuStart(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self._data_dir = TelebotUtils.get_data_dir()

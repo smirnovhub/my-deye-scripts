@@ -3,11 +3,11 @@ import telebot
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_user_choices import UserChoices
 from countdown_with_cancel import CountdownWithCancel
 
-class TelebotMenuRestart(TelebotMenuItemSyncHandler):
+class TelebotMenuRestart(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
 

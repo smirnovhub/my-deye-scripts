@@ -1,16 +1,24 @@
 import telebot
 import traceback
 
-from deye_exceptions import DeyeKnownException
-from telebot_menu_item_handler import TelebotMenuItemHandler
-from telebot_local_update_checker import TelebotLocalUpdateChecker
-from telebot_remote_update_checker import TelebotRemoteUpdateChecker
+from typing import Any, Coroutine
+from concurrent.futures import Future
 
-class TelebotMenuItemSyncHandler(TelebotMenuItemHandler):
+from deye_exceptions import DeyeKnownException
+from telebot_async_runner import TelebotAsyncRunner
+from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
+from telebot_remote_update_checker_async import TelebotRemoteUpdateCheckerAsync
+
+class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
   """
   Base class for handling Telebot menu item commands and user authorization
   """
-  def __init__(self, bot: telebot.TeleBot):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ):
     """
     Initialize the TelebotMenuItemHandler with a bot instance
 
@@ -19,8 +27,9 @@ class TelebotMenuItemSyncHandler(TelebotMenuItemHandler):
     """
     super().__init__(bot = bot)
 
-    self.local_update_checker = TelebotLocalUpdateChecker()
-    self.remote_update_checker = TelebotRemoteUpdateChecker()
+    self._runner = runner
+    self._local_update_checker = TelebotLocalUpdateCheckerAsync()
+    self._remote_update_checker = TelebotRemoteUpdateCheckerAsync()
 
   def register_handlers(self) -> None:
     """
@@ -33,21 +42,28 @@ class TelebotMenuItemSyncHandler(TelebotMenuItemHandler):
 
     @self.bot.message_handler(commands = commands)
     def handle(message: telebot.types.Message):
-      try:
-        if not self.is_authorized(message):
-          return
+      # Wrap sync handler → async execution
+      self._runner.run(self._handle_async(message))
 
-        if self.has_updates(message):
-          return
+  async def _handle_async(self, message: telebot.types.Message) -> None:
+    """
+    Async processing pipeline
+    """
+    try:
+      if not self.is_authorized(message):
+        return
 
-        self.process_message(message)
-      except DeyeKnownException as e:
-        self.bot.send_message(message.chat.id, str(e))
-      except Exception as e:
-        self.bot.send_message(message.chat.id, str(e))
-        self.logger.error(traceback.format_exc())
+      if await self.has_updates(message):
+        return
 
-  def process_message(self, message: telebot.types.Message) -> None:
+      await self.process_message(message)
+    except DeyeKnownException as e:
+      self.bot.send_message(message.chat.id, str(e))
+    except Exception as e:
+      self.bot.send_message(message.chat.id, str(e))
+      self.logger.error(traceback.format_exc())
+
+  async def process_message(self, message: telebot.types.Message) -> None:
     """
     Process the incoming message for this command
 
@@ -62,16 +78,16 @@ class TelebotMenuItemSyncHandler(TelebotMenuItemHandler):
     raise NotImplementedError(
       f'{self.__class__.__name__}: process_message() for command {self.command.command} is not implemented')
 
-  def has_updates(self, message: telebot.types.Message) -> bool:
+  async def has_updates(self, message: telebot.types.Message) -> bool:
     try:
-      if not self.remote_update_checker.is_on_branch():
+      if not await self._remote_update_checker.is_on_branch():
         self.bot.send_message(message.chat.id, 'Update check skipped: the repository is not currently on a branch')
         return False
 
-      if self.remote_update_checker.check_for_remote_updates(self.bot, message):
+      if await self._remote_update_checker.check_for_remote_updates(self.bot, message):
         return True
 
-      if self.local_update_checker.check_for_local_updates(
+      if await self._local_update_checker.check_for_local_updates(
           self.bot,
           message.chat.id,
           force = False,
@@ -83,3 +99,6 @@ class TelebotMenuItemSyncHandler(TelebotMenuItemHandler):
       self.logger.info(f'Error while checking for updates: {str(e)}')
 
     return False
+
+  def run_async(self, coro: Coroutine[Any, Any, Any]) -> Future[Any]:
+    return self._runner.run(coro)

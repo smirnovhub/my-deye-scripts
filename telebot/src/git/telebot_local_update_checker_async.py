@@ -7,14 +7,14 @@ from typing import Optional
 from deye_utils import DeyeUtils
 from button_node import ButtonNode
 from common_utils import CommonUtils
-from git_helper import GitHelper
+from git_helper_async import GitHelperAsync
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 from deye_file_with_lock import DeyeFileWithLock
 from telebot_user_choices import UserChoices
 from countdown_with_cancel import CountdownWithCancel
 
-class TelebotLocalUpdateChecker:
+class TelebotLocalUpdateCheckerAsync:
   """
   This class provides functionality to check for local changes in the Git repository
   used by the Telebot project. It tracks the last time the user was asked about
@@ -24,7 +24,7 @@ class TelebotLocalUpdateChecker:
   File-based locking is used to safely read/write state files.
   """
   def __init__(self):
-    self._git_helper = GitHelper()
+    self._git_helper = GitHelperAsync()
     self._logger = logging.getLogger()
 
     data_dir = TelebotUtils.get_data_dir()
@@ -34,7 +34,7 @@ class TelebotLocalUpdateChecker:
     DeyeUtils.ensure_dir_and_file_exists(self._ask_file_name)
     DeyeUtils.ensure_dir_and_file_exists(self._hash_file_name)
 
-  def check_for_local_updates(
+  async def check_for_local_updates(
     self,
     bot: telebot.TeleBot,
     chat_id: int,
@@ -64,7 +64,7 @@ class TelebotLocalUpdateChecker:
     self._save_last_local_update_ask_time(time.time())
 
     # Check if the local repository changed since last run
-    if self._is_local_repository_changed():
+    if await self._is_local_repository_changed():
       # Prompt the user to restart the bot to apply local changes
       options = [
         ButtonNode(text = 'Yes, restart now'),
@@ -94,11 +94,11 @@ class TelebotLocalUpdateChecker:
 
     return False
 
-  def update_last_commit_hash(self):
+  async def update_last_commit_hash(self):
     """
     Update the saved commit hash file with the current HEAD commit hash.
     """
-    hash = self._git_helper.get_last_commit_hash()
+    hash = await self._git_helper.get_last_commit_hash()
     self._save_last_commit_hash(hash)
 
   def _ask_for_restart(self, bot: telebot.TeleBot, chat_id: int):
@@ -125,14 +125,14 @@ class TelebotLocalUpdateChecker:
       on_cancel = on_cancel,
     )
 
-  def _is_local_repository_changed(self) -> bool:
+  async def _is_local_repository_changed(self) -> bool:
     """
     Determine if the local repository has changed since the last saved commit hash.
 
     Returns:
         bool: True if the current commit hash differs from the last saved hash.
     """
-    current_hash = self._git_helper.get_last_commit_hash()
+    current_hash = await self._git_helper.get_last_commit_hash()
     last_hash = self._load_last_commit_hash()
     return len(last_hash) > 0 and len(current_hash) > 0 and last_hash != current_hash
 

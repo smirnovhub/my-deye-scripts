@@ -18,12 +18,12 @@ from telebot_menu_item import TelebotMenuItem
 from telebot_test_utils import TelebotTestUtils
 from telebot_utils import TelebotUtils
 from testable_telebot import TestableTelebot
-from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from lock_exceptions import DeyeLockAlreadyAcquiredException
 from telebot_progress_message import TelebotProgressMessage
 
-class TelebotMenuTest(TelebotMenuItemSyncHandler):
+class TelebotMenuTest(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self.update_checker = TelebotLocalUpdateChecker()

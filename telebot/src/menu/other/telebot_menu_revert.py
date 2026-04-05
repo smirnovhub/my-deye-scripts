@@ -8,14 +8,14 @@ from git_helper import GitHelper
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_constants import TelebotConstants
 from telebot_user_choices import UserChoices
 from telebot_advanced_choice import AdvancedChoice
 from countdown_with_cancel import CountdownWithCancel
 
-class TelebotMenuRevert(TelebotMenuItemSyncHandler):
+class TelebotMenuRevert(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self.git_helper = GitHelper()

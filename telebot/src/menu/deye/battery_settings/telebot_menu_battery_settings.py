@@ -2,7 +2,7 @@ import telebot
 
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder import DeyeRegistersHolder
 from battery_settings_registers import BatterySettingsRegisters
@@ -11,7 +11,7 @@ from battery_settings_main_page import BatterySettingsMainPage
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
 
-class TelebotMenuBatterySettings(TelebotMenuItemSyncHandler):
+class TelebotMenuBatterySettings(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
 

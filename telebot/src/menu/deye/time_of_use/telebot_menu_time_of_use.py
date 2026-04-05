@@ -10,12 +10,12 @@ from time_of_use_registers import TimeOfUseRegisters
 from time_of_use_socs_page import TimeOfUseSocsPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_deye_helper import TelebotDeyeHelper
 from time_of_use_data import TimeOfUseData
 from deye_registers_holder import DeyeRegistersHolder
 
-class TelebotMenuTimeOfUse(TelebotMenuItemSyncHandler):
+class TelebotMenuTimeOfUse(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
 
