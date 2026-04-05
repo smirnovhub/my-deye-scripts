@@ -88,7 +88,7 @@ class MyTelebot:
       handler.register_handlers()
 
     default_menu_items = self.get_default_menu_items(bot)
-    authorized_menu_items = self.get_authorized_menu_items(bot)
+    authorized_menu_items = self.get_authorized_menu_items(bot = bot, runner = runner)
     authorized_menu_items.extend(self.get_writable_registers_menu_items(bot))
 
     # unknown command handler should be always last
