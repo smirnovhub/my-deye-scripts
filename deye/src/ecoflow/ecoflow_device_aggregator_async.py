@@ -1,8 +1,7 @@
 import logging
 
-from typing import List
+from typing import Dict, List
 
-from key_value_store_async import KeyValueStoreAsync
 from ecoflow_device import EcoflowDevice
 from ecoflow_devices import EcoflowDevices
 from ecoflow_powerstream_interactor_async import EcoflowPowerStreamInteractorAsync
@@ -27,7 +26,6 @@ class EcoflowDeviceAggregatorAsync:
     self,
     access_key: str,
     secret_key: str,
-    cache_file,
     **kwargs,
   ):
     self._devices = EcoflowDevices()
@@ -39,7 +37,7 @@ class EcoflowDeviceAggregatorAsync:
 
     self._name = kwargs.get('name', 'ecoflow')
     self._verbose = kwargs.get('verbose', False)
-    self._power_cache = KeyValueStoreAsync(cache_file, -1)
+    self._power_cache: Dict[str, int] = {}
     self._logger = logging.getLogger()
     self._logger.setLevel(logging.INFO)
 
@@ -76,7 +74,7 @@ class EcoflowDeviceAggregatorAsync:
     online_serials = {device.serial for device in online_devices}
     for device in self._devices.devices:
       if device.serial not in online_serials:
-        await self._power_cache.set(device.serial, -1)
+        self._power_cache[device.serial] = -1
 
   async def try_set_power(self, device: EcoflowDevice, power: int):
     """
@@ -96,7 +94,7 @@ class EcoflowDeviceAggregatorAsync:
     if self._verbose:
       self._logger.info(f'{self._name}: setting power {power} W for {device.name}...')
 
-    old_power = await self._power_cache.get(device.serial)
+    old_power = self._power_cache.get(device.serial, -1)
 
     if self._verbose:
       self._logger.info(f'{self._name}: got power {old_power} W from cache for {device.name}')
@@ -114,7 +112,7 @@ class EcoflowDeviceAggregatorAsync:
     if self._verbose:
       self._logger.info(f'{self._name}: writing power {power} W to cache for {device.name}...')
 
-    await self._power_cache.set(device.serial, power)
+    self._power_cache[device.serial] = power
 
   async def get_cached_total_power(self) -> int:
     """
@@ -128,7 +126,7 @@ class EcoflowDeviceAggregatorAsync:
     """
     total_power = 0
     for device in self._devices.devices:
-      power = await self._power_cache.get(device.serial)
+      power = self._power_cache.get(device.serial, -1)
       if power > 0:
         total_power += power
 
