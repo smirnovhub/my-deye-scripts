@@ -18,7 +18,6 @@ class EcoflowDeviceAggregatorAsync:
   Parameters:
     access_key (str): Ecoflow API access key.
     secret_key (str): Ecoflow API secret key.
-    cache_file (str): Path to a local file used for caching device power values.
     **kwargs: Optional keyword arguments passed to EcoflowPowerStreamInteractor:
       - name (str): Name identifier for logging (default: 'ecoflow').
       - verbose (bool): Enable verbose logging (default: False).
