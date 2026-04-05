@@ -19,12 +19,6 @@ class TelebotMenuGraphs(TelebotMenuItemSyncHandler):
     return TelebotMenuItem.deye_graphs
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if self.has_updates(message):
-      return
-
     server_url = EnvUtils.get_remote_graph_server_url()
     if not server_url:
       self.bot.send_message(

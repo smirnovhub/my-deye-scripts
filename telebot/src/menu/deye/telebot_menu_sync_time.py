@@ -26,12 +26,6 @@ class TelebotMenuSyncTime(TelebotMenuItemSyncHandler):
     return TelebotMenuItem.deye_sync_time
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if self.has_updates(message):
-      return
-
     registers = DeyeRegisters()
     register = registers.inverter_system_time_register
 

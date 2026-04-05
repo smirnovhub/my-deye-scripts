@@ -24,12 +24,6 @@ class TelebotMenuTimeOfUse(TelebotMenuItemSyncHandler):
     return TelebotMenuItem.deye_time_of_use
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if self.has_updates(message):
-      return
-
     # Should be local to avoid issues with locks and threads
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master],

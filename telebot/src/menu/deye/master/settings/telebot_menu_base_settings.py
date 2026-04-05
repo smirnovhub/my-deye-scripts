@@ -37,12 +37,6 @@ class TelebotMenuBaseSettings(TelebotMenuItemSyncHandler):
     ]
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if self.has_updates(message):
-      return
-
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolder(
       loggers = [self.loggers.master] if self.main_command == self.master_command else self.loggers.loggers,

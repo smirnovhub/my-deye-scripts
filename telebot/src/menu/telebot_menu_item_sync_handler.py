@@ -34,6 +34,12 @@ class TelebotMenuItemSyncHandler(TelebotMenuItemHandler):
     @self.bot.message_handler(commands = commands)
     def handle(message: telebot.types.Message):
       try:
+        if not self.is_authorized(message):
+          return
+
+        if self.has_updates(message):
+          return
+
         self.process_message(message)
       except DeyeKnownException as e:
         self.bot.send_message(message.chat.id, str(e))

@@ -42,9 +42,6 @@ class TelebotMenuTest(TelebotMenuItemSyncHandler):
     return TelebotMenuItem.test
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
     if not self.acquire_lock(message.chat.id):
       return
 

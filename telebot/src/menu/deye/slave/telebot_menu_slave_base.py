@@ -45,12 +45,6 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemSyncHandler):
     return commands
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if self.has_updates(message):
-      return
-
     command_name = message.text.lstrip('/')
 
     pattern = re.compile(self.slave_command.command.replace("{0}", r"(.+)"))
