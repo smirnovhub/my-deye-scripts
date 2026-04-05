@@ -3,6 +3,7 @@ import telebot
 
 from typing import List
 
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_utils import TelebotUtils
 from teletest import TeleTest
 from deye_utils import DeyeUtils
@@ -48,6 +49,7 @@ class MyTelebot:
   def __init__(
     self,
     bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
     logger: logging.Logger,
   ):
     self.bot = bot
@@ -170,7 +172,11 @@ class MyTelebot:
       TelebotMenuStart(bot),
     ]
 
-  def get_authorized_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
+  def get_authorized_menu_items(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ) -> List[TelebotMenuItemHandler]:
     return [
       TelebotMenuAllInfo(bot),
       TelebotMenuMasterInfo(bot),
@@ -189,7 +195,7 @@ class MyTelebot:
       TelebotMenuBatteryForecast(bot),
       TelebotMenuBatteryForecastByPercent(bot),
       TelebotMenuBatteryForecastByTime(bot),
-      TelebotMenuSyncTime(bot),
+      TelebotMenuSyncTime(bot = bot, runner = runner),
       TelebotMenuRestart(bot),
       TelebotMenuRevert(bot),
       TelebotMenuUpdate(bot),
