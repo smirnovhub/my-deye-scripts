@@ -1,4 +1,5 @@
 import os
+import asyncio
 import logging
 
 from typing import IO, Any, Optional
@@ -27,12 +28,14 @@ class DeyeFileWithLockAsync:
     timeout: int = 15,
   ):
     self._sfile: Optional[IO[Any]] = None
+    self._start_time: Optional[float] = None
     self._path: str = path
     self._mode: str = mode
     self._encoding = encoding
     self._timeout: int = timeout
     self._lock_name: Optional[str] = None
     self._logger = logging.getLogger()
+    self._loop = asyncio.get_running_loop()
 
   async def __aenter__(self) -> IO[Any]:
     # Initialize file opening and locking when entering the context
@@ -65,14 +68,16 @@ class DeyeFileWithLockAsync:
         DeyeFileLockingException: If the lock cannot be acquired within the timeout.
     """
     self._path = path
+    self._start_time = self._loop.time()
 
     if "w" in mode or "a" in mode:
       # Write/append mode: open file for read/write (a+) and lock exclusively
       self._lock_name = "exclusive"
       self._sfile = open(path, "a+", encoding = self._encoding)
 
-      wait_time = await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_EX, timeout)
+      await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_EX, timeout)
 
+      wait_time = self._loop.time() - self._start_time
       self._logger.info(f"Acquired {self._lock_name} lock on {self._path} in {wait_time:.3f}s")
 
       # Position file pointer according to mode
@@ -86,8 +91,9 @@ class DeyeFileWithLockAsync:
       self._lock_name = "shared"
       self._sfile = open(path, mode, encoding = self._encoding)
 
-      wait_time = await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_SH, timeout)
+      await DeyeFileLock.flock_async(self._sfile, DeyeFileLock.LOCK_SH, timeout)
 
+      wait_time = self._loop.time() - self._start_time
       self._logger.info(f"Acquired {self._lock_name} lock on {self._path} in {wait_time:.3f}s")
 
     return self._sfile
@@ -100,4 +106,8 @@ class DeyeFileWithLockAsync:
       DeyeFileLock.flock(self._sfile, DeyeFileLock.LOCK_UN)
       self._sfile.close()
       self._sfile = None
-      self._logger.info(f"Released {self._lock_name} lock on {self._path}")
+
+      if self._start_time:
+        total_time = self._loop.time() - self._start_time
+        self._logger.info(f"Released {self._lock_name} lock on {self._path} after {total_time:.3f}s")
+        self._start_time = None

@@ -110,7 +110,7 @@ class TelebotLocalUpdateChecker:
         chat_id (int): The Telegram chat ID to send messages to.
     """
     def on_finish(chat_id: int):
-      bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...', parse_mode = 'HTML')
+      bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
       TelebotUtils.stop_bot(bot)
 
     def on_cancel(chat_id: int):

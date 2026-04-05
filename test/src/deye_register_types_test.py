@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 import logging
 
 from pathlib import Path
@@ -27,70 +28,74 @@ from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_test_utils import DeyeTestUtils
 from solarman_test_server import SolarmanTestServer
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 
-DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
-logging.basicConfig(
-  level = logging.INFO,
-  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-  datefmt = DeyeUtils.time_format_str,
-)
-
-log = logging.getLogger()
-loggers = DeyeLoggers()
-
-if not loggers.is_test_loggers:
-  log.error('ERROR: your loggers are not test loggers')
-  sys.exit(1)
-
-servers: List[SolarmanTestServer] = []
-
-for logger in loggers.loggers:
-  server = SolarmanTestServer(
-    name = logger.name,
-    address = logger.address,
-    serial = logger.serial,
-    port = logger.port,
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
   )
 
-  server.set_random_mode(True)
-  servers.append(server)
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
 
-holder_kwargs = {
-  'name': 'test',
-  'socket_timeout': 1,
-  'caching_time': 0,
-  'verbose': True,
-}
-
-# should be local to avoid issues with locks
-holder = DeyeRegistersHolder(
-  loggers = loggers.loggers,
-  **holder_kwargs,
-)
-
-try:
-  holder.read_registers()
-finally:
-  holder.disconnect()
-
-# Test types match for accumulated registers
-for register in holder.master_registers.all_registers:
-  register_type = type(register.value).__name__
-
-  accumulated_register = holder.accumulated_registers.get_register_by_name(register.name)
-  if accumulated_register is None:
-    log.error(f"Unable to get accumulated register '{register.name}'")
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
     sys.exit(1)
 
-  accumulated_register_type = type(accumulated_register.value).__name__
+  servers: List[SolarmanTestServer] = []
 
-  if register_type != accumulated_register_type:
-    log.error(f"Original ({register_type}) and accumulated ({accumulated_register_type}) register "
-          f"value type doesn't match for register '{register.name}'")
-    sys.exit(1)
-  else:
-    log.info(f"Register value type '{register_type}' matched for accumulated register '{register.name}'")
+  for logger in loggers.loggers:
+    server = SolarmanTestServer(
+      name = logger.name,
+      address = logger.address,
+      serial = logger.serial,
+      port = logger.port,
+    )
 
-log.info('All accumulated registers types matched. Test is ok')
+    server.set_random_mode(True)
+    servers.append(server)
+
+  holder_kwargs = {
+    'name': 'test',
+    'socket_timeout': 1,
+    'caching_time': 0,
+    'verbose': True,
+  }
+
+  # should be local to avoid issues with locks
+  holder = DeyeRegistersHolderAsync(
+    loggers = loggers.loggers,
+    **holder_kwargs,
+  )
+
+  try:
+    await holder.read_registers()
+  finally:
+    holder.disconnect()
+
+  # Test types match for accumulated registers
+  for register in holder.master_registers.all_registers:
+    register_type = type(register.value).__name__
+
+    accumulated_register = holder.accumulated_registers.get_register_by_name(register.name)
+    if accumulated_register is None:
+      log.error(f"Unable to get accumulated register '{register.name}'")
+      sys.exit(1)
+
+    accumulated_register_type = type(accumulated_register.value).__name__
+
+    if register_type != accumulated_register_type:
+      log.error(f"Original ({register_type}) and accumulated ({accumulated_register_type}) register "
+                f"value type doesn't match for register '{register.name}'")
+      sys.exit(1)
+    else:
+      log.info(f"Register value type '{register_type}' matched for accumulated register '{register.name}'")
+
+  log.info('All accumulated registers types matched. Test is ok')
+
+if __name__ == "__main__":
+  asyncio.run(main())

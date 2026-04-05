@@ -100,6 +100,9 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
         count = (last_item.address + last_item.quantity) - start
 
         data = await self._solarman.read_holding_registers(address = start, quantity = count)
+        if len(data) != count:
+          raise RuntimeError(f'{self.name}: expected to read {count} values '
+                             f'at address {start}, but got {len(data)}')
 
         for reg in group:
           offset = reg.address - start

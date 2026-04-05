@@ -41,7 +41,7 @@ class TelebotMenuRestart(TelebotMenuItemHandler):
       self.bot.send_message(chat_id, 'Restart cancelled')
 
   def on_finish(self, chat_id: int):
-    self.bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...', parse_mode = 'HTML')
+    self.bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
     TelebotUtils.stop_bot(self.bot)
 
   def on_cancel(self, chat_id: int):

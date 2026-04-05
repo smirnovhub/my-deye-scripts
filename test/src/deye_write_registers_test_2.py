@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 import logging
 
 from pathlib import Path
@@ -28,83 +29,87 @@ from deye_test_utils import DeyeTestUtils
 from deye_loggers import DeyeLoggers
 from deye_base_enum import DeyeBaseEnum
 from solarman_test_server import SolarmanTestServer
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_test_helper import DeyeTestHelper
 
-DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
-logging.basicConfig(
-  level = logging.INFO,
-  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-  datefmt = DeyeUtils.time_format_str,
-)
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
+  )
 
-log = logging.getLogger()
-loggers = DeyeLoggers()
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
 
-if not loggers.is_test_loggers:
-  log.error('ERROR: your loggers are not test loggers')
-  sys.exit(1)
-
-logger = loggers.master
-
-server = SolarmanTestServer(
-  name = logger.name,
-  address = logger.address,
-  serial = logger.serial,
-  port = logger.port,
-)
-
-holder_kwargs = {
-  'name': 'test',
-  'socket_timeout': 1,
-  'caching_time': 0,
-  'verbose': False,
-}
-
-# should be local to avoid issues with locks
-holder = DeyeRegistersHolder(
-  loggers = [logger],
-  **holder_kwargs,
-)
-
-write_values: Dict[str, Any] = {}
-
-for register in holder.master_registers.all_registers:
-  if not register.can_write:
-    continue
-
-  value = DeyeTestHelper.get_random_by_register_value_type(register)
-  if value is None:
-    log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
-    continue
-
-  register_value = f'{register.name} = {value}'
-
-  log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
-  log.info(f'Trying to write: {register_value}')
-
-  if isinstance(register.value, DeyeBaseEnum):
-    write_values[register.name] = holder.write_register(register, register.value.parse(value))
-  else:
-    write_values[register.name] = holder.write_register(register, value)
-
-log.info(f'Reading of all registers...')
-
-try:
-  holder.read_registers()
-finally:
-  holder.disconnect()
-
-for register in holder.master_registers.all_registers:
-  if not register.can_write:
-    continue
-
-  if register.value != write_values[register.name]:
-    log.error(f"Register value after read {register.value} doesn't match "
-             f"value after write {write_values[register.name]} for '{register.name}'")
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
     sys.exit(1)
-  else:
-    log.info(f"Register values successfully matched for '{register.name}'")
 
-log.info('All registers have been written and read correctly. Test is ok')
+  logger = loggers.master
+
+  server = SolarmanTestServer(
+    name = logger.name,
+    address = logger.address,
+    serial = logger.serial,
+    port = logger.port,
+  )
+
+  holder_kwargs = {
+    'name': 'test',
+    'socket_timeout': 1,
+    'caching_time': 0,
+    'verbose': False,
+  }
+
+  # should be local to avoid issues with locks
+  holder = DeyeRegistersHolderAsync(
+    loggers = [logger],
+    **holder_kwargs,
+  )
+
+  write_values: Dict[str, Any] = {}
+
+  try:
+    for register in holder.master_registers.all_registers:
+      if not register.can_write:
+        continue
+
+      value = DeyeTestHelper.get_random_by_register_value_type(register)
+      if value is None:
+        log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
+        continue
+
+      register_value = f'{register.name} = {value}'
+
+      log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
+      log.info(f'Trying to write: {register_value}')
+
+      if isinstance(register.value, DeyeBaseEnum):
+        write_values[register.name] = await holder.write_register(register, register.value.parse(value))
+      else:
+        write_values[register.name] = await holder.write_register(register, value)
+
+    log.info(f'Reading of all registers...')
+
+    await holder.read_registers()
+  finally:
+    holder.disconnect()
+
+  for register in holder.master_registers.all_registers:
+    if not register.can_write:
+      continue
+
+    if register.value != write_values[register.name]:
+      log.error(f"Register value after read {register.value} doesn't match "
+                f"value after write {write_values[register.name]} for '{register.name}'")
+      sys.exit(1)
+    else:
+      log.info(f"Register values successfully matched for '{register.name}'")
+
+  log.info('All registers have been written and read correctly. Test is ok')
+
+if __name__ == "__main__":
+  asyncio.run(main())
