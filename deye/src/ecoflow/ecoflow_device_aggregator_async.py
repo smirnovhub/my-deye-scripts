@@ -244,3 +244,4 @@ class EcoflowDeviceAggregatorAsync:
   def _set_cached_power(self, device: EcoflowDevice, power: int) -> None:
     self._power_cache[device.serial] = power
     self._power_cache_last_update[device.serial] = datetime.now()
+    self._logger.info(f"Cached power last update time for {device.name} has been reset.")
