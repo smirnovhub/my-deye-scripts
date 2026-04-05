@@ -16,12 +16,12 @@ from telebot_constants import TelebotConstants
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_fake_message import TelebotFakeMessage
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
 from deye_registers import DeyeRegisters
 from telebot_user_choices import UserChoices
 from telebot_command_choice import CommandChoice
 
-class TelebotMenuWritableRegisters(TelebotMenuItemHandler):
+class TelebotMenuWritableRegisters(TelebotMenuItemSyncHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
 

@@ -2,9 +2,9 @@ import telebot
 
 from typing import List
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
 
-class TelebotMenuUnknownCommandHandler(TelebotMenuItemHandler):
+class TelebotMenuUnknownCommandHandler(TelebotMenuItemSyncHandler):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
 

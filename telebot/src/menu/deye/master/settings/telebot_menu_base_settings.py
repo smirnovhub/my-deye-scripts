@@ -5,10 +5,10 @@ from deye_registers import DeyeRegisters
 from deye_registers_holder import DeyeRegistersHolder
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_menu_item_sync_handler import TelebotMenuItemSyncHandler
 from telebot_command_choice import CommandChoice
 
-class TelebotMenuBaseSettings(TelebotMenuItemHandler):
+class TelebotMenuBaseSettings(TelebotMenuItemSyncHandler):
   def __init__(
     self,
     bot: telebot.TeleBot,
