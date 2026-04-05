@@ -4,7 +4,7 @@ import tempfile
 
 from typing import Any, Dict
 
-from git_helper import GitHelper
+from git_helper_async import GitHelperAsync
 from deye_web_constants import DeyeWebConstants
 from deye_web_section import DeyeWebSection
 from deye_web_utils import DeyeWebUtils
@@ -15,7 +15,7 @@ from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
 class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
   def __init__(self):
     super().__init__([DeyeWebRemoteCommand.update_scripts])
-    self._git_helper = GitHelper()
+    self._git_helper = GitHelperAsync()
 
   async def get_command_result(
     self,
@@ -34,15 +34,15 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
       return result
 
     try:
-      current_branch_name = await self._git_helper.get_current_branch_name_async()
+      current_branch_name = await self._git_helper.get_current_branch_name()
 
       if current_branch_name == 'HEAD':
         return get_result('Unable to update: the repository is not currently on a branch')
 
-      pull_result = await self._git_helper.pull_async()
+      pull_result = await self._git_helper.pull()
 
       if 'up to date' in pull_result.lower():
-        last_commit = await self._git_helper.get_last_commit_hash_and_comment_async()
+        last_commit = await self._git_helper.get_last_commit_hash_and_comment()
         return get_result('<p style="color: green;">'
                           "Already up to date.<br>"
                           f"You are currently on branch '{current_branch_name}':<br>"
