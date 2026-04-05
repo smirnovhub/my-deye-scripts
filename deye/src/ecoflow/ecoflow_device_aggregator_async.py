@@ -1,6 +1,7 @@
 import logging
 
 from typing import Dict, List
+from datetime import datetime, timedelta
 
 from ecoflow_device import EcoflowDevice
 from ecoflow_devices import EcoflowDevices
@@ -38,6 +39,8 @@ class EcoflowDeviceAggregatorAsync:
     self._name = kwargs.get('name', 'ecoflow')
     self._verbose = kwargs.get('verbose', False)
     self._power_cache: Dict[str, int] = {}
+    self._power_cache_last_update: Dict[str, datetime] = {}
+    self._power_cache_reset_interval = timedelta(minutes = 10)
     self._logger = logging.getLogger()
     self._logger.setLevel(logging.INFO)
 
@@ -74,7 +77,7 @@ class EcoflowDeviceAggregatorAsync:
     online_serials = {device.serial for device in online_devices}
     for device in self._devices.devices:
       if device.serial not in online_serials:
-        self._power_cache[device.serial] = -1
+        self._set_cached_power(device, -1)
 
   async def try_set_power(self, device: EcoflowDevice, power: int):
     """
@@ -94,7 +97,7 @@ class EcoflowDeviceAggregatorAsync:
     if self._verbose:
       self._logger.info(f'{self._name}: setting power {power} W for {device.name}...')
 
-    old_power = self._power_cache.get(device.serial, -1)
+    old_power = self._get_cached_power(device)
 
     if self._verbose:
       self._logger.info(f'{self._name}: got power {old_power} W from cache for {device.name}')
@@ -112,7 +115,7 @@ class EcoflowDeviceAggregatorAsync:
     if self._verbose:
       self._logger.info(f'{self._name}: writing power {power} W to cache for {device.name}...')
 
-    self._power_cache[device.serial] = power
+    self._set_cached_power(device, power)
 
   async def get_cached_total_power(self) -> int:
     """
@@ -126,7 +129,7 @@ class EcoflowDeviceAggregatorAsync:
     """
     total_power = 0
     for device in self._devices.devices:
-      power = self._power_cache.get(device.serial, -1)
+      power = self._get_cached_power(device)
       if power > 0:
         total_power += power
 
@@ -230,3 +233,14 @@ class EcoflowDeviceAggregatorAsync:
     powers = [await self._interactor.get_power(device) for device in online_devices]
 
     return sum(powers)
+
+  def _get_cached_power(self, device: EcoflowDevice) -> int:
+    last_update = self._power_cache_last_update.get(device.serial, datetime.min)
+    if datetime.now() - last_update > self._power_cache_reset_interval:
+      self._power_cache[device.serial] = -1
+      self._power_cache_last_update[device.serial] = datetime.now()
+      self._logger.info(f"Cached power for {device.name} has been reset.")
+    return self._power_cache.get(device.serial, -1)
+
+  def _set_cached_power(self, device: EcoflowDevice, power: int) -> None:
+    self._power_cache[device.serial] = power
