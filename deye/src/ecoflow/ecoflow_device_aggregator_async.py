@@ -40,7 +40,7 @@ class EcoflowDeviceAggregatorAsync:
     self._verbose = kwargs.get('verbose', False)
     self._power_cache: Dict[str, int] = {}
     self._power_cache_last_update: Dict[str, datetime] = {}
-    self._power_cache_reset_interval = timedelta(minutes = 10)
+    self._power_cache_reset_interval = timedelta(minutes = 5, seconds = 5)
     self._logger = logging.getLogger()
     self._logger.setLevel(logging.INFO)
 
@@ -244,3 +244,4 @@ class EcoflowDeviceAggregatorAsync:
 
   def _set_cached_power(self, device: EcoflowDevice, power: int) -> None:
     self._power_cache[device.serial] = power
+    self._power_cache_last_update[device.serial] = datetime.now()
