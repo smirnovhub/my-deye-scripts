@@ -1,23 +1,29 @@
 import telebot
 
 from typing import List, Type
+
 from deye_registers import DeyeRegisters
-from deye_registers_holder import DeyeRegistersHolder
+from telebot_command_choice import CommandChoice
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
-from telebot_command_choice import CommandChoice
+from telebot_async_runner import TelebotAsyncRunner
+from deye_registers_holder_async import DeyeRegistersHolderAsync
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
-class TelebotMenuBaseSettings(TelebotMenuItemHandlerSync):
+class TelebotMenuBaseSettings(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
     bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
     registers_class: Type[DeyeRegisters],
     main_command: TelebotMenuItem,
     all_command: TelebotMenuItem,
     master_command: TelebotMenuItem,
   ):
-    super().__init__(bot)
+    super().__init__(
+      bot = bot,
+      runner = runner,
+    )
     self.registers_class = registers_class
     self.main_command = main_command
     self.all_command = all_command
@@ -36,16 +42,16 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandlerSync):
       ),
     ]
 
-  def process_message(self, message: telebot.types.Message) -> None:
+  async def process_message(self, message: telebot.types.Message) -> None:
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       loggers = [self.loggers.master] if self.main_command == self.master_command else self.loggers.loggers,
       register_creator = lambda prefix: self.registers_class(prefix = prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
