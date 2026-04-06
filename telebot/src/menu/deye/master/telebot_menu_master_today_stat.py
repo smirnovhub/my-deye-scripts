@@ -4,11 +4,17 @@ from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_master_base import TelebotMenuMasterBase
 from today_stat_registers import TodayStatRegisters
+from telebot_async_runner import TelebotAsyncRunner
 
 class TelebotMenuMasterTodayStat(TelebotMenuMasterBase):
-  def __init__(self, bot: telebot.TeleBot):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ):
     super().__init__(
       bot = bot,
+      runner = runner,
       registers_class = TodayStatRegisters,
       all_command = TelebotMenuItem.deye_all_today_stat,
       master_command = TelebotMenuItem.deye_master_today_stat,

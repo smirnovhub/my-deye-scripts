@@ -10,7 +10,7 @@ from common_utils import CommonUtils
 from git_helper_async import GitHelperAsync
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
-from deye_file_with_lock import DeyeFileWithLock
+from deye_file_with_lock_async import DeyeFileWithLockAsync
 from telebot_user_choices import UserChoices
 from countdown_with_cancel import CountdownWithCancel
 
@@ -55,13 +55,13 @@ class TelebotLocalUpdateCheckerAsync:
         bool: True if a user prompt was sent, False otherwise.
     """
     if not force:
-      last_ask_time = self._load_last_local_update_ask_time()
+      last_ask_time = await self._load_last_local_update_ask_time()
       if time.time() - last_ask_time < TelebotConstants.git_repository_local_check_period_sec:
         # Too soon since the last check; skip
         return False
 
     # Save the current check time
-    self._save_last_local_update_ask_time(time.time())
+    await self._save_last_local_update_ask_time(time.time())
 
     # Check if the local repository changed since last run
     if await self._is_local_repository_changed():
@@ -99,7 +99,7 @@ class TelebotLocalUpdateCheckerAsync:
     Update the saved commit hash file with the current HEAD commit hash.
     """
     hash = await self._git_helper.get_last_commit_hash()
-    self._save_last_commit_hash(hash)
+    await self._save_last_commit_hash(hash)
 
   def _ask_for_restart(self, bot: telebot.TeleBot, chat_id: int):
     """
@@ -133,10 +133,10 @@ class TelebotLocalUpdateCheckerAsync:
         bool: True if the current commit hash differs from the last saved hash.
     """
     current_hash = await self._git_helper.get_last_commit_hash()
-    last_hash = self._load_last_commit_hash()
+    last_hash = await self._load_last_commit_hash()
     return len(last_hash) > 0 and len(current_hash) > 0 and last_hash != current_hash
 
-  def _load_last_local_update_ask_time(self) -> float:
+  async def _load_last_local_update_ask_time(self) -> float:
     """
     Load the timestamp of the last time the user was asked about local updates.
 
@@ -146,7 +146,7 @@ class TelebotLocalUpdateCheckerAsync:
     Raises:
         Exception: If the file cannot be opened or read.
     """
-    with DeyeFileWithLock(self._ask_file_name, "r") as f:
+    async with DeyeFileWithLockAsync(self._ask_file_name, "r") as f:
       try:
         str_val = f.readline().strip()
         return float(str_val) if str_val else 0
@@ -154,7 +154,7 @@ class TelebotLocalUpdateCheckerAsync:
         self._logger.info('Error while loading last local update ask time')
         raise
 
-  def _save_last_local_update_ask_time(self, time: float):
+  async def _save_last_local_update_ask_time(self, time: float):
     """
     Save the timestamp of the last local update check.
 
@@ -164,14 +164,14 @@ class TelebotLocalUpdateCheckerAsync:
     Raises:
         Exception: If the file cannot be opened or written.
     """
-    with DeyeFileWithLock(self._ask_file_name, "w") as f:
+    async with DeyeFileWithLockAsync(self._ask_file_name, "w") as f:
       try:
         f.write(str(int(time)))
       except Exception:
         self._logger.info('Error while saving last local update ask time')
         raise
 
-  def _load_last_commit_hash(self) -> str:
+  async def _load_last_commit_hash(self) -> str:
     """
     Load the last saved commit hash from file.
 
@@ -181,14 +181,14 @@ class TelebotLocalUpdateCheckerAsync:
     Raises:
         Exception: If the file cannot be opened or read.
     """
-    with DeyeFileWithLock(self._hash_file_name, "r") as f:
+    async with DeyeFileWithLockAsync(self._hash_file_name, "r") as f:
       try:
         return str(f.readline().strip())
       except Exception:
         self._logger.info('Error while loading last commit hash')
         raise
 
-  def _save_last_commit_hash(self, hash: str):
+  async def _save_last_commit_hash(self, hash: str):
     """
     Save the given commit hash to file.
 
@@ -198,7 +198,7 @@ class TelebotLocalUpdateCheckerAsync:
     Raises:
         Exception: If the file cannot be opened or written.
     """
-    with DeyeFileWithLock(self._hash_file_name, "w") as f:
+    async with DeyeFileWithLockAsync(self._hash_file_name, "w") as f:
       try:
         f.write(hash)
       except Exception:

@@ -7,7 +7,7 @@ from telebot_utils import TelebotUtils
 from git_helper_async import GitHelperAsync
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
-from deye_file_with_lock import DeyeFileWithLock
+from deye_file_with_lock_async import DeyeFileWithLockAsync
 from telebot_command_choice import CommandChoice
 
 class TelebotRemoteUpdateCheckerAsync:
@@ -29,7 +29,7 @@ class TelebotRemoteUpdateCheckerAsync:
     DeyeUtils.ensure_dir_and_file_exists(self._ask_file_name)
 
   async def is_on_branch(self):
-    last_ask_time = self._load_last_remote_update_ask_time()
+    last_ask_time = await self._load_last_remote_update_ask_time()
     if time.time() - last_ask_time < TelebotConstants.git_repository_remote_check_period_sec:
       # Too soon since the last check; skip
       return True
@@ -38,11 +38,11 @@ class TelebotRemoteUpdateCheckerAsync:
       result = await self._git_helper.get_current_branch_name() != 'HEAD'
       if not result:
         # Save the current check time
-        self._save_last_remote_update_ask_time(time.time())
+        await self._save_last_remote_update_ask_time(time.time())
       return result
     except Exception:
       # Save the current check time
-      self._save_last_remote_update_ask_time(time.time())
+      await self._save_last_remote_update_ask_time(time.time())
       return False
 
   async def check_for_remote_updates(self, bot: telebot.TeleBot, message: telebot.types.Message) -> bool:
@@ -59,13 +59,13 @@ class TelebotRemoteUpdateCheckerAsync:
     Returns:
         bool: True if a user prompt was sent, False otherwise.
     """
-    last_ask_time = self._load_last_remote_update_ask_time()
+    last_ask_time = await self._load_last_remote_update_ask_time()
     if time.time() - last_ask_time < TelebotConstants.git_repository_remote_check_period_sec:
       # Too soon since the last check; skip
       return False
 
     # Save the current check time
-    self._save_last_remote_update_ask_time(time.time())
+    await self._save_last_remote_update_ask_time(time.time())
 
     # Check if the remote repository is up to date
     if not await self._git_helper.is_repository_up_to_date():
@@ -84,7 +84,7 @@ class TelebotRemoteUpdateCheckerAsync:
 
     return False
 
-  def _load_last_remote_update_ask_time(self) -> float:
+  async def _load_last_remote_update_ask_time(self) -> float:
     """
     Load the timestamp of the last time the user was asked about remote updates.
 
@@ -94,7 +94,7 @@ class TelebotRemoteUpdateCheckerAsync:
     Raises:
         Exception: If the file cannot be opened or read.
     """
-    with DeyeFileWithLock(self._ask_file_name, "r") as f:
+    async with DeyeFileWithLockAsync(self._ask_file_name, "r") as f:
       try:
         str_val = f.readline().strip()
         return float(str_val) if str_val else 0
@@ -102,7 +102,7 @@ class TelebotRemoteUpdateCheckerAsync:
         self._logger.info('Error while loading last remote update ask time')
         raise
 
-  def _save_last_remote_update_ask_time(self, time: float):
+  async def _save_last_remote_update_ask_time(self, time: float):
     """
     Save the timestamp of the last remote update check.
 
@@ -112,7 +112,7 @@ class TelebotRemoteUpdateCheckerAsync:
     Raises:
         Exception: If the file cannot be opened or written.
     """
-    with DeyeFileWithLock(self._ask_file_name, "w") as f:
+    async with DeyeFileWithLockAsync(self._ask_file_name, "w") as f:
       try:
         f.write(str(int(time)))
       except Exception:
