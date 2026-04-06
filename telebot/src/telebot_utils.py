@@ -1,3 +1,4 @@
+import json
 import os
 import signal
 import time
@@ -186,13 +187,13 @@ class TelebotUtils:
     return keyboard
 
   @staticmethod
-  def get_response_message(response: requests.Response) -> str:
+  def get_response_message(response_text: str) -> str:
     """
     Extract 'result' or 'detail' from the JSON response and always return a string.
     """
     try:
       # Check if the response body is valid JSON
-      data: Dict[str, Any] = response.json()
+      data: Dict[str, Any] = json.loads(response_text)
 
       # If the response is a list or not a dictionary, we can't access keys
       if not isinstance(data, dict):
