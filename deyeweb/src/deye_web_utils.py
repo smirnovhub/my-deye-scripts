@@ -5,7 +5,7 @@ import re
 import signal
 import tempfile
 import threading
-import time
+import asyncio
 import zlib
 import random
 import inspect
@@ -235,11 +235,11 @@ class DeyeWebUtils:
     return app_id
 
   @staticmethod
-  def shutdown_with_delay(delay: int = 1) -> None:
+  async def shutdown_with_delay(delay: int = 1) -> None:
     """
     Schedules a process termination after a specified delay.
     
-    This method starts a background daemon thread that waits for 'delay' 
+    This method creates a background task that waits for 'delay' 
     seconds and then sends a SIGTERM signal to the current process. 
     It is typically used to allow a server to send a final confirmation 
     response to a client before shutting down.
@@ -247,11 +247,11 @@ class DeyeWebUtils:
     Args:
         delay (int): Time in seconds to wait before termination.
     """
-    def delayed_kill():
-      time.sleep(delay)
+    async def delayed_kill():
+      await asyncio.sleep(delay)
       signal.raise_signal(signal.SIGTERM)
-      time.sleep(15)
-      # Exit will never fire if bot has stopped in right way
+      await asyncio.sleep(15)
+      # Exit will never fire if server has stopped in right way
       os._exit(1)
 
-    threading.Thread(target = delayed_kill, daemon = True).start()
+    asyncio.create_task(delayed_kill())
