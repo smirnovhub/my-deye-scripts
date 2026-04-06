@@ -31,6 +31,10 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
     self._local_update_checker = TelebotLocalUpdateCheckerAsync()
     self._remote_update_checker = TelebotRemoteUpdateCheckerAsync()
 
+  @property
+  def runner(self) -> TelebotAsyncRunner:
+    return self._runner
+
   def register_handlers(self) -> None:
     """
     Register message handlers for the bot based on the command list

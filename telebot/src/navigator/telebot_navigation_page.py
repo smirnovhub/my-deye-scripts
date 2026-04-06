@@ -21,7 +21,10 @@ class TelebotNavigationPage(ABC):
   Abstract base class representing a single UI page in the telegram bot navigation system.
   Each page manages its own buttons and click handlers.
   """
-  def __init__(self, runner: Optional[TelebotAsyncRunner]):
+  def __init__(
+    self,
+    runner: Optional[TelebotAsyncRunner] = None,
+  ):
     """
     Initializes the page and its internal button handler storage.
     """

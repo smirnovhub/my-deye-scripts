@@ -9,6 +9,7 @@ from deye_loggers import DeyeLoggers
 from break_button_node import BreakButtonNode
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_deye_helper import TelebotDeyeHelper
@@ -18,10 +19,11 @@ from battery_settings_registers import BatterySettingsRegisters
 class BatterySettingsMainPage(TelebotNavigationPage):
   def __init__(
     self,
+    runner: TelebotAsyncRunner,
     batt_data: BatterySettingsData,
     title: str,
   ):
-    super().__init__()
+    super().__init__(runner)
     self._loggers = DeyeLoggers()
     self._batt_data = batt_data
     self._batt_data_original_values = copy.deepcopy(batt_data.values)

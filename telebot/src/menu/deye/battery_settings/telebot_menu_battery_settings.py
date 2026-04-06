@@ -63,6 +63,7 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
     title = "Battery settings:"
 
     main_page = BatterySettingsMainPage(
+      runner = self.runner,
       batt_data = batt_data,
       title = title,
     )
