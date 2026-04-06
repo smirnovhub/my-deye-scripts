@@ -63,11 +63,13 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
     navigator = TelebotPageNavigator(self.bot)
 
     enable_page = TimeOfUseEnablePage(
+      runner = self.runner,
       tou_register = tou_register,
       tou_data = tou_data,
     )
 
     main_page = TimeOfUseMainPage(
+      runner = self.runner,
       tou_register = tou_register,
       tou_data = tou_data,
     )

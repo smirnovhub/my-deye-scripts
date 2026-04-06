@@ -73,7 +73,7 @@ class TimeOfUseBottomButtons:
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
-  def _handle_save(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_save(self, navigator: TelebotPageNavigator) -> None:
     text = TimeOfUseHelper.get_time_of_use_as_text(tou_data = self._tou_data)
 
     if not self._need_save():
@@ -88,7 +88,7 @@ class TimeOfUseBottomButtons:
     )
 
     try:
-      TimeOfUseHelper.write_time_of_use(
+      await TimeOfUseHelper.write_time_of_use(
         tou_register = self._tou_register,
         master_logger = self._loggers.master,
         tou_data = data,

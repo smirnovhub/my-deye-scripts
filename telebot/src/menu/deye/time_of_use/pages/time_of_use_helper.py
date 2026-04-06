@@ -7,7 +7,7 @@ from deye_register import DeyeRegister
 from time_of_use_data import TimeOfUseData
 from custom_single_registers import CustomSingleRegisters
 from telebot_deye_helper import TelebotDeyeHelper
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 
 class TimeOfUseHelper:
   @staticmethod
@@ -23,7 +23,7 @@ class TimeOfUseHelper:
       raise RuntimeError(f"Index {index} should be less than {count - 1}")
 
   @staticmethod
-  def write_time_of_use(
+  async def write_time_of_use(
     tou_register: DeyeRegister,
     tou_data: TimeOfUseData,
     master_logger: DeyeLogger,
@@ -33,14 +33,14 @@ class TimeOfUseHelper:
                          f"{type(tou_register.value).__name__} received")
 
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       loggers = [master_logger],
       register_creator = lambda prefix: CustomSingleRegisters(tou_register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.write_register(tou_register, tou_data)
+      await holder.write_register(tou_register, tou_data)
     finally:
       holder.disconnect()
 
