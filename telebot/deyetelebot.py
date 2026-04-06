@@ -27,6 +27,7 @@ from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from telegram_send_message import Telegram
 from telebot_async_runner import TelebotAsyncRunner
+from http_session_singleton_async import HttpSessionSingletonAsync
 
 # Simple and safe way for HTML parse_mode
 def escape_html(text: str) -> str:
@@ -56,6 +57,12 @@ def main():
     except Exception as e:
       # Log error if message fails
       logger.info(f"Failed to send goodbye message: {e}")
+
+    try:
+      future = runner.run(HttpSessionSingletonAsync.close_session())
+      future.result(timeout = 3)
+    except Exception:
+      logger.error("Failed to close async session", exc_info = True)
 
     # Stop event loop
     runner.stop()
