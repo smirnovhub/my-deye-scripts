@@ -178,11 +178,11 @@ class MyTelebot:
     runner: TelebotAsyncRunner,
   ) -> List[TelebotMenuItemHandler]:
     return [
-      TelebotMenuAllInfo(bot),
+      TelebotMenuAllInfo(bot, runner),
       TelebotMenuMasterInfo(bot),
       TelebotMenuSlaveInfo(bot),
-      TelebotMenuAllTodayStat(bot),
-      TelebotMenuAllTotalStat(bot),
+      TelebotMenuAllTodayStat(bot, runner),
+      TelebotMenuAllTotalStat(bot, runner),
       TelebotMenuMasterTodayStat(bot),
       TelebotMenuMasterTotalStat(bot),
       TelebotMenuSlaveTodayStat(bot),
@@ -195,7 +195,7 @@ class MyTelebot:
       TelebotMenuBatteryForecast(bot),
       TelebotMenuBatteryForecastByPercent(bot),
       TelebotMenuBatteryForecastByTime(bot),
-      TelebotMenuSyncTime(bot = bot, runner = runner),
+      TelebotMenuSyncTime(bot, runner),
       TelebotMenuRestart(bot),
       TelebotMenuRevert(bot),
       TelebotMenuUpdate(bot),
