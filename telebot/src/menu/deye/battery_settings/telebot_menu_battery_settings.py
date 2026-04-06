@@ -1,34 +1,42 @@
 import telebot
 
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_deye_helper import TelebotDeyeHelper
-from deye_registers_holder import DeyeRegistersHolder
 from battery_settings_registers import BatterySettingsRegisters
 from battery_settings_socs_page import BatterySettingsSocsPage
 from battery_settings_main_page import BatterySettingsMainPage
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
+from deye_registers_holder_async import DeyeRegistersHolderAsync
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
-class TelebotMenuBatterySettings(TelebotMenuItemHandlerSync):
-  def __init__(self, bot: telebot.TeleBot):
-    super().__init__(bot)
+class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ):
+    super().__init__(
+      bot = bot,
+      runner = runner,
+    )
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_battery_settings
 
-  def process_message(self, message: telebot.types.Message) -> None:
+  async def process_message(self, message: telebot.types.Message) -> None:
     # Should be local to avoid issues with locks and threads
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: BatterySettingsRegisters(prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
