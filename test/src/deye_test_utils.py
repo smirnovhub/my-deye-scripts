@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import os
-from pathlib import Path
 import socket
 import sys
 import time
@@ -11,6 +10,7 @@ import logging.config
 import multiprocessing
 
 from typing import List
+from pathlib import Path
 from contextlib import contextmanager
 from env_utils import EnvUtils
 from deye_logger import DeyeLogger
