@@ -19,8 +19,8 @@ class TelebotMenuItemHandlerSync(TelebotMenuItemHandler):
     """
     super().__init__(bot = bot)
 
-    self.local_update_checker = TelebotLocalUpdateChecker()
-    self.remote_update_checker = TelebotRemoteUpdateChecker()
+    self._local_update_checker = TelebotLocalUpdateChecker()
+    self._remote_update_checker = TelebotRemoteUpdateChecker()
 
   def register_handlers(self) -> None:
     """
@@ -64,14 +64,14 @@ class TelebotMenuItemHandlerSync(TelebotMenuItemHandler):
 
   def has_updates(self, message: telebot.types.Message) -> bool:
     try:
-      if not self.remote_update_checker.is_on_branch():
+      if not self._remote_update_checker.is_on_branch():
         self.bot.send_message(message.chat.id, 'Update check skipped: the repository is not currently on a branch')
         return False
 
-      if self.remote_update_checker.check_for_remote_updates(self.bot, message):
+      if self._remote_update_checker.check_for_remote_updates(self.bot, message):
         return True
 
-      if self.local_update_checker.check_for_local_updates(
+      if self._local_update_checker.check_for_local_updates(
           self.bot,
           message.chat.id,
           force = False,

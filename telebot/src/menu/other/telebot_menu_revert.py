@@ -26,7 +26,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerSync):
     return TelebotMenuItem.revert
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.remote_update_checker.is_on_branch():
+    if not self._remote_update_checker.is_on_branch():
       self.bot.send_message(message.chat.id, 'Unable to revert: the repository is not currently on a branch')
       return
 
@@ -153,7 +153,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerSync):
 
   def on_finish(self, chat_id: int):
     self.bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
-    TelebotUtils.stop_bot(self.bot)
+    TelebotUtils.stop_bot()
 
   def on_cancel(self, chat_id: int):
     self.bot.send_message(chat_id, 'Restart cancelled')

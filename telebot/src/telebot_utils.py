@@ -246,17 +246,9 @@ class TelebotUtils:
     return False
 
   @staticmethod
-  def stop_bot(bot: telebot.TeleBot):
+  def stop_bot():
     """
     Gracefully stops the running TeleBot instance and terminates the process.
-
-    This method first calls `bot.stop_bot()` to stop all polling and background
-    threads associated with the TeleBot instance. If the bot shuts down correctly,
-    the process should naturally exit. However, as a safeguard, the method waits
-    a minute and then forcefully terminates the process using `os._exit(1)`.
-
-    Args:
-        bot (telebot.TeleBot): The TeleBot instance to stop.
     """
     time.sleep(1)
     signal.raise_signal(signal.SIGTERM)

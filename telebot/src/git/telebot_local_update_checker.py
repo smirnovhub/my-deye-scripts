@@ -111,7 +111,7 @@ class TelebotLocalUpdateChecker:
     """
     def on_finish(chat_id: int):
       bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
-      TelebotUtils.stop_bot(bot)
+      TelebotUtils.stop_bot()
 
     def on_cancel(chat_id: int):
       bot.send_message(chat_id, 'Restart cancelled')
