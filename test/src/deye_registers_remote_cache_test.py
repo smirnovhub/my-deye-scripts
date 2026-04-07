@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import logging
@@ -17,7 +18,7 @@ import_dirs(
   current_path,
   [
     'src',
-    os.path.join(base_path, 'deye/src'),
+    os.path.join(base_path, 'deye'),
     os.path.join(base_path, 'deyestorage'),
     os.path.join(base_path, 'common'),
   ],
@@ -46,4 +47,4 @@ if __name__ == '__main__':
     sys.exit(1)
 
   with DeyeTestUtils.storage_server():
-    main_test_logic()
+    asyncio.run(main_test_logic())

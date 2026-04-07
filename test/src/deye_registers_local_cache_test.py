@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import logging
@@ -17,7 +18,7 @@ import_dirs(
   current_path,
   [
     'src',
-    os.path.join(base_path, 'deye/src'),
+    os.path.join(base_path, 'deye'),
     os.path.join(base_path, 'common'),
   ],
 )
@@ -44,4 +45,4 @@ if not loggers.is_test_loggers:
   sys.exit(1)
 
 if __name__ == '__main__':
-  main_test_logic()
+  asyncio.run(main_test_logic())

@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+from pathlib import Path
 import socket
 import sys
 import time
@@ -84,8 +85,15 @@ class DeyeTestUtils:
   @staticmethod
   def _run_server() -> None:
     # Load the config from the JSON file
+    current_dir = Path(__file__).parent.resolve()
+    config_path = current_dir / "log_config.json"
+
+    if not config_path.exists():
+      print(f"Config not found at: {config_path}")
+      sys.exit(1)
+
     try:
-      with open("log_config.json", "r") as f:
+      with open(config_path, "r") as f:
         log_config = json.load(f)
       logging.config.dictConfig(log_config)
       logger = logging.getLogger(__name__)
