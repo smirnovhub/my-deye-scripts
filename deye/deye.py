@@ -1,0 +1,158 @@
+#!/usr/bin/python3 -u
+
+import os
+import sys
+import asyncio
+import logging
+import argparse
+import traceback
+
+from typing import List
+from pathlib import Path
+
+current_path = Path(__file__).parent.resolve()
+modules_path = (current_path / '../modules').resolve()
+
+os.chdir(current_path)
+sys.path.append(str(modules_path))
+
+from common_modules import import_dirs
+
+import_dirs(current_path, ['src', '../common'])
+
+from time import perf_counter
+from deye_utils import DeyeUtils
+from deye_logger import DeyeLogger
+from deye_loggers import DeyeLoggers
+from deye_exceptions import DeyeKnownException
+from deye_register_processor import DeyeRegisterProcessor
+from http_session_singleton_async import HttpSessionSingletonAsync
+
+class DeyeArgumentParser(argparse.ArgumentParser):
+  def error(self, message):
+    sys.stderr.write(f'{os.path.basename(__file__)}: error: {message}\n')
+    sys.exit(2)
+
+async def main():
+  parser = DeyeArgumentParser(
+    description = 'read/write deye parameters',
+    formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position = 50, width = 100))
+
+  loggers = DeyeLoggers()
+
+  inverters_list: List[str] = []
+  for logger in loggers.loggers:
+    inverters_list.append(logger.name)
+
+  inverters_str = ','.join(inverters_list)
+
+  def int_range(min_value, max_value):
+    def checker(x):
+      x = int(x)
+      if x < min_value or x > max_value:
+        raise argparse.ArgumentTypeError(f"value must be between {min_value} and {max_value}")
+      return x
+
+    return checker
+
+  parser.add_argument('-v', '--verbose-output', action = 'store_true', help = 'verbose output')
+  parser.add_argument('-c', '--caching-time', type = int, default = 3, help = 'caching time for requests')
+  parser.add_argument('-p', '--print-addresses', action = 'store_true', help = 'print register addresses')
+  parser.add_argument('--connection-timeout', type = int_range(1, 60), default = 10, help = argparse.SUPPRESS)
+  parser.add_argument('-i',
+                      '--inverter',
+                      help = f'specify inverter ({inverters_str})' if loggers.count > 1 else argparse.SUPPRESS,
+                      default = loggers.master.name)
+  parser.add_argument('-a', '--get-all', action = 'store_true', help = 'get all parameters')
+  parser.add_argument('-o',
+                      '--only-accumulated',
+                      action = 'store_true',
+                      help = 'get only accumulated parameters for all inverters')
+  parser.add_argument('-t', '--test', action = 'store_true', help = 'get test registers')
+  parser.add_argument('--get-all-read-only', action = 'store_true', help = 'get all read only parameters')
+  parser.add_argument('--get-all-read-write', action = 'store_true', help = 'get all read/write parameters')
+
+  current = perf_counter()
+
+  try:
+    processor = DeyeRegisterProcessor()
+    processor.add_command_line_parameters(parser)
+    create_processor = perf_counter() - current
+    current = perf_counter()
+
+    args = parser.parse_args()
+
+    if args.verbose_output:
+      logging.basicConfig(
+        level = logging.INFO,
+        format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+        datefmt = DeyeUtils.time_format_str,
+      )
+
+    if hasattr(args, 'inverter'):
+      inverters = getattr(args, 'inverter').strip().split(',')
+    else:
+      inverters = [loggers.master.name]
+
+    loggers_list: List[DeyeLogger] = []
+
+    for inverter in inverters:
+      if not inverter:
+        continue
+
+      logger = loggers.get_logger_by_name(inverter)
+      if logger is None:
+        parser.error(f"Inverter '{inverter}' is unknown. Pls use these: {inverters_str}")
+        exit()
+      else:
+        loggers_list.append(logger)
+
+    loggers_list.sort(key = lambda logger: logger.name)
+
+    if len(sys.argv) == 1 or not any(
+      (lambda: type(e) is str or type(e) is int or (type(e) is bool and e == True))() for e in vars(args).values()):
+      parser.print_help()
+      exit()
+
+    parse_inverters = perf_counter() - current
+    current = perf_counter()
+
+    current = perf_counter()
+
+    if processor.check_parameters(parser, args):
+      check_parameters = perf_counter() - current
+      current = perf_counter()
+      processor.enqueue_registers(args, loggers = loggers_list)
+      enqueue_registers = perf_counter() - current
+      current = perf_counter()
+      await processor.process_registers()
+      process_registers = perf_counter() - current
+      current = perf_counter()
+      await processor.process_parameters(args)
+      process_parameters = perf_counter() - current
+      current = perf_counter()
+  except DeyeKnownException as e:
+    print(f'{os.path.basename(__file__)}: An exception occurred: {str(e)}')
+    sys.exit(1)
+  except Exception as e:
+    callstack = traceback.format_exc()
+    print(f'{os.path.basename(__file__)}: An exception occurred: {str(e)}\n{callstack}')
+    sys.exit(1)
+  finally:
+    processor.disconnect()
+    await HttpSessionSingletonAsync.close_session()
+
+  disconnect = perf_counter() - current
+
+  total = create_processor + parse_inverters + check_parameters +\
+    enqueue_registers + process_registers + process_parameters + disconnect
+
+  if False:
+    print(f'create processor took   : {round(create_processor, 3):.3f} s')
+    print(f'parse invertors took    : {round(parse_inverters, 3):.3f} s')
+    print(f'check parameters took   : {round(check_parameters, 3):.3f} s')
+    print(f'enqueue registers took  : {round(enqueue_registers, 3):.3f} s')
+    print(f'process registers took  : {round(process_registers, 3):.3f} s')
+    print(f'process parameters took : {round(process_parameters, 3):.3f} s')
+    print(f'disconnect took         : {round(disconnect, 3):.3f} s')
+    print(f'total took              : {round(total, 3):.3f} s')
