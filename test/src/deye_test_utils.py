@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -8,8 +9,10 @@ import uvicorn
 import logging.config
 import multiprocessing
 
+from typing import List
 from contextlib import contextmanager
 from env_utils import EnvUtils
+from deye_logger import DeyeLogger
 
 class DeyeTestUtils:
   storage_server_host = '127.0.0.1'
@@ -134,4 +137,47 @@ class DeyeTestUtils:
         time.sleep(0.1)
 
     logger.error("Storage server did not become ready in time.")
+    return False
+
+  @staticmethod
+  async def wait_for_solarman_servers_ready(loggers: List[DeyeLogger], timeout: float = 5) -> bool:
+    """
+    Wait until all solarman server ports for all loggers are open.
+    """
+    logger_tools = logging.getLogger()
+    logger_tools.info(f"Waiting for {len(loggers)} solarman server(s) to be ready...")
+
+    async def check_single_logger(deye_logger: DeyeLogger) -> bool:
+      """
+      Internal helper to check one specific logger with a timeout.
+      """
+      start_time = asyncio.get_running_loop().time()
+      while asyncio.get_running_loop().time() - start_time < timeout:
+        try:
+          # Try to open a connection to the specific logger's address and port
+          reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(
+              deye_logger.address,
+              deye_logger.port,
+            ),
+            timeout = 0.5,
+          )
+          writer.close()
+          await writer.wait_closed()
+          return True
+        except (ConnectionRefusedError, OSError, asyncio.TimeoutError):
+          await asyncio.sleep(0.2)
+
+      logger_tools.error(
+        f"Logger '{deye_logger.name}' ({deye_logger.address}:{deye_logger.port}) did not become ready.")
+      return False
+
+    # Run all checks concurrently
+    results = await asyncio.gather(*(check_single_logger(l) for l in loggers))
+
+    # Return True only if ALL loggers are ready
+    if all(results):
+      logger_tools.info("All solarman servers are ready!")
+      return True
+
     return False
