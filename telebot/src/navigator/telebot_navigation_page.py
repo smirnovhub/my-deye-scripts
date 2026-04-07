@@ -116,12 +116,10 @@ class TelebotNavigationPage(ABC):
     # Logic to decide how many arguments to pass
     if len(params) >= 2:
       # Handler expects at least two arguments (navigator and button)
-      args = (navigator, button)
+      result = handler(navigator, button) # type: ignore
     else:
       # Handler expects only one argument (navigator)
-      args = (navigator, )
-
-    result = handler(*args) # type: ignore
+      result = handler(navigator) # type: ignore
 
     if inspect.iscoroutine(result):
       if not self._runner:
