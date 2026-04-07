@@ -33,6 +33,10 @@ class TelebotMenuStart(TelebotMenuItemHandlerSync):
     @self.bot.message_handler(commands = commands)
     def handle(message: telebot.types.Message):
       try:
+        if self.users.is_user_blocked(message.from_user.id):
+          self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
+          return
+
         self.process_message(message)
       except DeyeKnownException as e:
         self.bot.send_message(message.chat.id, str(e))
