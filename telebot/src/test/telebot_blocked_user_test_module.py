@@ -2,7 +2,6 @@ from typing import List
 
 from solarman_test_server import SolarmanTestServer
 from telebot_base_test_module import TelebotBaseTestModule
-from telebot_menu_item import TelebotMenuItem
 from telebot_users import TelebotUsers
 from testable_telebot import TestableTelebot
 
@@ -42,10 +41,6 @@ class TelebotBlockedUserTestModule(TelebotBaseTestModule):
         self.log.info(f"Sending command '/{command}' from user {user.id}")
 
         self.send_text(user, f'/{command}')
-
-        if command == TelebotMenuItem.start.command:
-          self.wait_for_text('Command is not allowed for this user')
-        else:
-          self.wait_for_text('User is not authorized')
+        self.wait_for_text('Command is not allowed for this user')
 
     self.log.info('Seems blocked users processed correctly')
