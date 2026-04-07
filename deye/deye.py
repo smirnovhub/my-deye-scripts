@@ -41,8 +41,8 @@ async def main():
   loggers = DeyeLoggers()
 
   inverters_list: List[str] = []
-  for logger in loggers.loggers:
-    inverters_list.append(logger.name)
+  for lg in loggers.loggers:
+    inverters_list.append(lg.name)
 
   inverters_str = ','.join(inverters_list)
 

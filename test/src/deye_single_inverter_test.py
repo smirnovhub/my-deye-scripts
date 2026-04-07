@@ -109,7 +109,10 @@ async def main():
       try:
         # Redirect all print() calls to the buffer
         with redirect_stdout(output_buffer):
-          await deye_main()
+          try:
+            await deye_main()
+          except SystemExit:
+            pass
       except Exception as e:
         log.error(f'An exception occurred: {e}. Retrying...')
         await asyncio.sleep(1)

@@ -1,10 +1,12 @@
+import io
 import os
 import sys
+import asyncio
 import logging
-import subprocess
 
 from typing import List
 from pathlib import Path
+from contextlib import redirect_stdout
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -19,7 +21,7 @@ import_dirs(
   current_path,
   [
     'src',
-    os.path.join(base_path, 'deye/src'),
+    os.path.join(base_path, 'deye'),
     os.path.join(base_path, 'common'),
   ],
 )
@@ -31,82 +33,98 @@ from deye_registers import DeyeRegisters
 from solarman_test_server import SolarmanTestServer
 from deye_test_helper import DeyeTestHelper
 
-DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+from deye import main as deye_main
 
-logging.basicConfig(
-  level = logging.INFO,
-  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-  datefmt = DeyeUtils.time_format_str,
-)
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
-log = logging.getLogger()
-loggers = DeyeLoggers()
-registers = DeyeRegisters()
-
-if not loggers.is_test_loggers:
-  log.error('ERROR: your loggers are not test loggers')
-  sys.exit(1)
-
-servers: List[SolarmanTestServer] = []
-
-for logger in loggers.loggers:
-  server = SolarmanTestServer(
-    name = logger.name,
-    address = logger.address,
-    serial = logger.serial,
-    port = logger.port,
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
   )
 
-  servers.append(server)
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
+  registers = DeyeRegisters()
 
-for register in registers.all_registers:
-  if not register.can_write:
-    continue
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
+    sys.exit(1)
 
-  value = DeyeTestHelper.get_random_by_register_value_type(register)
-  if value is None:
-    log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
-    continue
+  servers: List[SolarmanTestServer] = []
 
-  for slave in loggers.slaves:
-    register_value = f'{register.name} = {value}'
-
-    log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
-    log.info(f'Trying to write: {register_value}')
-
-    write_command = [
-      sys.executable,
-      '-u',
-      os.path.join(base_path, 'deye/deye'),
-      f'-i',
-      slave.name,
-      f"--set-{register.name.replace('_', '-')}",
-      f'{value}',
-    ]
-
-    command_str = ' '.join(write_command)
-    command_str = command_str[command_str.find('deye'):].replace('deye/deye', 'deye')
-
-    log.info(f'Command to execute: {command_str}')
-
-    result = subprocess.run(
-      write_command,
-      capture_output = True,
-      text = True,
+  for logger in loggers.loggers:
+    server = SolarmanTestServer(
+      name = logger.name,
+      address = logger.address,
+      serial = logger.serial,
+      port = logger.port,
     )
 
-    output = result.stdout.strip() + result.stderr.strip()
-    log.info(f'Write command output: {output}')
+    servers.append(server)
 
-    resp_message = 'An exception occurred: You can write only to master inverter'
+  if not await DeyeTestUtils.wait_for_solarman_servers_ready(loggers.loggers):
+    return
 
-    if resp_message.lower() not in output.lower():
-      log.error(f"Response message is incorrect. Should be: '{resp_message}'")
-      sys.exit(1)
+  for register in registers.all_registers:
+    if not register.can_write:
+      continue
 
-    for server in servers:
-      if server.is_something_written():
-        log.error(f"Changes on server '{server.name}' detected. We should not write to slaves")
+    value = DeyeTestHelper.get_random_by_register_value_type(register)
+    if value is None:
+      log.info(f"Skipping register '{register.name}' with type {type(register).__name__}")
+      continue
+
+    for slave in loggers.slaves:
+      register_value = f'{register.name} = {value}'
+
+      log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
+      log.info(f'Trying to write: {register_value}')
+
+      fake_args = [
+        "deye",
+        '-v',
+        f'-i',
+        slave.name,
+        f"--set-{register.name.replace('_', '-')}",
+        f'{value}',
+      ]
+
+      log.info(f'Command to execute: {" ".join(fake_args)}')
+
+      old_argv = sys.argv
+      sys.argv = fake_args
+
+      output_buffer = io.StringIO()
+
+      try:
+        # Redirect all print() calls to the buffer
+        with redirect_stdout(output_buffer):
+          try:
+            await deye_main()
+          except SystemExit:
+            pass
+      finally:
+        # Restore original argv
+        sys.argv = old_argv
+
+      output = output_buffer.getvalue().strip()
+
+      log.info(f'Write command output: {output}')
+
+      resp_message = 'An exception occurred: You can write only to master inverter'
+
+      if resp_message.lower() not in output.lower():
+        log.error(f"Response message is incorrect. Should be: '{resp_message}'")
         sys.exit(1)
 
-log.info('No changes on server side tedected. Test is ok')
+      for server in servers:
+        if server.is_something_written():
+          log.error(f"Changes on server '{server.name}' detected. We should not write to slaves")
+          sys.exit(1)
+
+  log.info('No changes on server side tedected. Test is ok')
+
+if __name__ == "__main__":
+  asyncio.run(main())
