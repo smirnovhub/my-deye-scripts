@@ -1,4 +1,4 @@
-name: mypy checks
+name: code checks
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 jobs:
-  mypy-check:
+  code-checks:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
@@ -16,29 +16,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install mypy
-          python -m pip install types-requests
-
-      - name: Run mypy for deye
-        working-directory: deye
+          python -m pip install flake8 codespell mypy types-requests
+      - name: Run code checkers
         run: |
-          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
-
-      - name: Run mypy for telebot
-        working-directory: telebot
-        run: |
-          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
-
-      - name: Run mypy for test
-        working-directory: test
-        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude modules
+          codespell . --skip="./modules/*,JsHttpRequest.php,JsHttpRequest.js,*.svg,*.log"
           mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
