@@ -31,8 +31,7 @@
     "../deye/src/solarman/cache",
     "../deye/src/solarman/server",
     "../deye/src/utils",
-    "src",
-    "src/common"
+    "src"
   ],
   "python.analysis.useImportHeuristic": true,
   "python.languageServer": "Pylance",

@@ -1,6 +1,7 @@
-import asyncio
 import os
 import sys
+import asyncio
+import random
 import logging
 
 from pathlib import Path
@@ -30,21 +31,32 @@ from deye_test_utils import DeyeTestUtils
 
 from deye_registers_cache_test_base import main_test_logic
 
-if __name__ == '__main__':
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+  DeyeTestUtils.turn_on_remote_cache()
+
   logging.basicConfig(
     level = logging.INFO,
     format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
     datefmt = DeyeUtils.time_format_str,
   )
 
-  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
-  DeyeTestUtils.turn_on_remote_cache()
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
 
-  logger = logging.getLogger()
-
-  if not DeyeLoggers().is_test_loggers:
-    logger.error('ERROR: your loggers are not test loggers')
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
     sys.exit(1)
 
+  logger = random.choice(loggers.loggers)
+
   with DeyeTestUtils.storage_server():
-    asyncio.run(main_test_logic())
+    async with DeyeTestUtils.solarman_server(logger) as server:
+      await main_test_logic(
+        server = server,
+        logger = logger,
+        log = log,
+      )
+
+if __name__ == "__main__":
+  asyncio.run(main())

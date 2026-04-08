@@ -4,6 +4,7 @@ import socketserver
 import asyncio
 import logging
 import platform
+from typing import Optional
 
 from umodbus.client.serial.redundancy_check import add_crc
 
@@ -49,21 +50,27 @@ class SolarmanBaseServer():
     serial: int,
     port: int = 8899,
   ):
-    self.name = name
-    self.address = address
-    self.serial = serial
-    self.port = port
+    self._name = name
+    self._address = address
+    self._serial = serial
+    self._port = port
 
-    self.log = logging.getLogger()
-    self.log.info(f"{self.name}: starting SolarmanServer at {address}:{port}")
+    self._log = logging.getLogger()
+    self._log.info(f"{self._name}: starting SolarmanServer at {address}:{port}")
+
+    self._server: Optional[asyncio.AbstractServer] = None
 
     try:
-      self.loop = asyncio.get_running_loop()
-      self.loop.create_task(self.start_server())
+      self._loop = asyncio.get_running_loop()
+      self._loop.create_task(self.start_server())
     except RuntimeError:
-      self.loop = asyncio.new_event_loop()
+      self._loop = asyncio.new_event_loop()
       thr = threading.Thread(target = self.sync_runner, daemon = True)
       thr.start()
+
+  @property
+  def name(self) -> str:
+    return self._name
 
   async def start_server(self) -> None:
     """
@@ -78,14 +85,45 @@ class SolarmanBaseServer():
     - Uses reuse_address and reuse_port where supported.
     - For Windows, reuse_port is disabled due to platform limitations.
     """
-    await asyncio.start_server(
+    self._server = await asyncio.start_server(
       self.stream_handler,
-      host = self.address,
-      port = self.port,
+      host = self._address,
+      port = self._port,
       family = socket.AF_INET,
       reuse_address = True,
       reuse_port = False if _WIN_PLATFORM else True,
     )
+
+    self._log.info(f"Solarman server {self.name} started at {self._address}:{self._port}")
+
+    async with self._server:
+      await self._server.serve_forever()
+
+  async def stop_server_async(self) -> None:
+    self._log.info(f"Solarman server {self.name} is stopping...")
+    if self._server:
+      # Stop accepting new connections
+      self._server.close()
+      # Wait until the server is fully closed
+      await self._server.wait_closed()
+      self._server = None
+      self._log.info(f"Solarman server {self.name} stopped.")
+    else:
+      self._log.error(f"Solarman server {self.name} is not running.")
+
+  def stop_server_sync(self) -> None:
+    if not self._loop.is_running():
+      self._log.error(f"Async loop for Solarman server {self.name} is not running.")
+      return
+
+    # Define the shutdown sequence
+    async def shutdown():
+      await self.stop_server_async()
+      # Stop the loop itself
+      self._loop.stop()
+
+    # Schedule the shutdown coroutine in the loop
+    asyncio.run_coroutine_threadsafe(shutdown(), self._loop)
 
   def sync_runner(self) -> None:
     """
@@ -95,8 +133,8 @@ class SolarmanBaseServer():
     the loop forever. Useful when there is no running asyncio loop,
     e.g., when starting the test server from a synchronous context.
     """
-    self.loop.create_task(self.start_server())
-    self.loop.run_forever()
+    self._loop.create_task(self.start_server())
+    self._loop.run_forever()
 
   async def stream_handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     """
@@ -114,14 +152,14 @@ class SolarmanBaseServer():
     writer : asyncio.StreamWriter
         Asynchronous stream writer for sending data to the client.
     """
-    sol = MockDatalogger(self.address, serial = self.serial, auto_reconnect = False)
+    sol = MockDatalogger(self._address, serial = self._serial, auto_reconnect = False)
     while True:
       data = await reader.read(1024)
       if data == b"":
         break
       else:
         sol.sequence_number = data[5]
-        self.log.debug(f"{self.name}: RECD: {data.hex(' ')}")
+        self._log.debug(f"{self._name}: RECD: {data.hex(' ')}")
         data = bytearray(data)
         data[3] = 0x10
         data[4] = PySolarmanV5._get_response_code(CONTROL_CODE.REQUEST)
@@ -133,22 +171,22 @@ class SolarmanBaseServer():
           break
         data[-2:-1] = checksum.to_bytes(1, byteorder = "big")
         data = bytes(data)
-        self.log.debug(f"{self.name}: DEC: {data.hex(' ')}")
+        self._log.debug(f"{self._name}: DEC: {data.hex(' ')}")
 
         try:
           decoded = sol._v5_frame_decoder(data)
           enc = self.function_response_from_request(decoded)
-          self.log.debug(f'{self.name}: Generated Raw modbus: {enc.hex(" ")}')
+          self._log.debug(f'{self._name}: Generated Raw modbus: {enc.hex(" ")}')
           enc = sol.v5_frame_response_encoder(enc)
-          self.log.debug(f'{self.name}: Sending frame: {bytes(enc).hex(" ")}')
+          self._log.debug(f'{self._name}: Sending frame: {bytes(enc).hex(" ")}')
           writer.write(bytes(enc))
           await writer.drain()
         except V5FrameError as e:
           # Close immediately - allows testing with wrong serial numbers, sequence numbers etc.
-          self.log.info(f"{self.name}: V5FrameError({' '.join(e.args)}). Closing immediately... ")
+          self._log.info(f"{self._name}: V5FrameError({' '.join(e.args)}). Closing immediately... ")
           break
         except Exception as e:
-          self.log.exception(e)
+          self._log.exception(e)
           writer.write(data)
 
     try:

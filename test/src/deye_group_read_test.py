@@ -26,6 +26,7 @@ import_dirs(
 
 from deye_utils import DeyeUtils
 from deye_test_utils import DeyeTestUtils
+from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
 from solarman_test_server import SolarmanTestServer
@@ -35,24 +36,12 @@ from deye_register_average_type import DeyeRegisterAverageType
 
 from deye import main as deye_main
 
-async def main():
-  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
-
-  logging.basicConfig(
-    level = logging.INFO,
-    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-    datefmt = DeyeUtils.time_format_str,
-  )
-
-  log = logging.getLogger()
+async def main_test_logic(
+  servers: List[SolarmanTestServer],
+  log: logging.Logger,
+):
   loggers = DeyeLoggers()
   registers = DeyeRegisters()
-
-  if not loggers.is_test_loggers:
-    log.error('ERROR: your loggers are not test loggers')
-    sys.exit(1)
-
-  servers = await DeyeTestUtils.start_solarman_servers(loggers.loggers)
 
   registers_to_skip = [
     registers.grid_state_register.name,
@@ -159,6 +148,28 @@ async def main():
     check_results(server, output, random_values)
 
     log.info('All registers and values found. Test is ok')
+
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
+  )
+
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
+
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
+    sys.exit(1)
+
+  async with DeyeTestUtils.solarman_servers(loggers.loggers) as servers:
+    await main_test_logic(
+      servers = servers,
+      log = log,
+    )
 
 if __name__ == "__main__":
   asyncio.run(main())

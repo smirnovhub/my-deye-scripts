@@ -1,4 +1,4 @@
-name: registers cache test
+name: deye tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 jobs:
-  registers-cache-test:
+  deye-tests:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
@@ -30,12 +30,35 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests fastapi uvicorn aiohttp
 
-      - name: Run tests
+      - name: Run single inverter tests
         env:
-          DEYE_LOG_NAME: deye_cache_test
+          DEYE_LOG_NAME: single_inverter_tests
+        run: |
+          python -u test/src/deye_register_types_test.py
+          python -u test/src/deye_single_inverter_test.py
+
+      - name: Run multi inverter tests
+        env:
+          DEYE_LOG_NAME: multi_inverter_tests
+        run: |
+          python -u test/src/deye_group_read_test.py
+          python -u test/src/deye_multi_inverter_test.py
+
+      - name: Run write registers tests
+        env:
+          DEYE_LOG_NAME: write_registers_tests
+        run: |
+          python -u test/src/deye_write_registers_test_1.py
+          python -u test/src/deye_write_registers_test_2.py
+          python -u test/src/deye_write_registers_test_3.py
+
+      - name: Run cache tests
+        env:
+          DEYE_LOG_NAME: deye_cache_tests
         run: |
           python -u test/src/deye_cache_server_test.py
           python -u test/src/deye_registers_local_cache_manager_test.py
           python -u test/src/deye_registers_local_cache_test.py
           python -u test/src/deye_registers_remote_cache_manager_test.py
           python -u test/src/deye_registers_remote_cache_test.py
+

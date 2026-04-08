@@ -37,28 +37,12 @@ from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
 
 from deye import main as deye_main
 
-async def main():
-  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
-
-  logging.basicConfig(
-    level = logging.INFO,
-    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-    datefmt = DeyeUtils.time_format_str,
-  )
-
-  log = logging.getLogger()
+async def main_test_logic(
+  servers: List[SolarmanTestServer],
+  log: logging.Logger,
+):
   loggers = DeyeLoggers()
   registers = DeyeRegisters()
-
-  if not loggers.is_test_loggers:
-    log.error('ERROR: your loggers are not test loggers')
-    sys.exit(1)
-
-  if not loggers.slaves:
-    log.error("ERROR: you don't have slave loggers to run this test")
-    sys.exit(1)
-
-  servers = await DeyeTestUtils.start_solarman_servers(loggers.loggers)
 
   for register in registers.all_registers:
     log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
@@ -158,6 +142,28 @@ async def main():
         log.info('Register and value found')
 
   log.info('All registers and values found. Test is ok')
+
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
+  )
+
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
+
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
+    sys.exit(1)
+
+  async with DeyeTestUtils.solarman_servers(loggers.loggers) as servers:
+    await main_test_logic(
+      servers = servers,
+      log = log,
+    )
 
 if __name__ == "__main__":
   asyncio.run(main())

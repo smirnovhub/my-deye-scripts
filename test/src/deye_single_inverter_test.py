@@ -1,4 +1,3 @@
-import io
 import os
 import sys
 import asyncio
@@ -6,7 +5,6 @@ import logging
 
 from pathlib import Path
 from typing import List
-from contextlib import redirect_stdout
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -28,6 +26,7 @@ import_dirs(
 
 from deye_utils import DeyeUtils
 from deye_test_utils import DeyeTestUtils
+from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
 from solarman_test_server import SolarmanTestServer
@@ -36,26 +35,12 @@ from deye_test_helper import DeyeTestHelper
 
 from deye import main as deye_main
 
-async def main():
-  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
-
-  logging.basicConfig(
-    level = logging.INFO,
-    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-    datefmt = DeyeUtils.time_format_str,
-  )
-
-  log = logging.getLogger()
-  loggers = DeyeLoggers()
+async def main_test_logic(
+  server: SolarmanTestServer,
+  logger: DeyeLogger,
+  log: logging.Logger,
+):
   registers = DeyeRegisters()
-
-  if not loggers.is_test_loggers:
-    log.error('ERROR: your loggers are not test loggers')
-    sys.exit(1)
-
-  logger = loggers.master
-
-  server = await DeyeTestUtils.start_solarman_server(logger)
 
   randoms: List[DeyeRegisterRandomValue] = []
 
@@ -90,18 +75,18 @@ async def main():
 
     log.info(f'Command to execute: {" ".join(fake_args)}')
 
-  async with DeyeTestUtils.collect_output() as buffer:
-    try:
-      await deye_main(fake_args)
-    except SystemExit:
-      pass
-    output = buffer.getvalue().strip()
+    async with DeyeTestUtils.collect_output() as buffer:
+      try:
+        await deye_main(fake_args)
+      except SystemExit:
+        pass
+      output = buffer.getvalue().strip()
 
-  log.info(f'Command output: {output}')
+    log.info(f'Command output: {output}')
 
-  if 'exception' in output or 'error' in output:
-    log.error('An exception occurred.')
-    sys.exit(1)
+    if 'exception' in output or 'error' in output:
+      log.error('An exception occurred.')
+      sys.exit(1)
 
     if not server.is_registers_readed(register.address, register.quantity):
       log.error(f"No request for read on the server side after reading '{register.name}'")
@@ -116,6 +101,31 @@ async def main():
       log.info('Register and value found')
 
   log.info('All registers and values found. Test is ok')
+
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
+  )
+
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
+
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
+    sys.exit(1)
+
+  logger = loggers.master
+
+  async with DeyeTestUtils.solarman_server(logger) as server:
+    await main_test_logic(
+      server = server,
+      logger = logger,
+      log = log,
+    )
 
 if __name__ == "__main__":
   asyncio.run(main())

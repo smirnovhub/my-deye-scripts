@@ -10,7 +10,7 @@ import uvicorn
 import logging.config
 import multiprocessing
 
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator, AsyncIterator, List
 
 from pathlib import Path
 from env_utils import EnvUtils
@@ -62,7 +62,7 @@ class DeyeTestUtils:
   @staticmethod
   def _run_storage_server() -> multiprocessing.Process:
     logger = logging.getLogger()
-    logger.info(f"Starting cache server at {DeyeTestUtils.storage_server_host}:"
+    logger.info(f"Starting storage server at {DeyeTestUtils.storage_server_host}:"
                 f"{DeyeTestUtils.storage_server_port}...")
     server_process = multiprocessing.Process(target = DeyeTestUtils._run_server, daemon = True)
     server_process.start()
@@ -81,9 +81,10 @@ class DeyeTestUtils:
   @staticmethod
   def _stop_storage_server(process: multiprocessing.Process) -> None:
     logger = logging.getLogger()
-    logger.info("Shutting cache server down...")
+    logger.info("Shutting storage server down...")
     process.terminate()
     process.join()
+    logger.info("Storage server stopped.")
 
   @staticmethod
   def _run_server() -> None:
@@ -149,6 +150,26 @@ class DeyeTestUtils:
 
     logger.error("Storage server did not become ready in time.")
     return False
+
+  @staticmethod
+  @asynccontextmanager
+  async def solarman_server(logger: DeyeLogger) -> AsyncIterator[SolarmanTestServer]:
+    server = await DeyeTestUtils.start_solarman_server(logger)
+    try:
+      yield server
+    finally:
+      await server.stop_server_async()
+
+  @staticmethod
+  @asynccontextmanager
+  async def solarman_servers(loggers: List[DeyeLogger]) -> AsyncIterator[List[SolarmanTestServer]]:
+    servers = await DeyeTestUtils.start_solarman_servers(loggers)
+    try:
+      yield servers
+    finally:
+      stop_tasks = [server.stop_server_async() for server in servers]
+      if stop_tasks:
+        await asyncio.gather(*stop_tasks, return_exceptions = True)
 
   @staticmethod
   async def wait_for_solarman_servers_ready(loggers: List[DeyeLogger], timeout: float = 5) -> bool:
