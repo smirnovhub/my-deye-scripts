@@ -120,6 +120,9 @@ async def main_test_logic():
     port = logger.port,
   )
 
+  if not await DeyeTestUtils.wait_for_solarman_servers_ready([logger]):
+    return
+
   # ---- MAIN TEST LOGIC ----
   randoms: List[DeyeRegisterRandomValue] = []
 
