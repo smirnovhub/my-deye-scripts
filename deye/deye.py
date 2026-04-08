@@ -2,12 +2,11 @@
 
 import os
 import sys
-import asyncio
 import logging
 import argparse
 import traceback
 
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 
 current_path = Path(__file__).parent.resolve()
@@ -33,7 +32,7 @@ class DeyeArgumentParser(argparse.ArgumentParser):
     sys.stderr.write(f'{os.path.basename(__file__)}: error: {message}\n')
     sys.exit(2)
 
-async def main():
+async def main(args_list: Optional[List[str]] = None):
   parser = DeyeArgumentParser(
     description = 'read/write deye parameters',
     formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position = 50, width = 100))
@@ -80,7 +79,7 @@ async def main():
     create_processor = perf_counter() - current
     current = perf_counter()
 
-    args = parser.parse_args()
+    args = parser.parse_args(args = args_list)
 
     if args.verbose_output:
       logging.basicConfig(
@@ -109,7 +108,8 @@ async def main():
 
     loggers_list.sort(key = lambda logger: logger.name)
 
-    if len(sys.argv) == 1 or not any(
+    argv = args_list if args_list is not None else sys.argv[1:]
+    if not argv or not any(
       (lambda: type(e) is str or type(e) is int or (type(e) is bool and e == True))() for e in vars(args).values()):
       parser.print_help()
       exit()
