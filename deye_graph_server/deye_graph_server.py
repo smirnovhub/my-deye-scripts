@@ -73,7 +73,7 @@ app.add_middleware(GZipMiddleware, minimum_size = 1024)
 gzip.DEFAULT_EXCLUDED_CONTENT_TYPES = (
   "image/png",
   "application/zip",
-)
+) # type: ignore
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

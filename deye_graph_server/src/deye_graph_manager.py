@@ -237,6 +237,8 @@ class DeyeGraphManager:
       # Remove empty space on the sides
       ax.set_xlim(left_limit, right_limit)
 
+      major_locator: mdates.DateLocator
+
       # Define intervals based on time span
       if time_delta < 3600:
         major_locator = mdates.MinuteLocator(byminute = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55])
@@ -279,7 +281,7 @@ class DeyeGraphManager:
 
       # --- Y-axis limits logic ---
       # Get all y-values to find absolute min and max for the current plot
-      all_y_values = []
+      all_y_values = [] # type: ignore
       for line in ax.get_lines():
         all_y_values.extend(line.get_ydata()) # type: ignore
 
