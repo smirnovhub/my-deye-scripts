@@ -58,20 +58,7 @@ async def main():
     log.error("ERROR: you don't have slave loggers to run this test")
     sys.exit(1)
 
-  servers: List[SolarmanTestServer] = []
-
-  for logger in loggers.loggers:
-    server = SolarmanTestServer(
-      name = logger.name,
-      address = logger.address,
-      serial = logger.serial,
-      port = logger.port,
-    )
-
-    servers.append(server)
-
-  if not await DeyeTestUtils.wait_for_solarman_servers_ready(loggers.loggers):
-    return
+  servers = await DeyeTestUtils.start_solarman_servers(loggers.loggers)
 
   for register in registers.all_registers:
     log.info(f"Processing register '{register.name}' with type {type(register).__name__}")

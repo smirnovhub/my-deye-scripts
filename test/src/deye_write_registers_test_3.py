@@ -52,20 +52,7 @@ async def main():
     log.error('ERROR: your loggers are not test loggers')
     sys.exit(1)
 
-  servers: List[SolarmanTestServer] = []
-
-  for logger in loggers.loggers:
-    server = SolarmanTestServer(
-      name = logger.name,
-      address = logger.address,
-      serial = logger.serial,
-      port = logger.port,
-    )
-
-    servers.append(server)
-
-  if not await DeyeTestUtils.wait_for_solarman_servers_ready(loggers.loggers):
-    return
+  servers = await DeyeTestUtils.start_solarman_servers(loggers.loggers)
 
   for register in registers.all_registers:
     if not register.can_write:

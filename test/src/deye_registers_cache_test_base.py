@@ -112,16 +112,7 @@ async def main_test_logic():
     sys.exit(1)
 
   logger = random.choice(loggers.loggers)
-
-  server = SolarmanTestServer(
-    name = logger.name,
-    address = logger.address,
-    serial = logger.serial,
-    port = logger.port,
-  )
-
-  if not await DeyeTestUtils.wait_for_solarman_servers_ready([logger]):
-    return
+  server = await DeyeTestUtils.start_solarman_server(logger)
 
   # ---- MAIN TEST LOGIC ----
   randoms: List[DeyeRegisterRandomValue] = []

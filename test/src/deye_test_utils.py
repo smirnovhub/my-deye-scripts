@@ -10,10 +10,12 @@ import uvicorn
 import logging.config
 import multiprocessing
 
+from typing import AsyncGenerator, List
+
 from pathlib import Path
 from env_utils import EnvUtils
 from deye_logger import DeyeLogger
-from typing import AsyncGenerator, List
+from solarman_test_server import SolarmanTestServer
 from contextlib import asynccontextmanager, contextmanager, redirect_stdout
 
 class DeyeTestUtils:
@@ -200,3 +202,36 @@ class DeyeTestUtils:
     with redirect_stdout(output_buffer):
       # Yield the buffer so the caller can read from it if needed
       yield output_buffer
+
+  @staticmethod
+  async def start_solarman_server(logger: DeyeLogger) -> SolarmanTestServer:
+    server = SolarmanTestServer(
+      name = logger.name,
+      address = logger.address,
+      serial = logger.serial,
+      port = logger.port,
+    )
+
+    if not await DeyeTestUtils.wait_for_solarman_servers_ready([logger]):
+      raise RuntimeError("Can't start solarman test server")
+
+    return server
+
+  @staticmethod
+  async def start_solarman_servers(loggers: List[DeyeLogger]) -> List[SolarmanTestServer]:
+    servers: List[SolarmanTestServer] = []
+
+    for logger in loggers:
+      server = SolarmanTestServer(
+        name = logger.name,
+        address = logger.address,
+        serial = logger.serial,
+        port = logger.port,
+      )
+
+      servers.append(server)
+
+    if not await DeyeTestUtils.wait_for_solarman_servers_ready(loggers):
+      raise RuntimeError("Can't start solarman test servers")
+
+    return servers

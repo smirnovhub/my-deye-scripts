@@ -51,16 +51,7 @@ async def main():
     sys.exit(1)
 
   logger = loggers.master
-
-  server = SolarmanTestServer(
-    name = logger.name,
-    address = logger.address,
-    serial = logger.serial,
-    port = logger.port,
-  )
-
-  if not await DeyeTestUtils.wait_for_solarman_servers_ready([logger]):
-    return
+  server = await DeyeTestUtils.start_solarman_server(logger)
 
   for register in registers.all_registers:
     if not register.can_write:
