@@ -1,13 +1,10 @@
 import sys
-import random
 import asyncio
 import logging
 
 from typing import List
 
 from deye_test_utils import DeyeTestUtils
-from deye_utils import DeyeUtils
-from deye_loggers import DeyeLoggers
 from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
@@ -98,22 +95,11 @@ async def read_and_check(
     log.error(f"Register value {expected_value} not found for '{register.name}'")
     sys.exit(1)
 
-async def main_test_logic():
-  logging.basicConfig(
-    level = logging.INFO,
-    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-    datefmt = DeyeUtils.time_format_str,
-  )
-
-  loggers = DeyeLoggers()
-
-  if not loggers.is_test_loggers:
-    log.error('ERROR: your loggers are not test loggers')
-    sys.exit(1)
-
-  logger = random.choice(loggers.loggers)
-  server = await DeyeTestUtils.start_solarman_server(logger)
-
+async def main_test_logic(
+  server: SolarmanTestServer,
+  logger: DeyeLogger,
+  log: logging.Logger,
+):
   # ---- MAIN TEST LOGIC ----
   randoms: List[DeyeRegisterRandomValue] = []
 

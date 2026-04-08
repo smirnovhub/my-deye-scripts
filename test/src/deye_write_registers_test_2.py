@@ -26,32 +26,18 @@ import_dirs(
 
 from deye_utils import DeyeUtils
 from deye_test_utils import DeyeTestUtils
+from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_base_enum import DeyeBaseEnum
 from solarman_test_server import SolarmanTestServer
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_test_helper import DeyeTestHelper
 
-async def main():
-  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
-
-  logging.basicConfig(
-    level = logging.INFO,
-    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-    datefmt = DeyeUtils.time_format_str,
-  )
-
-  log = logging.getLogger()
-  loggers = DeyeLoggers()
-
-  if not loggers.is_test_loggers:
-    log.error('ERROR: your loggers are not test loggers')
-    sys.exit(1)
-
-  logger = loggers.master
-
-  await DeyeTestUtils.start_solarman_server(logger)
-
+async def main_test_logic(
+  server: SolarmanTestServer,
+  logger: DeyeLogger,
+  log: logging.Logger,
+):
   holder_kwargs = {
     'name': 'test',
     'socket_timeout': 1,
@@ -105,6 +91,31 @@ async def main():
       log.info(f"Register values successfully matched for '{register.name}'")
 
   log.info('All registers have been written and read correctly. Test is ok')
+
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
+  )
+
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
+
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
+    sys.exit(1)
+
+  logger = loggers.master
+
+  async with DeyeTestUtils.solarman_server(logger) as server:
+    await main_test_logic(
+      server = server,
+      logger = logger,
+      log = log,
+    )
 
 if __name__ == "__main__":
   asyncio.run(main())

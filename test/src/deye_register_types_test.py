@@ -30,23 +30,11 @@ from deye_test_utils import DeyeTestUtils
 from solarman_test_server import SolarmanTestServer
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 
-async def main():
-  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
-
-  logging.basicConfig(
-    level = logging.INFO,
-    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-    datefmt = DeyeUtils.time_format_str,
-  )
-
-  log = logging.getLogger()
+async def main_test_logic(
+  servers: List[SolarmanTestServer],
+  log: logging.Logger,
+):
   loggers = DeyeLoggers()
-
-  if not loggers.is_test_loggers:
-    log.error('ERROR: your loggers are not test loggers')
-    sys.exit(1)
-
-  servers = await DeyeTestUtils.start_solarman_servers(loggers.loggers)
 
   for server in servers:
     server.set_random_mode(True)
@@ -88,6 +76,28 @@ async def main():
       log.info(f"Register value type '{register_type}' matched for accumulated register '{register.name}'")
 
   log.info('All accumulated registers types matched. Test is ok')
+
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
+  )
+
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
+
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
+    sys.exit(1)
+
+  async with DeyeTestUtils.solarman_servers(loggers.loggers) as servers:
+    await main_test_logic(
+      servers = servers,
+      log = log,
+    )
 
 if __name__ == "__main__":
   asyncio.run(main())
