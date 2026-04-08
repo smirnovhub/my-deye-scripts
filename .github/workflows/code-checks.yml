@@ -36,14 +36,14 @@ jobs:
       - name: Run mypy for deye
         working-directory: deye
         run: |
-          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
 
       - name: Run mypy for telebot
         working-directory: telebot
         run: |
-          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
 
       - name: Run mypy for test
         working-directory: test
         run: |
-          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
