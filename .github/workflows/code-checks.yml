@@ -33,8 +33,38 @@ jobs:
         run: |
           codespell . --skip="./modules/*,JsHttpRequest.php,JsHttpRequest.js,*.svg,*.log"
 
+      - name: Run mypy for common
+        working-directory: common
+        run: |
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} .
+
+      - name: Run mypy for data collector
+        working-directory: data_collector
+        run: |
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
+
       - name: Run mypy for deye
         working-directory: deye
+        run: |
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
+
+      - name: Run mypy for deye graph server
+        working-directory: deye_graph_server
+        run: |
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
+
+      - name: Run mypy for deye proxy
+        working-directory: deyeproxy
+        run: |
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
+
+      - name: Run mypy for deye storage
+        working-directory: deyestorage
+        run: |
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
+
+      - name: Run mypy for deye web
+        working-directory: deyeweb
         run: |
           mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
 
