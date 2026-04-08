@@ -42,5 +42,5 @@ jobs:
           mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deyeproxy
           mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deyestorage
           mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deyeweb
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} telebot
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} test
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} telebot/src
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} test/src
