@@ -35,4 +35,12 @@ jobs:
 
       - name: Run mypy checks
         run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deye/src
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} common
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} data_collector
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deye
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deye_graph_server
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deyeproxy
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deyestorage
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deyeweb
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} telebot
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} test
