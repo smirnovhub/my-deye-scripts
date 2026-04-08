@@ -46,9 +46,11 @@ def run_test(path: str):
     sys.exit(1)
 
 run_test('common')
+run_test('data_collector')
 run_test('demoserver')
 run_test('deye')
 run_test('deyestorage')
+run_test('deye_graph_server')
 run_test('deyeproxy')
 run_test('deyeweb')
 run_test('telebot')

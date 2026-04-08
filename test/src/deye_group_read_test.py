@@ -26,7 +26,6 @@ import_dirs(
 
 from deye_utils import DeyeUtils
 from deye_test_utils import DeyeTestUtils
-from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
 from solarman_test_server import SolarmanTestServer

@@ -1,4 +1,3 @@
-import io
 import os
 import sys
 import asyncio
@@ -6,7 +5,6 @@ import logging
 
 from typing import List
 from pathlib import Path
-from contextlib import redirect_stdout
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
