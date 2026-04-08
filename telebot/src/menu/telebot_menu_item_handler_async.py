@@ -104,5 +104,5 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
 
     return False
 
-  def run_async(self, coro: Coroutine[Any, Any, Any]) -> Future[Any]:
+  def run_async(self, coro: Coroutine[Any, Any, Any]) -> Future:
     return self._runner.run(coro)

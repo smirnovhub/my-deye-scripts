@@ -15,13 +15,13 @@ class TelebotAsyncRunner:
     )
     self._thread.start()
 
-  def run(self, coro: Coroutine[Any, Any, Any]) -> Future[Any]:
+  def run(self, coro: Coroutine[Any, Any, Any]) -> Future:
     """
     Submit coroutine to the event loop
     """
     future = asyncio.run_coroutine_threadsafe(coro, self._loop)
 
-    def _callback(f: Future[Any]) -> None:
+    def _callback(f: Future) -> None:
       try:
         f.result()
       except Exception:
