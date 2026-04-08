@@ -3,24 +3,29 @@ import telebot
 from typing import Dict
 
 from deye_utils import DeyeUtils
-from deye_registers_holder import DeyeRegistersHolder
 from forecast_registers import ForecastRegisters
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_command_choice import CommandChoice
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler import TelebotMenuItemHandler
 from battery_forecast_utils import BatteryForecastUtils
 from battery_forecast_utils import BatteryForecastType
 from battery_forecast_utils import BatteryForecastOrderType
+from deye_registers_holder_async import DeyeRegistersHolderAsync
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
-class TelebotMenuBatteryForecastBase(TelebotMenuItemHandler):
+class TelebotMenuBatteryForecastBase(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
     bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
     command: TelebotMenuItem,
     order_type: BatteryForecastOrderType,
   ):
-    super().__init__(bot)
+    super().__init__(
+      bot = bot,
+      runner = runner,
+    )
     self.cmd = command
     self.order_type = order_type
 
@@ -28,22 +33,16 @@ class TelebotMenuBatteryForecastBase(TelebotMenuItemHandler):
   def command(self) -> TelebotMenuItem:
     return self.cmd
 
-  def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if self.has_updates(message):
-      return
-
+  async def process_message(self, message: telebot.types.Message) -> None:
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       loggers = self.loggers.loggers,
       register_creator = lambda prefix: ForecastRegisters(prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return

@@ -42,7 +42,7 @@ class DeyeWebResetCacheCommandProcessor(DeyeWebBaseCommandProcessor):
     finally:
       holder.disconnect()
 
-    DeyeWebUtils.shutdown_with_delay()
+    await DeyeWebUtils.shutdown_with_delay()
 
     style_id = DeyeWebConstants.styles_template.format(command.name)
     result[style_id] = self.style_manager.generate_css()

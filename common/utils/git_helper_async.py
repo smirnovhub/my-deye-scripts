@@ -1,18 +1,18 @@
 import os
 import re
-import subprocess
+import asyncio
 
 from typing import Dict, List, Optional, Tuple
 
 from deye_exceptions import DeyeValueException
 from git_exceptions import GitException
 
-class GitHelper:
+class GitHelperAsync:
   def __init__(self):
     self._current_dir = os.path.dirname(__file__)
     self._local_repo_mark = 'git.dmitry'
 
-  def is_repository_up_to_date(self) -> bool:
+  async def is_repository_up_to_date(self) -> bool:
     """
     Check if the local repository is up to date with the remote.
 
@@ -26,54 +26,54 @@ class GitHelper:
         GitException: If the git command fails.
     """
     # Run 'git remote show origin' to get information about remote branches
-    result = self._run_git_command_and_get_result(
+    result = await self._run_git_command_and_get_result_async(
       ["remote", "show", "origin"],
       'remote show origin',
     )
     return 'up to date' in result.lower()
 
-  def stash_push(self) -> str:
-    return self._run_git_command_and_get_result(
+  async def stash_push(self) -> str:
+    return await self._run_git_command_and_get_result_async(
       ['stash', 'push'],
       'stash push',
     )
 
-  def stash_pop(self) -> str:
-    return self._run_git_command_and_get_result(
+  async def stash_pop(self) -> str:
+    return await self._run_git_command_and_get_result_async(
       ['stash', 'pop'],
       'stash pop',
     )
 
-  def stash_clear(self) -> str:
-    return self._run_git_command_and_get_result(
+  async def stash_clear(self) -> str:
+    return await self._run_git_command_and_get_result_async(
       ['stash', 'clear'],
       'stash clear',
     )
 
-  def pull(self) -> str:
-    return self._run_git_command_and_get_result(
+  async def pull(self) -> str:
+    return await self._run_git_command_and_get_result_async(
       ["pull"],
       'pull',
     )
 
-  def revert_to_revision(self, commit_hash: str) -> str:
-    return self._run_git_command_and_get_result(
+  async def revert_to_revision(self, commit_hash: str) -> str:
+    return await self._run_git_command_and_get_result_async(
       ['reset', '--hard', commit_hash],
       'reset --hard',
     )
 
-  def get_current_branch_name(self) -> str:
-    return self._run_git_command_and_get_result(
+  async def get_current_branch_name(self) -> str:
+    return await self._run_git_command_and_get_result_async(
       ["rev-parse", "--abbrev-ref", "HEAD"],
       'rev-parse --abbrev-ref HEAD',
     )
 
-  def get_last_commit_hash(self) -> str:
-    repo_name = self.get_repo_name()
+  async def get_last_commit_hash(self) -> str:
+    repo_name = await self.get_repo_name()
 
     # Return global last commit hash for production repo
     if self._local_repo_mark not in repo_name:
-      return self._run_git_command_and_get_result(
+      return await self._run_git_command_and_get_result_async(
         ["rev-parse", "HEAD"],
         'rev-parse HEAD',
       )
@@ -82,7 +82,7 @@ class GitHelper:
 
     # Find the root of the Git repository
     # This command returns the absolute path to the folder containing the .git directory
-    repo_root = self._run_git_command_and_get_result(
+    repo_root = await self._run_git_command_and_get_result_async(
       ['rev-parse', '--show-toplevel'],
       'rev-parse --show-toplevel',
       cwd = self._current_dir,
@@ -106,26 +106,26 @@ class GitHelper:
 
     # Get the hash of the latest commit that affected this specific folder
     # 'rev-list -1 HEAD -- <path>' returns the most recent commit ID for the given path
-    return self._run_git_command_and_get_result(
+    return await self._run_git_command_and_get_result_async(
       ['rev-list', '-1', 'HEAD', '--', target_path],
       'rev-list -1 HEAD',
       cwd = repo_root,
     )
 
-  def get_repo_name(self) -> str:
-    return self._run_git_command_and_get_result(
+  async def get_repo_name(self) -> str:
+    return await self._run_git_command_and_get_result_async(
       ["config", "--get", "remote.origin.url"],
       'config --get remote.origin.url',
     )
 
-  def get_last_commit_short_hash(self) -> str:
-    return self._run_git_command_and_get_result(
+  async def get_last_commit_short_hash(self) -> str:
+    return await self._run_git_command_and_get_result_async(
       ["rev-parse", "--short", "HEAD"],
       'rev-parse --short HEAD',
     )
 
-  def get_last_commit_hash_and_comment(self) -> str:
-    last_commit = self._run_git_command_and_get_result(
+  async def get_last_commit_hash_and_comment(self) -> str:
+    last_commit = await self._run_git_command_and_get_result_async(
       ["log", "-1", "--pretty=format:%h %ad %s", "--date=short"],
       'log -1',
     )
@@ -136,7 +136,7 @@ class GitHelper:
 
     return last_commit
 
-  def get_last_commits(self, pr_max_count: int = 5, regular_commits_max_count = 25) -> Dict[str, str]:
+  async def get_last_commits(self, pr_max_count: int = 5, regular_commits_max_count = 25) -> Dict[str, str]:
     """
     Get all merge commits of the format "Merge pull request #<number>" in the local repository.
     If no merge commits are found, return the last `max_count` commits.
@@ -154,7 +154,7 @@ class GitHelper:
     try:
       # Try to get only merge commits with date
       max_count = pr_max_count
-      result = self._run_git_command_and_get_result(
+      result = await self._run_git_command_and_get_result_async(
         [
           "log",
           f"-n{max_count}",
@@ -171,7 +171,7 @@ class GitHelper:
       # If no merge commits are found, get the last `max_count` commits with date
       if not lines or lines == ['']:
         max_count = regular_commits_max_count
-        result = self._run_git_command_and_get_result(
+        result = await self._run_git_command_and_get_result_async(
           [
             "log",
             f"-n{max_count}",
@@ -222,42 +222,40 @@ class GitHelper:
 
     return commits_dict
 
-  def _run_git_command_and_get_result(
+  async def _run_git_command_and_get_result_async(
     self,
     commands: List[str],
     command_name: str,
     cwd: Optional[str] = None,
   ) -> str:
-    """
-    Execute a git command and return its stdout output as a string.
-
-    Args:
-        commands (List[str]): The command and its arguments to execute as a list of strings
-        command_name (str): A short name or description of the command, used in error messages
-
-    Returns:
-        str: The standard output of the executed command, stripped of leading/trailing whitespace.
-
-    Raises:
-        GitException: If the command fails for any reason, including:
-            - A non-zero exit code detected
-            - Any other unexpected exception
-    """
     try:
-      result = subprocess.run(
-        ["git", "-C", self._current_dir] + commands,
+      # Create subprocess asynchronously
+      process = await asyncio.create_subprocess_exec(
+        "git",
+        "-C",
+        self._current_dir,
+        *commands,
         cwd = cwd,
-        capture_output = True,
-        text = True,
+        stdout = asyncio.subprocess.PIPE,
+        stderr = asyncio.subprocess.PIPE,
       )
+
+      # Wait for process completion and capture output
+      stdout_bytes, stderr_bytes = await process.communicate()
+      await process.wait()
+
+      # Decode output to text
+      stdout = stdout_bytes.decode().strip() if stdout_bytes else ""
+      stderr = stderr_bytes.decode().strip() if stderr_bytes else ""
 
       self._check_git_result_and_raise(
-        returncode = result.returncode,
-        stdout = result.stdout,
-        stderr = result.stderr,
+        returncode = process.returncode,
+        stdout = stdout,
+        stderr = stderr,
       )
 
-      return result.stdout.strip()
+      return stdout
+
     except GitException as e:
       raise GitException(f'git {command_name} failed: {str(e)}')
     except Exception as e:

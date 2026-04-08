@@ -1,7 +1,7 @@
 import copy
 
 from enum import Enum
-from typing import List
+from typing import List, Dict
 
 from button_node import ButtonNode
 from button_style import ButtonStyle
@@ -9,19 +9,21 @@ from deye_loggers import DeyeLoggers
 from break_button_node import BreakButtonNode
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_deye_helper import TelebotDeyeHelper
-from deye_registers_holder import DeyeRegistersHolder, Dict
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from battery_settings_registers import BatterySettingsRegisters
 
 class BatterySettingsMainPage(TelebotNavigationPage):
   def __init__(
     self,
+    runner: TelebotAsyncRunner,
     batt_data: BatterySettingsData,
     title: str,
   ):
-    super().__init__()
+    super().__init__(runner)
     self._loggers = DeyeLoggers()
     self._batt_data = batt_data
     self._batt_data_original_values = copy.deepcopy(batt_data.values)
@@ -90,15 +92,15 @@ class BatterySettingsMainPage(TelebotNavigationPage):
   def _need_save(self) -> bool:
     return self._batt_data.values != self._batt_data_original_values
 
-  def _handle_save(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_save(self, navigator: TelebotPageNavigator) -> None:
     try:
-      holder = DeyeRegistersHolder(
+      holder = DeyeRegistersHolderAsync(
         loggers = [self._loggers.master],
         register_creator = lambda prefix: BatterySettingsRegisters(prefix),
         **TelebotDeyeHelper.holder_kwargs,
       )
 
-      holder.read_registers()
+      await holder.read_registers()
 
       registers = holder.master_registers
 
@@ -111,7 +113,7 @@ class BatterySettingsMainPage(TelebotNavigationPage):
         register = self._batt_data.registers[page]
         reg = registers.get_register_by_name(register.name)
         if reg.value != value:
-          holder.write_register(register, value)
+          await holder.write_register(register, value)
 
       navigator.stop(f"{self._title} saved\n{self._get_data_as_text(self._batt_data.values)}")
 

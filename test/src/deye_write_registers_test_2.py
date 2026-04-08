@@ -50,12 +50,7 @@ async def main():
 
   logger = loggers.master
 
-  server = SolarmanTestServer(
-    name = logger.name,
-    address = logger.address,
-    serial = logger.serial,
-    port = logger.port,
-  )
+  await DeyeTestUtils.start_solarman_server(logger)
 
   holder_kwargs = {
     'name': 'test',

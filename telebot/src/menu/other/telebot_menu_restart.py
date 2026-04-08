@@ -3,11 +3,11 @@ import telebot
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_user_choices import UserChoices
 from countdown_with_cancel import CountdownWithCancel
 
-class TelebotMenuRestart(TelebotMenuItemHandler):
+class TelebotMenuRestart(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
 
@@ -16,12 +16,6 @@ class TelebotMenuRestart(TelebotMenuItemHandler):
     return TelebotMenuItem.restart
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if self.has_updates(message):
-      return
-
     UserChoices.ask_confirmation(
       self.bot, message.chat.id, f'<b>Warning!</b> Bot process will be killed '
       'and will <b>not</b> restart automatically if you didn\'t configure it '
@@ -42,7 +36,7 @@ class TelebotMenuRestart(TelebotMenuItemHandler):
 
   def on_finish(self, chat_id: int):
     self.bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
-    TelebotUtils.stop_bot(self.bot)
+    TelebotUtils.stop_bot()
 
   def on_cancel(self, chat_id: int):
     self.bot.send_message(chat_id, 'Restart cancelled')

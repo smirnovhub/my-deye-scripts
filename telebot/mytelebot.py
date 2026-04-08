@@ -3,6 +3,7 @@ import telebot
 
 from typing import List
 
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_utils import TelebotUtils
 from teletest import TeleTest
 from deye_utils import DeyeUtils
@@ -48,6 +49,7 @@ class MyTelebot:
   def __init__(
     self,
     bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
     logger: logging.Logger,
   ):
     self.bot = bot
@@ -86,7 +88,7 @@ class MyTelebot:
       handler.register_handlers()
 
     default_menu_items = self.get_default_menu_items(bot)
-    authorized_menu_items = self.get_authorized_menu_items(bot)
+    authorized_menu_items = self.get_authorized_menu_items(bot = bot, runner = runner)
     authorized_menu_items.extend(self.get_writable_registers_menu_items(bot))
 
     # unknown command handler should be always last
@@ -170,26 +172,30 @@ class MyTelebot:
       TelebotMenuStart(bot),
     ]
 
-  def get_authorized_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
+  def get_authorized_menu_items(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ) -> List[TelebotMenuItemHandler]:
     return [
-      TelebotMenuAllInfo(bot),
-      TelebotMenuMasterInfo(bot),
-      TelebotMenuSlaveInfo(bot),
-      TelebotMenuAllTodayStat(bot),
-      TelebotMenuAllTotalStat(bot),
-      TelebotMenuMasterTodayStat(bot),
-      TelebotMenuMasterTotalStat(bot),
-      TelebotMenuSlaveTodayStat(bot),
-      TelebotMenuSlaveTotalStat(bot),
-      TelebotMenuAllSettings(bot),
-      TelebotMenuMasterSettings(bot),
+      TelebotMenuAllInfo(bot, runner),
+      TelebotMenuMasterInfo(bot, runner),
+      TelebotMenuSlaveInfo(bot, runner),
+      TelebotMenuAllTodayStat(bot, runner),
+      TelebotMenuAllTotalStat(bot, runner),
+      TelebotMenuMasterTodayStat(bot, runner),
+      TelebotMenuMasterTotalStat(bot, runner),
+      TelebotMenuSlaveTodayStat(bot, runner),
+      TelebotMenuSlaveTotalStat(bot, runner),
+      TelebotMenuAllSettings(bot, runner),
+      TelebotMenuMasterSettings(bot, runner),
       TelebotMenuGraphs(bot),
-      TelebotMenuTimeOfUse(bot),
-      TelebotMenuBatterySettings(bot),
-      TelebotMenuBatteryForecast(bot),
-      TelebotMenuBatteryForecastByPercent(bot),
-      TelebotMenuBatteryForecastByTime(bot),
-      TelebotMenuSyncTime(bot),
+      TelebotMenuTimeOfUse(bot, runner),
+      TelebotMenuBatterySettings(bot, runner),
+      TelebotMenuBatteryForecast(bot, runner),
+      TelebotMenuBatteryForecastByPercent(bot, runner),
+      TelebotMenuBatteryForecastByTime(bot, runner),
+      TelebotMenuSyncTime(bot, runner),
       TelebotMenuRestart(bot),
       TelebotMenuRevert(bot),
       TelebotMenuUpdate(bot),

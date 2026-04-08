@@ -1,11 +1,9 @@
 import os
-import time
 import logging
 
 from typing import Any, Callable, Dict, List, Optional, cast
 
 from deye_utils import DeyeUtils
-from env_utils import EnvUtils
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
@@ -14,8 +12,6 @@ from deye_file_lock import DeyeFileLock
 from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_modbus_interactor_sync import DeyeModbusInteractorSync
-from deye_exceptions import DeyeNoSocketAvailableException
-from deye_exceptions import DeyeQueueIsEmptyException
 from concurrent.futures import Future, ThreadPoolExecutor, wait, ALL_COMPLETED
 
 class DeyeRegistersHolder:
@@ -70,17 +66,6 @@ class DeyeRegistersHolder:
     return self._registers[self._all_loggers.accumulated_registers_prefix]
 
   def read_registers(self) -> None:
-    def log_retry(attempt, total_attempts, exception):
-      self._log.info(f'{type(self).__name__}: an exception occurred while reading registers: '
-                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
-
-    if EnvUtils.is_tests_on():
-      retry_timeout = DeyeUtils.get_test_retry_timeout()
-      self._read_registers_with_retry_internal(retry_timeout = retry_timeout, on_retry = log_retry)
-    else:
-      self._read_registers_internal()
-
-  def _read_registers_internal(self) -> None:
     # Get the first available DeyeRegisters object from the values
     registers = next(iter(self.all_registers.values())).all_registers
 
@@ -88,6 +73,7 @@ class DeyeRegistersHolder:
     with ThreadPoolExecutor(max_workers = len(self._interactors)) as executor:
       future_to_interactor: Dict[Future[None], DeyeModbusInteractorSync] = {}
 
+      # Enqueue and create tasks for all interactors
       for interactor in self._interactors:
         try:
           for register in registers:
@@ -124,14 +110,17 @@ class DeyeRegistersHolder:
         # This matches your original error handling style
         raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while reading registers') from e
 
+    # Process individual interactor registers
     for interactor in self._interactors:
       try:
+        # Assuming interactor.name matches the keys in self._registers
         for register in self._registers[interactor.name].all_registers:
           register.read([interactor])
       except Exception as e:
         raise DeyeUtils.get_reraised_exception(
           e, f'{type(self).__name__}: error while reading {interactor.name} registers') from e
 
+    # Final step: read accumulated registers
     base_interactors = cast(List[DeyeModbusInteractor], self._interactors)
     for register in self.accumulated_registers.all_registers:
       try:
@@ -140,49 +129,7 @@ class DeyeRegistersHolder:
         raise DeyeUtils.get_reraised_exception(
           e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
-  def _read_registers_with_retry_internal(
-    self,
-    retry_timeout,
-    retry_delay = 1,
-    on_retry: Optional[Callable[[int, int, Exception], None]] = None,
-  ) -> None:
-    last_exception: Optional[Exception] = None
-    retry_attempt = 1
-    total_retry_time = 0
-    total_attempts = round(retry_timeout / retry_delay)
-
-    while total_retry_time < retry_timeout:
-      try:
-        self._read_registers_internal()
-        return
-      except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
-        last_exception = e
-        if on_retry:
-          on_retry(retry_attempt, total_attempts, e)
-        time.sleep(retry_delay)
-        retry_attempt += 1
-        total_retry_time += retry_delay
-    else:
-      if last_exception is not None:
-        raise last_exception
-
   def write_register(self, register: DeyeRegister, value) -> Any:
-    def log_retry(attempt, total_attempts, exception):
-      self._log.info(f'{type(self).__name__}: an exception occurred while writing registers: '
-                     f'{str(exception)}, retrying... (attempt {attempt}/{total_attempts})')
-
-    if EnvUtils.is_tests_on():
-      retry_timeout = DeyeUtils.get_test_retry_timeout()
-      return self._write_register_with_retry_internal(
-        register,
-        value,
-        retry_timeout = retry_timeout,
-        on_retry = log_retry,
-      )
-    else:
-      return self._write_register_internal(register, value)
-
-  def _write_register_internal(self, register: DeyeRegister, value) -> Any:
     if self._master_interactor == None:
       raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
 
@@ -192,33 +139,6 @@ class DeyeRegistersHolder:
       return value
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while writing register') from e
-
-  def _write_register_with_retry_internal(
-    self,
-    register: DeyeRegister,
-    value,
-    retry_timeout,
-    retry_delay = 1,
-    on_retry: Optional[Callable[[int, int, Exception], None]] = None,
-  ) -> Any:
-    last_exception: Optional[Exception] = None
-    retry_attempt = 1
-    total_retry_time = 0
-    total_attempts = round(retry_timeout / retry_delay)
-
-    while total_retry_time < retry_timeout:
-      try:
-        return self._write_register_internal(register, value)
-      except (DeyeNoSocketAvailableException, DeyeQueueIsEmptyException) as e:
-        last_exception = e
-        if on_retry:
-          on_retry(retry_attempt, total_attempts, e)
-        time.sleep(retry_delay)
-        retry_attempt += 1
-        total_retry_time += retry_delay
-    else:
-      if last_exception is not None:
-        raise last_exception
 
   def reset_cache(self) -> None:
     for interactor in self._interactors:

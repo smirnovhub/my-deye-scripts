@@ -1,15 +1,19 @@
 import inspect
+import logging
 
 from enum import Enum
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
 from abc import ABC, abstractmethod
 from button_node import ButtonNode
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_page_navigator import TelebotPageNavigator
 
 ButtonHandler = Union[
   Callable[[TelebotPageNavigator], None],
   Callable[[TelebotPageNavigator, ButtonNode], None],
+  Callable[[TelebotPageNavigator], Coroutine[Any, Any, None]],
+  Callable[[TelebotPageNavigator, ButtonNode], Coroutine[Any, Any, None]],
 ]
 
 class TelebotNavigationPage(ABC):
@@ -17,11 +21,16 @@ class TelebotNavigationPage(ABC):
   Abstract base class representing a single UI page in the telegram bot navigation system.
   Each page manages its own buttons and click handlers.
   """
-  def __init__(self):
+  def __init__(
+    self,
+    runner: Optional[TelebotAsyncRunner] = None,
+  ):
     """
     Initializes the page and its internal button handler storage.
     """
+    self._runner = runner
     self._button_handlers: Dict[int, ButtonHandler] = {}
+    self._logger = logging.getLogger()
 
   @property
   @abstractmethod
@@ -107,10 +116,17 @@ class TelebotNavigationPage(ABC):
     # Logic to decide how many arguments to pass
     if len(params) >= 2:
       # Handler expects at least two arguments (navigator and button)
-      handler(navigator, button) # type: ignore
+      result = handler(navigator, button) # type: ignore
     else:
       # Handler expects only one argument (navigator)
-      handler(navigator) # type: ignore
+      result = handler(navigator) # type: ignore
+
+    if inspect.iscoroutine(result):
+      if not self._runner:
+        raise RuntimeError("Async runner is not set")
+      self._logger.info(f"{self.__class__.__name__}: running async handler for button "
+                        f"text={button.text}, data={button.data}")
+      self._runner.run(result)
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     pass

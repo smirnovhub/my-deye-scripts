@@ -74,7 +74,7 @@ class DeyeGraphsDataProvider:
     url = urljoin(self._server_url, "/graphs")
     with self._session.get(url, timeout = 5) as response:
       if response.status_code != HTTPStatus.OK:
-        raise RuntimeError(TelebotUtils.get_response_message(response))
+        raise RuntimeError(TelebotUtils.get_response_message(response.text))
 
       # Check if the response body is valid JSON
       data = response.json()
@@ -92,7 +92,7 @@ class DeyeGraphsDataProvider:
     url = urljoin(self._server_url, f"/graphs/{graph_date.isoformat()}")
     with self._session.get(url, timeout = 5) as response:
       if response.status_code != HTTPStatus.OK:
-        raise RuntimeError(TelebotUtils.get_response_message(response))
+        raise RuntimeError(TelebotUtils.get_response_message(response.text))
 
       self._inverters = DeyeGraphInverters.from_json(response.text).inverters
       return self._inverters
@@ -106,7 +106,7 @@ class DeyeGraphsDataProvider:
     url = urljoin(self._server_url, f"/graphs/png/{graph_date.isoformat()}/{inverter}/{graph_name}")
     with self._session.get(url) as response:
       if response.status_code != HTTPStatus.OK:
-        raise RuntimeError(TelebotUtils.get_response_message(response))
+        raise RuntimeError(TelebotUtils.get_response_message(response.text))
 
       file = BytesIO(response.content)
 
@@ -120,7 +120,7 @@ class DeyeGraphsDataProvider:
     url = urljoin(self._server_url, f"/graphs/csv/{graph_date.isoformat()}")
     with self._session.get(url) as response:
       if response.status_code != HTTPStatus.OK:
-        raise RuntimeError(TelebotUtils.get_response_message(response))
+        raise RuntimeError(TelebotUtils.get_response_message(response.text))
 
       content = response.content
       content_disposition = response.headers.get("Content-Disposition", "")

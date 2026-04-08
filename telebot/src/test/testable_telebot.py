@@ -1,4 +1,3 @@
-import os
 import re
 import sys
 import logging
@@ -7,8 +6,6 @@ import telebot
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
-from deye_utils import DeyeUtils
-from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 from telebot_fake_test_message import TelebotFakeTestMessage
 from telebot_deye_helper import TelebotDeyeHelper
@@ -44,33 +41,10 @@ class TestableTelebot(telebot.TeleBot):
   - Intended solely for testing and development; does not communicate with Telegram.
   - `TelebotFakeTestMessage` is used to simulate `Message` objects returned by `send_message`.
   """
-
-  data_dir = TelebotUtils.get_data_dir()
-  telebot_test_log_file_name = f'{data_dir}/logs/telebot_telegram_test.log'
-
   def __init__(self, token: str):
     super().__init__(token)
     self.messages: List[MessageTestData] = []
     self.log = logging.getLogger()
-
-    DeyeUtils.ensure_dir_exists(os.path.dirname(TestableTelebot.telebot_test_log_file_name))
-
-    if os.path.exists(TestableTelebot.telebot_test_log_file_name):
-      os.remove(TestableTelebot.telebot_test_log_file_name)
-
-    file_handler = logging.FileHandler(
-      TestableTelebot.telebot_test_log_file_name,
-      mode = 'w',
-      encoding = 'utf-8',
-    )
-
-    formatter = logging.Formatter(
-      '[%(asctime)s.%(msecs)03d] %(message)s',
-      '%Y-%m-%d %H:%M:%S',
-    )
-
-    file_handler.setFormatter(formatter)
-    self.log.addHandler(file_handler)
 
   def clear_messages(self):
     self.messages.clear()

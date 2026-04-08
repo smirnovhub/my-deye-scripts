@@ -12,8 +12,6 @@ class MasterSettingsRegisters(DeyeRegisters):
   def all_registers(self) -> List[DeyeRegister]:
     return [
       self.backup_delay_register,
-      self.time_of_use_soc_register,
-      self.time_of_use_power_register,
       self.battery_max_charge_current_register,
       self.battery_max_discharge_current_register,
       self.battery_grid_charge_current_register,

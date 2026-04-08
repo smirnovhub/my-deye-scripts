@@ -5,6 +5,7 @@ from typing import List
 
 from button_node import ButtonNode
 from deye_register import DeyeRegister
+from telebot_async_runner import TelebotAsyncRunner
 from time_of_use_ask_data import TimeOfUseAskData
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
@@ -18,10 +19,11 @@ from time_of_use_bottom_buttons import TimeOfUseBottomButtons
 class TimeOfUseMainPage(TelebotNavigationPage):
   def __init__(
     self,
+    runner: TelebotAsyncRunner,
     tou_register: DeyeRegister,
     tou_data: TimeOfUseData,
   ):
-    super().__init__()
+    super().__init__(runner)
     self._tou_register = tou_register
     self._tou_data = tou_data
     self._tou_original_data = copy.deepcopy(tou_data)

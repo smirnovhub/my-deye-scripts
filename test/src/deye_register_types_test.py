@@ -46,18 +46,10 @@ async def main():
     log.error('ERROR: your loggers are not test loggers')
     sys.exit(1)
 
-  servers: List[SolarmanTestServer] = []
+  servers = await DeyeTestUtils.start_solarman_servers(loggers.loggers)
 
-  for logger in loggers.loggers:
-    server = SolarmanTestServer(
-      name = logger.name,
-      address = logger.address,
-      serial = logger.serial,
-      port = logger.port,
-    )
-
+  for server in servers:
     server.set_random_mode(True)
-    servers.append(server)
 
   holder_kwargs = {
     'name': 'test',

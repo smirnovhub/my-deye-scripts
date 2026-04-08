@@ -8,14 +8,14 @@ from git_helper import GitHelper
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_constants import TelebotConstants
 from telebot_user_choices import UserChoices
 from telebot_advanced_choice import AdvancedChoice
 from countdown_with_cancel import CountdownWithCancel
 
-class TelebotMenuRevert(TelebotMenuItemHandler):
+class TelebotMenuRevert(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self.git_helper = GitHelper()
@@ -26,10 +26,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
     return TelebotMenuItem.revert
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if not self.remote_update_checker.is_on_branch():
+    if not self._remote_update_checker.is_on_branch():
       self.bot.send_message(message.chat.id, 'Unable to revert: the repository is not currently on a branch')
       return
 
@@ -156,7 +153,7 @@ class TelebotMenuRevert(TelebotMenuItemHandler):
 
   def on_finish(self, chat_id: int):
     self.bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
-    TelebotUtils.stop_bot(self.bot)
+    TelebotUtils.stop_bot()
 
   def on_cancel(self, chat_id: int):
     self.bot.send_message(chat_id, 'Restart cancelled')

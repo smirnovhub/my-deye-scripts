@@ -1,23 +1,48 @@
 import telebot
+import traceback
 
 from datetime import datetime
 
 from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from deye_file_lock import DeyeFileLock
+from deye_exceptions import DeyeKnownException
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler import TelebotMenuItemHandler
 from telegram_send_message import Telegram
 from telebot_utils import TelebotUtils
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 
-class TelebotMenuStart(TelebotMenuItemHandler):
+class TelebotMenuStart(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self._data_dir = TelebotUtils.get_data_dir()
-    
+
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.start
+
+  def register_handlers(self) -> None:
+    """
+    Register message handlers for the bot based on the command list
+
+    The registered handler processes messages and handles exceptions
+    including known and unknown errors
+    """
+    commands = [cmd.command for cmd in self.get_commands()]
+
+    @self.bot.message_handler(commands = commands)
+    def handle(message: telebot.types.Message):
+      try:
+        if self.users.is_user_blocked(message.from_user.id):
+          self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
+          return
+
+        self.process_message(message)
+      except DeyeKnownException as e:
+        self.bot.send_message(message.chat.id, str(e))
+      except Exception as e:
+        self.bot.send_message(message.chat.id, str(e))
+        self.logger.error(traceback.format_exc())
 
   def process_message(self, message: telebot.types.Message) -> None:
     user = message.from_user

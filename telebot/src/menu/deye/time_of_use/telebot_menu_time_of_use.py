@@ -1,5 +1,6 @@
 import telebot
 
+from telebot_async_runner import TelebotAsyncRunner
 from time_of_use_page import TimeOfUsePage
 from time_of_use_enable_page import TimeOfUseEnablePage
 from time_of_use_hours_page import TimeOfUseHoursPage
@@ -10,35 +11,36 @@ from time_of_use_registers import TimeOfUseRegisters
 from time_of_use_socs_page import TimeOfUseSocsPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_deye_helper import TelebotDeyeHelper
 from time_of_use_data import TimeOfUseData
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_async import DeyeRegistersHolderAsync
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
-class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
-  def __init__(self, bot: telebot.TeleBot):
-    super().__init__(bot)
+class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ):
+    super().__init__(
+      bot = bot,
+      runner = runner,
+    )
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_time_of_use
 
-  def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if self.has_updates(message):
-      return
-
+  async def process_message(self, message: telebot.types.Message) -> None:
     # Should be local to avoid issues with locks and threads
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: TimeOfUseRegisters(prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
@@ -61,11 +63,13 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandler):
     navigator = TelebotPageNavigator(self.bot)
 
     enable_page = TimeOfUseEnablePage(
+      runner = self.runner,
       tou_register = tou_register,
       tou_data = tou_data,
     )
 
     main_page = TimeOfUseMainPage(
+      runner = self.runner,
       tou_register = tou_register,
       tou_data = tou_data,
     )

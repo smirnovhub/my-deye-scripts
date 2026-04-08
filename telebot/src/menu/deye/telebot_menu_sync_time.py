@@ -4,34 +4,33 @@ import traceback
 from datetime import datetime
 
 from deye_utils import DeyeUtils
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_utils import TelebotUtils
+from deye_register import DeyeRegister
+from deye_registers import DeyeRegisters
 from deye_exceptions import DeyeKnownException
 from custom_single_registers import CustomSingleRegisters
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
-from deye_registers_holder import DeyeRegistersHolder
-from deye_register import DeyeRegister
-from deye_registers import DeyeRegisters
-from telebot_menu_item_handler import TelebotMenuItemHandler
+from deye_registers_holder_async import DeyeRegistersHolderAsync
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 from telebot_user_choices import UserChoices
 from telebot_command_choice import CommandChoice
 
-class TelebotMenuSyncTime(TelebotMenuItemHandler):
-  def __init__(self, bot: telebot.TeleBot):
-    super().__init__(bot)
+class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ):
+    super().__init__(bot = bot, runner = runner)
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_sync_time
 
-  def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
-    if self.has_updates(message):
-      return
-
+  async def process_message(self, message: telebot.types.Message) -> None:
     registers = DeyeRegisters()
     register = registers.inverter_system_time_register
 
@@ -51,14 +50,14 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       return
 
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderAsync(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
@@ -73,7 +72,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
       return
 
     def on_user_confirmation(chat_id: int, result: bool) -> None:
-      self._on_confirmation(register, chat_id, result)
+      self.run_async(self._on_confirmation(register, chat_id, result))
 
     now = DeyeUtils.get_current_time().strftime(DeyeUtils.time_format_str)
     time_diff = register.value - DeyeUtils.get_current_time()
@@ -98,7 +97,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         'The inverter time is already synced',
       )
 
-  def _on_confirmation(
+  async def _on_confirmation(
     self,
     register: DeyeRegister,
     chat_id: int,
@@ -110,13 +109,13 @@ class TelebotMenuSyncTime(TelebotMenuItemHandler):
         value = DeyeUtils.get_current_time().strftime(DeyeUtils.time_format_str)
 
         # should be local to avoid issues with locks
-        holder = DeyeRegistersHolder(
+        holder = DeyeRegistersHolderAsync(
           loggers = [self.loggers.master],
           **TelebotDeyeHelper.holder_kwargs,
         )
 
         try:
-          result = holder.write_register(register, value)
+          result = await holder.write_register(register, value)
         finally:
           holder.disconnect()
 

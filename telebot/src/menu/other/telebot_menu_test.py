@@ -17,13 +17,12 @@ from telebot_advanced_choice import AdvancedChoice
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_utils import TelebotTestUtils
 from telebot_utils import TelebotUtils
-from testable_telebot import TestableTelebot
-from telebot_menu_item_handler import TelebotMenuItemHandler
+from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
 from telebot_local_update_checker import TelebotLocalUpdateChecker
 from lock_exceptions import DeyeLockAlreadyAcquiredException
 from telebot_progress_message import TelebotProgressMessage
 
-class TelebotMenuTest(TelebotMenuItemHandler):
+class TelebotMenuTest(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
     super().__init__(bot)
     self.update_checker = TelebotLocalUpdateChecker()
@@ -42,9 +41,6 @@ class TelebotMenuTest(TelebotMenuItemHandler):
     return TelebotMenuItem.test
 
   def process_message(self, message: telebot.types.Message) -> None:
-    if not self.is_authorized(message):
-      return
-
     if not self.acquire_lock(message.chat.id):
       return
 
@@ -177,11 +173,6 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       except Exception:
         pass
 
-    try:
-      os.remove(TestableTelebot.telebot_test_log_file_name)
-    except Exception:
-      pass
-
   def run_tests(
     self,
     chat_id: int,
@@ -304,10 +295,6 @@ class TelebotMenuTest(TelebotMenuItemHandler):
       file_path = os.path.join(self.logs_path, os.path.basename(script).replace('.py', '.log'))
       if os.path.exists(file_path):
         all_log_files.append(file_path)
-
-    # Add telebot test log if exists
-    if os.path.exists(TestableTelebot.telebot_test_log_file_name):
-      all_log_files.append(TestableTelebot.telebot_test_log_file_name)
 
     if not all_log_files:
       self.bot.send_message(chat_id, message, parse_mode = "HTML")

@@ -6,6 +6,7 @@ from typing import List
 from button_node import ButtonNode
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
+from telebot_async_runner import TelebotAsyncRunner
 from time_of_use_data import TimeOfUseData
 from break_button_node import BreakButtonNode
 from time_of_use_helper import TimeOfUseHelper
@@ -16,10 +17,11 @@ from telebot_navigation_page import TelebotNavigationPage
 class TimeOfUseEnablePage(TelebotNavigationPage):
   def __init__(
     self,
+    runner: TelebotAsyncRunner,
     tou_register: DeyeRegister,
     tou_data: TimeOfUseData,
   ):
-    super().__init__()
+    super().__init__(runner)
     self._tou_register = tou_register
     self._tou_data = tou_data
     self._loggers = DeyeLoggers()
@@ -40,7 +42,7 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
       self.register_button_handler(ButtonNode("No"), self._handle_no),
     ]
 
-  def _handle_yes(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_yes(self, navigator: TelebotPageNavigator) -> None:
     # Enable Time of Use
     self._tou_data.week.enabled = True
 
@@ -52,7 +54,7 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
     data.socs.values.clear()
 
     try:
-      TimeOfUseHelper.write_time_of_use(
+      await TimeOfUseHelper.write_time_of_use(
         tou_register = self._tou_register,
         master_logger = self._loggers.master,
         tou_data = data,

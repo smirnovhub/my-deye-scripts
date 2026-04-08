@@ -1,12 +1,11 @@
-import os
 import sys
-import time
 import random
+import asyncio
 import logging
-import subprocess
 
 from typing import List
 
+from deye_test_utils import DeyeTestUtils
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_logger import DeyeLogger
@@ -16,11 +15,13 @@ from solarman_test_server import SolarmanTestServer
 from deye_test_helper import DeyeRegisterRandomValue
 from deye_test_helper import DeyeTestHelper
 
+from deye import main as deye_main
+
 base_path = '../..'
 
 log = logging.getLogger()
 
-def execute_command(
+async def execute_command(
   logger: DeyeLogger,
   cache_time: int,
 ) -> str:
@@ -28,35 +29,31 @@ def execute_command(
   Execute the Deye command-line utility with the given cache time.
   Retries up to 10 times if 'exception' or 'error' is found in the output.
   """
-  commands = [
-    sys.executable,
-    '-u',
-    os.path.join(base_path, 'deye/deye'),
+  fake_args = [
     '-v',
     f'-c {cache_time}',
     f'-i {logger.name}',
     '-a',
   ]
 
-  command_str = ' '.join(commands)
-  command_str = command_str[command_str.find('deye'):].replace('deye/deye', 'deye')
-  log.info(f'Command to execute: {command_str}')
+  log.info(f'Command to execute: {" ".join(fake_args)}')
 
-  for i in range(10):
-    result = subprocess.run(commands, capture_output = True, text = True)
-    output = (result.stdout + result.stderr).strip()
-    log.info(f'Command output: {output}')
+  async with DeyeTestUtils.collect_output() as buffer:
+    try:
+      await deye_main(fake_args)
+    except SystemExit:
+      pass
+    output = buffer.getvalue().strip()
 
-    if 'exception' not in output.lower() and 'error' not in output.lower():
-      return output
+  log.info(f'Command output: {output}')
 
-    log.error('An exception occurred. Retrying...')
-    time.sleep(1)
+  if 'exception' in output or 'error' in output:
+    log.error('An exception occurred.')
+    sys.exit(1)
 
-  log.error('Max retry count exceeded')
-  sys.exit(1)
+  return output
 
-def read_and_check(
+async def read_and_check(
   *,
   logger: DeyeLogger,
   server: SolarmanTestServer,
@@ -78,12 +75,12 @@ def read_and_check(
   """
   if delay_before > 0:
     log.info(f'Waiting {delay_before} seconds before reading...')
-    time.sleep(delay_before)
+    await asyncio.sleep(delay_before)
 
   server.clear_registers_status()
   server.set_register_value(register.address, expected_value)
 
-  output = execute_command(
+  output = await execute_command(
     logger = logger,
     cache_time = cache_time,
   )
@@ -101,7 +98,7 @@ def read_and_check(
     log.error(f"Register value {expected_value} not found for '{register.name}'")
     sys.exit(1)
 
-def main_test_logic():
+async def main_test_logic():
   logging.basicConfig(
     level = logging.INFO,
     format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
@@ -115,13 +112,7 @@ def main_test_logic():
     sys.exit(1)
 
   logger = random.choice(loggers.loggers)
-
-  server = SolarmanTestServer(
-    name = logger.name,
-    address = logger.address,
-    serial = logger.serial,
-    port = logger.port,
-  )
+  server = await DeyeTestUtils.start_solarman_server(logger)
 
   # ---- MAIN TEST LOGIC ----
   randoms: List[DeyeRegisterRandomValue] = []
@@ -149,7 +140,7 @@ def main_test_logic():
 
   # 1. First read (no cache yet)
   value1 = 12345
-  read_and_check(
+  await read_and_check(
     logger = logger,
     server = server,
     register = register,
@@ -159,7 +150,7 @@ def main_test_logic():
   )
 
   # 2. Second read (from cache)
-  read_and_check(
+  await read_and_check(
     logger = logger,
     server = server,
     register = register,
@@ -170,7 +161,7 @@ def main_test_logic():
   )
 
   # 3. Third read (still from cache)
-  read_and_check(
+  await read_and_check(
     logger = logger,
     server = server,
     register = register,
@@ -183,10 +174,10 @@ def main_test_logic():
   # 4. Cache expires → should read new value from server
   log.info('Waiting for cache expiration...')
 
-  time.sleep(5)
+  await asyncio.sleep(5)
 
   value3 = 45678
-  read_and_check(
+  await read_and_check(
     logger = logger,
     server = server,
     register = register,
@@ -196,7 +187,7 @@ def main_test_logic():
   )
 
   # 5. Next read (from cache again)
-  read_and_check(
+  await read_and_check(
     logger = logger,
     server = server,
     register = register,

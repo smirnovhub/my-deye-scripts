@@ -1,8 +1,7 @@
 import os
 import sys
-import time
+import asyncio
 import logging
-import subprocess
 
 from pathlib import Path
 from typing import Any, Dict, List
@@ -20,7 +19,7 @@ import_dirs(
   current_path,
   [
     'src',
-    os.path.join(base_path, 'deye/src'),
+    os.path.join(base_path, 'deye'),
     os.path.join(base_path, 'common'),
   ],
 )
@@ -34,145 +33,132 @@ from deye_test_helper import DeyeTestHelper
 from deye_test_helper import DeyeRegisterRandomValue
 from deye_register_average_type import DeyeRegisterAverageType
 
-DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
+from deye import main as deye_main
 
-logging.basicConfig(
-  level = logging.INFO,
-  format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
-  datefmt = DeyeUtils.time_format_str,
-)
+async def main():
+  DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
-log = logging.getLogger()
-loggers = DeyeLoggers()
-registers = DeyeRegisters()
-
-if not loggers.is_test_loggers:
-  log.error('ERROR: your loggers are not test loggers')
-  sys.exit(1)
-
-servers: List[SolarmanTestServer] = []
-
-for logger in loggers.loggers:
-  server = SolarmanTestServer(
-    name = logger.name,
-    address = logger.address,
-    serial = logger.serial,
-    port = logger.port,
+  logging.basicConfig(
+    level = logging.INFO,
+    format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",
+    datefmt = DeyeUtils.time_format_str,
   )
 
-  servers.append(server)
+  log = logging.getLogger()
+  loggers = DeyeLoggers()
+  registers = DeyeRegisters()
 
-registers_to_skip = [
-  registers.grid_state_register.name,
-  registers.inverter_system_time_diff_register.name,
-  registers.time_of_use_register.name,
-]
-
-def generate_random_register_values(server: SolarmanTestServer) -> Dict[str, Any]:
-  random_values: Dict[str, Any] = {}
-  randoms: List[DeyeRegisterRandomValue] = []
-
-  server.clear_registers_status()
-
-  for register in registers.all_registers:
-    if register.name in registers_to_skip:
-      log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
-      continue
-
-    if register.avg_type == DeyeRegisterAverageType.only_master and server.name != loggers.master.name:
-      log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
-      continue
-
-    log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
-
-    random_value = DeyeTestHelper.get_random_by_register_type(register, randoms)
-    if random_value is None:
-      log.info(f"Register '{register.name}' is skipped")
-      continue
-
-    randoms.append(random_value)
-    random_values[register.name] = random_value.value
-
-    suffix = f' {register.suffix}'.rstrip()
-
-    log.info(f"Generated random value for register '{register.name}' is {random_value.value}{suffix}...")
-
-    if random_value.register.address > 0:
-      server.set_register_values(random_value.register.addresses, random_value.values)
-
-  return random_values
-
-def run_command(cmds: List[str]) -> str:
-  commands = [
-    sys.executable,
-    '-u',
-    os.path.join(base_path, 'deye/deye'),
-    '-v',
-    '--connection-timeout',
-    '1',
-    '-c 0',
-  ]
-
-  commands.extend(cmds)
-
-  command_str = ' '.join(commands)
-  command_str = command_str[command_str.find('deye'):].replace('deye/deye', 'deye')
-
-  log.info(f'Command to execute: {command_str}')
-
-  for i in range(10):
-    result = subprocess.run(
-      commands,
-      capture_output = True,
-      text = True,
-    )
-
-    output = result.stdout.strip() + result.stderr.strip()
-    log.info(f'Command output: {output}')
-
-    if 'exception' not in output and 'error' not in output:
-      return output
-
-    log.error('An exception occurred. Retrying...')
-    time.sleep(1)
-  else:
-    log.error('Retry count exceeded')
+  if not loggers.is_test_loggers:
+    log.error('ERROR: your loggers are not test loggers')
     sys.exit(1)
 
-def check_results(server: SolarmanTestServer, output: str, random_values: Dict[str, Any]):
-  for register in registers.all_registers:
-    if register.name in registers_to_skip:
-      log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
-      continue
+  servers = await DeyeTestUtils.start_solarman_servers(loggers.loggers)
 
-    if (register.avg_type == DeyeRegisterAverageType.only_master
-        or register.avg_type == DeyeRegisterAverageType.fake_accumulate) and server.name != loggers.master.name:
-      log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
-      continue
+  registers_to_skip = [
+    registers.grid_state_register.name,
+    registers.inverter_system_time_diff_register.name,
+    registers.time_of_use_register.name,
+  ]
 
-    if not server.is_registers_readed(register.address, register.quantity):
-      log.error(f"No request for read on the server side after reading '{register.name}'")
+  def generate_random_register_values(server: SolarmanTestServer) -> Dict[str, Any]:
+    random_values: Dict[str, Any] = {}
+    randoms: List[DeyeRegisterRandomValue] = []
+
+    server.clear_registers_status()
+
+    for register in registers.all_registers:
+      if register.name in registers_to_skip:
+        log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
+        continue
+
+      if register.avg_type == DeyeRegisterAverageType.only_master and server.name != loggers.master.name:
+        log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
+        continue
+
+      log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
+
+      random_value = DeyeTestHelper.get_random_by_register_type(register, randoms)
+      if random_value is None:
+        log.info(f"Register '{register.name}' is skipped")
+        continue
+
+      randoms.append(random_value)
+      random_values[register.name] = random_value.value
+
+      suffix = f' {register.suffix}'.rstrip()
+
+      log.info(f"Generated random value for register '{register.name}' is {random_value.value}{suffix}...")
+
+      if random_value.register.address > 0:
+        server.set_register_values(random_value.register.addresses, random_value.values)
+
+    return random_values
+
+  async def run_command(cmds: List[str]) -> str:
+    fake_args = [
+      '-v',
+      '--connection-timeout',
+      '1',
+      '-c 0',
+    ]
+
+    fake_args.extend(cmds)
+
+    log.info(f'Command to execute: {" ".join(fake_args)}')
+
+    async with DeyeTestUtils.collect_output() as buffer:
+      try:
+        await deye_main(fake_args)
+      except SystemExit:
+        pass
+      output = buffer.getvalue().strip()
+
+    log.info(f'Command output: {output}')
+
+    if 'exception' in output or 'error' in output:
+      log.error('An exception occurred.')
       sys.exit(1)
 
-    suffix = f' {register.suffix}'.rstrip()
-    random_value = random_values.get(register.name, 0)
-    name = f'{server.name}_{register.name} = {random_value}{suffix}'.strip()
+    return output
 
-    log.info(f"Finding '{name}'...")
+  def check_results(server: SolarmanTestServer, output: str, random_values: Dict[str, Any]):
+    for register in registers.all_registers:
+      if register.name in registers_to_skip:
+        log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
+        continue
 
-    if name not in output:
-      log.error('Register or value not found. Test failed')
-      sys.exit(1)
-    else:
-      log.info('Register and value found')
+      if (register.avg_type == DeyeRegisterAverageType.only_master
+          or register.avg_type == DeyeRegisterAverageType.fake_accumulate) and server.name != loggers.master.name:
+        log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
+        continue
 
-for server in servers:
-  random_values = generate_random_register_values(server)
-  output = run_command([f"--get-{r.name.replace('_', '-')}" for r in registers.all_registers] + [f'-i {server.name}'])
-  check_results(server, output, random_values)
+      if not server.is_registers_readed(register.address, register.quantity):
+        log.error(f"No request for read on the server side after reading '{register.name}'")
+        sys.exit(1)
 
-  random_values = generate_random_register_values(server)
-  output = run_command(['-a', f'-i {server.name}'])
-  check_results(server, output, random_values)
+      suffix = f' {register.suffix}'.rstrip()
+      random_value = random_values.get(register.name, 0)
+      name = f'{server.name}_{register.name} = {random_value}{suffix}'.strip()
 
-  log.info('All registers and values found. Test is ok')
+      log.info(f"Finding '{name}'...")
+
+      if name not in output:
+        log.error('Register or value not found. Test failed')
+        sys.exit(1)
+      else:
+        log.info('Register and value found')
+
+  for server in servers:
+    random_values = generate_random_register_values(server)
+    output = await run_command([f"--get-{r.name.replace('_', '-')}"
+                                for r in registers.all_registers] + [f'-i {server.name}'])
+    check_results(server, output, random_values)
+
+    random_values = generate_random_register_values(server)
+    output = await run_command(['-a', f'-i {server.name}'])
+    check_results(server, output, random_values)
+
+    log.info('All registers and values found. Test is ok')
+
+if __name__ == "__main__":
+  asyncio.run(main())

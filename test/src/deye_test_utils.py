@@ -1,3 +1,5 @@
+import asyncio
+import io
 import json
 import logging
 import os
@@ -8,8 +10,13 @@ import uvicorn
 import logging.config
 import multiprocessing
 
-from contextlib import contextmanager
+from typing import AsyncGenerator, List
+
+from pathlib import Path
 from env_utils import EnvUtils
+from deye_logger import DeyeLogger
+from solarman_test_server import SolarmanTestServer
+from contextlib import asynccontextmanager, contextmanager, redirect_stdout
 
 class DeyeTestUtils:
   storage_server_host = '127.0.0.1'
@@ -81,8 +88,15 @@ class DeyeTestUtils:
   @staticmethod
   def _run_server() -> None:
     # Load the config from the JSON file
+    current_dir = Path(__file__).parent.resolve()
+    config_path = current_dir / "log_config.json"
+
+    if not config_path.exists():
+      print(f"Config not found at: {config_path}")
+      sys.exit(1)
+
     try:
-      with open("log_config.json", "r") as f:
+      with open(config_path, "r") as f:
         log_config = json.load(f)
       logging.config.dictConfig(log_config)
       logger = logging.getLogger(__name__)
@@ -135,3 +149,89 @@ class DeyeTestUtils:
 
     logger.error("Storage server did not become ready in time.")
     return False
+
+  @staticmethod
+  async def wait_for_solarman_servers_ready(loggers: List[DeyeLogger], timeout: float = 5) -> bool:
+    """
+    Wait until all solarman server ports for all loggers are open.
+    """
+    logger_tools = logging.getLogger()
+    logger_tools.info(f"Waiting for {len(loggers)} solarman server(s) to be ready...")
+
+    async def check_single_logger(deye_logger: DeyeLogger) -> bool:
+      """
+      Internal helper to check one specific logger with a timeout.
+      """
+      start_time = asyncio.get_running_loop().time()
+      while asyncio.get_running_loop().time() - start_time < timeout:
+        try:
+          # Try to open a connection to the specific logger's address and port
+          reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(
+              deye_logger.address,
+              deye_logger.port,
+            ),
+            timeout = 0.5,
+          )
+          writer.close()
+          await writer.wait_closed()
+          return True
+        except (ConnectionRefusedError, OSError, asyncio.TimeoutError):
+          await asyncio.sleep(0.2)
+
+      logger_tools.error(
+        f"Logger '{deye_logger.name}' ({deye_logger.address}:{deye_logger.port}) did not become ready.")
+      return False
+
+    # Run all checks concurrently
+    results = await asyncio.gather(*(check_single_logger(l) for l in loggers))
+
+    # Return True only if ALL loggers are ready
+    if all(results):
+      logger_tools.info("All solarman servers are ready!")
+      return True
+
+    return False
+
+  @staticmethod
+  @asynccontextmanager
+  async def collect_output() -> AsyncGenerator[io.StringIO, None]:
+    output_buffer = io.StringIO()
+
+    # We wrap redirect_stdout inside the try block
+    with redirect_stdout(output_buffer):
+      # Yield the buffer so the caller can read from it if needed
+      yield output_buffer
+
+  @staticmethod
+  async def start_solarman_server(logger: DeyeLogger) -> SolarmanTestServer:
+    server = SolarmanTestServer(
+      name = logger.name,
+      address = logger.address,
+      serial = logger.serial,
+      port = logger.port,
+    )
+
+    if not await DeyeTestUtils.wait_for_solarman_servers_ready([logger]):
+      raise RuntimeError("Can't start solarman test server")
+
+    return server
+
+  @staticmethod
+  async def start_solarman_servers(loggers: List[DeyeLogger]) -> List[SolarmanTestServer]:
+    servers: List[SolarmanTestServer] = []
+
+    for logger in loggers:
+      server = SolarmanTestServer(
+        name = logger.name,
+        address = logger.address,
+        serial = logger.serial,
+        port = logger.port,
+      )
+
+      servers.append(server)
+
+    if not await DeyeTestUtils.wait_for_solarman_servers_ready(loggers):
+      raise RuntimeError("Can't start solarman test servers")
+
+    return servers

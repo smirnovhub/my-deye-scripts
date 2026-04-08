@@ -1,3 +1,4 @@
+import json
 import os
 import signal
 import time
@@ -186,13 +187,13 @@ class TelebotUtils:
     return keyboard
 
   @staticmethod
-  def get_response_message(response: requests.Response) -> str:
+  def get_response_message(response_text: str) -> str:
     """
     Extract 'result' or 'detail' from the JSON response and always return a string.
     """
     try:
       # Check if the response body is valid JSON
-      data: Dict[str, Any] = response.json()
+      data: Dict[str, Any] = json.loads(response_text)
 
       # If the response is a list or not a dictionary, we can't access keys
       if not isinstance(data, dict):
@@ -245,17 +246,9 @@ class TelebotUtils:
     return False
 
   @staticmethod
-  def stop_bot(bot: telebot.TeleBot):
+  def stop_bot():
     """
     Gracefully stops the running TeleBot instance and terminates the process.
-
-    This method first calls `bot.stop_bot()` to stop all polling and background
-    threads associated with the TeleBot instance. If the bot shuts down correctly,
-    the process should naturally exit. However, as a safeguard, the method waits
-    a minute and then forcefully terminates the process using `os._exit(1)`.
-
-    Args:
-        bot (telebot.TeleBot): The TeleBot instance to stop.
     """
     time.sleep(1)
     signal.raise_signal(signal.SIGTERM)
