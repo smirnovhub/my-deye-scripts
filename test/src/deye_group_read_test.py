@@ -1,13 +1,10 @@
-import io
 import os
 import sys
-import time
 import asyncio
 import logging
 
 from pathlib import Path
 from typing import Any, Dict, List
-from contextlib import redirect_stdout
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -112,7 +109,6 @@ async def main():
 
   async def run_command(cmds: List[str]) -> str:
     fake_args = [
-      "deye",
       '-v',
       '--connection-timeout',
       '1',
@@ -123,39 +119,20 @@ async def main():
 
     log.info(f'Command to execute: {" ".join(fake_args)}')
 
-    for i in range(10):
-      old_argv = sys.argv
-      sys.argv = fake_args
-
-      output_buffer = io.StringIO()
-
+    async with DeyeTestUtils.collect_output() as buffer:
       try:
-        # Redirect all print() calls to the buffer
-        with redirect_stdout(output_buffer):
-          try:
-            await deye_main()
-          except SystemExit:
-            pass
-      except Exception as e:
-        log.error(f'An exception occurred: {e}. Retrying...')
-        await asyncio.sleep(1)
-        continue
-      finally:
-        # Restore original argv
-        sys.argv = old_argv
+        await deye_main(fake_args)
+      except SystemExit:
+        pass
+      output = buffer.getvalue().strip()
 
-      output = output_buffer.getvalue().strip()
+    log.info(f'Command output: {output}')
 
-      log.info(f'Command output: {output}')
-
-      if 'exception' not in output and 'error' not in output:
-        return output
-
-      log.error('An exception occurred. Retrying...')
-      await asyncio.sleep(1)
-    else:
-      log.error('Retry count exceeded')
+    if 'exception' in output or 'error' in output:
+      log.error('An exception occurred.')
       sys.exit(1)
+
+    return output
 
   def check_results(server: SolarmanTestServer, output: str, random_values: Dict[str, Any]):
     for register in registers.all_registers:

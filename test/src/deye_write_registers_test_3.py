@@ -83,7 +83,6 @@ async def main():
       log.info(f'Trying to write: {register_value}')
 
       fake_args = [
-        "deye",
         '-v',
         f'-i',
         slave.name,
@@ -93,23 +92,12 @@ async def main():
 
       log.info(f'Command to execute: {" ".join(fake_args)}')
 
-      old_argv = sys.argv
-      sys.argv = fake_args
-
-      output_buffer = io.StringIO()
-
-      try:
-        # Redirect all print() calls to the buffer
-        with redirect_stdout(output_buffer):
-          try:
-            await deye_main()
-          except SystemExit:
-            pass
-      finally:
-        # Restore original argv
-        sys.argv = old_argv
-
-      output = output_buffer.getvalue().strip()
+      async with DeyeTestUtils.collect_output() as buffer:
+        try:
+          await deye_main(fake_args)
+        except SystemExit:
+          pass
+        output = buffer.getvalue().strip()
 
       log.info(f'Write command output: {output}')
 

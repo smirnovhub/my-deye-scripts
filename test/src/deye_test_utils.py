@@ -1,4 +1,5 @@
 import asyncio
+import io
 import json
 import logging
 import os
@@ -9,11 +10,11 @@ import uvicorn
 import logging.config
 import multiprocessing
 
-from typing import List
 from pathlib import Path
-from contextlib import contextmanager
 from env_utils import EnvUtils
 from deye_logger import DeyeLogger
+from typing import AsyncGenerator, List
+from contextlib import asynccontextmanager, contextmanager, redirect_stdout
 
 class DeyeTestUtils:
   storage_server_host = '127.0.0.1'
@@ -189,3 +190,13 @@ class DeyeTestUtils:
       return True
 
     return False
+
+  @staticmethod
+  @asynccontextmanager
+  async def collect_output() -> AsyncGenerator[io.StringIO, None]:
+    output_buffer = io.StringIO()
+
+    # We wrap redirect_stdout inside the try block
+    with redirect_stdout(output_buffer):
+      # Yield the buffer so the caller can read from it if needed
+      yield output_buffer

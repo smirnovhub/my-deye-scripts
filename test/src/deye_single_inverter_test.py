@@ -1,7 +1,6 @@
 import io
 import os
 import sys
-import time
 import asyncio
 import logging
 
@@ -87,7 +86,6 @@ async def main():
       server.set_register_values(random_value.register.addresses, random_value.values)
 
     fake_args = [
-      "deye",
       '-v',
       '--connection-timeout',
       '5',
@@ -100,36 +98,18 @@ async def main():
 
     log.info(f'Command to execute: {" ".join(fake_args)}')
 
-    for i in range(5):
-      old_argv = sys.argv
-      sys.argv = fake_args
+  async with DeyeTestUtils.collect_output() as buffer:
+    try:
+      await deye_main(fake_args)
+    except SystemExit:
+      pass
+    output = buffer.getvalue().strip()
 
-      output_buffer = io.StringIO()
+  log.info(f'Command output: {output}')
 
-      try:
-        # Redirect all print() calls to the buffer
-        with redirect_stdout(output_buffer):
-          try:
-            await deye_main()
-          except SystemExit:
-            pass
-      except Exception as e:
-        log.error(f'An exception occurred: {e}. Retrying...')
-        await asyncio.sleep(1)
-        continue
-      finally:
-        # Restore original argv
-        sys.argv = old_argv
-
-      output = output_buffer.getvalue().strip()
-
-      log.info(f'Command output: {output}')
-
-      if 'exception' not in output and 'error' not in output:
-        break
-
-      log.error('An exception occurred. Retrying...')
-      await asyncio.sleep(1)
+  if 'exception' in output or 'error' in output:
+    log.error('An exception occurred.')
+    sys.exit(1)
 
     if not server.is_registers_readed(register.address, register.quantity):
       log.error(f"No request for read on the server side after reading '{register.name}'")

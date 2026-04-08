@@ -1,15 +1,11 @@
-import asyncio
-from contextlib import redirect_stdout
-import io
-import os
 import sys
-import time
 import random
+import asyncio
 import logging
-import subprocess
 
 from typing import List
 
+from deye_test_utils import DeyeTestUtils
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_logger import DeyeLogger
@@ -34,7 +30,6 @@ async def execute_command(
   Retries up to 10 times if 'exception' or 'error' is found in the output.
   """
   fake_args = [
-    "deye",
     '-v',
     f'-c {cache_time}',
     f'-i {logger.name}',
@@ -43,39 +38,20 @@ async def execute_command(
 
   log.info(f'Command to execute: {" ".join(fake_args)}')
 
-  for i in range(10):
-    old_argv = sys.argv
-    sys.argv = fake_args
-
-    output_buffer = io.StringIO()
-
+  async with DeyeTestUtils.collect_output() as buffer:
     try:
-      # Redirect all print() calls to the buffer
-      with redirect_stdout(output_buffer):
-        try:
-          await deye_main()
-        except SystemExit:
-          pass
-    except Exception as e:
-      log.error(f'An exception occurred: {e}. Retrying...')
-      await asyncio.sleep(1)
-      continue
-    finally:
-      # Restore original argv
-      sys.argv = old_argv
+      await deye_main(fake_args)
+    except SystemExit:
+      pass
+    output = buffer.getvalue().strip()
 
-    output = output_buffer.getvalue().strip()
+  log.info(f'Command output: {output}')
 
-    log.info(f'Command output: {output}')
+  if 'exception' in output or 'error' in output:
+    log.error('An exception occurred.')
+    sys.exit(1)
 
-    if 'exception' not in output.lower() and 'error' not in output.lower():
-      return output
-
-    log.error('An exception occurred. Retrying...')
-    await asyncio.sleep(1)
-
-  log.error('Max retry count exceeded')
-  sys.exit(1)
+  return output
 
 async def read_and_check(
   *,

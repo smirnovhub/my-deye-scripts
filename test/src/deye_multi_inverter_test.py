@@ -1,4 +1,3 @@
-import io
 import math
 import os
 import sys
@@ -7,7 +6,6 @@ import logging
 
 from pathlib import Path
 from typing import List
-from contextlib import redirect_stdout
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -119,7 +117,6 @@ async def main():
     inverters = ','.join(logger.name for logger in loggers.loggers)
 
     fake_args = [
-      "deye",
       '-v',
       '--connection-timeout',
       '5',
@@ -132,36 +129,18 @@ async def main():
 
     log.info(f'Command to execute: {" ".join(fake_args)}')
 
-    for i in range(10):
-      old_argv = sys.argv
-      sys.argv = fake_args
-
-      output_buffer = io.StringIO()
-
+    async with DeyeTestUtils.collect_output() as buffer:
       try:
-        # Redirect all print() calls to the buffer
-        with redirect_stdout(output_buffer):
-          try:
-            await deye_main()
-          except SystemExit:
-            pass
-      except Exception as e:
-        log.error(f'An exception occurred: {e}. Retrying...')
-        await asyncio.sleep(1)
-        continue
-      finally:
-        # Restore original argv
-        sys.argv = old_argv
+        await deye_main(fake_args)
+      except SystemExit:
+        pass
+      output = buffer.getvalue().strip()
 
-      output = output_buffer.getvalue().strip()
+    log.info(f'Command output:\n{output}')
 
-      log.info(f'Command output:\n{output}')
-
-      if 'exception' not in output and 'error' not in output:
-        break
-
-      log.info('An exception occurred. Retrying...')
-      await asyncio.sleep(1)
+    if 'exception' in output or 'error' in output:
+      log.info('An exception occurred.')
+      sys.exit(1)
 
     for server in servers:
       if register.avg_type != DeyeRegisterAverageType.only_master or server.name == loggers.master.name:

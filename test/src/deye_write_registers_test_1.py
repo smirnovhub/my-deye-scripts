@@ -1,4 +1,3 @@
-import io
 import os
 import re
 import sys
@@ -6,7 +5,6 @@ import asyncio
 import logging
 
 from pathlib import Path
-from contextlib import redirect_stdout
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -81,30 +79,18 @@ async def main():
     log.info(f'Trying to write: {register_value}')
 
     write_fake_args = [
-      "deye",
       f"--set-{register.name.replace('_', '-')}",
       f'{value}',
     ]
 
     log.info(f'Command to execute: {" ".join(write_fake_args)}')
 
-    old_argv = sys.argv
-    sys.argv = write_fake_args
-
-    output_buffer = io.StringIO()
-
-    try:
-      # Redirect all print() calls to the buffer
-      with redirect_stdout(output_buffer):
-        try:
-          await deye_main()
-        except SystemExit:
-          pass
-    finally:
-      # Restore original argv
-      sys.argv = old_argv
-
-    write_output = output_buffer.getvalue().strip()
+    async with DeyeTestUtils.collect_output() as buffer:
+      try:
+        await deye_main(write_fake_args)
+      except SystemExit:
+        pass
+      write_output = buffer.getvalue().strip()
 
     log.info(f'Write command output: {write_output}')
 
@@ -115,30 +101,18 @@ async def main():
     log.info(f'Trying to read: {register_value}')
 
     read_fake_args = [
-      "deye",
       '-c 0',
       f"--get-{register.name.replace('_', '-')}",
     ]
 
     log.info(f'Command to execute: {" ".join(read_fake_args)}')
 
-    old_argv = sys.argv
-    sys.argv = read_fake_args
-
-    output_buffer = io.StringIO()
-
-    try:
-      # Redirect all print() calls to the buffer
-      with redirect_stdout(output_buffer):
-        try:
-          await deye_main()
-        except SystemExit:
-          pass
-    finally:
-      # Restore original argv
-      sys.argv = old_argv
-
-    read_output = output_buffer.getvalue().strip()
+    async with DeyeTestUtils.collect_output() as buffer:
+      try:
+        await deye_main(read_fake_args)
+      except SystemExit:
+        pass
+      read_output = buffer.getvalue().strip()
 
     log.info(f'Read command output: {read_output}')
 
