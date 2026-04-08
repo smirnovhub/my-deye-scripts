@@ -33,14 +33,17 @@ jobs:
         run: |
           codespell . --skip="./modules/*,JsHttpRequest.php,JsHttpRequest.js,*.svg,*.log"
 
-      - name: Run mypy checks
+      - name: Run mypy for deye
+        working-directory: deye
         run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} common
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} data_collector
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deye
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deye_graph_server
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deyeproxy
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deyestorage
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} deyeweb
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} telebot/src
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} test/src
+          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+
+      - name: Run mypy for telebot
+        working-directory: telebot
+        run: |
+          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+
+      - name: Run mypy for test
+        working-directory: test
+        run: |
+          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
