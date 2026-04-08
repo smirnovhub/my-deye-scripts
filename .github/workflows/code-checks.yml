@@ -28,4 +28,4 @@ jobs:
         run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude modules
           codespell . --skip="./modules/*,JsHttpRequest.php,JsHttpRequest.js,*.svg,*.log"
-          mypy --ignore-missing-imports --python-version=${{ matrix.python-version }} src
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} .
