@@ -1,4 +1,4 @@
-name: write registers test
+name: deye tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: ["master"]
 
 jobs:
-  write-registers-test:
+  deye-tests:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
