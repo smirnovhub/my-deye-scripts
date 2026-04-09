@@ -6,11 +6,11 @@ from typing import Dict
 from pathlib import Path
 from datetime import datetime
 
+from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_file_with_lock_async import DeyeFileWithLockAsync
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 from data_collector_registers import DataCollectorRegisters
-from deye_register_average_type import DeyeRegisterAverageType
 from data_collector_config import DataCollectorConfig
 
 DATA_PATH = "data/deye-collected-data"
@@ -43,8 +43,6 @@ async def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> Non
   data_dir = Path(data_file_path)
   data_dir.parent.mkdir(parents = True, exist_ok = True)
 
-  header = "timestamp,inverter,parameter,value,unit\n"
-
   write_header = not os.path.exists(data_file_path) or os.path.getsize(data_file_path) == 0
 
   if write_header:
@@ -54,24 +52,19 @@ async def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> Non
       logger = logger,
     )
 
+  header = DeyeUtils.get_csv_header()
+  lines = DeyeUtils.get_csv_lines(
+    holder = holder,
+    loggers = loggers,
+    timestamp = timestamp,
+  )
+
   async with DeyeFileWithLockAsync(data_file_path, "a", encoding = "utf-8") as f:
     if write_header:
       f.write(header)
 
-    for inverter, registers in holder.all_registers.items():
-      for register in registers.all_registers:
-        is_accumulated = registers.prefix == loggers.accumulated_registers_prefix
-
-        if is_accumulated and register.can_accumulate == False:
-          continue
-
-        is_slave = inverter != loggers.master.name
-        is_only_master = register.avg_type == DeyeRegisterAverageType.only_master
-
-        if is_slave and (register.can_write or is_only_master):
-          continue
-
-        f.write(f"{timestamp},{inverter},{register.description},{register.pretty_value},{register.suffix}\n")
+    for line in lines:
+      f.write(line)
 
     f.flush()
 

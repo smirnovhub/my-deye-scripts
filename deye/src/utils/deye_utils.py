@@ -8,10 +8,14 @@ import logging
 import requests
 
 from pathlib import Path
-from typing import Dict, Optional, Union, List
+from typing import Dict, Iterator, Optional, Union, List
 
 from datetime import datetime, timedelta
 from pysolarmanv5 import NoSocketAvailableError
+
+from deye_loggers import DeyeLoggers
+from deye_registers_holder_async import DeyeRegistersHolderAsync
+from deye_register_average_type import DeyeRegisterAverageType
 
 from deye_exceptions import (
   DeyeConnectionErrorException,
@@ -327,3 +331,28 @@ class DeyeUtils:
         return limit
 
     return max_current
+
+  @staticmethod
+  def get_csv_header() -> str:
+    return "timestamp,inverter,parameter,value,unit\n"
+
+  @staticmethod
+  def get_csv_lines(
+    holder: DeyeRegistersHolderAsync,
+    loggers: DeyeLoggers,
+    timestamp: str,
+  ) -> Iterator[str]:
+    for inverter, registers in holder.all_registers.items():
+      for register in registers.all_registers:
+        is_accumulated = registers.prefix == loggers.accumulated_registers_prefix
+
+        if is_accumulated and register.can_accumulate == False:
+          continue
+
+        is_slave = inverter != loggers.master.name
+        is_only_master = register.avg_type == DeyeRegisterAverageType.only_master
+
+        if is_slave and (register.can_write or is_only_master):
+          continue
+
+        yield f"{timestamp},{inverter},{register.description},{register.pretty_value},{register.suffix}\n"
