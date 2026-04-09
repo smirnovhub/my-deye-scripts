@@ -56,16 +56,13 @@ async def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> Non
   lines = DeyeCsvUtils.get_csv_lines(
     holder = holder,
     loggers = loggers,
-    timestamp = timestamp,
   )
 
   async with DeyeFileWithLockAsync(data_file_path, "a", encoding = "utf-8") as f:
     if write_header:
       f.write(header)
 
-    for line in lines:
-      f.write(line)
-
+    f.write("\n".join(lines))
     f.flush()
 
   thresholds = _get_thresholds(holder)

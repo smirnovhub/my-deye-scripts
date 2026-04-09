@@ -1,4 +1,5 @@
-from typing import Iterator
+from typing import List
+from datetime import datetime
 
 from deye_loggers import DeyeLoggers
 from deye_registers_holder import DeyeRegistersHolder
@@ -13,8 +14,10 @@ class DeyeCsvUtils:
   def get_csv_lines(
     holder: DeyeRegistersHolder,
     loggers: DeyeLoggers,
-    timestamp: str,
-  ) -> Iterator[str]:
+  ) -> List[str]:
+    result: List[str] = []
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     for inverter, registers in holder.all_registers.items():
       for register in registers.all_registers:
         is_accumulated = registers.prefix == loggers.accumulated_registers_prefix
@@ -28,4 +31,6 @@ class DeyeCsvUtils:
         if is_slave and (register.can_write or is_only_master):
           continue
 
-        yield f"{timestamp},{inverter},{register.description},{register.pretty_value},{register.suffix}\n"
+        result.append(f"{timestamp},{inverter},{register.description},{register.pretty_value},{register.suffix}")
+
+    return result
