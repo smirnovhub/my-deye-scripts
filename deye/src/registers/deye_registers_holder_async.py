@@ -27,6 +27,7 @@ class DeyeRegistersHolderAsync:
     self._loggers = loggers
     self._log = logging.getLogger()
     self._all_loggers = DeyeLoggers()
+    self._socket_timeout = kwargs.get("socket_timeout", 10)
 
     # Initialize locker
     self.verbose = kwargs.get('verbose', False)
@@ -96,7 +97,7 @@ class DeyeRegistersHolderAsync:
         # asyncio.gather aggregates results and raises the first exception encountered
         await asyncio.wait_for(
           asyncio.gather(*tasks, return_exceptions = True),
-          timeout = 10.0,
+          timeout = self._socket_timeout + 3,
         )
       except asyncio.TimeoutError:
         # Identify which interactors failed to respond in time

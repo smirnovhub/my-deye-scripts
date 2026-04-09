@@ -27,6 +27,7 @@ class DeyeRegistersHolder:
     self._loggers = loggers
     self._log = logging.getLogger()
     self._all_loggers = DeyeLoggers()
+    self._socket_timeout = kwargs.get("socket_timeout", 10)
 
     # Initialize locker
     self.verbose = kwargs.get('verbose', False)
@@ -92,7 +93,7 @@ class DeyeRegistersHolder:
         # We wait for all tasks, but with a timeout to prevent total hang
         done, not_done = wait(
           future_to_interactor.keys(),
-          timeout = 10,
+          timeout = self._socket_timeout + 3,
           return_when = ALL_COMPLETED,
         )
 
