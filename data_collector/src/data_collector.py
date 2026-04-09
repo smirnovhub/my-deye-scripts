@@ -6,8 +6,8 @@ from typing import Dict
 from pathlib import Path
 from datetime import datetime
 
-from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
+from deye_csv_utils import DeyeCsvUtils
 from deye_file_with_lock_async import DeyeFileWithLockAsync
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 from data_collector_registers import DataCollectorRegisters
@@ -52,8 +52,8 @@ async def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> Non
       logger = logger,
     )
 
-  header = DeyeUtils.get_csv_header()
-  lines = DeyeUtils.get_csv_lines(
+  header = DeyeCsvUtils.get_csv_header()
+  lines = DeyeCsvUtils.get_csv_lines(
     holder = holder,
     loggers = loggers,
     timestamp = timestamp,
