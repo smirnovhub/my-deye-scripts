@@ -8,14 +8,10 @@ import logging
 import requests
 
 from pathlib import Path
-from typing import Dict, Iterator, Optional, Union, List
+from typing import Dict, Optional, Union, List, Iterator
 
 from datetime import datetime, timedelta
 from pysolarmanv5 import NoSocketAvailableError
-
-from deye_loggers import DeyeLoggers
-from deye_registers_holder_async import DeyeRegistersHolderAsync
-from deye_register_average_type import DeyeRegisterAverageType
 
 from deye_exceptions import (
   DeyeConnectionErrorException,
@@ -27,6 +23,9 @@ from deye_exceptions import (
 )
 
 from env_utils import EnvUtils
+from deye_loggers import DeyeLoggers
+from deye_registers_holder import DeyeRegistersHolder
+from deye_register_average_type import DeyeRegisterAverageType
 
 class DeyeUtils:
   time_format_str = '%Y-%m-%d %H:%M:%S'
@@ -338,7 +337,7 @@ class DeyeUtils:
 
   @staticmethod
   def get_csv_lines(
-    holder: DeyeRegistersHolderAsync,
+    holder: DeyeRegistersHolder,
     loggers: DeyeLoggers,
     timestamp: str,
   ) -> Iterator[str]:

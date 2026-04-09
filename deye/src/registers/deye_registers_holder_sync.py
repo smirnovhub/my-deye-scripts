@@ -1,6 +1,5 @@
-import asyncio
-
 from typing import Any, Callable, Dict, List, Optional, cast
+from concurrent.futures import Future, ThreadPoolExecutor, wait, ALL_COMPLETED
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
@@ -9,9 +8,9 @@ from deye_registers import DeyeRegisters
 from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_registers_holder import DeyeRegistersHolder
-from deye_modbus_interactor_async import DeyeModbusInteractorAsync
+from deye_modbus_interactor_sync import DeyeModbusInteractorSync
 
-class DeyeRegistersHolderAsync(DeyeRegistersHolder):
+class DeyeRegistersHolderSync(DeyeRegistersHolder):
   def __init__(
     self,
     loggers: List[DeyeLogger],
@@ -23,11 +22,11 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
       **kwargs,
     )
 
-    self._interactors: List[DeyeModbusInteractorAsync] = []
-    self._master_interactor: Optional[DeyeModbusInteractorAsync] = None
+    self._interactors: List[DeyeModbusInteractorSync] = []
+    self._master_interactor: Optional[DeyeModbusInteractorSync] = None
 
     for logger in self._loggers:
-      interactor = DeyeModbusInteractorAsync(logger = logger, **kwargs)
+      interactor = DeyeModbusInteractorSync(logger = logger, **kwargs)
       self._interactors.append(interactor)
 
       if register_creator is not None:
@@ -57,77 +56,50 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
   def accumulated_registers(self) -> DeyeRegisters:
     return self._registers[self._all_loggers.accumulated_registers_prefix]
 
-  async def read_registers(self) -> None:
+  def read_registers(self) -> None:
     # Get the first available DeyeRegisters object from the values
     registers = next(iter(self.all_registers.values())).all_registers
 
-    tasks: List[asyncio.Task[None]] = []
+    # We use a ThreadPoolExecutor for better management of concurrent tasks
+    with ThreadPoolExecutor(max_workers = len(self._interactors)) as executor:
+      future_to_interactor: Dict[Future[None], DeyeModbusInteractorSync] = {}
 
-    try:
       # Enqueue and create tasks for all interactors
       for interactor in self._interactors:
         try:
           for register in registers:
             register.enqueue(interactor)
 
-          # Create an asyncio task for the interactor's processing logic
-          # Using create_task starts execution immediately in the event loop
-          coro = interactor.process_enqueued_registers()
-          task = asyncio.create_task(coro, name = interactor.name)
-
-          tasks.append(task)
+          # Submit the task to the pool
+          future: Future[None] = executor.submit(interactor.process_enqueued_registers)
+          future_to_interactor[future] = interactor
         except Exception as e:
           raise DeyeUtils.get_reraised_exception(
-            e, f'{type(self).__name__}: error while enqueueing {interactor.name}') from e
+            e,
+            f'{type(self).__name__}: error while enqueue {interactor.name}',
+          ) from e
 
-      if not tasks:
-        return
-
-      # Wait for all interactor tasks with a global timeout
       try:
-        # asyncio.gather aggregates results and raises the first exception encountered
-        await asyncio.wait_for(
-          asyncio.gather(*tasks, return_exceptions = True),
+        # We wait for all tasks, but with a timeout to prevent total hang
+        done, not_done = wait(
+          future_to_interactor.keys(),
           timeout = self._socket_timeout + 3,
+          return_when = ALL_COMPLETED,
         )
-      except asyncio.TimeoutError:
-        # Identify which interactors failed to respond in time
-        unfinished = [t.get_name() for t in tasks if not t.done()]
 
-        # Cancel pending tasks to avoid background leaks
-        for t in tasks:
-          if not t.done():
-            t.cancel()
+        # To replicate your exception handling, we check completed futures.
+        # Calling future.result() will re-raise the exception from the thread.
+        for future in done:
+          future.result()
 
-        raise TimeoutError(f"Some interactors timed out: {', '.join(unfinished)}")
+        # If there are tasks that didn't finish in time, we can treat it as an error
+        if not_done:
+          timed_out = [future_to_interactor[f].name for f in not_done]
+          raise TimeoutError(f"Some interactors timed out: {', '.join(timed_out)}")
+
       except Exception as e:
-        # Propagation of errors occurred during register processing
+        # This matches your original error handling style
         raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while reading registers') from e
-
-      # Check results after gather is finished
-      for task in tasks:
-        # Important: Check if task is NOT cancelled before calling .exception()
-        if task.cancelled():
-          continue
-
-        exc = task.exception()
-
-        # Reraise with context so we know which inverter failed
-        if isinstance(exc, Exception):
-          interactor_name = task.get_name()
-          raise DeyeUtils.get_reraised_exception(
-            exc,
-            f"{type(self).__name__}: interactor '{interactor_name}' failed",
-          ) from exc
-    finally:
-      # Mandatory cleanup to prevent background task leaks
-      pending = [t for t in tasks if not t.done()]
-      for t in pending:
-        t.cancel()
-
-      if pending:
-        # Give the loop a chance to finish cancellation of tasks
-        await asyncio.gather(*pending, return_exceptions = True)
 
     # Process individual interactor registers
     for interactor in self._interactors:
@@ -148,20 +120,20 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
         raise DeyeUtils.get_reraised_exception(
           e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
-  async def write_register(self, register: DeyeRegister, value) -> Any:
+  def write_register(self, register: DeyeRegister, value) -> Any:
     if self._master_interactor == None:
       raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
 
     try:
       value = register.write(self._master_interactor, value)
-      await self._master_interactor.write_registers_to_inverter()
+      self._master_interactor.write_registers_to_inverter()
       return value
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while writing register') from e
 
-  async def reset_cache(self) -> None:
-    tasks = [interactor.reset_cache() for interactor in self._interactors]
-    await asyncio.gather(*tasks)
+  def reset_cache(self) -> None:
+    for interactor in self._interactors:
+      interactor.reset_cache()
 
   def disconnect(self) -> None:
     last_exception = None

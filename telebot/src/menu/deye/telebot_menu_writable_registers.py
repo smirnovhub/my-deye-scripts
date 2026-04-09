@@ -13,7 +13,7 @@ from deye_base_enum import DeyeBaseEnum
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_sync import DeyeRegistersHolderSync
 from telebot_fake_message import TelebotFakeMessage
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
@@ -191,7 +191,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
 
   def get_register_value(self, register: DeyeRegister) -> str:
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderSync(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
@@ -221,7 +221,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
       raise DeyeValueException('Message text is empty')
 
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderSync(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
