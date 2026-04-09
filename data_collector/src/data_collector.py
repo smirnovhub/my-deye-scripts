@@ -58,11 +58,13 @@ async def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> Non
     loggers = loggers,
   )
 
+  lines_to_write = "\n".join(lines)
+
   async with DeyeFileWithLockAsync(data_file_path, "a", encoding = "utf-8") as f:
     if write_header:
       f.write(header)
 
-    f.write("\n".join(lines))
+    f.write(f"{lines_to_write}\n")
     f.flush()
 
   thresholds = _get_thresholds(holder)
