@@ -39,15 +39,14 @@ class HourlyLogRotator:
     current_hour = self._get_hour()
 
     filename = self._build_filename(current_hour)
+    write_header = not os.path.exists(filename) or os.path.getsize(filename) == 0
 
     mode = "w" if self._is_file_too_old(filename, current_date) else "a"
     self._stream = open(filename, mode = mode, encoding = self._encoding)
 
-    if self._header:
-      write_header = not os.path.exists(filename) or os.path.getsize(filename) == 0
-      if write_header or mode == "w":
-        self._stream.write(self._header)
-        self._stream.flush()
+    if self._header and (write_header or mode == "w"):
+      self._stream.write(self._header)
+      self._stream.flush()
 
     self._current_date = current_date
     self._current_hour = current_hour
@@ -65,15 +64,15 @@ class HourlyLogRotator:
       if self._stream:
         self._stream.close()
 
+      write_header = not os.path.exists(filename) or os.path.getsize(filename) == 0
+
       # Always overwrite when shifting to a new time slot
       mode = "w" if too_old else "a"
       self._stream = open(filename, mode = mode, encoding = self._encoding)
 
-      if self._header:
-        write_header = not os.path.exists(filename) or os.path.getsize(filename) == 0
-        if write_header or mode == "w":
-          self._stream.write(self._header)
-          self._stream.flush()
+      if self._header and (write_header or mode == "w"):
+        self._stream.write(self._header)
+        self._stream.flush()
 
       self._current_date = current_date
       self._current_hour = current_hour
