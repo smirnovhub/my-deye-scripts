@@ -19,10 +19,12 @@ class HourlyLogRotator:
     self,
     directory: str,
     log_file_template: str,
+    header = "",
     encoding: str = "utf-8",
   ):
     self._directory = directory
     self._log_file_template = log_file_template
+    self._header = header
     self._encoding = encoding
 
     self._stream: Optional[IO[Any]] = None
@@ -37,9 +39,16 @@ class HourlyLogRotator:
     current_hour = self._get_hour()
 
     filename = self._build_filename(current_hour)
-    mode = "w" if self._is_file_too_old(filename, current_date) else "a"
 
+    mode = "w" if self._is_file_too_old(filename, current_date) else "a"
     self._stream = open(filename, mode = mode, encoding = self._encoding)
+
+    if self._header:
+      write_header = not os.path.exists(filename) or os.path.getsize(filename) == 0
+      if write_header or mode == "w":
+        self._stream.write(self._header)
+        self._stream.flush()
+
     self._current_date = current_date
     self._current_hour = current_hour
 
@@ -59,6 +68,13 @@ class HourlyLogRotator:
       # Always overwrite when shifting to a new time slot
       mode = "w" if too_old else "a"
       self._stream = open(filename, mode = mode, encoding = self._encoding)
+
+      if self._header:
+        write_header = not os.path.exists(filename) or os.path.getsize(filename) == 0
+        if write_header or mode == "w":
+          self._stream.write(self._header)
+          self._stream.flush()
+
       self._current_date = current_date
       self._current_hour = current_hour
 
