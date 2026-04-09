@@ -11,7 +11,7 @@ class HourlyOverwriteFileHandler(logging.Handler):
     encoding: str = "utf-8",
   ):
     super().__init__()
-    self.rotator = HourlyLogRotator(
+    self._rotator = HourlyLogRotator(
       directory = directory,
       log_file_template = log_file_template,
       encoding = encoding,
@@ -20,18 +20,18 @@ class HourlyOverwriteFileHandler(logging.Handler):
     self._lock = threading.RLock()
 
     with self._lock:
-      self.rotator.open_initial_stream()
+      self._rotator.open_initial_stream()
 
   def emit(self, record: logging.LogRecord):
     try:
       with self._lock:
-        self.rotator.rollover_if_needed()
+        self._rotator.rollover_if_needed()
         msg = self.format(record)
-        self.rotator.write(msg)
+        self._rotator.write(msg)
     except Exception:
       self.handleError(record)
 
   def close(self):
     with self._lock:
-      self.rotator.close()
+      self._rotator.close()
     super().close()
