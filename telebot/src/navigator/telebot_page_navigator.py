@@ -245,7 +245,7 @@ class TelebotPageNavigator:
     if not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
-    sent = self.send_message(text)
+    sent = self.send_message(text[:512])
 
     TelebotUtils.remove_message_with_delay(
       bot = self._bot,
