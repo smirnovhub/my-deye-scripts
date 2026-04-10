@@ -2,6 +2,7 @@ from typing import Any
 
 from int_deye_register import IntDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
+from deye_register_group import DeyeRegisterGroup
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_system_work_mode import DeyeSystemWorkMode
 
@@ -11,12 +12,14 @@ class SystemWorkModeWritableDeyeRegister(IntDeyeRegister):
     address: int,
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       address = address,
       description = description,
       suffix = suffix,
+      group = group,
       avg = avg,
     )
     self._value = DeyeSystemWorkMode.unknown

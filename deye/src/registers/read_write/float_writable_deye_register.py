@@ -1,6 +1,7 @@
 from typing import Any
 
 from float_deye_register import FloatDeyeRegister
+from deye_register_group import DeyeRegisterGroup
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
@@ -12,12 +13,14 @@ class FloatWritableDeyeRegister(FloatDeyeRegister):
     max_value: float,
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       address = address,
       description = description,
       suffix = suffix,
+      group = group,
       avg = avg,
     )
     self._min_value = min_value

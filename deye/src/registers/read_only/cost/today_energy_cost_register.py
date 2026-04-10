@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from deye_register import DeyeRegister
+from deye_register_group import DeyeRegisterGroup
 from base_energy_cost_register import BaseEnergyCostRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
@@ -11,12 +12,16 @@ class TodayEnergyCostRegister(BaseEnergyCostRegister):
     energy_register: DeyeRegister,
     energy_costs: Dict[int, float],
     description: str,
+    suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       energy_register = energy_register,
       energy_costs = energy_costs,
       description = description,
+      suffix = suffix,
+      group = group,
       avg = avg,
     )
 

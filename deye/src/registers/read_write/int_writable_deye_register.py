@@ -1,6 +1,7 @@
 from typing import Any
 
 from int_deye_register import IntDeyeRegister
+from deye_register_group import DeyeRegisterGroup
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
@@ -12,6 +13,7 @@ class IntWritableDeyeRegister(IntDeyeRegister):
     max_value: int,
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
     quantity: int = 1,
   ):
@@ -19,6 +21,7 @@ class IntWritableDeyeRegister(IntDeyeRegister):
       address = address,
       description = description,
       suffix = suffix,
+      group = group,
       avg = avg,
       quantity = quantity,
     )

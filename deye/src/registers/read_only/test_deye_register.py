@@ -1,6 +1,7 @@
 from typing import Any
 
 from base_deye_register import BaseDeyeRegister
+from deye_register_group import DeyeRegisterGroup
 from deye_modbus_interactor import DeyeModbusInteractor
 
 class TestDeyeRegister(BaseDeyeRegister):
@@ -10,12 +11,14 @@ class TestDeyeRegister(BaseDeyeRegister):
     quantity: int,
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
   ):
     super().__init__(
       address = address,
       quantity = quantity,
       description = description,
       suffix = suffix,
+      group = group,
     )
     self._value = 0
 

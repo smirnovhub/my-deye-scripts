@@ -3,6 +3,7 @@ from typing import Any, Optional
 from datetime import timedelta
 
 from deye_utils import DeyeUtils
+from deye_register_group import DeyeRegisterGroup
 from float_deye_register import FloatDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
@@ -13,6 +14,7 @@ class LongFloatDeyeRegister(FloatDeyeRegister):
     address: int,
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
     caching_time: Optional[timedelta] = None,
     quantity: int = 2,
@@ -21,6 +23,7 @@ class LongFloatDeyeRegister(FloatDeyeRegister):
       address = address,
       description = description,
       suffix = suffix,
+      group = group,
       avg = avg,
       caching_time = caching_time,
       quantity = quantity,

@@ -5,6 +5,7 @@ from functools import cached_property
 
 from deye_base_registers import DeyeBaseRegisters
 from deye_energy_cost import DeyeEnergyCost
+from deye_register_group import DeyeRegisterGroup
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_register import DeyeRegister
 from float_deye_register import FloatDeyeRegister
@@ -41,6 +42,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 52,
       description = 'AC Couple Frz High',
       suffix = 'Hz',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.only_master,
     ).with_scale(100)
 
@@ -52,6 +54,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 30000,
       description = 'Backup Delay',
       suffix = 'ms',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -61,6 +64,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 314,
       description = 'Battery BMS Charge Current Limit',
       suffix = 'A',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -70,6 +74,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 315,
       description = 'Battery BMS Discharge Current Limit',
       suffix = 'A',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -79,6 +84,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 107,
       description = 'Battery Capacity',
       suffix = 'Ah',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.only_master,
       caching_time = timedelta(hours = 12),
     )
@@ -89,6 +95,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 191,
       description = 'Battery Current',
       suffix = 'A',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.accumulate,
     ).with_scale(100)
 
@@ -100,6 +107,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 80,
       description = 'Battery Gen Charge Current',
       suffix = 'A',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
@@ -111,6 +119,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 80,
       description = 'Battery Grid Charge Current',
       suffix = 'A',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
@@ -122,6 +131,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 100,
       description = 'Battery Low Batt SOC',
       suffix = '%',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -133,6 +143,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 80,
       description = 'Battery Max Charge Current',
       suffix = 'A',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
@@ -144,6 +155,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 120,
       description = 'Battery Max Discharge Current',
       suffix = 'A',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
@@ -153,6 +165,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 190,
       description = 'Battery Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -164,6 +177,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 100,
       description = 'Battery Restart SOC',
       suffix = '%',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -173,6 +187,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 184,
       description = 'Battery SOC',
       suffix = '%',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -182,6 +197,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 10006,
       description = 'Battery SOH',
       suffix = '%',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.only_master,
       caching_time = timedelta(hours = 12),
     )
@@ -194,6 +210,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 100,
       description = 'Battery Shutdown SOC',
       suffix = '%',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -203,6 +220,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 182,
       description = 'Battery Temperature',
       suffix = 'deg',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -212,6 +230,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 183,
       description = 'Battery Voltage',
       suffix = 'V',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.average,
     ).with_scale(100)
 
@@ -223,6 +242,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 2000,
       description = 'CT Ratio',
       suffix = '',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -234,6 +254,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 6000,
       description = 'Gen Peak Shaving Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.gen,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -243,6 +264,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 166,
       description = 'Gen Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.gen,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -254,6 +276,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 90,
       description = 'Grid Charging Start SOC',
       suffix = '%',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -265,6 +288,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 255,
       description = 'Grid Connect Voltage High',
       suffix = 'V',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -276,6 +300,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 230,
       description = 'Grid Connect Voltage Low',
       suffix = 'V',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -287,6 +312,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 255,
       description = 'Grid Reconnect Voltage High',
       suffix = 'V',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -298,6 +324,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 230,
       description = 'Grid Reconnect Voltage Low',
       suffix = 'V',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -307,6 +334,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 79,
       description = 'Grid Frequency',
       suffix = 'Hz',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.average,
     ).with_scale(100)
 
@@ -318,6 +346,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 6000,
       description = 'Grid Peak Shaving Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -327,6 +356,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 169,
       description = 'Grid Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -336,6 +366,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 167,
       description = 'Grid Internal CT Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -345,6 +376,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 170,
       description = 'Grid External CT Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -356,6 +388,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 3600,
       description = 'Grid Reconnection Time',
       suffix = 'sec',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -365,6 +398,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 194,
       description = 'Grid State code',
       suffix = '',
+      group = DeyeRegisterGroup.grid,
     )
 
   @cached_property
@@ -373,6 +407,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 194,
       description = 'Grid State',
       suffix = '',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -382,6 +417,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 150,
       description = 'Grid Voltage',
       suffix = 'V',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.average,
     )
 
@@ -391,6 +427,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 235,
       description = 'Gen Port Mode',
       suffix = '',
+      group = DeyeRegisterGroup.gen,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -400,6 +437,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 91,
       description = 'Inverter AC Temperature',
       suffix = 'deg',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.average,
     )
 
@@ -409,6 +447,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 90,
       description = 'Inverter DC Temperature',
       suffix = 'deg',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.average,
     )
 
@@ -418,6 +457,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       system_time_register = self.inverter_system_time_register,
       description = 'Inverter System Time Diff',
       suffix = 'sec',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.average,
     )
 
@@ -427,6 +467,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 22,
       description = 'Inverter System Time',
       suffix = '',
+      group = DeyeRegisterGroup.inverter,
       caching_time = timedelta(seconds = 50),
     )
 
@@ -436,6 +477,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 192,
       description = 'Load Frequency',
       suffix = 'Hz',
+      group = DeyeRegisterGroup.load,
       avg = DeyeRegisterAverageType.average,
     ).with_scale(100)
 
@@ -445,6 +487,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 178,
       description = 'Load Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.load,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -454,6 +497,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 157,
       description = 'Load Voltage',
       suffix = 'V',
+      group = DeyeRegisterGroup.load,
       avg = DeyeRegisterAverageType.average,
     )
 
@@ -463,6 +507,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 110,
       description = 'PV1 current',
       suffix = 'A',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -472,6 +517,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 186,
       description = 'PV1 Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -481,6 +527,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 109,
       description = 'PV1 voltage',
       suffix = 'V',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.average,
     )
 
@@ -490,6 +537,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 112,
       description = 'PV2 current',
       suffix = 'A',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -499,6 +547,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 187,
       description = 'PV2 Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.accumulate,
     )
 
@@ -508,6 +557,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 111,
       description = 'PV2 voltage',
       suffix = 'V',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.average,
     )
 
@@ -520,6 +570,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       ],
       description = 'PV Total current',
       suffix = 'A',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -532,6 +583,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       ],
       description = 'PV Total Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -541,6 +593,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 244,
       description = 'System Work Mode',
       suffix = '',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -556,6 +609,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_power = 6000,
       description = 'Time Of Use',
       suffix = '',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -567,6 +621,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 6000,
       description = 'Time Of Use Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.fake_accumulate,
     )
 
@@ -578,6 +633,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 100,
       description = 'Time Of Use SOC',
       suffix = '%',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -587,6 +643,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 70,
       description = 'Today Battery Charged Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -597,6 +654,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 71,
       description = 'Today Battery Discharged Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -607,6 +665,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 77,
       description = 'Today Grid Feed-in Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -617,6 +676,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 76,
       description = 'Today Grid Purchased Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -627,6 +687,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 62,
       description = 'Today Gen Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.gen,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -637,6 +698,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 84,
       description = 'Today Load Consumption',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.load,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -647,6 +709,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 108,
       description = 'Today PV Production',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 5),
     )
@@ -657,6 +720,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       energy_register = self.today_pv_production_register,
       energy_costs = self._energy_cost.pv_energy_costs,
       description = 'Today PV Production Cost',
+      suffix = DeyeEnergyCost().currency_code,
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -666,6 +731,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       energy_register = self.today_grid_purchased_energy_register,
       energy_costs = self._energy_cost.grid_purchased_energy_costs,
       description = 'Today Grid Purchased Energy Cost',
+      suffix = DeyeEnergyCost().currency_code,
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -675,6 +742,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       energy_register = self.today_grid_feed_in_energy_register,
       energy_costs = self._energy_cost.grid_feed_in_energy_costs,
       description = 'Today Grid Feed-in Energy Cost',
+      suffix = DeyeEnergyCost().currency_code,
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -684,6 +753,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       energy_register = self.today_gen_energy_register,
       energy_costs = self._energy_cost.gen_energy_costs,
       description = 'Today Gen Energy Cost',
+      suffix = DeyeEnergyCost().currency_code,
+      group = DeyeRegisterGroup.gen,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -693,6 +764,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 72,
       description = 'Total Battery Charged Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -703,6 +775,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 74,
       description = 'Total Battery Discharged Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.battery,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -713,6 +786,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 81,
       description = 'Total Grid Feed-in Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -724,6 +798,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       split_offset = 2,
       description = 'Total Grid Purchased Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -735,6 +810,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       split_offset = 3,
       description = 'Total Gen Energy',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.gen,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -745,6 +821,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 85,
       description = 'Total Load Consumption',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.load,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -755,6 +832,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 96,
       description = 'Total PV Production',
       suffix = 'kWh',
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.accumulate,
       caching_time = timedelta(minutes = 15),
     )
@@ -765,6 +843,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       energy_register = self.total_pv_production_register,
       energy_costs = self._energy_cost.pv_energy_costs,
       description = 'Total PV Production Cost',
+      suffix = DeyeEnergyCost().currency_code,
+      group = DeyeRegisterGroup.pv,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -774,6 +854,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       energy_register = self.total_grid_purchased_energy_register,
       energy_costs = self._energy_cost.grid_purchased_energy_costs,
       description = 'Total Grid Purchased Energy Cost',
+      suffix = DeyeEnergyCost().currency_code,
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -783,6 +865,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       energy_register = self.total_grid_feed_in_energy_register,
       energy_costs = self._energy_cost.grid_feed_in_energy_costs,
       description = 'Total Grid Feed-in Energy Cost',
+      suffix = DeyeEnergyCost().currency_code,
+      group = DeyeRegisterGroup.grid,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -792,6 +876,8 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       energy_register = self.total_gen_energy_register,
       energy_costs = self._energy_cost.gen_energy_costs,
       description = 'Total Gen Energy Cost',
+      suffix = DeyeEnergyCost().currency_code,
+      group = DeyeRegisterGroup.gen,
       avg = DeyeRegisterAverageType.special,
     )
 
@@ -803,6 +889,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       max_value = 100,
       description = 'Zero Export Power',
       suffix = 'W',
+      group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.only_master,
     )
 
@@ -812,6 +899,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       address = 316,
       description = 'Test1',
       suffix = '',
+      group = DeyeRegisterGroup.test,
     )
 
   @cached_property
@@ -821,6 +909,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       quantity = 350,
       description = 'Test2',
       suffix = '',
+      group = DeyeRegisterGroup.test,
     )
 
   @cached_property

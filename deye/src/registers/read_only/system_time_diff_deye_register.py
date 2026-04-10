@@ -5,6 +5,7 @@ from datetime import datetime
 from deye_exceptions import DeyeValueException
 from deye_register import DeyeRegister
 from deye_utils import DeyeUtils
+from deye_register_group import DeyeRegisterGroup
 from int_deye_register import IntDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
@@ -15,12 +16,14 @@ class SystemTimeDiffDeyeRegister(IntDeyeRegister):
     system_time_register: DeyeRegister,
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       address = 0,
       description = description,
       suffix = suffix,
+      group = group,
       avg = avg,
       quantity = 0,
     )

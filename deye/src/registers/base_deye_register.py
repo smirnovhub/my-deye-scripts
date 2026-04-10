@@ -5,9 +5,10 @@ from datetime import datetime, timedelta
 
 from deye_utils import DeyeUtils
 from deye_base_enum import DeyeBaseEnum
-from deye_exceptions import DeyeValueException
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
+from deye_register_group import DeyeRegisterGroup
+from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
@@ -18,6 +19,7 @@ class BaseDeyeRegister(DeyeRegister):
     quantity: int,
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
     caching_time: Optional[timedelta] = None,
   ):
@@ -27,6 +29,7 @@ class BaseDeyeRegister(DeyeRegister):
     self._name = description.replace(" ", "_").replace("-", "_").lower()
     self._description = description
     self._suffix = suffix
+    self._group = group
     self._avg = avg
     self._value: Union[int, float, str, datetime, DeyeBaseEnum] = 0
     self._min_value: Union[int, float] = 0
@@ -104,6 +107,10 @@ class BaseDeyeRegister(DeyeRegister):
       master_interactor = interactors[0]
 
     return self.read_internal(master_interactor)
+
+  @property
+  def group(self) -> DeyeRegisterGroup:
+    return self._group
 
   @property
   def avg_type(self) -> DeyeRegisterAverageType:
