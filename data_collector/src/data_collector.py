@@ -68,7 +68,9 @@ class DataCollector:
 
     logger.info("-------------------------------------")
 
-  async def save_thresholds(self) -> None:
+  async def save_thresholds(self, logger: logging.Logger) -> None:
+    logger.info("Saving thresholds...")
+
     thresholds = self._get_thresholds()
     thresholds_str = "\n".join([f"{key},{value}" for key, value in thresholds.items()])
 
@@ -79,6 +81,8 @@ class DataCollector:
       f.write("register,threshold\n")
       f.write(thresholds_str)
       f.flush()
+
+    logger.info("Thresholds saved.")
 
   async def _read_registers(
     self,

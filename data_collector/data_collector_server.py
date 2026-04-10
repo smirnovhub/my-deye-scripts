@@ -80,7 +80,7 @@ async def main():
     align_with_period = True,
   )
 
-  await collector.save_thresholds()
+  await collector.save_thresholds(logger)
 
   ticker_task = asyncio.create_task(run_ticker(ticker))
 
