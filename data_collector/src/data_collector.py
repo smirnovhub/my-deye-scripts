@@ -36,7 +36,6 @@ async def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> Non
   now = datetime.now()
 
   current_date = now.strftime("%Y-%m-%d")
-  timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
 
   data_file_path = os.path.join(DATA_PATH, f"{current_date}.csv")
 
