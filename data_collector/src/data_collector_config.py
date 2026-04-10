@@ -9,8 +9,8 @@ class DataCollectorConfig:
     self.__log_name = LogNameEnvVar()
     self.__data_collecting_interval = EnvVar("DATA_COLLECTING_INTERVAL", "180", "Data collecting interval, sec")
     self.__data_retention_days = EnvVar("DATA_RETENTION_DAYS", "10", "Data retention time, days")
-    self.__connection_lost_notify_after_minutes = EnvVar("CONN_LOST_NOTIFY_AFTER_MINUTES", "30", "Notify about connection lost after, minutes")
-    self.__connection_lost_notify_interval_minutes = EnvVar("CONN_LOST_NOTIFY_INTERVAL_MINUTES", "15", "Notify about connection lost interval, minutes")
+    self.__connection_lost_notify_after_minutes = EnvVar("CONN_LOST_NOTIFY_AFTER_MINUTES", "5", "Notify about connection lost after, minutes")
+    self.__connection_lost_notify_interval_minutes = EnvVar("CONN_LOST_NOTIFY_INTERVAL_MINUTES", "10", "Notify about connection lost interval, minutes")
 
     self.__all_vars: List[EnvVar] = [
       self.__log_name,
