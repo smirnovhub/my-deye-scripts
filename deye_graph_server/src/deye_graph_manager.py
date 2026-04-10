@@ -88,17 +88,19 @@ class DeyeGraphManager:
 
       # Process each physical inverter and collect all its available registers
       for inv in sorted(physical_inverters):
-        # Get unique registers for this specific unit
-        unit_params: List[str] = sorted(list(df[df['inverter'] == inv]['register'].unique()))
+        # Filter dataframe for this specific unit
+        inv_df = df.loc[df['inverter'] == inv]
+        unit_params: List[str] = sorted(list(inv_df['register'].unique()))
         physical_params_map[inv] = set(unit_params)
 
         # Append full data object for this inverter
-        result.append(DeyeGraphInverterData(inverter = inv, graphs = self._get_graph_data(unit_params)))
+        result.append(DeyeGraphInverterData(inverter = inv, graphs = self._get_graph_data(inv_df)))
 
       # Handle 'all' (aggregated system data) separately if present
       if 'all' in all_units:
-        all_params: List[str] = sorted(list(df[df['inverter'] == 'all']['register'].unique()))
-        result.append(DeyeGraphInverterData(inverter = 'all', graphs = self._get_graph_data(all_params)))
+        all_inv_df = df.loc[df['inverter'] == 'all']
+        if isinstance(all_inv_df, pd.DataFrame):
+          result.append(DeyeGraphInverterData(inverter = 'all', graphs = self._get_graph_data(all_inv_df)))
 
       # Calculate 'combined' graphs (intersection of ALL physical inverters)
       # This allows side-by-side comparison of shared metrics
@@ -112,8 +114,8 @@ class DeyeGraphManager:
 
         # If common registers exist, add a virtual 'combined' inverter entry
         if common_set:
-          cs: List[str] = sorted(list(common_set))
-          result.append(DeyeGraphInverterData(inverter = "combined", graphs = self._get_graph_data(cs)))
+          cs_df = df.loc[df['register'].isin(common_set)].drop_duplicates(subset = ['register'])
+          result.append(DeyeGraphInverterData(inverter = "combined", graphs = self._get_graph_data(cs_df)))
 
       return DeyeGraphInverters(
         graph_date = graph_date,
@@ -125,11 +127,17 @@ class DeyeGraphManager:
       self._logger.error(f"Error processing {file_name}: {e}")
       raise
 
-  def _get_graph_data(self, graphs: List[str]) -> List[DeyeGraphData]:
-    return [DeyeGraphData(
-      name = p.replace(" ", "_").lower(),
-      description = p,
-    ) for p in graphs]
+  def _get_graph_data(self, df: pd.DataFrame) -> List[DeyeGraphData]:
+    # Ensure we use unique rows to avoid duplicate graph definitions
+    unique_df = df.drop_duplicates(subset = ['register'])
+
+    return [
+      DeyeGraphData(
+        group = str(row['group']),
+        name = str(row['register']).replace(" ", "_").lower(),
+        description = str(row['register']),
+      ) for _, row in unique_df.iterrows()
+    ]
 
   def generate_graph_png(self, graph_date: date, inverter: str, graph_name: str) -> bytes:
     # Construct file path from date

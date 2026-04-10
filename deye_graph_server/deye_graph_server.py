@@ -4,7 +4,6 @@ import asyncio
 import logging
 import uvicorn
 
-from dataclasses import asdict
 from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
@@ -116,8 +115,7 @@ def get_graphs():
 @app.get("/graphs/{graph_date}", tags = ["Graphs Operations"])
 async def get_graphs_by_date(graph_date: str):
   target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
-  inverters = graph_manager.get_inverters_by_date(target_date)
-  return asdict(inverters)
+  return graph_manager.get_inverters_by_date(target_date).to_dict()
 
 @app.get("/graphs/png/{graph_date}/{inverter}/{graph_name}", tags = ["Graphs Operations"])
 async def get_graphs_png(graph_date: str, inverter: str, graph_name: str):
