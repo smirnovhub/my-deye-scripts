@@ -19,6 +19,7 @@ from common_modules import import_dirs
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 from log_utils import LogUtils
+from deye_utils import DeyeUtils
 from async_ticker import AsyncTicker
 from data_collector import main_logic
 from data_collector_config import DataCollectorConfig
@@ -58,7 +59,9 @@ async def run_ticker(ticker: AsyncTicker):
           if last_success_delta >= config.CONN_LOST_NOTIFY_AFTER_MINUTES and \
               last_notification_delta >= config.CONN_LOST_NOTIFY_INTERVAL_MINUTES:
             last_notification = now
-            await TelegramAsync.send_private_telegram_message()
+            last_success_delta_str = DeyeUtils.format_timedelta(now - last_success)
+            message = f"data collector: unable to retrieve data for the last {last_success_delta_str}"
+            await TelegramAsync.send_private_telegram_message(message)
         except Exception as e:
           logger.error(f"Error during sending telegram notification: {e}")
 
