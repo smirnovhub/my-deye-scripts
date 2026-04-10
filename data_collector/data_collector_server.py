@@ -22,12 +22,13 @@ from log_utils import LogUtils
 from common_utils import CommonUtils
 from deye_utils import DeyeUtils
 from async_ticker import AsyncTicker
-from data_collector import main_logic
+from data_collector import DataCollector
 from data_collector_config import DataCollectorConfig
 from telegram_send_message_async import TelegramAsync
 from http_session_singleton_async import HttpSessionSingletonAsync
 
 config = DataCollectorConfig()
+collector = DataCollector()
 
 LOG_DIR = f"data/{config.LOG_NAME}"
 
@@ -46,7 +47,7 @@ async def run_ticker(ticker: AsyncTicker):
   try:
     async for _ in ticker:
       try:
-        await main_logic(config = config, logger = logger)
+        await collector.main_logic(config = config, logger = logger)
         last_success = datetime.now()
       except Exception:
         callstack = traceback.format_exc()
@@ -78,6 +79,8 @@ async def main():
     period = timedelta(seconds = config.DATA_COLLECTING_INTERVAL_MINUTES),
     align_with_period = True,
   )
+
+  await collector.save_thresholds()
 
   ticker_task = asyncio.create_task(run_ticker(ticker))
 
