@@ -70,7 +70,7 @@ async def run_ticker(ticker: AsyncTicker):
 
 async def main():
   ticker = AsyncTicker(
-    period = timedelta(seconds = config.DATA_COLLECTING_INTERVAL),
+    period = timedelta(seconds = config.DATA_COLLECTING_INTERVAL_MINUTES),
     align_with_period = True,
   )
 
