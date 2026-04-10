@@ -52,8 +52,8 @@ async def run_ticker(ticker: AsyncTicker):
 
         try:
           now = datetime.now()
-          last_success_delta = (now - last_success).total_seconds // 60
-          last_notification_delta = (now - last_notification).total_seconds // 60
+          last_success_delta = (now - last_success).total_seconds() / 60
+          last_notification_delta = (now - last_notification).total_seconds() / 60
 
           if last_success_delta >= config.CONN_LOST_NOTIFY_AFTER_MINUTES and \
               last_notification_delta >= config.CONN_LOST_NOTIFY_INTERVAL_MINUTES:
