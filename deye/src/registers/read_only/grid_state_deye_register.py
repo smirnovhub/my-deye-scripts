@@ -1,6 +1,7 @@
 from typing import Any, List
 
 from int_deye_register import IntDeyeRegister
+from deye_register_group import DeyeRegisterGroup
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 from deye_grid_state import DeyeGridState
@@ -11,12 +12,14 @@ class GridStateDeyeRegister(IntDeyeRegister):
     address: int,
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       address = address,
       description = description,
       suffix = suffix,
+      group = group,
       avg = avg,
     )
     self._value = DeyeGridState.unknown
