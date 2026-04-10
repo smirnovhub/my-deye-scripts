@@ -19,6 +19,7 @@ from common_modules import import_dirs
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 from log_utils import LogUtils
+from common_utils import CommonUtils
 from deye_utils import DeyeUtils
 from async_ticker import AsyncTicker
 from data_collector import main_logic
@@ -60,7 +61,8 @@ async def run_ticker(ticker: AsyncTicker):
               last_notification_delta >= config.CONN_LOST_NOTIFY_INTERVAL_MINUTES:
             last_notification = now
             last_success_delta_str = DeyeUtils.format_timedelta(now - last_success)
-            message = f"data collector: unable to retrieve data for the last {last_success_delta_str}"
+            message = (f"{CommonUtils.large_red_circle_emoji} data collector: unable to retrieve "
+                       f"data for the last {last_success_delta_str}")
             await TelegramAsync.send_private_telegram_message(message)
         except Exception as e:
           logger.error(f"Error during sending telegram notification: {e}")
