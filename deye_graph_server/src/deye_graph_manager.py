@@ -83,13 +83,13 @@ class DeyeGraphManager:
       all_units = df['inverter'].unique()
       physical_inverters = [inv for inv in all_units if inv != 'all']
 
-      # Temporary storage for parameter sets to calculate intersection later
+      # Temporary storage for register sets to calculate intersection later
       physical_params_map = {}
 
-      # Process each physical inverter and collect all its available parameters
+      # Process each physical inverter and collect all its available registers
       for inv in sorted(physical_inverters):
-        # Get unique parameters for this specific unit
-        unit_params: List[str] = sorted(list(df[df['inverter'] == inv]['parameter'].unique()))
+        # Get unique registers for this specific unit
+        unit_params: List[str] = sorted(list(df[df['inverter'] == inv]['register'].unique()))
         physical_params_map[inv] = set(unit_params)
 
         # Append full data object for this inverter
@@ -97,20 +97,20 @@ class DeyeGraphManager:
 
       # Handle 'all' (aggregated system data) separately if present
       if 'all' in all_units:
-        all_params: List[str] = sorted(list(df[df['inverter'] == 'all']['parameter'].unique()))
+        all_params: List[str] = sorted(list(df[df['inverter'] == 'all']['register'].unique()))
         result.append(DeyeGraphInverterData(inverter = 'all', graphs = self._get_graph_data(all_params)))
 
       # Calculate 'combined' graphs (intersection of ALL physical inverters)
       # This allows side-by-side comparison of shared metrics
       if len(physical_inverters) > 1:
-        # Start with parameters of the first physical inverter
+        # Start with registers of the first physical inverter
         common_set = physical_params_map[physical_inverters[0]]
 
-        # Intersect with parameters of all other physical units
+        # Intersect with registers of all other physical units
         for inv in physical_inverters[1:]:
           common_set = common_set.intersection(physical_params_map[inv])
 
-        # If common parameters exist, add a virtual 'combined' inverter entry
+        # If common registers exist, add a virtual 'combined' inverter entry
         if common_set:
           cs: List[str] = sorted(list(common_set))
           result.append(DeyeGraphInverterData(inverter = "combined", graphs = self._get_graph_data(cs)))
@@ -156,14 +156,14 @@ class DeyeGraphManager:
       threshold = thresholds.get(target_name_norm)
 
       if threshold is not None:
-        df = self._trim_by_parameter(
+        df = self._trim_by_register(
           df = df,
           graph_name = target_name_norm,
           threshold = threshold,
         )
 
-      # Find the actual parameter name in the CSV to keep original casing in title
-      available_params: List[str] = df['parameter'].unique().tolist()
+      # Find the actual register name in the CSV to keep original casing in title
+      available_params: List[str] = df['register'].unique().tolist()
       actual_graph_name = None
 
       for p in available_params:
@@ -172,7 +172,7 @@ class DeyeGraphManager:
           break
 
       if not actual_graph_name:
-        raise RuntimeError(f"parameter '{graph_name}' not found in data")
+        raise RuntimeError(f"register '{graph_name}' not found in data")
 
       # Create figure and axis with A4 proportions
       # Use Figure object directly to avoid global state memory leaks
@@ -184,8 +184,8 @@ class DeyeGraphManager:
       for spine in ax.spines.values():
         spine.set_linewidth(spine_width)
 
-      # Get unit of measurement using the correctly cased parameter name
-      sample_data = df[df['parameter'] == actual_graph_name]
+      # Get unit of measurement using the correctly cased register name
+      sample_data = df[df['register'] == actual_graph_name]
       unit_label = ""
       if not sample_data.empty and 'unit' in df.columns:
         unit_val = sample_data['unit'].iloc[0]
@@ -196,7 +196,7 @@ class DeyeGraphManager:
         # Logic for comparing multiple physical inverters on one plot
         physical_units = [inv for inv in df['inverter'].unique() if inv != 'all']
         for unit in physical_units:
-          unit_data = df[(df['inverter'] == unit) & (df['parameter'] == actual_graph_name)]
+          unit_data = df[(df['inverter'] == unit) & (df['register'] == actual_graph_name)]
           if not unit_data.empty:
             ax.plot(
               unit_data['timestamp'],
@@ -208,7 +208,7 @@ class DeyeGraphManager:
         ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
       else:
         # Logic for a single inverter
-        plot_data = df[(df['inverter'] == inverter) & (df['parameter'] == actual_graph_name)]
+        plot_data = df[(df['inverter'] == inverter) & (df['register'] == actual_graph_name)]
         if plot_data.empty:
           raise RuntimeError(f"plot data for {inverter} is empty")
 
@@ -330,14 +330,14 @@ class DeyeGraphManager:
       plt.close('all')
       gc.collect()
 
-  def _trim_by_parameter(
+  def _trim_by_register(
     self,
     df: pd.DataFrame,
     graph_name: str,
     threshold: float,
   ) -> pd.DataFrame:
     df_working: pd.DataFrame = df.copy()
-    df_working['temp_norm'] = df_working['parameter'].str.lower().str.replace("_", " ").str.strip()
+    df_working['temp_norm'] = df_working['register'].str.lower().str.replace("_", " ").str.strip()
 
     target_rows = df_working[df_working['temp_norm'] == graph_name]
 
@@ -422,8 +422,8 @@ class DeyeGraphManager:
       file_path = os.path.join(self._data_path, "thresholds.csv")
       with DeyeFileWithLock(file_path, "r") as f:
         df = pd.read_csv(f)
-      df['parameter'] = df['parameter'].str.lower().str.replace("_", " ").str.strip()
-      return dict(zip(df['parameter'], df['threshold']))
+      df['register'] = df['register'].str.lower().str.replace("_", " ").str.strip()
+      return dict(zip(df['register'], df['threshold']))
     except Exception as e:
       self._logger.error(f"Error loading thresholds.csv: {e}")
       raise

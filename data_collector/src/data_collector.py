@@ -73,7 +73,7 @@ async def main_logic(config: DataCollectorConfig, logger: logging.Logger) -> Non
 
   # Write thresholds
   async with DeyeFileWithLockAsync(thresholds_file_path, "w", encoding = "utf-8") as f:
-    f.write("parameter,threshold\n")
+    f.write("register,threshold\n")
     f.write(thresholds_str)
     f.flush()
 

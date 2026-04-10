@@ -8,7 +8,7 @@ from deye_register_average_type import DeyeRegisterAverageType
 class DeyeCsvUtils:
   @staticmethod
   def get_csv_header() -> str:
-    return "timestamp,inverter,parameter,value,unit\n"
+    return "timestamp,inverter,group,register,value,unit\n"
 
   @staticmethod
   def get_csv_lines(
@@ -31,6 +31,7 @@ class DeyeCsvUtils:
         if is_slave and (register.can_write or is_only_master):
           continue
 
-        result.append(f"{timestamp},{inverter},{register.description},{register.pretty_value},{register.suffix}")
+        result.append(f"{timestamp},{inverter},{register.group.title},"
+                      f"{register.description},{register.pretty_value},{register.suffix}")
 
     return result
