@@ -22,6 +22,7 @@ from deye_graph_data import DeyeGraphData
 from deye_file_with_lock import DeyeFileWithLock
 from deye_graph_inverters import DeyeGraphInverters
 from deye_graph_inverter_data import DeyeGraphInverterData
+from deye_graph_group_data import DeyeGraphGroupData
 from src.deye_graph_server_config import DeyeGraphServerConfig
 
 class DeyeGraphManager:
@@ -93,14 +94,14 @@ class DeyeGraphManager:
         unit_params: List[str] = sorted(list(inv_df['register'].unique()))
         physical_params_map[inv] = set(unit_params)
 
-        # Append full data object for this inverter
-        result.append(DeyeGraphInverterData(inverter = inv, graphs = self._get_graph_data(inv_df)))
+        # Append full data object with grouped graphs
+        result.append(DeyeGraphInverterData(inverter = inv, groups = self._get_graph_data(inv_df)))
 
       # Handle 'all' (aggregated system data) separately if present
       if 'all' in all_units:
         all_inv_df = df.loc[df['inverter'] == 'all']
         if isinstance(all_inv_df, pd.DataFrame):
-          result.append(DeyeGraphInverterData(inverter = 'all', graphs = self._get_graph_data(all_inv_df)))
+          result.append(DeyeGraphInverterData(inverter = 'all', groups = self._get_graph_data(all_inv_df)))
 
       # Calculate 'combined' graphs (intersection of ALL physical inverters)
       # This allows side-by-side comparison of shared metrics
@@ -115,7 +116,7 @@ class DeyeGraphManager:
         # If common registers exist, add a virtual 'combined' inverter entry
         if common_set:
           cs_df = df.loc[df['register'].isin(common_set)].drop_duplicates(subset = ['register'])
-          result.append(DeyeGraphInverterData(inverter = "combined", graphs = self._get_graph_data(cs_df)))
+          result.append(DeyeGraphInverterData(inverter = "combined", groups = self._get_graph_data(cs_df)))
 
       return DeyeGraphInverters(
         graph_date = graph_date,
@@ -127,17 +128,26 @@ class DeyeGraphManager:
       self._logger.error(f"Error processing {file_name}: {e}")
       raise
 
-  def _get_graph_data(self, df: pd.DataFrame) -> List[DeyeGraphData]:
+  def _get_graph_data(self, df: pd.DataFrame) -> List[DeyeGraphGroupData]:
     # Ensure we use unique rows to avoid duplicate graph definitions
     unique_df = df.drop_duplicates(subset = ['register'])
 
-    return [
-      DeyeGraphData(
-        group = str(row['group']),
-        name = str(row['register']).replace(" ", "_").lower(),
-        description = str(row['register']),
-      ) for _, row in unique_df.iterrows()
-    ]
+    # Group by the 'group' column
+    grouped = unique_df.groupby('group')
+
+    group_results: List[DeyeGraphGroupData] = []
+
+    for group_name, group_df in grouped:
+      graphs_in_group: List[DeyeGraphData] = []
+
+      for _, row in group_df.iterrows():
+        # Original logic for name and description
+        graphs_in_group.append(
+          DeyeGraphData(name = str(row['register']).replace(" ", "_").lower(), description = str(row['register'])))
+
+      group_results.append(DeyeGraphGroupData(group = str(group_name), graphs = graphs_in_group))
+
+    return group_results
 
   def generate_graph_png(self, graph_date: date, inverter: str, graph_name: str) -> bytes:
     # Construct file path from date
