@@ -2,15 +2,18 @@ import time
 import asyncio
 import logging
 
+from typing import Optional
 from datetime import timedelta
 
 class AsyncTicker:
   def __init__(
     self,
     period: timedelta,
+    run_delay: Optional[timedelta] = None,
     align_with_period: bool = False,
   ):
     self._period = period
+    self._run_delay = run_delay
     self._align_with_period = align_with_period
     self._stop_event = asyncio.Event()
     self._logger = logging.getLogger()
@@ -42,6 +45,9 @@ class AsyncTicker:
       while not self._stop_event.is_set():
         # Calculate how long to wait until the next tick
         wait_time = max(0.0, next_tick - time.time())
+
+        if self._run_delay:
+          wait_time += self._run_delay.total_seconds()
 
         await self._wait_with_cancellation(wait_time)
 
