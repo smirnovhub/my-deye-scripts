@@ -1,36 +1,41 @@
-from typing import Dict
+from typing import Dict, List
 from urllib.parse import urljoin
 
 from env_utils import EnvUtils
 from simple_singleton import singleton
+from deye_register import DeyeRegister
 from deye_web_constants import DeyeWebConstants
 
 @singleton
 class DeyeWebGraphsConfig:
   def __init__(self):
     registers = DeyeWebConstants.registers
-    self.graphs_base_url = EnvUtils.get_deye_web_graphs_base_url()
-    self.urls: Dict[str, str] = {
-      registers.battery_current_register.name: 'battery_current.png',
-      registers.battery_power_register.name: 'battery_power.png',
-      registers.battery_soc_register.name: 'battery_soc.png',
-      registers.battery_temperature_register.name: 'battery_temperature.png',
-      registers.gen_power_register.name: 'gen_power.png',
-      registers.grid_external_ct_power_register.name: 'grid_external_ct_power.png',
-      registers.grid_internal_ct_power_register.name: 'grid_power.png',
-      registers.grid_voltage_register.name: 'grid_voltage.png',
-      registers.inverter_ac_temperature_register.name: 'inverter_ac_temperature.png',
-      registers.inverter_dc_temperature_register.name: 'inverter_dc_temperature.png',
-      registers.inverter_system_time_diff_register.name: 'inverter_system_time_diff.png',
-      registers.load_power_register.name: 'load_power.png',
-      registers.pv1_power_register.name: 'pv1_power.png',
-      registers.pv2_power_register.name: 'pv2_power.png',
-      registers.pv_total_power_register.name: 'pv_total_power.png',
-    }
+    self._graphs_base_url = EnvUtils.get_deye_web_graphs_base_url()
+    regs: List[DeyeRegister] = [
+      registers.battery_current_register,
+      registers.battery_power_register,
+      registers.battery_soc_register,
+      registers.battery_temperature_register,
+      registers.gen_power_register,
+      registers.grid_external_ct_power_register,
+      registers.grid_internal_ct_power_register,
+      registers.grid_voltage_register,
+      registers.inverter_ac_temperature_register,
+      registers.inverter_dc_temperature_register,
+      registers.inverter_system_time_diff_register,
+      registers.load_power_register,
+      registers.pv1_power_register,
+      registers.pv2_power_register,
+      registers.pv_total_power_register,
+    ]
+    self._urls = self._get_graph_names(regs)
+
+  def _get_graph_names(self, registers: List[DeyeRegister]) -> Dict[str, str]:
+    return {register.name: f"{register.name}.png" for register in registers}
 
   def get_url_for_register(self, register_name: str) -> str:
-    if not self.graphs_base_url:
+    if not self._graphs_base_url:
       return ''
 
-    url = self.urls.get(register_name, '')
-    return urljoin(self.graphs_base_url, url) if url else ''
+    url = self._urls.get(register_name, '')
+    return urljoin(self._graphs_base_url, url) if url else ''
