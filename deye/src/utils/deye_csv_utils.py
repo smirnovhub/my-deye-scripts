@@ -25,6 +25,9 @@ class DeyeCsvUtils:
         if is_accumulated and register.can_accumulate == False:
           continue
 
+        if is_accumulated and loggers.count == 1:
+          continue
+
         is_slave = inverter != loggers.master.name
         is_only_master = register.avg_type == DeyeRegisterAverageType.only_master
 
