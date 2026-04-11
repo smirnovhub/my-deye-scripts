@@ -149,6 +149,20 @@ class DeyeGraphManager:
 
     return group_results
 
+  def _get_color(self, name: str) -> str:
+    # Define fixed colors for specific inverter types
+    color_map = {
+      'master': 'steelblue',
+      'all': 'forestgreen',
+      'slave': 'orange',
+    }
+
+    for inverter, color in color_map.items():
+      if name.startswith(inverter):
+        return color
+
+    return "steelblue"
+
   def generate_graph_png(self, graph_date: date, inverter: str, graph_name: str) -> bytes:
     # Construct file path from date
     file_name = f"{graph_date.isoformat()}.csv"
@@ -221,6 +235,7 @@ class DeyeGraphManager:
               unit_data['value'],
               label = unit,
               linewidth = graph_line_width,
+              color = self._get_color(unit),
             )
 
         ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
@@ -234,7 +249,7 @@ class DeyeGraphManager:
           plot_data['timestamp'],
           plot_data['value'],
           label = inverter,
-          color = 'orange',
+          color = self._get_color(inverter),
           linewidth = graph_line_width,
         )
 
