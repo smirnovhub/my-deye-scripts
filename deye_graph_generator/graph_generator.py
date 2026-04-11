@@ -1,6 +1,5 @@
 import os
-from typing import List, Optional
-
+import asyncio
 import aiofiles
 import logging
 
@@ -8,6 +7,7 @@ from io import BytesIO
 from datetime import date
 from pathlib import Path
 from http import HTTPStatus
+from typing import List, Optional
 from urllib.parse import urljoin
 
 from deye_graph_inverters import DeyeGraphInverters
@@ -49,6 +49,9 @@ class GraphGenerator:
 
     generated_list: List[str] = []
 
+    loop = asyncio.get_running_loop()
+    start_time = loop.time()
+
     if combined:
       generated_list = await self._generate_png_for_inverter(
         inverter = combined,
@@ -62,7 +65,8 @@ class GraphGenerator:
       exclude_list = generated_list,
     )
 
-    self._logger.info("All graphs generated.")
+    duration = loop.time() - start_time
+    self._logger.info(f"All graphs generated in {duration:.3f}s")
 
   async def _generate_png_for_inverter(
     self,
@@ -72,6 +76,7 @@ class GraphGenerator:
   ) -> List[str]:
     generated_list: List[str] = []
 
+    loop = asyncio.get_running_loop()
     self._logger.info(f"Generating graphs for {inverter.inverter} inverter...")
 
     for group in inverter.groups:
@@ -80,6 +85,8 @@ class GraphGenerator:
           continue
 
         self._logger.info(f"Generating graph for {graph.name}...")
+
+        start_time = loop.time()
 
         try:
           png = await self._get_graph_png(
@@ -96,7 +103,9 @@ class GraphGenerator:
           await f.write(png.getvalue())
 
         generated_list.append(graph.name)
-        self._logger.info(f"Graph for {graph.name} generated.")
+
+        duration = loop.time() - start_time
+        self._logger.info(f"Graph for {graph.name} generated in {duration:.3f}s")
 
     return generated_list
 
