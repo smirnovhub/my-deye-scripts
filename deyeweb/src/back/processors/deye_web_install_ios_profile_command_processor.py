@@ -28,7 +28,7 @@ class DeyeWebInstallIosProfileCommandProcessor(DeyeWebBaseCommandProcessor):
     return result
 
   def generate_icons_table(self, columns_count: int) -> str:
-    names = self.get_image_file_names('images/icons/ios')
+    names = self.get_image_file_names('icons/ios')
 
     style_id_table = self.style_manager.register_style('border-collapse: collapse;')
     style_id1 = self.style_manager.register_style('padding: 15px; text-align: center;')
@@ -56,7 +56,7 @@ class DeyeWebInstallIosProfileCommandProcessor(DeyeWebBaseCommandProcessor):
         html += f"""
             <td class="{style_id1}">
               <a href="mobileconfig.php?icon={item}">
-                <img class="{style_id2}" src="images/icons/ios/{item}.png" onerror="{onerror}">
+                <img class="{style_id2}" src="icons/ios/{item}.png" onerror="{onerror}">
               </a>
             </td>
           """
