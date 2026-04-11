@@ -123,15 +123,56 @@ async def get_graphs_png(graph_date: str, inverter: str, graph_name: str):
 
   image_bytes = await loop.run_in_executor(
     None,
-    graph_manager.generate_graph_png,
+    graph_manager.generate_graph_image,
     target_date,
     inverter,
     graph_name,
+    "png",
   )
 
   return Response(
     content = image_bytes,
     media_type = "image/png",
+  )
+
+@app.get("/graphs/svg/{graph_date}/{inverter}/{graph_name}", tags = ["Graphs Operations"])
+async def get_graphs_svg(graph_date: str, inverter: str, graph_name: str):
+  target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
+
+  loop = asyncio.get_running_loop()
+
+  image_bytes = await loop.run_in_executor(
+    None,
+    graph_manager.generate_graph_image,
+    target_date,
+    inverter,
+    graph_name,
+    "svg",
+  )
+
+  return Response(
+    content = image_bytes,
+    media_type = "image/svg+xml",
+  )
+
+@app.get("/graphs/pdf/{graph_date}/{inverter}/{graph_name}", tags = ["Graphs Operations"])
+async def get_graphs_pdf(graph_date: str, inverter: str, graph_name: str):
+  target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
+
+  loop = asyncio.get_running_loop()
+
+  image_bytes = await loop.run_in_executor(
+    None,
+    graph_manager.generate_graph_image,
+    target_date,
+    inverter,
+    graph_name,
+    "pdf",
+  )
+
+  return Response(
+    content = image_bytes,
+    media_type = "application/pdf",
   )
 
 @app.get("/graphs/csv/{graph_date}", tags = ["Graphs Operations"])

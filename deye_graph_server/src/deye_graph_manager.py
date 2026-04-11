@@ -165,7 +165,13 @@ class DeyeGraphManager:
 
     return "steelblue"
 
-  def generate_graph_png(self, graph_date: date, inverter: str, graph_name: str) -> bytes:
+  def generate_graph_image(
+    self,
+    graph_date: date,
+    inverter: str,
+    graph_name: str,
+    format: str,
+  ) -> bytes:
     # Construct file path from date
     file_name = f"{graph_date.isoformat()}.csv"
     file_path = os.path.join(self._data_path, file_name)
@@ -351,9 +357,9 @@ class DeyeGraphManager:
       fig.tight_layout()
 
       # Save to memory buffer
-      with DebugTimerWithLog("PNG generation"):
+      with DebugTimerWithLog(f"Image {format} generation"):
         buf = io.BytesIO()
-        fig.savefig(buf, format = 'png', dpi = 300)
+        fig.savefig(buf, format = format, dpi = 300)
         buf.seek(0)
         return buf.getvalue()
     except Exception as e:
