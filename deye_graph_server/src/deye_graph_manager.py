@@ -41,6 +41,8 @@ class DeyeGraphManager:
     if not base_dir.is_dir():
       raise RuntimeError(f"Data dir '{self._data_path}' doesn't exist")
 
+    self._thresholds = self._get_thresholds(self._data_path)
+
   def get_available_dates(self) -> List[date]:
     available_dates = []
     # Use Path for convenient file globbing
@@ -185,8 +187,7 @@ class DeyeGraphManager:
       # Normalize the input graph_name for comparison (lowercase and no underscores)
       target_name_norm = graph_name.lower().replace("_", " ").strip()
 
-      thresholds = self._get_thresholds()
-      threshold = thresholds.get(target_name_norm)
+      threshold = self._thresholds.get(target_name_norm)
 
       if threshold is not None:
         with DebugTimerWithLog("Trimming data"):
@@ -456,9 +457,9 @@ class DeyeGraphManager:
     # Grab the bytes from the buffer
     return buffer.getvalue()
 
-  def _get_thresholds(self) -> Dict[str, float]:
+  def _get_thresholds(self, data_path: str) -> Dict[str, float]:
     try:
-      file_path = os.path.join(self._data_path, "thresholds.csv")
+      file_path = os.path.join(data_path, "thresholds.csv")
       with DeyeFileWithLock(file_path, "r") as f:
         df = pd.read_csv(f)
       df['register'] = df['register'].str.lower().str.replace("_", " ").str.strip()
