@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import date, datetime
 
+from debug_timer import DebugTimerWithLog
 from deye_graph_data import DeyeGraphData
 from deye_file_with_lock import DeyeFileWithLock
 from deye_graph_inverters import DeyeGraphInverters
@@ -177,8 +178,9 @@ class DeyeGraphManager:
 
     try:
       # Load data and ensure timestamp is parsed
-      with DeyeFileWithLock(file_path, "r") as f:
-        df = pd.read_csv(f, parse_dates = ['timestamp'])
+      with DebugTimerWithLog("CSV reading"):
+        with DeyeFileWithLock(file_path, "r") as f:
+          df = pd.read_csv(f, parse_dates = ['timestamp'])
 
       # Normalize the input graph_name for comparison (lowercase and no underscores)
       target_name_norm = graph_name.lower().replace("_", " ").strip()
@@ -187,11 +189,12 @@ class DeyeGraphManager:
       threshold = thresholds.get(target_name_norm)
 
       if threshold is not None:
-        df = self._trim_by_register(
-          df = df,
-          graph_name = target_name_norm,
-          threshold = threshold,
-        )
+        with DebugTimerWithLog("Trimming data"):
+          df = self._trim_by_register(
+            df = df,
+            graph_name = target_name_norm,
+            threshold = threshold,
+          )
 
       # Find the actual register name in the CSV to keep original casing in title
       available_params: List[str] = df['register'].unique().tolist()
@@ -229,13 +232,14 @@ class DeyeGraphManager:
         for unit in physical_units:
           unit_data = df[(df['inverter'] == unit) & (df['register'] == actual_graph_name)]
           if not unit_data.empty:
-            ax.plot(
-              unit_data['timestamp'],
-              unit_data['value'],
-              label = unit,
-              linewidth = graph_line_width,
-              color = self._get_color(unit),
-            )
+            with DebugTimerWithLog("Plot combined graph"):
+              ax.plot(
+                unit_data['timestamp'],
+                unit_data['value'],
+                label = unit,
+                linewidth = graph_line_width,
+                color = self._get_color(unit),
+              )
 
         ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
       else:
@@ -244,13 +248,14 @@ class DeyeGraphManager:
         if plot_data.empty:
           raise RuntimeError(f"plot data for {inverter} is empty")
 
-        ax.plot(
-          plot_data['timestamp'],
-          plot_data['value'],
-          label = inverter,
-          color = self._get_color(inverter),
-          linewidth = graph_line_width,
-        )
+        with DebugTimerWithLog("Plot regular graph"):
+          ax.plot(
+            plot_data['timestamp'],
+            plot_data['value'],
+            label = inverter,
+            color = self._get_color(inverter),
+            linewidth = graph_line_width,
+          )
 
         ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
 
@@ -345,11 +350,11 @@ class DeyeGraphManager:
       fig.tight_layout()
 
       # Save to memory buffer
-      buf = io.BytesIO()
-      fig.savefig(buf, format = 'png', dpi = 300)
-      buf.seek(0)
-
-      return buf.getvalue()
+      with DebugTimerWithLog("PNG generation"):
+        buf = io.BytesIO()
+        fig.savefig(buf, format = 'png', dpi = 300)
+        buf.seek(0)
+        return buf.getvalue()
     except Exception as e:
       self._logger.error(f"Error generating graph for {graph_date}/{inverter}/{graph_name}: {e}")
       raise
@@ -359,8 +364,10 @@ class DeyeGraphManager:
         fig.clear()
       if buf:
         buf.close()
-      plt.close('all')
-      gc.collect()
+
+      with DebugTimerWithLog("Cleanup & GC"):
+        plt.close('all')
+        gc.collect()
 
   def _trim_by_register(
     self,
