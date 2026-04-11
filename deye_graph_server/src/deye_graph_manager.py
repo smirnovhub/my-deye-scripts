@@ -14,6 +14,8 @@ import matplotlib.dates as mdates
 from matplotlib.figure import Figure
 
 import pandas as pd
+import numpy as np
+
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import date, datetime
@@ -303,7 +305,7 @@ class DeyeGraphManager:
       for line in ax.get_lines():
         all_y_values.extend(line.get_ydata()) # type: ignore
 
-      if all_y_values:
+      if all_y_values and np.issubdtype(np.array(all_y_values).dtype, np.number):
         y_min_val = min(all_y_values)
         y_max_val = max(all_y_values)
 
@@ -322,10 +324,17 @@ class DeyeGraphManager:
         final_y_ticks.extend([y_min_val, y_max_val])
         ax.set_yticks(sorted(final_y_ticks))
 
-      # --- Prevention of Y-min and X-min collision ---
-      # If the lowest Y-label is too close to the X-axis,
-      # Matplotlib usually handles it, but we can pad the Y-axis slightly
-      ax.set_ylim(y_min_val - (y_range * 0.02), y_max_val + (y_range * 0.02))
+        # --- Prevention of Y-min and X-min collision ---
+        # If the lowest Y-label is too close to the X-axis,
+        # Matplotlib usually handles it, but we can pad the Y-axis slightly
+        ax.set_ylim(y_min_val - (y_range * 0.02), y_max_val + (y_range * 0.02))
+      elif all_y_values:
+        # Get unique values and sort them
+        unique_labels = sorted(list(set(map(str, all_y_values))), reverse = False)
+
+        # Set positions and labels
+        ax.set_yticks(range(len(unique_labels)))
+        ax.set_yticklabels(unique_labels)
 
       # Layout adjustment to prevent clipping
       fig.tight_layout()
