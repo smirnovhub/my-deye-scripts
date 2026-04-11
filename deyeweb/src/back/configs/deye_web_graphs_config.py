@@ -19,7 +19,6 @@ class DeyeWebGraphsConfig:
       registers.gen_power_register,
       registers.grid_external_ct_power_register,
       registers.grid_internal_ct_power_register,
-      registers.grid_state_code_register,
       registers.grid_voltage_register,
       registers.inverter_ac_temperature_register,
       registers.inverter_dc_temperature_register,
@@ -29,7 +28,9 @@ class DeyeWebGraphsConfig:
       registers.pv2_power_register,
       registers.pv_total_power_register,
     ]
+
     self._urls = self._get_graph_names(regs)
+    self._urls[registers.grid_state_register.name] = f"{registers.grid_state_code_register.name}.png"
 
   def _get_graph_names(self, registers: List[DeyeRegister]) -> Dict[str, str]:
     return {register.name: f"{register.name}.png" for register in registers}
