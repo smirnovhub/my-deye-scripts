@@ -15,9 +15,12 @@ from data_collector_registers import DataCollectorRegisters
 from data_collector_config import DataCollectorConfig
 
 class DataCollector:
-  def __init__(self):
+  def __init__(self, config: DataCollectorConfig):
     self._loggers = DeyeLoggers()
-    self._data_path = "data/deye-collected-data"
+    self._data_path = f"data/{config.DEYE_DATA_COLLECTOR_DIR}"
+
+    data_dir = Path(self._data_path)
+    data_dir.mkdir(parents = True, exist_ok = True)
 
   def _get_thresholds(self) -> Dict[str, float]:
     registers = DeyeRegisters()
@@ -40,7 +43,6 @@ class DataCollector:
     data_file_path = os.path.join(self._data_path, f"{current_date}.csv")
 
     data_dir = Path(data_file_path)
-    data_dir.parent.mkdir(parents = True, exist_ok = True)
 
     write_header = not os.path.exists(data_file_path) or os.path.getsize(data_file_path) == 0
 

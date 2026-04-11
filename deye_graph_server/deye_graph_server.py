@@ -98,8 +98,6 @@ graph_manager = DeyeGraphManager(
   logger = logger,
 )
 
-graph_manager.check_data_dir_exist()
-
 @app.get("/ping", tags = ["Server Health Operations"])
 def ping():
   """

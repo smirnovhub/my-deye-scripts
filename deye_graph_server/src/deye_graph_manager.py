@@ -33,9 +33,8 @@ class DeyeGraphManager:
   ):
     self._config = config
     self._logger = logger
-    self._data_path = "data/deye-collected-data"
+    self._data_path = f"data/{config.DEYE_DATA_COLLECTOR_DIR}"
 
-  def check_data_dir_exist(self) -> None:
     base_dir = Path(self._data_path)
 
     if not base_dir.is_dir():

@@ -28,7 +28,7 @@ from telegram_send_message_async import TelegramAsync
 from http_session_singleton_async import HttpSessionSingletonAsync
 
 config = DataCollectorConfig()
-collector = DataCollector()
+collector = DataCollector(config)
 
 LOG_DIR = f"data/{config.LOG_NAME}"
 
