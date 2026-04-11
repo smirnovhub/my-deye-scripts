@@ -19,6 +19,7 @@ class DeyeWebGraphsConfig:
       registers.gen_power_register,
       registers.grid_external_ct_power_register,
       registers.grid_internal_ct_power_register,
+      registers.grid_state_code_register,
       registers.grid_voltage_register,
       registers.inverter_ac_temperature_register,
       registers.inverter_dc_temperature_register,
