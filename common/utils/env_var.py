@@ -8,7 +8,7 @@ class EnvVar:
     self._name = name
     self._default = default
     self._description = description
-    self._value = os.getenv(name, default)
+    self._value = os.getenv(name, default).strip()
 
   @property
   def name(self) -> str:
@@ -25,6 +25,21 @@ class EnvVar:
   @property
   def value(self) -> str:
     return self._value
+
+  def as_not_empty_value(self) -> str:
+    if not self._value:
+      raise RuntimeError(f"Environment variable '{self._name}' is not set")
+    return self._value
+
+  def as_not_empty_filtered_value(self) -> str:
+    if not self._value:
+      raise RuntimeError(f"Environment variable '{self._name}' is not set")
+
+    val = self.as_filtered_value()
+    if not val:
+      raise RuntimeError(f"Environment variable '{self._name}' is empty")
+
+    return val
 
   def as_filtered_value(self) -> str:
     return re.sub(r'[^a-zA-Z0-9-]+', '-', self._value).strip('-')
