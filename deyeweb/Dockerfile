@@ -2,6 +2,7 @@ FROM php:8.4-apache AS baseweb
 
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
+ARG DEYE_PNG_GRAPHS_DIR
 ENV GRAPHS_PATH="/var/www/${REPO_NAME}/deyeweb/data/${DEYE_PNG_GRAPHS_DIR}"
 
 # Set remote branch name
