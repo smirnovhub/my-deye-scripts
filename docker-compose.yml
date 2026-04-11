@@ -197,6 +197,7 @@ services:
 #      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
 
       REMOTE_CACHE_SERVER_URL: http://deye-storage
+      REMOTE_GRAPH_SERVER_URL: http://deye-graph-server
 
       DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
       DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
@@ -228,6 +229,29 @@ services:
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/telebot/my-deye-scripts/telebot/data
+
+  deye-graph-server:
+    build:
+      context: .
+      dockerfile: deye_graph_server/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
+    environment:
+      DEYE_DATA_COLLECTOR_DIR: ${DEYE_DATA_COLLECTOR_DIR}
+      DEYE_LOG_NAME: deye-graph-server
+      SERVER_PORT: 80
+    image: deye-graph-server
+    container_name: deye-graph-server
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GRAPH_SERVER_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/home/deyegraphserver/deye_graph_server/data
 
   deye-storage:
     build:
