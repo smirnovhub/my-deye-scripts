@@ -132,7 +132,7 @@ services:
 
   deye-data-collector:
     build:
-      context: ../..
+      context: .
       dockerfile: data_collector/Dockerfile
       args:
         BRANCH: ${APP_BRANCH}
