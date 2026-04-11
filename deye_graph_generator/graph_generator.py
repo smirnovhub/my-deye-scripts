@@ -3,7 +3,6 @@ import asyncio
 import aiofiles
 import logging
 
-from io import BytesIO
 from datetime import date
 from pathlib import Path
 from http import HTTPStatus
@@ -100,7 +99,7 @@ class GraphGenerator:
 
         filename = os.path.join(self._data_dir, f"{graph.name}.png")
         async with aiofiles.open(filename, mode = "wb") as f:
-          await f.write(png.getvalue())
+          await f.write(png)
 
         generated_list.append(graph.name)
 
@@ -137,16 +136,11 @@ class GraphGenerator:
     graph_date: date,
     inverter: str,
     graph_name: str,
-  ) -> BytesIO:
+  ) -> bytes:
     url = urljoin(self._server_url, f"/graphs/png/{graph_date.isoformat()}/{inverter}/{graph_name}")
     session = await HttpSessionSingletonAsync.get_session()
     async with session.get(url) as response:
       if response.status != HTTPStatus.OK:
         text = await response.text()
         raise RuntimeError(f"Can't get graph PNG: response code = {response.status}, text = {text}")
-
-      content = await response.read()
-      file = BytesIO(content)
-
-    file.name = f"{graph_date}-{inverter}-{graph_name}.png"
-    return file
+      return await response.read()
