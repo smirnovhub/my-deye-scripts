@@ -190,6 +190,8 @@ services:
 #        condition: service_started
       deye-storage:
         condition: service_started
+      deye-graph-server:
+        condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: deye-proxy-master
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -258,6 +260,9 @@ services:
     build:
       context: .
       dockerfile: deye_graph_generator/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
     environment:
       TELEGRAM_BOT_API_TOKEN: ${TELEGRAM_BOT_API_TOKEN}
       TELEGRAM_PRIVATE_CHAT_ID: ${TELEGRAM_PRIVATE_CHAT_ID}
