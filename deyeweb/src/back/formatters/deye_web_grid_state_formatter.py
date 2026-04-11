@@ -21,6 +21,8 @@ class DeyeWebGridStateFormatter(DeyeWebBaseFormatter):
     style_id1 = self.style_manager.register_style(DeyeWebConstants.item_td_style)
     style_id2 = self.style_manager.register_style(DeyeWebConstants.item_td_style_with_color.format(color.color))
 
+    onclick = self.get_onclick(registers, register)
+
     cursor_style = self.get_cursor(registers, register)
     cursor_style_id = self.style_manager.register_style(cursor_style)
 
@@ -28,7 +30,7 @@ class DeyeWebGridStateFormatter(DeyeWebBaseFormatter):
       {DeyeWebUtils.begin_comment(self)}
       <table>
         <tr>
-          <td class="{style_id1} {style_id2} {cursor_style_id}">
+          <td {onclick} class="{style_id1} {style_id2} {cursor_style_id}">
             {value}
           </td>
         </tr>
