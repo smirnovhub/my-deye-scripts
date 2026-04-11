@@ -16,6 +16,7 @@ services:
       target: deyeweb
       args:
         BRANCH: ${APP_BRANCH}
+        DEYE_PNG_GRAPHS_DIR: deye-png-graphs
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -48,7 +49,7 @@ services:
       DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON: ""
       DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON: ""
       DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON: ""
-      DEYE_WEB_GRAPHS_BASE_URL: ""
+      DEYE_WEB_GRAPHS_BASE_URL: graphs/
 
       DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
       DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
@@ -104,7 +105,7 @@ services:
       DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON: ""
       DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON: ""
       DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON: ""
-      DEYE_WEB_GRAPHS_BASE_URL: ""
+      DEYE_WEB_GRAPHS_BASE_URL: graphs/
 
       DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
       DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
@@ -252,6 +253,31 @@ services:
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/deyegraphserver/deye_graph_server/data
+
+  deye-graph-generator:
+    build:
+      context: .
+      dockerfile: deye_graph_generator/Dockerfile
+    environment:
+      TELEGRAM_BOT_API_TOKEN: ${TELEGRAM_BOT_API_TOKEN}
+      TELEGRAM_PRIVATE_CHAT_ID: ${TELEGRAM_PRIVATE_CHAT_ID}
+      TELEGRAM_PUBLIC_CHAT_ID: ${TELEGRAM_PUBLIC_CHAT_ID}
+
+      REMOTE_GRAPH_SERVER_URL: http://deye-graph-server
+      DEYE_PNG_GRAPHS_DIR: deye-png-graphs
+
+      DEYE_LOG_NAME: deye-graph-generator
+    image: graph-generator
+    container_name: deye-graph-generator
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GLOBAL_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/home/graphgenerator/deye_graph_generator/data
 
   deye-storage:
     build:
