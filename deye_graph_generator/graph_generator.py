@@ -21,6 +21,7 @@ class GraphGenerator:
     logger: logging.Logger,
   ):
     self._logger = logger
+    self._format = config.DEYE_GRAPHS_FORMAT
     self._server_url = config.REMOTE_GRAPH_SERVER_URL
     self._data_dir = f"data/{config.DEYE_GRAPHS_DIR}"
 
@@ -52,13 +53,13 @@ class GraphGenerator:
     start_time = loop.time()
 
     if combined:
-      generated_list = await self._generate_png_for_inverter(
+      generated_list = await self._generate_graph_for_inverter(
         inverter = combined,
         graph_date = graph_date,
         exclude_list = [],
       )
 
-    await self._generate_png_for_inverter(
+    await self._generate_graph_for_inverter(
       inverter = master,
       graph_date = graph_date,
       exclude_list = generated_list,
@@ -67,7 +68,7 @@ class GraphGenerator:
     duration = loop.time() - start_time
     self._logger.info(f"All graphs generated in {duration:.3f}s")
 
-  async def _generate_png_for_inverter(
+  async def _generate_graph_for_inverter(
     self,
     inverter: DeyeGraphInverterData,
     graph_date: date,
@@ -88,23 +89,23 @@ class GraphGenerator:
         start_time = loop.time()
 
         try:
-          png = await self._get_graph_png(
+          image = await self._get_graph_image(
             graph_date = graph_date,
             inverter = inverter.inverter,
             graph_name = graph.name,
           )
         except Exception as e:
-          self._logger.info(f"Can't generate graph for {graph.name}: {e}")
+          self._logger.info(f"Can't generate {self._format} graph for {graph.name}: {e}")
           continue
 
-        filename = os.path.join(self._data_dir, f"{graph.name}.png")
+        filename = os.path.join(self._data_dir, f"{graph.name}.{self._format}")
         async with aiofiles.open(filename, mode = "wb") as f:
-          await f.write(png)
+          await f.write(image)
 
         generated_list.append(graph.name)
 
         duration = loop.time() - start_time
-        self._logger.info(f"Graph for {graph.name} generated in {duration:.3f}s")
+        self._logger.info(f"Graph {self._format} for {graph.name} generated in {duration:.3f}s")
 
     return generated_list
 
@@ -131,16 +132,16 @@ class GraphGenerator:
 
       return DeyeGraphInverters.from_json(text)
 
-  async def _get_graph_png(
+  async def _get_graph_image(
     self,
     graph_date: date,
     inverter: str,
     graph_name: str,
   ) -> bytes:
-    url = urljoin(self._server_url, f"/graphs/png/{graph_date.isoformat()}/{inverter}/{graph_name}")
+    url = urljoin(self._server_url, f"/graphs/{self._format}/{graph_date.isoformat()}/{inverter}/{graph_name}")
     session = await HttpSessionSingletonAsync.get_session()
     async with session.get(url) as response:
       if response.status != HTTPStatus.OK:
         text = await response.text()
-        raise RuntimeError(f"Can't get graph PNG: response code = {response.status}, text = {text}")
+        raise RuntimeError(f"Can't get graph {self._format}: response code = {response.status}, text = {text}")
       return await response.read()

@@ -2,13 +2,12 @@ import sys
 import logging
 
 from typing import List
-from env_utils import EnvUtils
-from env_var import EnvVar, LogNameEnvVar
+
+from env_var import EnvVar
+from env_vars import EnvVars
 
 class DataCollectorConfig:
   def __init__(self):
-    self.__log_name = LogNameEnvVar()
-    self.__deye_data_collector_dir = EnvVar(EnvUtils.DEYE_DATA_COLLECTOR_DIR, "", "Directory for data files")
     self.__data_collecting_interval_minutes = EnvVar("DATA_COLLECTING_INTERVAL_MINUTES", "180",
                                                      "Data collecting interval, sec")
     self.__data_retention_days = EnvVar("DATA_RETENTION_DAYS", "10", "Data retention time, days")
@@ -18,8 +17,8 @@ class DataCollectorConfig:
                                                             "Notify about connection lost interval, minutes")
 
     self.__all_vars: List[EnvVar] = [
-      self.__log_name,
-      self.__deye_data_collector_dir,
+      EnvVars.DEYE_LOG_NAME,
+      EnvVars.DEYE_DATA_COLLECTOR_DIR,
       self.__data_collecting_interval_minutes,
       self.__data_retention_days,
       self.__connection_lost_notify_after_minutes,
@@ -28,11 +27,11 @@ class DataCollectorConfig:
 
   @property
   def LOG_NAME(self) -> str:
-    return self.__log_name.value
+    return EnvVars.DEYE_LOG_NAME.value
 
   @property
   def DEYE_DATA_COLLECTOR_DIR(self) -> str:
-    return self.__deye_data_collector_dir.as_not_empty_filtered_value()
+    return EnvVars.DEYE_DATA_COLLECTOR_DIR.value
 
   @property
   def DATA_COLLECTING_INTERVAL_MINUTES(self) -> int:

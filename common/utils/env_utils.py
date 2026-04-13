@@ -2,7 +2,6 @@ import os
 import re
 
 class EnvUtils:
-
   IS_TEST_RUN = "IS_TEST_RUN"
 
   DEYE_LOG_NAME = "DEYE_LOG_NAME"
@@ -25,6 +24,7 @@ class EnvUtils:
   DEYE_WEB_GRAPHS_BASE_URL = "DEYE_WEB_GRAPHS_BASE_URL"
   DEYE_DATA_COLLECTOR_DIR = "DEYE_DATA_COLLECTOR_DIR"
   DEYE_GRAPHS_DIR = "DEYE_GRAPHS_DIR"
+  DEYE_GRAPHS_FORMAT = "DEYE_GRAPHS_FORMAT"
 
   REMOTE_CACHE_SERVER_URL = "REMOTE_CACHE_SERVER_URL"
   REMOTE_GRAPH_SERVER_URL = "REMOTE_GRAPH_SERVER_URL"
@@ -254,6 +254,21 @@ class EnvUtils:
     if not dir_name:
       raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GRAPHS_DIR}' is not set")
     return dir_name
+
+  @staticmethod
+  def get_deye_graphs_format() -> str:
+    formats = ["png", "svg", "pdf"]
+    format = os.getenv(EnvUtils.DEYE_GRAPHS_FORMAT, '').lower().strip()
+    if not format:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GRAPHS_FORMAT}' is not set. "
+                         f"Pls use one of them: {', '.join(formats).upper()}.")
+
+    if format not in formats:
+      raise RuntimeError(f"Unsupported graph format: '{format}'. "
+                         f"Environment variable '{EnvUtils.DEYE_GRAPHS_FORMAT}' "
+                         f"supports only {', '.join(formats).upper()}.")
+
+    return format
 
   @staticmethod
   def is_tests_on() -> bool:

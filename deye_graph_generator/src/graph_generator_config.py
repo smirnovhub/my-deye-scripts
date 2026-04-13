@@ -2,36 +2,38 @@ import sys
 import logging
 
 from typing import List
-from env_var import EnvVar, LogNameEnvVar
-from env_utils import EnvUtils
+from env_var import EnvVar
+from env_vars import EnvVars
 
 class GraphGeneratorConfig:
   def __init__(self):
-    self.__log_name = LogNameEnvVar()
-    self.__remote_graph_server_url = EnvVar(EnvUtils.REMOTE_GRAPH_SERVER_URL, "", "Remote graph server URL")
-    self.__deye_graphs_dir = EnvVar(EnvUtils.DEYE_GRAPHS_DIR, "", "Directory for PNG files")
     self.__graphs_generate_period_minutes = EnvVar("PERIOD", "10", "Graphs generate period, minutes")
     self.__graphs_generate_delay_sec = EnvVar("DELAY", "30", "Graphs generate delay, sec")
 
     self.__all_vars: List[EnvVar] = [
-      self.__log_name,
-      self.__remote_graph_server_url,
-      self.__deye_graphs_dir,
+      EnvVars.DEYE_LOG_NAME,
+      EnvVars.REMOTE_GRAPH_SERVER_URL,
+      EnvVars.DEYE_GRAPHS_DIR,
+      EnvVars.DEYE_GRAPHS_FORMAT,
       self.__graphs_generate_period_minutes,
       self.__graphs_generate_delay_sec,
     ]
 
   @property
   def LOG_NAME(self) -> str:
-    return self.__log_name.as_not_empty_value()
+    return EnvVars.DEYE_LOG_NAME.value
 
   @property
   def REMOTE_GRAPH_SERVER_URL(self) -> str:
-    return self.__remote_graph_server_url.as_not_empty_value()
+    return EnvVars.REMOTE_GRAPH_SERVER_URL.value
 
   @property
   def DEYE_GRAPHS_DIR(self) -> str:
-    return self.__deye_graphs_dir.as_not_empty_filtered_value()
+    return EnvVars.DEYE_GRAPHS_DIR.value
+
+  @property
+  def DEYE_GRAPHS_FORMAT(self) -> str:
+    return EnvVars.DEYE_GRAPHS_FORMAT.value
 
   @property
   def PERIOD(self) -> int:
