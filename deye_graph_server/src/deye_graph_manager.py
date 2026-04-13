@@ -228,6 +228,7 @@ class DeyeGraphManager:
       spine_width = 1.3
       for spine in ax.spines.values():
         spine.set_linewidth(spine_width)
+        spine.set_zorder(10)
 
       # Get unit of measurement using the correctly cased register name
       sample_data = df[df['register'] == actual_graph_name]
@@ -250,6 +251,7 @@ class DeyeGraphManager:
                 label = unit,
                 linewidth = graph_line_width,
                 color = self._get_color(unit),
+                zorder = 5 if unit == 'master' else 3,
               )
 
         ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
