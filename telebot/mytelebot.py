@@ -198,7 +198,7 @@ class MyTelebot:
       TelebotMenuSyncTime(bot, runner),
       TelebotMenuRestart(bot),
       TelebotMenuRevert(bot),
-      TelebotMenuUpdate(bot),
+      TelebotMenuUpdate(bot, runner),
       TelebotMenuTest(bot),
     ]
 
