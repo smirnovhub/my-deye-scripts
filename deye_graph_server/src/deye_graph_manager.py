@@ -468,14 +468,16 @@ class DeyeGraphManager:
                       graph_name = graph.name,
                     )
 
-                  with DebugTimerWithLog(f"Adding graph to PDF"):
+                  with DebugTimerWithLog("Adding graph to PDF"):
                     pdf.savefig(fig)
+                except Exception:
+                  self._logger.error(f"Error generating graph for {graph_date}/{inv_info.inverter}/{graph.name}: {e}")
+                  continue
                 finally:
-                  with DebugTimerWithLog(f"Graph data cleanup"):
-                    if fig:
+                  if fig:
+                    with DebugTimerWithLog("Graph data cleanup"):
                       fig.clear()
-
-                    plt.close(fig)
+                      plt.close(fig)
 
         buf.seek(0)
         return buf.getvalue()
