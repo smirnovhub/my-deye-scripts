@@ -11,6 +11,7 @@ class DeyeWebGraphsConfig:
   def __init__(self):
     registers = DeyeWebConstants.registers
     self._graphs_base_url = EnvUtils.get_deye_web_graphs_base_url()
+    self._graphs_format = EnvUtils.get_deye_graphs_format()
     regs: List[DeyeRegister] = [
       registers.battery_current_register,
       registers.battery_power_register,
@@ -30,10 +31,10 @@ class DeyeWebGraphsConfig:
     ]
 
     self._urls = self._get_graph_names(regs)
-    self._urls[registers.grid_state_register.name] = f"{registers.grid_state_code_register.name}.png"
+    self._urls[registers.grid_state_register.name] = f"{registers.grid_state_code_register.name}.{self._graphs_format}"
 
   def _get_graph_names(self, registers: List[DeyeRegister]) -> Dict[str, str]:
-    return {register.name: f"{register.name}.png" for register in registers}
+    return {register.name: f"{register.name}.{self._graphs_format}" for register in registers}
 
   def get_url_for_register(self, register_name: str) -> str:
     if not self._graphs_base_url:
