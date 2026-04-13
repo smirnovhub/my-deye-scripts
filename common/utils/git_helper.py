@@ -56,6 +56,12 @@ class GitHelper:
       'pull',
     )
 
+  def submodule_update(self) -> str:
+    return self._run_git_command_and_get_result(
+      ["submodule", "update", "--init", "--recursive"],
+      'submodule update',
+    )
+
   def revert_to_revision(self, commit_hash: str) -> str:
     return self._run_git_command_and_get_result(
       ['reset', '--hard', commit_hash],

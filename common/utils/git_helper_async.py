@@ -56,6 +56,12 @@ class GitHelperAsync:
       'pull',
     )
 
+  async def submodule_update(self) -> str:
+    return await self._run_git_command_and_get_result_async(
+      ["submodule", "update", "--init", "--recursive"],
+      'submodule update',
+    )
+
   async def revert_to_revision(self, commit_hash: str) -> str:
     return await self._run_git_command_and_get_result_async(
       ['reset', '--hard', commit_hash],
