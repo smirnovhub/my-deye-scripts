@@ -113,11 +113,12 @@ class DeyeGraphsDataProvider:
     file.name = f"{graph_date}-{inverter}-{graph_name}.png"
     return file
 
-  def get_graph_raw_data(
+  def get_graph_data(
     self,
     graph_date: date,
+    format: str,
   ) -> BytesIO:
-    url = urljoin(self._server_url, f"/graphs/csv/{graph_date.isoformat()}")
+    url = urljoin(self._server_url, f"/graphs/{format}/{graph_date.isoformat()}")
     with self._session.get(url) as response:
       if response.status_code != HTTPStatus.OK:
         raise RuntimeError(TelebotUtils.get_response_message(response.text))
