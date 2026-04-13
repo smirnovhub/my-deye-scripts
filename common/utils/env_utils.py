@@ -24,7 +24,7 @@ class EnvUtils:
   DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON = "DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON"
   DEYE_WEB_GRAPHS_BASE_URL = "DEYE_WEB_GRAPHS_BASE_URL"
   DEYE_DATA_COLLECTOR_DIR = "DEYE_DATA_COLLECTOR_DIR"
-  DEYE_PNG_GRAPHS_DIR = "DEYE_PNG_GRAPHS_DIR"
+  DEYE_GRAPHS_DIR = "DEYE_GRAPHS_DIR"
 
   REMOTE_CACHE_SERVER_URL = "REMOTE_CACHE_SERVER_URL"
   REMOTE_GRAPH_SERVER_URL = "REMOTE_GRAPH_SERVER_URL"
@@ -248,11 +248,11 @@ class EnvUtils:
     return dir_name
 
   @staticmethod
-  def get_deye_png_graphs_dir() -> str:
-    dir_name = os.getenv(EnvUtils.DEYE_PNG_GRAPHS_DIR, '').strip()
+  def get_deye_graphs_dir() -> str:
+    dir_name = os.getenv(EnvUtils.DEYE_GRAPHS_DIR, '').strip()
     dir_name = re.sub(r'[^a-zA-Z0-9-]+', '-', dir_name).strip('-')
     if not dir_name:
-      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_PNG_GRAPHS_DIR}' is not set")
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GRAPHS_DIR}' is not set")
     return dir_name
 
   @staticmethod

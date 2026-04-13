@@ -22,7 +22,7 @@ class GraphGenerator:
   ):
     self._logger = logger
     self._server_url = config.REMOTE_GRAPH_SERVER_URL
-    self._data_dir = f"data/{config.DEYE_PNG_GRAPHS_DIR}"
+    self._data_dir = f"data/{config.DEYE_GRAPHS_DIR}"
 
     data_dir = Path(self._data_dir)
     data_dir.mkdir(parents = True, exist_ok = True)
