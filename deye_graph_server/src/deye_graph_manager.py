@@ -12,6 +12,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.figure import Figure
+from matplotlib.transforms import ScaledTranslation
 
 import pandas as pd
 from pathlib import Path
@@ -215,9 +216,12 @@ class DeyeGraphManager:
       if not actual_graph_name:
         raise RuntimeError(f"register '{graph_name}' not found in data")
 
+      # Set font type to 42 (TrueType) to enable text search and embedding
+      matplotlib.rcParams['pdf.fonttype'] = 42
+
       # Create figure and axis with A4 proportions
       # Use Figure object directly to avoid global state memory leaks
-      fig = Figure(figsize = (11.69, 8.27))
+      fig = Figure(figsize = (297 / 25.4, 210 / 25.4))
       ax = fig.add_subplot(111)
 
       # Make plot border (spines) thicker
@@ -322,6 +326,11 @@ class DeyeGraphManager:
       # Applying tick parameters via axis object
       ax.tick_params(axis = 'x', rotation = 90, labelsize = 9)
       ax.tick_params(axis = 'y', rotation = 0, labelsize = 9)
+
+      # Apply a fine-tuned horizontal offset (in points) to align X-axis labels perfectly
+      offset = ScaledTranslation(1 / 72, 0, fig.dpi_scale_trans)
+      for label in ax.get_xticklabels():
+        label.set_transform(label.get_transform() + offset)
 
       # --- Y-axis limits logic ---
       # Get all y-values to find absolute min and max for the current plot
