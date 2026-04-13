@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.figure import Figure
 from matplotlib.transforms import ScaledTranslation
+from matplotlib.backends.backend_pdf import PdfPages
 
 import pandas as pd
 from pathlib import Path
@@ -166,6 +167,187 @@ class DeyeGraphManager:
 
     return "steelblue"
 
+  def _prepare_figure_object(
+    self,
+    df: pd.DataFrame,
+    graph_date: date,
+    inverter: str,
+    graph_name: str,
+  ) -> Figure:
+    # Normalize the input graph_name for comparison (lowercase and no underscores)
+    target_name_norm = graph_name.lower().replace("_", " ").strip()
+
+    threshold = self._thresholds.get(target_name_norm)
+
+    if threshold is not None:
+      with DebugTimerWithLog("Trimming data"):
+        df = self._trim_by_register(
+          df = df,
+          graph_name = target_name_norm,
+          threshold = threshold,
+        )
+
+    graph_line_width = 1.5
+
+    # Find the actual register name in the CSV to keep original casing in title
+    available_params: List[str] = df['register'].unique().tolist()
+    actual_graph_name = None
+
+    for p in available_params:
+      if p.lower().replace("_", " ").strip() == target_name_norm:
+        actual_graph_name = p
+        break
+
+    if not actual_graph_name:
+      raise RuntimeError(f"register '{graph_name}' not found in data")
+
+    # Create figure and axis with A4 proportions
+    # Use Figure object directly to avoid global state memory leaks
+    fig = Figure(figsize = (297 / 25.4, 210 / 25.4))
+    ax = fig.add_subplot(111)
+
+    # Make plot border (spines) thicker
+    spine_width = 1.3
+    for spine in ax.spines.values():
+      spine.set_linewidth(spine_width)
+      spine.set_zorder(10)
+
+    # Get unit of measurement using the correctly cased register name
+    sample_data = df[df['register'] == actual_graph_name]
+    unit_label = ""
+    if not sample_data.empty and 'unit' in df.columns:
+      unit_val = sample_data['unit'].iloc[0]
+      if pd.notna(unit_val):
+        unit_label = f", {unit_val.replace('deg', '°C')}"
+
+    if inverter == "combined":
+      # Logic for comparing multiple physical inverters on one plot
+      physical_units = [inv for inv in df['inverter'].unique() if inv != 'all']
+      for unit in physical_units:
+        unit_data = df[(df['inverter'] == unit) & (df['register'] == actual_graph_name)]
+        if not unit_data.empty:
+          with DebugTimerWithLog("Plot combined graph"):
+            ax.plot(
+              unit_data['timestamp'],
+              unit_data['value'],
+              label = unit,
+              linewidth = graph_line_width,
+              color = self._get_color(unit),
+              zorder = 5 if unit == 'master' else 3,
+            )
+
+      ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
+    else:
+      # Logic for a single inverter
+      plot_data = df[(df['inverter'] == inverter) & (df['register'] == actual_graph_name)]
+      if plot_data.empty:
+        raise RuntimeError(f"plot data for {inverter} is empty")
+
+      with DebugTimerWithLog("Plot regular graph"):
+        ax.plot(
+          plot_data['timestamp'],
+          plot_data['value'],
+          label = inverter,
+          color = self._get_color(inverter),
+          linewidth = graph_line_width,
+        )
+
+      ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
+
+    # Configure X-axis time format and grid intervals
+    time_min: datetime = df['timestamp'].min()
+    time_max: datetime = df['timestamp'].max()
+    time_delta = (time_max - time_min).total_seconds()
+
+    # Raise error if there is not enough data to form an interval
+    if pd.isna(time_min) or pd.isna(time_max) or time_min == time_max:
+      raise RuntimeError(f"not enough data points for {graph_date} to build a time interval")
+
+    left_limit: float = mdates.date2num(time_min)
+    right_limit: float = mdates.date2num(time_max)
+
+    # Remove empty space on the sides
+    ax.set_xlim(left_limit, right_limit)
+
+    major_locator: mdates.DateLocator
+
+    # Define intervals based on time span
+    if time_delta < 3600:
+      major_locator = mdates.MinuteLocator(byminute = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55])
+      ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval = 1))
+    elif time_delta < 3 * 3600:
+      major_locator = mdates.MinuteLocator(byminute = [0, 15, 30, 45])
+      ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [5, 10, 20, 25, 35, 40, 50, 55]))
+    elif time_delta < 7 * 3600:
+      major_locator = mdates.MinuteLocator(byminute = [0, 30])
+      ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [10, 20, 40, 50]))
+    else:
+      major_locator = mdates.HourLocator(interval = 1)
+      ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [30]))
+
+    # Add start and end times, but filter standard ticks that are too close (15 min threshold)
+    if time_delta < 3600:
+      min_dist = 5 / (24 * 60) # 5 minutes threshold for short spans
+    else:
+      min_dist = 15 / (24 * 60) # 15 minutes threshold for long spans
+
+    std_ticks = major_locator.tick_values(time_min, time_max) # type: ignore
+    final_ticks = [t for t in std_ticks if abs(t - left_limit) > min_dist and abs(t - right_limit) > min_dist]
+    final_ticks.extend([left_limit, right_limit])
+
+    ax.set_xticks(sorted(final_ticks))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+
+    # Generation time watermark
+    gen_time = datetime.now().strftime("Generated: %Y-%m-%d %H:%M:%S")
+    ax.set_xlabel(gen_time, fontsize = 7, color = 'black', loc = 'right', labelpad = 15)
+
+    # Basic styling
+    ax.grid(True, which = 'major', linestyle = '--', alpha = 0.84)
+    ax.grid(True, which = 'minor', linestyle = ':', alpha = 0.6)
+    ax.legend(loc = 'upper left', fontsize = 10, framealpha = 0.8)
+
+    # Applying tick parameters via axis object
+    ax.tick_params(axis = 'x', rotation = 90, labelsize = 9)
+    ax.tick_params(axis = 'y', rotation = 0, labelsize = 9)
+
+    # Apply a fine-tuned horizontal offset (in points) to align X-axis labels perfectly
+    offset = ScaledTranslation(1 / 72, 0, fig.dpi_scale_trans)
+    for label in ax.get_xticklabels():
+      label.set_transform(label.get_transform() + offset)
+
+    # --- Y-axis limits logic ---
+    # Get all y-values to find absolute min and max for the current plot
+    all_y_values = [] # type: ignore
+    for line in ax.get_lines():
+      all_y_values.extend(line.get_ydata()) # type: ignore
+
+    if all_y_values:
+      y_min_val = min(all_y_values)
+      y_max_val = max(all_y_values)
+
+      # Get default ticks that Matplotlib calculated
+      std_y_ticks = ax.get_yticks()
+
+      # Set threshold for Y-axis (e.g., 5% of range) to avoid overlapping
+      y_range = y_max_val - y_min_val if y_max_val != y_min_val else 1
+      y_threshold = y_range * 0.05
+
+      # Filter out standard ticks too close to our boundaries
+      final_y_ticks = [t for t in std_y_ticks if abs(t - y_min_val) > y_threshold and abs(t - y_max_val) > y_threshold]
+
+      final_y_ticks.extend([y_min_val, y_max_val])
+      ax.set_yticks(sorted(final_y_ticks))
+
+      # --- Prevention of Y-min and X-min collision ---
+      # If the lowest Y-label is too close to the X-axis,
+      # Matplotlib usually handles it, but we can pad the Y-axis slightly
+      ax.set_ylim(y_min_val - (y_range * 0.02), y_max_val + (y_range * 0.02))
+
+    # Layout adjustment to prevent clipping
+    fig.tight_layout(pad = 1.5)
+    return fig
+
   def generate_graph_image(
     self,
     graph_date: date,
@@ -181,196 +363,43 @@ class DeyeGraphManager:
       raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
 
     fig: Optional[Figure] = None
-    buf: Optional[io.BytesIO] = None
 
-    graph_line_width = 1.5
+    # Load data and ensure timestamp is parsed
+    with DebugTimerWithLog("CSV reading"):
+      with DeyeFileWithLock(file_path, "r") as f:
+        df = pd.read_csv(f, parse_dates = ['timestamp'])
+
+    # Set font type to 42 (TrueType) to enable text search and embedding
+    matplotlib.rcParams['pdf.fonttype'] = 42
+    matplotlib.rcParams['pdf.compression'] = 9
+
+    metadata = {
+      "Title": f"Deye Inverter Graph for {graph_date}",
+      "Author": "Dimitras Papandopoulos",
+      "Subject": f"Inverter: {inverter}, Register: {graph_name}",
+      "Keywords": "Deye, Solar, PV, Python, Matplotlib"
+    }
+
+    buf = io.BytesIO()
+    fig: Optional[Figure] = None
 
     try:
-      # Load data and ensure timestamp is parsed
-      with DebugTimerWithLog("CSV reading"):
-        with DeyeFileWithLock(file_path, "r") as f:
-          df = pd.read_csv(f, parse_dates = ['timestamp'])
-
-      # Normalize the input graph_name for comparison (lowercase and no underscores)
-      target_name_norm = graph_name.lower().replace("_", " ").strip()
-
-      threshold = self._thresholds.get(target_name_norm)
-
-      if threshold is not None:
-        with DebugTimerWithLog("Trimming data"):
-          df = self._trim_by_register(
-            df = df,
-            graph_name = target_name_norm,
-            threshold = threshold,
-          )
-
-      # Find the actual register name in the CSV to keep original casing in title
-      available_params: List[str] = df['register'].unique().tolist()
-      actual_graph_name = None
-
-      for p in available_params:
-        if p.lower().replace("_", " ").strip() == target_name_norm:
-          actual_graph_name = p
-          break
-
-      if not actual_graph_name:
-        raise RuntimeError(f"register '{graph_name}' not found in data")
-
-      # Set font type to 42 (TrueType) to enable text search and embedding
-      matplotlib.rcParams['pdf.fonttype'] = 42
-
-      # Create figure and axis with A4 proportions
-      # Use Figure object directly to avoid global state memory leaks
-      fig = Figure(figsize = (297 / 25.4, 210 / 25.4))
-      ax = fig.add_subplot(111)
-
-      # Make plot border (spines) thicker
-      spine_width = 1.3
-      for spine in ax.spines.values():
-        spine.set_linewidth(spine_width)
-        spine.set_zorder(10)
-
-      # Get unit of measurement using the correctly cased register name
-      sample_data = df[df['register'] == actual_graph_name]
-      unit_label = ""
-      if not sample_data.empty and 'unit' in df.columns:
-        unit_val = sample_data['unit'].iloc[0]
-        if pd.notna(unit_val):
-          unit_label = f", {unit_val.replace('deg', '°C')}"
-
-      if inverter == "combined":
-        # Logic for comparing multiple physical inverters on one plot
-        physical_units = [inv for inv in df['inverter'].unique() if inv != 'all']
-        for unit in physical_units:
-          unit_data = df[(df['inverter'] == unit) & (df['register'] == actual_graph_name)]
-          if not unit_data.empty:
-            with DebugTimerWithLog("Plot combined graph"):
-              ax.plot(
-                unit_data['timestamp'],
-                unit_data['value'],
-                label = unit,
-                linewidth = graph_line_width,
-                color = self._get_color(unit),
-                zorder = 5 if unit == 'master' else 3,
-              )
-
-        ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
-      else:
-        # Logic for a single inverter
-        plot_data = df[(df['inverter'] == inverter) & (df['register'] == actual_graph_name)]
-        if plot_data.empty:
-          raise RuntimeError(f"plot data for {inverter} is empty")
-
-        with DebugTimerWithLog("Plot regular graph"):
-          ax.plot(
-            plot_data['timestamp'],
-            plot_data['value'],
-            label = inverter,
-            color = self._get_color(inverter),
-            linewidth = graph_line_width,
-          )
-
-        ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
-
-      # Configure X-axis time format and grid intervals
-      time_min: datetime = df['timestamp'].min()
-      time_max: datetime = df['timestamp'].max()
-      time_delta = (time_max - time_min).total_seconds()
-
-      # Raise error if there is not enough data to form an interval
-      if pd.isna(time_min) or pd.isna(time_max) or time_min == time_max:
-        raise RuntimeError(f"not enough data points for {graph_date} to build a time interval")
-
-      left_limit: float = mdates.date2num(time_min)
-      right_limit: float = mdates.date2num(time_max)
-
-      # Remove empty space on the sides
-      ax.set_xlim(left_limit, right_limit)
-
-      major_locator: mdates.DateLocator
-
-      # Define intervals based on time span
-      if time_delta < 3600:
-        major_locator = mdates.MinuteLocator(byminute = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55])
-        ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval = 1))
-      elif time_delta < 3 * 3600:
-        major_locator = mdates.MinuteLocator(byminute = [0, 15, 30, 45])
-        ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [5, 10, 20, 25, 35, 40, 50, 55]))
-      elif time_delta < 7 * 3600:
-        major_locator = mdates.MinuteLocator(byminute = [0, 30])
-        ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [10, 20, 40, 50]))
-      else:
-        major_locator = mdates.HourLocator(interval = 1)
-        ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [30]))
-
-      # Add start and end times, but filter standard ticks that are too close (15 min threshold)
-      if time_delta < 3600:
-        min_dist = 5 / (24 * 60) # 5 minutes threshold for short spans
-      else:
-        min_dist = 15 / (24 * 60) # 15 minutes threshold for long spans
-
-      std_ticks = major_locator.tick_values(time_min, time_max) # type: ignore
-      final_ticks = [t for t in std_ticks if abs(t - left_limit) > min_dist and abs(t - right_limit) > min_dist]
-      final_ticks.extend([left_limit, right_limit])
-
-      ax.set_xticks(sorted(final_ticks))
-      ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-
-      # Generation time watermark
-      gen_time = datetime.now().strftime("Generated: %Y-%m-%d %H:%M:%S")
-      ax.set_xlabel(gen_time, fontsize = 7, color = 'black', loc = 'right', labelpad = 15)
-
-      # Basic styling
-      ax.grid(True, which = 'major', linestyle = '--', alpha = 0.84)
-      ax.grid(True, which = 'minor', linestyle = ':', alpha = 0.6)
-      ax.legend(loc = 'upper left', fontsize = 10, framealpha = 0.8)
-
-      # Applying tick parameters via axis object
-      ax.tick_params(axis = 'x', rotation = 90, labelsize = 9)
-      ax.tick_params(axis = 'y', rotation = 0, labelsize = 9)
-
-      # Apply a fine-tuned horizontal offset (in points) to align X-axis labels perfectly
-      offset = ScaledTranslation(1 / 72, 0, fig.dpi_scale_trans)
-      for label in ax.get_xticklabels():
-        label.set_transform(label.get_transform() + offset)
-
-      # --- Y-axis limits logic ---
-      # Get all y-values to find absolute min and max for the current plot
-      all_y_values = [] # type: ignore
-      for line in ax.get_lines():
-        all_y_values.extend(line.get_ydata()) # type: ignore
-
-      if all_y_values:
-        y_min_val = min(all_y_values)
-        y_max_val = max(all_y_values)
-
-        # Get default ticks that Matplotlib calculated
-        std_y_ticks = ax.get_yticks()
-
-        # Set threshold for Y-axis (e.g., 5% of range) to avoid overlapping
-        y_range = y_max_val - y_min_val if y_max_val != y_min_val else 1
-        y_threshold = y_range * 0.05
-
-        # Filter out standard ticks too close to our boundaries
-        final_y_ticks = [
-          t for t in std_y_ticks if abs(t - y_min_val) > y_threshold and abs(t - y_max_val) > y_threshold
-        ]
-
-        final_y_ticks.extend([y_min_val, y_max_val])
-        ax.set_yticks(sorted(final_y_ticks))
-
-        # --- Prevention of Y-min and X-min collision ---
-        # If the lowest Y-label is too close to the X-axis,
-        # Matplotlib usually handles it, but we can pad the Y-axis slightly
-        ax.set_ylim(y_min_val - (y_range * 0.02), y_max_val + (y_range * 0.02))
-
-      # Layout adjustment to prevent clipping
-      fig.tight_layout()
+      fig = self._prepare_figure_object(
+        df = df,
+        graph_date = graph_date,
+        inverter = inverter,
+        graph_name = graph_name,
+      )
 
       # Save to memory buffer
       with DebugTimerWithLog(f"Image {format} generation"):
-        buf = io.BytesIO()
-        fig.savefig(buf, format = format, dpi = 300)
+        fig.savefig(
+          buf,
+          format = format,
+          dpi = 300,
+          metadata = metadata,
+        )
+
         buf.seek(0)
         return buf.getvalue()
     except Exception as e:
@@ -380,6 +409,81 @@ class DeyeGraphManager:
       # Explicitly clean up figure and call garbage collector
       if fig:
         fig.clear()
+
+      buf.close()
+
+      with DebugTimerWithLog("Cleanup & GC"):
+        plt.close('all')
+        gc.collect()
+
+  def generate_full_report_pdf(self, graph_date: date) -> bytes:
+    """
+    Generates a single multipage PDF using the internal plotting logic.
+    """
+    # Set font type to 42 (TrueType) to enable text search and embedding
+    matplotlib.rcParams['pdf.fonttype'] = 42
+    matplotlib.rcParams['pdf.compression'] = 9
+
+    # Construct file path from date
+    file_name = f"{graph_date.isoformat()}.csv"
+    file_path = os.path.join(self._data_path, file_name)
+
+    if not os.path.exists(file_path):
+      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
+
+    fig: Optional[Figure] = None
+
+    # Load data and ensure timestamp is parsed
+    with DebugTimerWithLog("CSV reading"):
+      with DeyeFileWithLock(file_path, "r") as f:
+        df = pd.read_csv(f, parse_dates = ['timestamp'])
+
+    inverters_data = self.get_inverters_by_date(graph_date)
+
+    metadata = {
+      "Title": f"Deye Inverter Graphs for {graph_date}",
+      "Author": "Dimitras Papandopoulos",
+      "Subject": "Deye Full Report PDF",
+      "Keywords": "Deye, Solar, PV, Python, Matplotlib"
+    }
+
+    buf = io.BytesIO()
+    fig: Optional[Figure] = None
+
+    try:
+      with DebugTimerWithLog("Full PDF report generation"):
+        with PdfPages(buf, keep_empty = False, metadata = metadata) as pdf:
+          for inv_info in inverters_data.inverters:
+            for group in inv_info.groups:
+              for graph in group.graphs:
+
+                fig = None
+
+                try:
+                  with DebugTimerWithLog(f"Generate PDF graph for {inv_info.inverter} {graph.name}"):
+                    fig = self._prepare_figure_object(
+                      df = df,
+                      graph_date = graph_date,
+                      inverter = inv_info.inverter,
+                      graph_name = graph.name,
+                    )
+
+                  with DebugTimerWithLog(f"Adding graph to PDF"):
+                    pdf.savefig(fig)
+                finally:
+                  with DebugTimerWithLog(f"Graph data cleanup"):
+                    if fig:
+                      fig.clear()
+
+                    plt.close(fig)
+
+        buf.seek(0)
+        return buf.getvalue()
+    except Exception as e:
+      self._logger.error(f"Error generating full PDF report for {graph_date}: {e}")
+      raise
+    finally:
+      # Explicitly clean up figure and call garbage collector
       if buf:
         buf.close()
 

@@ -130,9 +130,14 @@ async def get_graphs_png(graph_date: str, inverter: str, graph_name: str):
     "png",
   )
 
+  filename = f"{graph_date}_{inverter}_{graph_name}.png"
+
   return Response(
     content = image_bytes,
     media_type = "image/png",
+    headers = {
+      "Content-Disposition": f'inline; filename="{filename}"',
+    },
   )
 
 @app.get("/graphs/svg/{graph_date}/{inverter}/{graph_name}", tags = ["Graphs Operations"])
@@ -150,9 +155,14 @@ async def get_graphs_svg(graph_date: str, inverter: str, graph_name: str):
     "svg",
   )
 
+  filename = f"{graph_date}_{inverter}_{graph_name}.svg"
+
   return Response(
     content = image_bytes,
     media_type = "image/svg+xml",
+    headers = {
+      "Content-Disposition": f'inline; filename="{filename}"',
+    },
   )
 
 @app.get("/graphs/pdf/{graph_date}/{inverter}/{graph_name}", tags = ["Graphs Operations"])
@@ -170,9 +180,32 @@ async def get_graphs_pdf(graph_date: str, inverter: str, graph_name: str):
     "pdf",
   )
 
+  filename = f"{graph_date}_{inverter}_{graph_name}.pdf"
+
   return Response(
     content = image_bytes,
     media_type = "application/pdf",
+    headers = {
+      "Content-Disposition": f'inline; filename="{filename}"',
+    },
+  )
+
+@app.get("/graphs/pdf/{graph_date}", tags = ["Graphs Operations"])
+async def get_full_report_pdf(graph_date: str):
+  target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
+
+  loop = asyncio.get_running_loop()
+
+  image_bytes = await loop.run_in_executor(None, graph_manager.generate_full_report_pdf, target_date)
+
+  filename = f"{graph_date}.pdf"
+
+  return Response(
+    content = image_bytes,
+    media_type = "application/pdf",
+    headers = {
+      "Content-Disposition": f'inline; filename="{filename}"',
+    },
   )
 
 @app.get("/graphs/csv/{graph_date}", tags = ["Graphs Operations"])
