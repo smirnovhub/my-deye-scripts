@@ -19,6 +19,7 @@ class DeyeGraphsDataProvider:
     self._inverters: List[DeyeGraphInverterData] = []
     self._selected_date: Optional[date] = None
     self._selected_inverter: Optional[str] = None
+    self._selected_group: Optional[str] = None
     self._selected_graph_name: Optional[str] = None
 
   @property
@@ -49,9 +50,20 @@ class DeyeGraphsDataProvider:
       raise RuntimeError("Inverter is not selected")
     return self._selected_inverter
 
+  @property
+  def selected_group(self) -> str:
+    # Return the currently selected group name
+    if not self._selected_group:
+      raise RuntimeError("Group is not selected")
+    return self._selected_group
+
   def set_selected_inverter(self, value: str) -> None:
     # Update the selected inverter value
     self._selected_inverter = value
+
+  def set_selected_group(self, value: str) -> None:
+    # Update the selected group value
+    self._selected_group = value
 
   @property
   def selected_graph_name(self) -> str:
@@ -97,20 +109,21 @@ class DeyeGraphsDataProvider:
       self._inverters = DeyeGraphInverters.from_json(response.text).inverters
       return self._inverters
 
-  def get_graph_png(
+  def get_graph_image(
     self,
     graph_date: date,
     inverter: str,
     graph_name: str,
   ) -> BytesIO:
-    url = urljoin(self._server_url, f"/graphs/png/{graph_date.isoformat()}/{inverter}/{graph_name}")
+    format = EnvUtils.get_deye_graphs_format()
+    url = urljoin(self._server_url, f"/graphs/{format}/{graph_date.isoformat()}/{inverter}/{graph_name}")
     with self._session.get(url) as response:
       if response.status_code != HTTPStatus.OK:
         raise RuntimeError(TelebotUtils.get_response_message(response.text))
 
       file = BytesIO(response.content)
 
-    file.name = f"{graph_date}-{inverter}-{graph_name}.png"
+    file.name = f"{graph_date}-{inverter}-{graph_name}.{format}"
     return file
 
   def get_graph_data(

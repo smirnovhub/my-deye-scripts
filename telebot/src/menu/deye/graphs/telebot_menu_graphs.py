@@ -8,6 +8,7 @@ from deye_graphs_data_provider import DeyeGraphsDataProvider
 from deye_graphs_main_page import DeyeGraphsMainPage
 from deye_graphs_graph_name_page import DeyeGraphsGraphNamePage
 from deye_graphs_inverter_page import DeyeGraphsInverterPage
+from deye_graphs_group_page import DeyeGraphsGroupPage
 
 class TelebotMenuGraphs(TelebotMenuItemHandlerSync):
   def __init__(self, bot: telebot.TeleBot):
@@ -56,6 +57,10 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerSync):
     navigator.register_pages([
       main_page,
       DeyeGraphsInverterPage(
+        provider = self._provider,
+        title = title,
+      ),
+      DeyeGraphsGroupPage(
         provider = self._provider,
         title = title,
       ),

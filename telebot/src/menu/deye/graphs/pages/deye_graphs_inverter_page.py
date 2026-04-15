@@ -51,10 +51,7 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       buttons.append(
         self.register_button_handler(
           ButtonNode(inverter.inverter.title()),
-          self._create_navigation_handler(
-            target_page = DeyeGraphsPage.graph_name,
-            inverter = inverter.inverter,
-          ),
+          self._create_navigation_handler(inverter = inverter.inverter),
         ))
 
     buttons.append(BreakButtonNode())
@@ -134,10 +131,10 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(f"{self._title} cancel")
 
-  def _create_navigation_handler(self, target_page: Enum, inverter: str):
+  def _create_navigation_handler(self, inverter: str):
     def handler(navigator: TelebotPageNavigator) -> None:
       self._provider.set_selected_inverter(inverter)
-      navigator.navigate(target_page)
+      navigator.navigate(DeyeGraphsPage.group)
 
     return handler
 
