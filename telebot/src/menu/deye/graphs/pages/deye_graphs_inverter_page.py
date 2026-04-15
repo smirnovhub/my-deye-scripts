@@ -107,10 +107,6 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       navigator.stop(f"{self._title} chat id is not set")
       return
 
-    if not self._acquire_lock():
-      navigator.stop(f"{self._title} already working")
-      return
-
     navigator.stop(f"{self._title} raw data")
 
     try:
