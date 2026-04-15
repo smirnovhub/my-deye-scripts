@@ -1,4 +1,6 @@
 *.txt
+*.pdf
+*.svg
 *.json
 *.log
 *.csv
