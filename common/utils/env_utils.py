@@ -25,6 +25,7 @@ class EnvUtils:
   DEYE_DATA_COLLECTOR_DIR = "DEYE_DATA_COLLECTOR_DIR"
   DEYE_GRAPHS_DIR = "DEYE_GRAPHS_DIR"
   DEYE_GRAPHS_FORMAT = "DEYE_GRAPHS_FORMAT"
+  DEYE_GRAPHS_FORMATS = ["png", "svg", "pdf"]
 
   REMOTE_CACHE_SERVER_URL = "REMOTE_CACHE_SERVER_URL"
   REMOTE_GRAPH_SERVER_URL = "REMOTE_GRAPH_SERVER_URL"
@@ -257,16 +258,15 @@ class EnvUtils:
 
   @staticmethod
   def get_deye_graphs_format() -> str:
-    formats = ["png", "svg", "pdf"]
     format = os.getenv(EnvUtils.DEYE_GRAPHS_FORMAT, '').lower().strip()
     if not format:
       raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GRAPHS_FORMAT}' is not set. "
-                         f"Pls use one of them: {', '.join(formats).upper()}.")
+                         f"Pls use one of them: {', '.join(EnvUtils.DEYE_GRAPHS_FORMATS).upper()}.")
 
-    if format not in formats:
+    if format not in EnvUtils.DEYE_GRAPHS_FORMATS:
       raise RuntimeError(f"Unsupported graph format: '{format}'. "
                          f"Environment variable '{EnvUtils.DEYE_GRAPHS_FORMAT}' "
-                         f"supports only {', '.join(formats).upper()}.")
+                         f"supports only {', '.join(EnvUtils.DEYE_GRAPHS_FORMATS).upper()}.")
 
     return format
 
