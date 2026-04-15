@@ -362,8 +362,6 @@ class DeyeGraphManager:
     if not os.path.exists(file_path):
       raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
 
-    fig: Optional[Figure] = None
-
     # Load data and ensure timestamp is parsed
     with DebugTimerWithLog("CSV reading"):
       with DeyeFileWithLock(file_path, "r") as f:
@@ -430,8 +428,6 @@ class DeyeGraphManager:
 
     if not os.path.exists(file_path):
       raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
-
-    fig: Optional[Figure] = None
 
     # Load data and ensure timestamp is parsed
     with DebugTimerWithLog("CSV reading"):
