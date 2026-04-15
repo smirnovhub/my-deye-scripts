@@ -73,7 +73,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
     return f"{self._title} cancel"
 
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    navigator.navigate(DeyeGraphsPage.inverter)
+    navigator.navigate(DeyeGraphsPage.group)
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(f"{self._title} cancel")
