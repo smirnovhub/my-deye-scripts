@@ -99,7 +99,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         selected_date = self._provider.selected_date
         selected_inverter = self._provider.selected_inverter
 
-        png_file = self._provider.get_graph_image(
+        image_file = self._provider.get_graph_image(
           graph_date = selected_date,
           inverter = selected_inverter,
           graph_name = graph.name,
@@ -108,7 +108,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         progress.hide()
 
         # Send the file as a document
-        bot.send_document(chat_id = chat_id, document = png_file)
+        bot.send_document(chat_id = chat_id, document = image_file)
       except Exception as e:
         bot.send_message(chat_id = chat_id, text = str(e))
       finally:

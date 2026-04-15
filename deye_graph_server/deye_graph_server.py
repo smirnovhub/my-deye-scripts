@@ -198,7 +198,7 @@ async def get_full_report_pdf(graph_date: str):
 
   image_bytes = await loop.run_in_executor(None, graph_manager.generate_full_report_pdf, target_date)
 
-  filename = f"{graph_date}.pdf"
+  filename = f"deye-{graph_date}.pdf"
 
   return Response(
     content = image_bytes,
@@ -220,11 +220,13 @@ async def get_graphs_csv(graph_date: str):
     target_date,
   )
 
+  filename = f"deye-{graph_date}.zip"
+
   return Response(
     content = zip_bytes,
     media_type = "application/zip",
     headers = {
-      "Content-Disposition": f'attachment; filename="{graph_date}.zip"',
+      "Content-Disposition": f'attachment; filename="{filename}"',
     },
   )
 

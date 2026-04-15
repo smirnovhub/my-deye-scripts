@@ -123,7 +123,7 @@ class DeyeGraphsDataProvider:
 
       file = BytesIO(response.content)
 
-    file.name = f"{graph_date}-{inverter}-{graph_name}.{format}"
+    file.name = f"deye-{graph_date}-{inverter}-{graph_name}.{format}"
     return file
 
   def get_graph_data(
@@ -139,7 +139,7 @@ class DeyeGraphsDataProvider:
       content = response.content
       content_disposition = response.headers.get("Content-Disposition", "")
 
-    filename = "file.raw"
+    filename = f"deye.{format}"
 
     if content_disposition:
       msg = Message()
