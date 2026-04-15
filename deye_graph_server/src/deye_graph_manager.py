@@ -470,7 +470,7 @@ class DeyeGraphManager:
 
                   with DebugTimerWithLog("Adding graph to PDF"):
                     pdf.savefig(fig)
-                except Exception:
+                except Exception as e:
                   self._logger.error(f"Error generating graph for {graph_date}/{inv_info.inverter}/{graph.name}: {e}")
                   continue
                 finally:
@@ -481,8 +481,8 @@ class DeyeGraphManager:
 
         buf.seek(0)
         return buf.getvalue()
-    except Exception as e:
-      self._logger.error(f"Error generating full PDF report for {graph_date}: {e}")
+    except Exception as ee:
+      self._logger.error(f"Error generating full PDF report for {graph_date}: {ee}")
       raise
     finally:
       # Explicitly clean up figure and call garbage collector
