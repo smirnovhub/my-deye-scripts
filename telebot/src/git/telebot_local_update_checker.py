@@ -72,7 +72,7 @@ class TelebotLocalUpdateChecker:
       ]
 
       def on_choice(chat_id: int, button: ButtonNode):
-        if "yes" in button.text:
+        if "yes" in button.text.lower():
           self._ask_for_restart(bot, chat_id)
         else:
           bot.send_message(chat_id, 'Restart cancelled')

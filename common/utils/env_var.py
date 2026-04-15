@@ -1,14 +1,22 @@
 import os
 import re
 
-from env_utils import EnvUtils
+from typing import Callable, Optional
 
 class EnvVar:
-  def __init__(self, name: str, default: str, description: str):
+  def __init__(
+    self,
+    name: str,
+    default: str,
+    description: str,
+    value_getter: Optional[Callable[[], str]] = None,
+  ):
     self._name = name
     self._default = default
     self._description = description
-    self._value = os.getenv(name, default)
+
+    self._value_getter = value_getter
+    self._value = os.getenv(name, default).strip()
 
   @property
   def name(self) -> str:
@@ -24,23 +32,28 @@ class EnvVar:
 
   @property
   def value(self) -> str:
-    return self._value
+    return self._value_getter() if self._value_getter else self._value
+
+  def as_not_empty_value(self) -> str:
+    if not self.value:
+      raise RuntimeError(f"Environment variable '{self._name}' is not set")
+    return self.value
+
+  def as_not_empty_filtered_value(self) -> str:
+    if not self.value:
+      raise RuntimeError(f"Environment variable '{self._name}' is not set")
+
+    val = self.as_filtered_value()
+    if not val:
+      raise RuntimeError(f"Environment variable '{self._name}' is empty")
+
+    return val
 
   def as_filtered_value(self) -> str:
-    return re.sub(r'[^a-zA-Z0-9-]+', '-', self._value).strip('-')
+    return re.sub(r'[^a-zA-Z0-9-]+', '-', self.value).strip('-')
 
   def as_int(self) -> int:
-    return int(self._value)
+    return int(self.value)
 
   def as_float(self) -> float:
-    return float(self._value)
-
-class LogNameEnvVar(EnvVar):
-  def __init__(self):
-    super().__init__(
-      name = EnvUtils.DEYE_LOG_NAME,
-      default = '',
-      description = 'Individual folder name for logging',
-    )
-    # Will replace value from base class!
-    self._value = EnvUtils.get_log_name()
+    return float(self.value)

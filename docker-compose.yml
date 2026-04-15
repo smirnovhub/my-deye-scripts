@@ -16,6 +16,7 @@ services:
       target: deyeweb
       args:
         BRANCH: ${APP_BRANCH}
+        DEYE_GRAPHS_DIR: deye-graphs
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -35,6 +36,7 @@ services:
 #      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
 
       REMOTE_CACHE_SERVER_URL: http://deye-storage
+      DEYE_GRAPHS_FORMAT: ${DEYE_GRAPHS_FORMAT}
 
       BACK_SERVER_URL: http://deye-back-server
 
@@ -48,7 +50,7 @@ services:
       DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON: ""
       DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON: ""
       DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON: ""
-      DEYE_WEB_GRAPHS_BASE_URL: ""
+      DEYE_WEB_GRAPHS_BASE_URL: graphs/
 
       DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
       DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
@@ -93,6 +95,7 @@ services:
 #      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
 
       REMOTE_CACHE_SERVER_URL: http://deye-storage
+      DEYE_GRAPHS_FORMAT: ${DEYE_GRAPHS_FORMAT}
 
       DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
       DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
@@ -104,7 +107,7 @@ services:
       DEYE_WEB_REGISTER_VALUE_CORRECTIONS_JSON: ""
       DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON: ""
       DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON: ""
-      DEYE_WEB_GRAPHS_BASE_URL: ""
+      DEYE_WEB_GRAPHS_BASE_URL: graphs/
 
       DEYE_GPS_LATITUDE: ${DEYE_GPS_LATITUDE}
       DEYE_GPS_LONGITUDE: ${DEYE_GPS_LONGITUDE}
@@ -130,6 +133,50 @@ services:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/backserver/my-deye-scripts/deyeweb/data
 
+  deye-data-collector:
+    build:
+      context: .
+      dockerfile: data_collector/Dockerfile
+      args:
+        BRANCH: ${APP_BRANCH}
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
+      deye-proxy-master:
+        condition: service_started
+#      deye-proxy-slave1:
+#        condition: service_started
+    environment:
+      DEYE_MASTER_LOGGER_HOST: deye-proxy-master
+      DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
+
+      DEYE_DATA_COLLECTOR_DIR: ${DEYE_DATA_COLLECTOR_DIR}
+      DATA_COLLECTING_INTERVAL: ${DEYE_DATA_COLLECTING_INTERVAL}
+
+      DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
+      DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
+      DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON: ${DEYE_GRID_FEED_IN_ENERGY_COSTS_JSON}
+      DEYE_GEN_ENERGY_COSTS_JSON: ${DEYE_GEN_ENERGY_COSTS_JSON}
+
+      DEYE_ENERGY_COST_CURRENCY_CODE: ${DEYE_ENERGY_COST_CURRENCY_CODE}
+
+      TELEGRAM_BOT_API_TOKEN: ${TELEGRAM_BOT_API_TOKEN}
+      TELEGRAM_PRIVATE_CHAT_ID: ${TELEGRAM_PRIVATE_CHAT_ID}
+      TELEGRAM_PUBLIC_CHAT_ID: ${TELEGRAM_PUBLIC_CHAT_ID}
+
+      DEYE_LOG_NAME: deye-data-collector
+    image: deye-data-collector
+    container_name: deye-data-collector
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GLOBAL_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/home/datacollector/my-deye-scripts/data_collector/data
+
   telebot:
     build:
       context: .
@@ -145,6 +192,8 @@ services:
 #        condition: service_started
       deye-storage:
         condition: service_started
+      deye-graph-server:
+        condition: service_started
     environment:
       DEYE_MASTER_LOGGER_HOST: deye-proxy-master
       DEYE_MASTER_LOGGER_SERIAL: ${DEYE_MASTER_LOGGER_SERIAL}
@@ -153,6 +202,8 @@ services:
 #      DEYE_SLAVE1_LOGGER_SERIAL: ${DEYE_SLAVE1_LOGGER_SERIAL}
 
       REMOTE_CACHE_SERVER_URL: http://deye-storage
+      REMOTE_GRAPH_SERVER_URL: http://deye-graph-server
+      DEYE_GRAPHS_FORMAT: ${DEYE_GRAPHS_FORMAT}
 
       DEYE_PV_ENERGY_COSTS_JSON: ${DEYE_PV_ENERGY_COSTS_JSON}
       DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON: ${DEYE_GRID_PURCHASED_ENERGY_COSTS_JSON}
@@ -184,6 +235,58 @@ services:
     volumes:
       # Mount shared folder with read-write permissions
       - deye_shared_volume:/home/telebot/my-deye-scripts/telebot/data
+
+  deye-graph-server:
+    build:
+      context: .
+      dockerfile: deye_graph_server/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
+    environment:
+      DEYE_DATA_COLLECTOR_DIR: ${DEYE_DATA_COLLECTOR_DIR}
+      DEYE_LOG_NAME: deye-graph-server
+      SERVER_PORT: 80
+    image: deye-graph-server
+    container_name: deye-graph-server
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GRAPH_SERVER_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/home/deyegraphserver/deye_graph_server/data
+
+  deye-graph-generator:
+    build:
+      context: .
+      dockerfile: deye_graph_generator/Dockerfile
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
+    environment:
+      TELEGRAM_BOT_API_TOKEN: ${TELEGRAM_BOT_API_TOKEN}
+      TELEGRAM_PRIVATE_CHAT_ID: ${TELEGRAM_PRIVATE_CHAT_ID}
+      TELEGRAM_PUBLIC_CHAT_ID: ${TELEGRAM_PUBLIC_CHAT_ID}
+
+      REMOTE_GRAPH_SERVER_URL: http://deye-graph-server
+      DEYE_GRAPHS_DIR: deye-graphs
+      DEYE_GRAPHS_FORMAT: ${DEYE_GRAPHS_FORMAT}
+
+      DEYE_LOG_NAME: deye-graph-generator
+    image: graph-generator
+    container_name: deye-graph-generator
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          pids: ${GLOBAL_PIDS_LIMIT}
+          memory: ${GLOBAL_MEMORY_LIMIT}
+    volumes:
+      # Mount shared folder with read-write permissions
+      - deye_shared_volume:/home/graphgenerator/deye_graph_generator/data
 
   deye-storage:
     build:

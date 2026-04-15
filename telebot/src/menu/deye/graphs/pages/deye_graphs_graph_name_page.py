@@ -5,6 +5,7 @@ from button_node import ButtonNode
 from deye_graph_data import DeyeGraphData
 from break_button_node import BreakButtonNode
 from deye_graphs_page import DeyeGraphsPage
+from deye_graph_group_data import DeyeGraphGroupData
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 from deye_graphs_data_provider import DeyeGraphsDataProvider
@@ -39,10 +40,16 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
     ]
 
     graphs: List[DeyeGraphData] = []
+    groups: List[DeyeGraphGroupData] = []
 
     for inverter in self._provider.inverters:
       if inverter.inverter == self._provider.selected_inverter:
-        graphs = inverter.graphs
+        groups = inverter.groups
+        break
+
+    for group in groups:
+      if group.group == self._provider.selected_group:
+        graphs = group.graphs
         break
 
     for index, graph in enumerate(graphs):
@@ -66,7 +73,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
     return f"{self._title} cancel"
 
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    navigator.navigate(DeyeGraphsPage.inverter)
+    navigator.navigate(DeyeGraphsPage.group)
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(f"{self._title} cancel")
@@ -92,7 +99,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         selected_date = self._provider.selected_date
         selected_inverter = self._provider.selected_inverter
 
-        png_file = self._provider.get_graph_png(
+        image_file = self._provider.get_graph_image(
           graph_date = selected_date,
           inverter = selected_inverter,
           graph_name = graph.name,
@@ -101,7 +108,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         progress.hide()
 
         # Send the file as a document
-        bot.send_document(chat_id = chat_id, document = png_file)
+        bot.send_document(chat_id = chat_id, document = image_file)
       except Exception as e:
         bot.send_message(chat_id = chat_id, text = str(e))
       finally:

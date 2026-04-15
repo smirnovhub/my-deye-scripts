@@ -54,7 +54,7 @@ class DeyeFileLocker(DeyeBaseLocker):
 
     DeyeUtils.ensure_dir_and_file_exists(self._log_filename, dir_mode = 0o777, file_mode = 0o666)
 
-  def acquire(self, timeout: int = 15) -> None:
+  def acquire(self, timeout: float = 15) -> None:
     """
     Acquire an exclusive lock on the file.
     Waits up to `timeout` seconds before raising an exception.

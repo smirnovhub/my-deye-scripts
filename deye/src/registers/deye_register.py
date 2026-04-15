@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from deye_exceptions import DeyeNotImplementedException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
+from deye_register_group import DeyeRegisterGroup
 
 class DeyeRegister(ABC):
   @abstractmethod
@@ -30,6 +31,11 @@ class DeyeRegister(ABC):
   @property
   def can_accumulate(self) -> bool:
     return self.avg_type != DeyeRegisterAverageType.none and self.avg_type != DeyeRegisterAverageType.only_master
+
+  @property
+  @abstractmethod
+  def group(self) -> DeyeRegisterGroup:
+    pass
 
   @property
   @abstractmethod

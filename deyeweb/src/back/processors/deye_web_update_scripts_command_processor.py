@@ -40,6 +40,7 @@ class DeyeWebUpdateScriptsCommandProcessor(DeyeWebBaseCommandProcessor):
         return get_result('Unable to update: the repository is not currently on a branch')
 
       pull_result = await self._git_helper.pull()
+      await self._git_helper.submodule_update()
 
       if 'up to date' in pull_result.lower():
         last_commit = await self._git_helper.get_last_commit_hash_and_comment()

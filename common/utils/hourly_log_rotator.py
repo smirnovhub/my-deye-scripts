@@ -19,17 +19,19 @@ class HourlyLogRotator:
     self,
     directory: str,
     log_file_template: str,
+    header = "",
     encoding: str = "utf-8",
   ):
-    self.directory = directory
+    self._directory = directory
     self._log_file_template = log_file_template
-    self.encoding = encoding
+    self._header = header
+    self._encoding = encoding
 
     self._stream: Optional[IO[Any]] = None
     self._current_hour: Optional[str] = None
     self._current_date: Optional[date] = None
 
-    os.makedirs(self.directory, exist_ok = True)
+    os.makedirs(self._directory, exist_ok = True)
 
   def open_initial_stream(self) -> None:
     """Initial startup: determine whether to append or overwrite."""
@@ -37,9 +39,15 @@ class HourlyLogRotator:
     current_hour = self._get_hour()
 
     filename = self._build_filename(current_hour)
-    mode = "w" if self._is_file_too_old(filename, current_date) else "a"
+    write_header = not os.path.exists(filename) or os.path.getsize(filename) == 0
 
-    self._stream = open(filename, mode = mode, encoding = self.encoding)
+    mode = "w" if self._is_file_too_old(filename, current_date) else "a"
+    self._stream = open(filename, mode = mode, encoding = self._encoding)
+
+    if self._header and (write_header or mode == "w"):
+      self._stream.write(self._header)
+      self._stream.flush()
+
     self._current_date = current_date
     self._current_hour = current_hour
 
@@ -56,9 +64,16 @@ class HourlyLogRotator:
       if self._stream:
         self._stream.close()
 
+      write_header = not os.path.exists(filename) or os.path.getsize(filename) == 0
+
       # Always overwrite when shifting to a new time slot
       mode = "w" if too_old else "a"
-      self._stream = open(filename, mode = mode, encoding = self.encoding)
+      self._stream = open(filename, mode = mode, encoding = self._encoding)
+
+      if self._header and (write_header or mode == "w"):
+        self._stream.write(self._header)
+        self._stream.flush()
+
       self._current_date = current_date
       self._current_hour = current_hour
 
@@ -89,7 +104,7 @@ class HourlyLogRotator:
     return datetime.now().date()
 
   def _build_filename(self, hour: str) -> str:
-    return os.path.join(self.directory, self._log_file_template.format(hour))
+    return os.path.join(self._directory, self._log_file_template.format(hour))
 
   def _is_file_too_old(self, filename: str, current_date: date) -> bool:
     if not os.path.exists(filename):

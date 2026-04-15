@@ -2,6 +2,8 @@ FROM php:8.4-apache AS baseweb
 
 # Set remote repository name
 ARG REPO_NAME=my-deye-scripts
+ARG DEYE_GRAPHS_DIR
+ENV GRAPHS_PATH="/var/www/${REPO_NAME}/deyeweb/data/${DEYE_GRAPHS_DIR}"
 
 # Set remote branch name
 ARG BRANCH=master
@@ -45,7 +47,7 @@ RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
 COPY --chmod=755 common/utils/hourly_log_rotator.py /usr/local/bin/
 
 # Find and copy only files from the icons directory to the parent directory
-RUN find $REPO_NAME/deyeweb/icons/ -maxdepth 1 -type f -exec cp {} $REPO_NAME/deyeweb/ \;
+RUN find $REPO_NAME/deyeweb/images/icons/ -maxdepth 1 -type f -exec cp {} $REPO_NAME/deyeweb/ \;
 
 # Create symlink
 RUN rm -rf /var/www/html && \
@@ -65,10 +67,6 @@ RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
   -out /etc/ssl/certs/apache-selfsigned.crt \
   -subj "/C=UA/L=Kyiv/O=Development/CN=localhost" \
   -addext "basicConstraints=CA:FALSE"
-
-# Comment out the Alias /icons/ directive inside the alias module configuration
-# This frees up the /icons/ path for our own application
-RUN sed -i 's|^Alias /icons/|#Alias /icons/|' /etc/apache2/mods-available/alias.conf
 
 # Copy proxy configuration
 COPY deyeweb/apache/apache-proxy-settings.conf /etc/apache2/conf-available/apache-proxy-settings.conf

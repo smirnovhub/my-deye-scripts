@@ -111,12 +111,14 @@ class TelebotMenuRevert(TelebotMenuItemHandlerSync):
 
       self.git_helper.stash_push()
       result = self.git_helper.revert_to_revision(commit_hash)
+      self.git_helper.submodule_update()
       self.git_helper.stash_pop()
     except Exception as e:
       self.bot.send_message(chat_id, f'{str(e)}: trying to reset to HEAD and then stash pop again...')
       try:
         self.git_helper.revert_to_revision('HEAD')
         self.git_helper.pull()
+        self.git_helper.submodule_update()
         self.git_helper.stash_pop()
         self.bot.send_message(
           chat_id,

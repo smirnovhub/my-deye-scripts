@@ -1,5 +1,6 @@
 from typing import Any, List
 
+from deye_register_group import DeyeRegisterGroup
 from time_of_use_charge import TimeOfUseCharge
 from time_of_use_charges import TimeOfUseCharges
 from time_of_use_data import TimeOfUseData
@@ -25,6 +26,7 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
     max_power: int,
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
@@ -32,6 +34,7 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
       quantity = 0,
       description = description,
       suffix = suffix,
+      group = group,
       avg = avg,
     )
 

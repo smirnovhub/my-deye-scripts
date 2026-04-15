@@ -8,7 +8,7 @@ from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_registers import DeyeRegisters
 from telebot_deye_helper import TelebotDeyeHelper
-from deye_registers_holder import DeyeRegistersHolder
+from deye_registers_holder_sync import DeyeRegistersHolderSync
 from deye_test_helper import DeyeTestHelper
 from deye_exceptions import DeyeKnownException
 
@@ -58,7 +58,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.send_button_click(user, command)
     self.call_with_retry(self._check_results, holder)
 
-  def _init_registers(self, servers: List[SolarmanTestServer]) -> DeyeRegistersHolder:
+  def _init_registers(self, servers: List[SolarmanTestServer]) -> DeyeRegistersHolderSync:
     for server in servers:
       server.clear_registers()
       server.clear_registers_status()
@@ -78,7 +78,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
         server.set_register_values(random_value.register.addresses, random_value.values)
 
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolder(
+    holder = DeyeRegistersHolderSync(
       loggers = self.loggers.loggers,
       register_creator = self.register_creator,
       **TelebotDeyeHelper.holder_kwargs,
@@ -91,7 +91,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
 
     return holder
 
-  def _check_results(self, holder: DeyeRegistersHolder):
+  def _check_results(self, holder: DeyeRegistersHolderSync):
     pattern = f'{self.title}: {self.name}|{self.name} settings:'
     if not self.bot.is_messages_contains_regex(pattern):
       raise DeyeKnownException(f"Messages don't contain expected title '{pattern}'")

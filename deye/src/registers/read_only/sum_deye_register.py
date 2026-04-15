@@ -2,6 +2,7 @@ from typing import Any, List
 
 from deye_register import DeyeRegister
 from base_deye_register import BaseDeyeRegister
+from deye_register_group import DeyeRegisterGroup
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_register_average_type import DeyeRegisterAverageType
 
@@ -11,6 +12,7 @@ class SumDeyeRegister(BaseDeyeRegister):
     registers: List[DeyeRegister],
     description: str,
     suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
@@ -18,6 +20,7 @@ class SumDeyeRegister(BaseDeyeRegister):
       quantity = 0,
       description = description,
       suffix = suffix,
+      group = group,
       avg = avg,
     )
     self._value = 0.0

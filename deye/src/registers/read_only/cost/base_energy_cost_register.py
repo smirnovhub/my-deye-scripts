@@ -1,9 +1,9 @@
 from typing import Any, Dict, List
 
 from deye_register import DeyeRegister
+from deye_register_group import DeyeRegisterGroup
 from float_deye_register import FloatDeyeRegister
 from deye_modbus_interactor import DeyeModbusInteractor
-from deye_energy_cost import DeyeEnergyCost
 from deye_register_average_type import DeyeRegisterAverageType
 
 class BaseEnergyCostRegister(FloatDeyeRegister):
@@ -12,12 +12,15 @@ class BaseEnergyCostRegister(FloatDeyeRegister):
     energy_register: DeyeRegister,
     energy_costs: Dict[int, float],
     description: str,
+    suffix: str,
+    group: DeyeRegisterGroup,
     avg = DeyeRegisterAverageType.none,
   ):
     super().__init__(
       address = 0,
       description = description,
-      suffix = DeyeEnergyCost().currency_code,
+      suffix = suffix,
+      group = group,
       avg = avg,
       quantity = 0,
     )

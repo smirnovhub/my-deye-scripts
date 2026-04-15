@@ -1,41 +1,48 @@
 import re
 import telebot
 
-from git_helper import GitHelper
+from git_helper_async import GitHelperAsync
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from git_exceptions import GitException
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
-from telebot_local_update_checker import TelebotLocalUpdateChecker
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_user_choices import UserChoices
 from countdown_with_cancel import CountdownWithCancel
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
-class TelebotMenuUpdate(TelebotMenuItemHandlerSync):
-  def __init__(self, bot: telebot.TeleBot):
-    super().__init__(bot)
-    self.git_helper = GitHelper()
-    self.update_checker = TelebotLocalUpdateChecker()
+class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ):
+    super().__init__(
+      bot = bot,
+      runner = runner,
+    )
+    self._git_helper = GitHelperAsync()
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.update
 
-  def process_message(self, message: telebot.types.Message) -> None:
-    if not self._remote_update_checker.is_on_branch():
+  async def process_message(self, message: telebot.types.Message) -> None:
+    if not await self._remote_update_checker.is_on_branch():
       self.bot.send_message(message.chat.id, 'Unable to update: the repository is not currently on a branch')
       return
 
     try:
-      result = self.git_helper.pull()
+      result = await self._git_helper.pull()
+      await self._git_helper.submodule_update()
     except GitException as e:
       self.bot.send_message(message.chat.id, str(e))
       return
 
     if 'up to date' in result.lower():
       try:
-        branch_name = self.git_helper.get_current_branch_name()
-        last_commit = self.git_helper.get_last_commit_hash_and_comment()
+        branch_name = await self._git_helper.get_current_branch_name()
+        last_commit = await self._git_helper.get_last_commit_hash_and_comment()
       except Exception as e:
         self.bot.send_message(message.chat.id, str(e))
         return
@@ -49,7 +56,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerSync):
         parse_mode = "HTML",
       )
 
-      self.update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
+      await self._local_update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
 
       return
 

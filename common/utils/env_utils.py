@@ -2,7 +2,6 @@ import os
 import re
 
 class EnvUtils:
-
   IS_TEST_RUN = "IS_TEST_RUN"
 
   DEYE_LOG_NAME = "DEYE_LOG_NAME"
@@ -23,6 +22,10 @@ class EnvUtils:
   DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON = "DEYE_WEB_SECTION_TITLE_CORRECTIONS_JSON"
   DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON = "DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON"
   DEYE_WEB_GRAPHS_BASE_URL = "DEYE_WEB_GRAPHS_BASE_URL"
+  DEYE_DATA_COLLECTOR_DIR = "DEYE_DATA_COLLECTOR_DIR"
+  DEYE_GRAPHS_DIR = "DEYE_GRAPHS_DIR"
+  DEYE_GRAPHS_FORMAT = "DEYE_GRAPHS_FORMAT"
+  DEYE_GRAPHS_FORMATS = ["png", "svg", "pdf"]
 
   REMOTE_CACHE_SERVER_URL = "REMOTE_CACHE_SERVER_URL"
   REMOTE_GRAPH_SERVER_URL = "REMOTE_GRAPH_SERVER_URL"
@@ -236,6 +239,36 @@ class EnvUtils:
   @staticmethod
   def get_deye_web_graphs_base_url() -> str:
     return os.getenv(EnvUtils.DEYE_WEB_GRAPHS_BASE_URL, '').strip()
+
+  @staticmethod
+  def get_deye_data_collector_dir() -> str:
+    dir_name = os.getenv(EnvUtils.DEYE_DATA_COLLECTOR_DIR, '').strip()
+    dir_name = re.sub(r'[^a-zA-Z0-9-]+', '-', dir_name).strip('-')
+    if not dir_name:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_DATA_COLLECTOR_DIR}' is not set")
+    return dir_name
+
+  @staticmethod
+  def get_deye_graphs_dir() -> str:
+    dir_name = os.getenv(EnvUtils.DEYE_GRAPHS_DIR, '').strip()
+    dir_name = re.sub(r'[^a-zA-Z0-9-]+', '-', dir_name).strip('-')
+    if not dir_name:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GRAPHS_DIR}' is not set")
+    return dir_name
+
+  @staticmethod
+  def get_deye_graphs_format() -> str:
+    format = os.getenv(EnvUtils.DEYE_GRAPHS_FORMAT, '').lower().strip()
+    if not format:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GRAPHS_FORMAT}' is not set. "
+                         f"Pls use one of them: {', '.join(EnvUtils.DEYE_GRAPHS_FORMATS).upper()}.")
+
+    if format not in EnvUtils.DEYE_GRAPHS_FORMATS:
+      raise RuntimeError(f"Unsupported graph format: '{format}'. "
+                         f"Environment variable '{EnvUtils.DEYE_GRAPHS_FORMAT}' "
+                         f"supports only {', '.join(EnvUtils.DEYE_GRAPHS_FORMATS).upper()}.")
+
+    return format
 
   @staticmethod
   def is_tests_on() -> bool:

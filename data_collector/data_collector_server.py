@@ -6,7 +6,7 @@ import traceback
 import signal
 
 from pathlib import Path
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 current_path = Path(__file__).parent.resolve()
 modules_path = (current_path / '../modules').resolve()
@@ -19,12 +19,16 @@ from common_modules import import_dirs
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 from log_utils import LogUtils
+from common_utils import CommonUtils
+from deye_utils import DeyeUtils
 from async_ticker import AsyncTicker
-from data_collector import main_logic
+from data_collector import DataCollector
 from data_collector_config import DataCollectorConfig
+from telegram_send_message_async import TelegramAsync
 from http_session_singleton_async import HttpSessionSingletonAsync
 
 config = DataCollectorConfig()
+collector = DataCollector(config)
 
 LOG_DIR = f"data/{config.LOG_NAME}"
 
@@ -33,15 +37,37 @@ logger = LogUtils.setup_hourly_overwrite_file_logger(
   log_file_template = "data-collector-{0}.log",
 )
 
+last_success = datetime.now()
+last_notification = datetime.now()
+
 async def run_ticker(ticker: AsyncTicker):
   """Wrapper to run the AsyncTicker and handle CancelledError"""
+  global last_success, last_notification
+
   try:
     async for _ in ticker:
       try:
-        await main_logic(config = config, logger = logger)
+        await collector.main_logic(config = config, logger = logger)
+        last_success = datetime.now()
       except Exception:
         callstack = traceback.format_exc()
         logger.error(f"Error during task execution: {callstack}")
+
+        try:
+          now = datetime.now()
+          last_success_delta = (now - last_success).total_seconds() / 60
+          last_notification_delta = (now - last_notification).total_seconds() / 60
+
+          if last_success_delta >= config.CONN_LOST_NOTIFY_AFTER_MINUTES and \
+              last_notification_delta >= config.CONN_LOST_NOTIFY_INTERVAL_MINUTES:
+            last_notification = now
+            last_success_delta_str = DeyeUtils.format_timedelta(now - last_success)
+            message = (f"{CommonUtils.large_red_circle_emoji} data collector: unable to retrieve "
+                       f"data for the last {last_success_delta_str}")
+            await TelegramAsync.send_private_telegram_message(message)
+        except Exception as e:
+          logger.error(f"Error during sending telegram notification: {e}")
+
   except asyncio.CancelledError:
     logger.info("Ticker task received CancelledError")
     raise
@@ -50,9 +76,11 @@ async def run_ticker(ticker: AsyncTicker):
 
 async def main():
   ticker = AsyncTicker(
-    period = timedelta(seconds = config.DATA_COLLECTING_INTERVAL),
+    period = timedelta(seconds = config.DATA_COLLECTING_INTERVAL_MINUTES),
     align_with_period = True,
   )
+
+  await collector.save_thresholds(logger)
 
   ticker_task = asyncio.create_task(run_ticker(ticker))
 

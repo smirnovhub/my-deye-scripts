@@ -1,38 +1,30 @@
-import os
 import asyncio
-import logging
 
 from typing import Any, Callable, Dict, List, Optional, cast
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
-from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
-from deye_file_lock import DeyeFileLock
 from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
+from deye_registers_holder import DeyeRegistersHolder
 from deye_modbus_interactor_async import DeyeModbusInteractorAsync
 
-class DeyeRegistersHolderAsync:
+class DeyeRegistersHolderAsync(DeyeRegistersHolder):
   def __init__(
     self,
     loggers: List[DeyeLogger],
     register_creator: Optional[Callable[[str], DeyeRegisters]] = None,
     **kwargs,
   ):
-    self._registers: Dict[str, DeyeRegisters] = {}
+    super().__init__(
+      loggers = loggers,
+      **kwargs,
+    )
+
     self._interactors: List[DeyeModbusInteractorAsync] = []
     self._master_interactor: Optional[DeyeModbusInteractorAsync] = None
-    self._loggers = loggers
-    self._log = logging.getLogger()
-    self._all_loggers = DeyeLoggers()
-
-    # Initialize locker
-    self.verbose = kwargs.get('verbose', False)
-    self.name = kwargs.get('name', os.path.basename(__file__))
-    suffix = '_test' if self._all_loggers.is_test_loggers else ''
-    self.lockfile = os.path.join(DeyeFileLock.lock_path, DeyeFileLock.inverter_lock_file_name_template.format(suffix))
 
     for logger in self._loggers:
       interactor = DeyeModbusInteractorAsync(logger = logger, **kwargs)
@@ -96,7 +88,7 @@ class DeyeRegistersHolderAsync:
         # asyncio.gather aggregates results and raises the first exception encountered
         await asyncio.wait_for(
           asyncio.gather(*tasks, return_exceptions = True),
-          timeout = 10.0,
+          timeout = self._socket_timeout + 3,
         )
       except asyncio.TimeoutError:
         # Identify which interactors failed to respond in time

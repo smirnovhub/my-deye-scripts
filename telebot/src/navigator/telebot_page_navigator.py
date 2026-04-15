@@ -169,17 +169,17 @@ class TelebotPageNavigator:
       raise RuntimeError(f"Page {page_type.name} is not registered")
 
     page = self._pages[page_type]
-    self._current_page = page
 
     try:
       page.clear_button_handlers()
       page.prepare(**kwargs)
       page.update()
+
+      self._current_page = page
+      self.update(text)
     except Exception as e:
       self._logger.error(traceback.format_exc())
       self.send_message_with_remove_with_delay(str(e))
-
-    self.update(text)
 
   def update(
     self,
@@ -245,7 +245,7 @@ class TelebotPageNavigator:
     if not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
-    sent = self.send_message(text)
+    sent = self.send_message(text[:512])
 
     TelebotUtils.remove_message_with_delay(
       bot = self._bot,

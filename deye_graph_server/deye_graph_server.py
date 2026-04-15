@@ -4,7 +4,6 @@ import asyncio
 import logging
 import uvicorn
 
-from dataclasses import asdict
 from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
@@ -73,7 +72,7 @@ app.add_middleware(GZipMiddleware, minimum_size = 1024)
 gzip.DEFAULT_EXCLUDED_CONTENT_TYPES = (
   "image/png",
   "application/zip",
-)
+) # type: ignore
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -99,8 +98,6 @@ graph_manager = DeyeGraphManager(
   logger = logger,
 )
 
-graph_manager.check_data_dir_exist()
-
 @app.get("/ping", tags = ["Server Health Operations"])
 def ping():
   """
@@ -116,8 +113,7 @@ def get_graphs():
 @app.get("/graphs/{graph_date}", tags = ["Graphs Operations"])
 async def get_graphs_by_date(graph_date: str):
   target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
-  inverters = graph_manager.get_inverters_by_date(target_date)
-  return asdict(inverters)
+  return graph_manager.get_inverters_by_date(target_date).to_dict()
 
 @app.get("/graphs/png/{graph_date}/{inverter}/{graph_name}", tags = ["Graphs Operations"])
 async def get_graphs_png(graph_date: str, inverter: str, graph_name: str):
@@ -127,15 +123,89 @@ async def get_graphs_png(graph_date: str, inverter: str, graph_name: str):
 
   image_bytes = await loop.run_in_executor(
     None,
-    graph_manager.generate_graph_png,
+    graph_manager.generate_graph_image,
     target_date,
     inverter,
     graph_name,
+    "png",
   )
+
+  filename = f"{graph_date}_{inverter}_{graph_name}.png"
 
   return Response(
     content = image_bytes,
     media_type = "image/png",
+    headers = {
+      "Content-Disposition": f'inline; filename="{filename}"',
+    },
+  )
+
+@app.get("/graphs/svg/{graph_date}/{inverter}/{graph_name}", tags = ["Graphs Operations"])
+async def get_graphs_svg(graph_date: str, inverter: str, graph_name: str):
+  target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
+
+  loop = asyncio.get_running_loop()
+
+  image_bytes = await loop.run_in_executor(
+    None,
+    graph_manager.generate_graph_image,
+    target_date,
+    inverter,
+    graph_name,
+    "svg",
+  )
+
+  filename = f"{graph_date}_{inverter}_{graph_name}.svg"
+
+  return Response(
+    content = image_bytes,
+    media_type = "image/svg+xml",
+    headers = {
+      "Content-Disposition": f'inline; filename="{filename}"',
+    },
+  )
+
+@app.get("/graphs/pdf/{graph_date}/{inverter}/{graph_name}", tags = ["Graphs Operations"])
+async def get_graphs_pdf(graph_date: str, inverter: str, graph_name: str):
+  target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
+
+  loop = asyncio.get_running_loop()
+
+  image_bytes = await loop.run_in_executor(
+    None,
+    graph_manager.generate_graph_image,
+    target_date,
+    inverter,
+    graph_name,
+    "pdf",
+  )
+
+  filename = f"{graph_date}_{inverter}_{graph_name}.pdf"
+
+  return Response(
+    content = image_bytes,
+    media_type = "application/pdf",
+    headers = {
+      "Content-Disposition": f'inline; filename="{filename}"',
+    },
+  )
+
+@app.get("/graphs/pdf/{graph_date}", tags = ["Graphs Operations"])
+async def get_full_report_pdf(graph_date: str):
+  target_date = datetime.strptime(graph_date, "%Y-%m-%d").date()
+
+  loop = asyncio.get_running_loop()
+
+  image_bytes = await loop.run_in_executor(None, graph_manager.generate_full_report_pdf, target_date)
+
+  filename = f"deye-{graph_date}.pdf"
+
+  return Response(
+    content = image_bytes,
+    media_type = "application/pdf",
+    headers = {
+      "Content-Disposition": f'inline; filename="{filename}"',
+    },
   )
 
 @app.get("/graphs/csv/{graph_date}", tags = ["Graphs Operations"])
@@ -150,11 +220,13 @@ async def get_graphs_csv(graph_date: str):
     target_date,
   )
 
+  filename = f"deye-{graph_date}.zip"
+
   return Response(
     content = zip_bytes,
     media_type = "application/zip",
     headers = {
-      "Content-Disposition": f'attachment; filename="{graph_date}.zip"',
+      "Content-Disposition": f'attachment; filename="{filename}"',
     },
   )
 

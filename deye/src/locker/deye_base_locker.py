@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class DeyeBaseLocker(ABC):
   @abstractmethod
-  def acquire(self, timeout: int = 15) -> None:
+  def acquire(self, timeout: float = 15) -> None:
     pass
 
   @abstractmethod
