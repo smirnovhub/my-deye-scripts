@@ -273,29 +273,49 @@ class DeyeGraphManager:
 
     # Define intervals based on time span
     if time_delta < 3600:
+      min_dist = 1 # 1 minute
       major_locator = mdates.MinuteLocator(byminute = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55])
       ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval = 1))
     elif time_delta < 3 * 3600:
+      min_dist = 3 # 3 minutes
       major_locator = mdates.MinuteLocator(byminute = [0, 15, 30, 45])
       ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [5, 10, 20, 25, 35, 40, 50, 55]))
     elif time_delta < 7 * 3600:
+      min_dist = 7
       major_locator = mdates.MinuteLocator(byminute = [0, 30])
       ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [10, 20, 40, 50]))
     else:
+      min_dist = 7
       major_locator = mdates.HourLocator(interval = 1)
       ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [30]))
 
-    # Add start and end times, but filter standard ticks that are too close (15 min threshold)
-    if time_delta < 3600:
-      min_dist = 5 / (24 * 60) # 5 minutes threshold for short spans
-    else:
-      min_dist = 15 / (24 * 60) # 15 minutes threshold for long spans
-
+    min_dist /= (24 * 60)
     std_ticks = major_locator.tick_values(time_min, time_max) # type: ignore
-    final_ticks = [t for t in std_ticks if abs(t - left_limit) > min_dist and abs(t - right_limit) > min_dist]
-    final_ticks.extend([left_limit, right_limit])
 
-    ax.set_xticks(sorted(final_ticks))
+    # Ticks that will actually have text labels
+    label_ticks = [t for t in std_ticks if abs(t - left_limit) > min_dist and abs(t - right_limit) > min_dist]
+
+    # Identify ticks that were filtered out because they are too close to boundaries
+    # We will draw them as minor lines instead
+    skipped_major_ticks = [t for t in std_ticks if t not in label_ticks]
+
+    # Final major ticks (with labels)
+    final_major_ticks = sorted(list(set(label_ticks + [left_limit, right_limit])))
+    ax.set_xticks(final_major_ticks)
+
+    # Combine standard minor ticks with the ones we just skipped
+    # Get minor ticks from your already defined minor_locator
+    standard_minor_ticks = ax.xaxis.get_minor_locator().tick_values(time_min, time_max) # type: ignore
+
+    # Filter minor ticks so they don't overlap with our new major ticks
+    final_minor_ticks = [
+      t for t in set(list(standard_minor_ticks) + skipped_major_ticks) if all(
+        abs(t - mt) > 1e-6 for mt in final_major_ticks)
+    ]
+
+    # Apply minor ticks to the axis
+    ax.set_xticks(final_minor_ticks, minor = True)
+
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 
     # Generation time watermark
