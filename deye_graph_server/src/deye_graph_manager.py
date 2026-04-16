@@ -272,7 +272,11 @@ class DeyeGraphManager:
     major_locator: mdates.DateLocator
 
     # Define intervals based on time span
-    if time_delta < 3600:
+    if time_delta < 900:
+      min_dist = 0.2 # 12 seconds safety margin
+      major_locator = mdates.MinuteLocator(interval = 1)
+      ax.xaxis.set_minor_locator(mdates.SecondLocator(bysecond = [30]))
+    elif time_delta < 3600:
       min_dist = 1 # 1 minute
       major_locator = mdates.MinuteLocator(byminute = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55])
       ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval = 1))
@@ -285,7 +289,7 @@ class DeyeGraphManager:
       major_locator = mdates.MinuteLocator(byminute = [0, 30])
       ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [10, 20, 40, 50]))
     else:
-      min_dist = 7
+      min_dist = 15
       major_locator = mdates.HourLocator(interval = 1)
       ax.xaxis.set_minor_locator(mdates.MinuteLocator(byminute = [30]))
 
