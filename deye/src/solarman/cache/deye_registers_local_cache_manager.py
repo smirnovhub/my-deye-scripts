@@ -31,6 +31,7 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
     # Ensure cache file exists
     DeyeUtils.ensure_file_exists(self._cache_filename, mode = 0o666)
 
+    self._logger.warning("PLEASE USE REMOTE CACHE MANAGER INSTEAD!")
     self._logger.info(f"{self._name} {self.__class__.__name__} initialized")
     self._logger.info(f"Local cache file name: {self._cache_filename}")
 
