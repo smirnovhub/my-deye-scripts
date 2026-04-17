@@ -113,6 +113,8 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
     finally:
       await self._solarman.disconnect()
 
+    self._log.info(f'{self.name} got {len(results)} registers from inverter')
+
     return results
 
   async def write_registers_to_inverter(self) -> None:
@@ -134,6 +136,7 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
         if self._can_cache():
           await self._cache_manager.save_to_cache({reg.address: reg})
 
+      self._log.info(f'{self.name} wrote {len(self._registers_to_write)} registers to inverter')
       self._registers_to_write.clear()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while writing registers') from e

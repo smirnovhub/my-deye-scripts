@@ -83,6 +83,7 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     end_time = time.perf_counter()
     duration_ms = round((end_time - start_time) * 1000)
     self._logger.info(f"{self._name} cache read took {duration_ms} ms")
+    self._logger.info(f'{self._name} got {len(results)} registers from cache')
 
     return results
 
@@ -130,6 +131,7 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
         )
 
         await self._save_json(json_string)
+        self._logger.info(f'{self._name} saved {len(registers_to_save)} registers to cache')
     except DeyeKnownException:
       raise
     except Exception as ee:
@@ -146,6 +148,7 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     try:
       async with self._exclusive_lock_context():
         await self._reset()
+      self._logger.info(f'{self._name} cache reset successful')
     except DeyeKnownException:
       raise
     except Exception as ee:
