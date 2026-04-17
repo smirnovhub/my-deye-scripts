@@ -1,3 +1,5 @@
+import time
+
 from typing import Dict
 
 from deye_utils import DeyeUtils
@@ -43,14 +45,18 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     if self._default_caching_time < 1:
       # Do NOT use any caching on read
       self._registers = self._read_from_inverter(self._registers)
+
       if self._can_cache():
-        self._cache_manager.save_to_cache(self._registers)
+        self._cache_manager.save_to_cache(registers_to_save = self._registers)
       return
 
     cached_registers: Dict[int, DeyeRegisterCacheData] = {}
 
     if self._can_cache():
-      cached_registers = self._cache_manager.get_cached_registers(self._registers)
+      cached_registers = self._cache_manager.get_cached_registers(
+        registers_to_check = self._registers,
+        current_ts = time.time(),
+      )
     else:
       # Reset cache during the last and first 5 minutes of the day
       if self._verbose:
@@ -71,8 +77,9 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
 
     if uncached_registers:
       polled_registers = self._read_from_inverter(uncached_registers)
+
       if self._can_cache():
-        self._cache_manager.save_to_cache(polled_registers)
+        self._cache_manager.save_to_cache(registers_to_save = polled_registers)
       self._registers = {**cached_registers, **polled_registers}
     else:
       self._registers = cached_registers
@@ -96,6 +103,8 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
         count = (last_item.address + last_item.quantity) - start
 
         data = self._solarman.read_holding_registers(address = start, quantity = count)
+        current_ts = time.time() # Should be exact after read_holding_registers() call
+
         if len(data) != count:
           raise RuntimeError(f'{self.name}: expected to read {count} values '
                              f'at address {start}, but got {len(data)}')
@@ -106,6 +115,7 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
             address = reg.address,
             quantity = reg.quantity,
             caching_time = reg.caching_time,
+            read_ts = current_ts,
             values = data[offset:offset + reg.quantity],
           )
     except Exception as e:
@@ -124,6 +134,8 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     try:
       for reg in self._registers_to_write:
         result = self._solarman.write_multiple_holding_registers(reg.address, reg.values)
+        current_ts = time.time() # Should be exact after write_multiple_holding_registers() call
+
         if result != len(reg.values):
           raise RuntimeError(f'{self.name}: expected to write {len(reg.values)} values '
                              f'at address {reg.address}, but wrote {result}')
@@ -132,9 +144,17 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
         # This ensures subsequent reads within this session get the new value
         self._registers[reg.address] = reg
 
+        updated_reg = DeyeRegisterCacheData(
+          address = reg.address,
+          quantity = reg.quantity,
+          caching_time = reg.caching_time,
+          read_ts = current_ts,
+          values = reg.values,
+        )
+
         # Update the persistent JSON cache
         if self._can_cache():
-          self._cache_manager.save_to_cache({reg.address: reg})
+          self._cache_manager.save_to_cache(registers_to_save = {reg.address: updated_reg})
 
       self._log.info(f'{self.name} wrote {len(self._registers_to_write)} registers to inverter')
       self._registers_to_write.clear()

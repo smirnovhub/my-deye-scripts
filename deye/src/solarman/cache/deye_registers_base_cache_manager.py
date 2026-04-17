@@ -25,10 +25,13 @@ class DeyeRegistersBaseCacheManager(ABC):
     self._serial = abs(serial)
     self._cache_available = False
     self._logger = logging.getLogger()
+    # 1000 means milliseconds
+    self._ts_multiplier = 1000
 
   def get_cached_registers(
     self,
     registers_to_check: Dict[int, DeyeRegisterCacheData],
+    current_ts: float,
   ) -> Dict[int, DeyeRegisterCacheData]:
     if not self._cache_available:
       self._cache_available = self._is_cache_available()
@@ -49,7 +52,7 @@ class DeyeRegistersBaseCacheManager(ABC):
       except (json.JSONDecodeError, ValueError) as e:
         raise DeyeCacheException(f"{self._name}: cache json parse error after get: {e}") from e
 
-      current_time = int(time.time())
+      current_time = int(current_ts * self._ts_multiplier)
       cached_registry = cache_content.get("registers", {})
 
       # Iterate through the registers we are interested in
@@ -58,7 +61,7 @@ class DeyeRegistersBaseCacheManager(ABC):
         addr_str = str(addr)
         if addr_str in cached_registry:
           entry = cached_registry[addr_str]
-          cached_time = entry.get("time", 0)
+          cached_time = entry.get("reg_ts", 0)
 
           # Check if the cached data is still valid by time duration
           if (current_time - cached_time) > reg.caching_time:
@@ -75,14 +78,17 @@ class DeyeRegistersBaseCacheManager(ABC):
             caching_time = reg.caching_time,
             values = entry.get("data", []),
           )
-    except DeyeKnownException:
+    except DeyeKnownException as e:
+      self._logger.error("%s: cache read error: %s", self._name, e, exc_info = True)
       raise
     except Exception as ee:
+      self._logger.error("%s: cache read error: %s", self._name, ee, exc_info = True)
       raise DeyeCacheException(f"{self._name}: cache read error: {ee}") from ee
 
     end_time = time.perf_counter()
     duration_ms = round((end_time - start_time) * 1000)
     self._logger.info(f"{self._name} cache read took {duration_ms} ms")
+    self._logger.info(f'{self._name} got {len(results)} registers from cache')
 
     return results
 
@@ -113,14 +119,15 @@ class DeyeRegistersBaseCacheManager(ABC):
           except (json.JSONDecodeError, ValueError) as e:
             raise DeyeCacheException(f"{self._name}: cache json parse error after read: {e}") from e
 
-        current_time = int(time.time())
-
         # Now iterating over dictionary items
         for addr, reg in registers_to_save.items():
+          if reg.read_ts < 1776451743: # It's just my current time)
+            raise RuntimeError("Register read timestamp is empty")
+
           self._check_address_match(addr, reg.address)
           # Store using the address as a string key for JSON compatibility
           cache_content["registers"][str(addr)] = {
-            "time": current_time,
+            "reg_ts": int(reg.read_ts * self._ts_multiplier),
             "data": reg.values,
           }
 
@@ -130,6 +137,7 @@ class DeyeRegistersBaseCacheManager(ABC):
         )
 
         self._save_json(json_string)
+        self._logger.info(f'{self._name} saved {len(registers_to_save)} registers to cache')
     except DeyeKnownException:
       raise
     except Exception as ee:
@@ -146,9 +154,12 @@ class DeyeRegistersBaseCacheManager(ABC):
     try:
       with self._exclusive_lock_context():
         self._reset()
-    except DeyeKnownException:
+      self._logger.info(f'{self._name} cache reset successful')
+    except DeyeKnownException as e:
+      self._logger.error("%s: cache write error: %s", self._name, e, exc_info = True)
       raise
     except Exception as ee:
+      self._logger.error("%s: cache write error: %s", self._name, ee, exc_info = True)
       raise DeyeCacheException(f"{self._name}: cache reset error: {ee}") from ee
 
   def _check_address_match(self, key: int, address: int) -> None:

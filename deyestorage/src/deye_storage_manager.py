@@ -181,16 +181,34 @@ class DeyeStorageManager:
     update: Dict[str, Any],
   ) -> None:
     """
-    Recursively merge dictionary 'update' into 'source'.
+      Recursively merge dictionary 'update' into 'source' with race condition protection.
 
-    The merge is performed in-place:
-    - nested dictionaries are merged recursively
-    - other values are overwritten
-    """
+      The merge is performed in-place. If a dictionary contains a 'time' key, 
+      the update is only applied if the incoming timestamp is strictly newer.
+      """
     for key, value in update.items():
       src_value = source.get(key)
+
+      # Check if we are dealing with an object that has a timestamp
       if isinstance(value, dict) and isinstance(src_value, dict):
-        # If both are dicts, go deeper
+        value_time = value.get("reg_ts")
+        src_time = src_value.get("reg_ts")
+
+        # If the cached timestamp is newer or equal, skip updating this specific object.
+        # This prevents older network packets from overwriting fresh data.
+        if isinstance(value_time, (int, float)) and isinstance(src_time, (int, float)) and src_time >= value_time:
+          # Log the skip event with details for debugging
+          self._logger.warning(
+            "Stale data ignored for key '%s': incoming time (%s) <= cached time (%s)",
+            key,
+            value_time,
+            src_time,
+          )
+          continue
+
+      # Standard recursive logic for nested structures
+      if isinstance(value, dict) and isinstance(src_value, dict):
+        # If both are dictionaries, proceed deeper into the tree
         self._deep_merge(src_value, value)
       else:
         # Otherwise, just overwrite or add the value
