@@ -1,5 +1,4 @@
 from typing import Dict
-from datetime import datetime
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
@@ -44,23 +43,19 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
     if self._default_caching_time < 1:
       # Do NOT use any caching on read
       self._registers = await self._read_from_inverter(self._registers)
-      await self._cache_manager.save_to_cache(self._registers)
+      if self._can_cache():
+        await self._cache_manager.save_to_cache(self._registers)
       return
-
-    now = datetime.now()
 
     cached_registers: Dict[int, DeyeRegisterCacheData] = {}
 
-    # Reset cache during the last and first 5 minutes of the day
-    if_first_5_minutes = now.hour == 0 and now.minute <= 5
-    if_last_5_minutes = now.hour == 23 and now.minute >= 55
-
-    if if_first_5_minutes or if_last_5_minutes:
+    if self._can_cache():
+      cached_registers = await self._cache_manager.get_cached_registers(self._registers)
+    else:
+      # Reset cache during the last and first 5 minutes of the day
       if self._verbose:
         self._log.info(f'{self.name} resetting cache because midnight')
       await self._cache_manager.reset_cache()
-    else:
-      cached_registers = await self._cache_manager.get_cached_registers(self._registers)
 
     if self._verbose:
       registers_caching_time = {addr: reg.caching_time for addr, reg in self._registers.items()}
@@ -76,7 +71,8 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
 
     if uncached_registers:
       polled_registers = await self._read_from_inverter(uncached_registers)
-      await self._cache_manager.save_to_cache(polled_registers)
+      if self._can_cache():
+        await self._cache_manager.save_to_cache(polled_registers)
       self._registers = {**cached_registers, **polled_registers}
     else:
       self._registers = cached_registers
@@ -135,7 +131,8 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
         self._registers[reg.address] = reg
 
         # Update the persistent JSON cache
-        await self._cache_manager.save_to_cache({reg.address: reg})
+        if self._can_cache():
+          await self._cache_manager.save_to_cache({reg.address: reg})
 
       self._registers_to_write.clear()
     except Exception as e:

@@ -1,7 +1,7 @@
 import logging
 
 from typing import Dict, List, Optional
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
@@ -98,6 +98,12 @@ class DeyeModbusInteractor:
       self._log.info(f'register groups to read from {self.name}:\n{grp}')
 
     return groups
+
+  def _can_cache(self) -> bool:
+    now = datetime.now()
+    if_first_minutes = now.hour == 0 and now.minute <= 5
+    if_last_minutes = now.hour == 23 and now.minute >= 55
+    return not if_first_minutes and not if_last_minutes
 
   def disconnect(self) -> None:
     self._registers.clear()
