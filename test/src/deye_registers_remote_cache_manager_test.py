@@ -254,6 +254,135 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
         current_ts = time.time(),
       )
 
+  def test_remote_stale_data_not_overwriting_new_on_server(self):
+    """
+    LOGIC: Verify that older data (by read_ts) does not overwrite newer data on the server.
+    This relies on the server-side deep_merge logic using 'reg_ts'.
+    """
+    address = 200
+    now = time.time()
+
+    # 1. Save "Fresh" data
+    fresh_reg = DeyeRegisterCacheData(
+      address = address,
+      quantity = 1,
+      caching_time = 60,
+      values = [999], # Newer value
+      read_ts = now,
+    )
+
+    self.cache_manager.save_to_cache({address: fresh_reg})
+
+    # 2. Attempt to save "Stale" data for the same address
+    stale_reg = DeyeRegisterCacheData(
+      address = address,
+      quantity = 1,
+      caching_time = 60,
+      values = [111], # Older value
+      read_ts = now - 100 # 100 seconds in the past
+    )
+    self.cache_manager.save_to_cache({address: stale_reg})
+
+    # 3. Retrieve and verify
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = {address: fresh_reg},
+      current_ts = time.time(),
+    )
+
+    self.assertEqual(results[address].values, [999])
+
+  def test_remote_equal_timestamp_not_overwriting(self):
+    """
+    LOGIC: Verify that data with the same timestamp is ignored by the server 
+    to prevent redundant writes.
+    """
+    address = 300
+    ts = time.time()
+
+    # 1. Initial save
+    reg_v1 = DeyeRegisterCacheData(
+      address = address,
+      quantity = 1,
+      caching_time = 60,
+      values = [10],
+      read_ts = ts,
+    )
+    self.cache_manager.save_to_cache({address: reg_v1})
+
+    # 2. Save same timestamp but different value
+    reg_v2 = DeyeRegisterCacheData(
+      address = address,
+      quantity = 1,
+      caching_time = 60,
+      values = [20],
+      read_ts = ts # Exact same timestamp
+    )
+    self.cache_manager.save_to_cache({address: reg_v2})
+
+    # 3. Retrieve and verify
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = {address: reg_v1},
+      current_ts = time.time(),
+    )
+
+    self.assertEqual(results[address].values, [10])
+
+  def test_remote_mixed_freshness_in_batch(self):
+    """
+    LOGIC: Verify that in a batch update, fresh registers are updated 
+    while stale ones in the same dictionary are ignored.
+    """
+    now = time.time()
+
+    # Pre-populate server with initial data
+    initial_map = {
+      401: DeyeRegisterCacheData(
+        address = 401,
+        quantity = 1,
+        caching_time = 60,
+        values = [1],
+        read_ts = now,
+      ),
+      402: DeyeRegisterCacheData(
+        address = 402,
+        quantity = 1,
+        caching_time = 60,
+        values = [2],
+        read_ts = now,
+      )
+    }
+    self.cache_manager.save_to_cache(initial_map)
+
+    # Batch update: 401 is fresh, 402 is stale
+    batch_update = {
+      401:
+      DeyeRegisterCacheData(
+        address = 401,
+        quantity = 1,
+        caching_time = 60,
+        values = [100],
+        read_ts = now + 10 # Newer
+      ),
+      402:
+      DeyeRegisterCacheData(
+        address = 402,
+        quantity = 1,
+        caching_time = 60,
+        values = [200],
+        read_ts = now - 10 # Older
+      )
+    }
+    self.cache_manager.save_to_cache(batch_update)
+
+    # Retrieve all
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = batch_update,
+      current_ts = time.time(),
+    )
+
+    self.assertEqual(results[401].values, [100])
+    self.assertEqual(results[402].values, [2])
+
 if __name__ == "__main__":
   logging.basicConfig(
     level = logging.INFO,
