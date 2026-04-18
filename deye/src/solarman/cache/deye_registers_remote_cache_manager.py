@@ -35,16 +35,15 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     Fetches the current state of the cache to be used for reading and displaying data.
     """
     try:
-      response = self._session.get(self._inverter_cache_endpoint, timeout = 5)
+      with self._session.get(self._inverter_cache_endpoint, timeout = 5) as response:
+        # Treat 404 as an empty result (key is missing in the cache)
+        if response.status_code == HTTPStatus.NOT_FOUND:
+          return "{}"
 
-      # Treat 404 as an empty result (key is missing in the cache)
-      if response.status_code == HTTPStatus.NOT_FOUND:
-        return "{}"
+        response.raise_for_status()
 
-      response.raise_for_status()
-
-      # FastAPI returns a dict, we convert it back to string to satisfy base class
-      return response.text
+        # FastAPI returns a dict, we convert it back to string to satisfy base class
+        return response.text
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(
         e, f"{self._name}: error reading "
@@ -63,14 +62,13 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     try:
       headers = {'Content-Type': 'application/json'}
 
-      response = self._session.post(
-        self._inverter_cache_endpoint,
-        data = json_string,
-        headers = headers,
-        timeout = 5,
-      )
-
-      response.raise_for_status()
+      with self._session.post(
+          self._inverter_cache_endpoint,
+          data = json_string,
+          headers = headers,
+          timeout = 5,
+      ) as response:
+        response.raise_for_status()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(
         e, f"{self._name}: error writing remote cache "
@@ -79,11 +77,10 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
   def _reset(self) -> None:
     try:
       # Clear all cached data for all inverters
-      response = self._session.delete(self._inverter_cache_endpoint, timeout = 5)
-
-      # Check if the status code is 2xx
-      if response.status_code != HTTPStatus.NOT_FOUND:
-        response.raise_for_status()
+      with self._session.delete(self._inverter_cache_endpoint, timeout = 5) as response:
+        # Check if the status code is 2xx
+        if response.status_code != HTTPStatus.NOT_FOUND:
+          response.raise_for_status()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(
         e, f"{self._name}: error resetting remote cache "
@@ -101,8 +98,8 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     """
     try:
       ping_endpoint = urljoin(self._remote_cache_server, "/ping")
-      response = self._session.get(ping_endpoint, timeout = 3)
-      response.raise_for_status()
+      with self._session.get(ping_endpoint, timeout = 3) as response:
+        response.raise_for_status()
       return True
     except Exception as e:
       raise DeyeCacheException(f"{self._name}: remote cache server "
