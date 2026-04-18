@@ -191,6 +191,6 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
       cache_cnt = js.get("total1", 0)
       total = js.get("total1", 0) + js.get("total2", 0)
 
-      self._log.info(f'global cache hit rate: {hit_rate}% {cache_cnt}/{total}')
+      self._log.info(f'global cache hit rate: {hit_rate}% {cache_cnt:g}/{total:g}')
     except Exception as e:
       self._log.error("%s: error updating cache hit rate: %s", self.name, e, exc_info = True)
