@@ -109,15 +109,17 @@ class DeyeModbusInteractor:
     return not if_first_minutes and not if_last_minutes
 
   def _log_cache_hit_rate(self) -> None:
-    total = DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_CACHE + \
-            DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_INVERTER
+    cache_cnt = DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_CACHE
+    inv_cnt = DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_INVERTER
+
+    total = cache_cnt + inv_cnt
 
     if total == 0:
       hit_rate = 0
     else:
-      hit_rate = round((DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_CACHE / total) * 100)
+      hit_rate = round((cache_cnt / total) * 100)
 
-    self._log.info(f'{self.name} cache hit rate: {hit_rate}%')
+    self._log.info(f'{self.name} cache hit rate: {cache_cnt}/{total} {hit_rate}%')
 
   def disconnect(self) -> None:
     self._registers.clear()
