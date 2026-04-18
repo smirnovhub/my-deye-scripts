@@ -119,7 +119,7 @@ class DeyeModbusInteractor:
     else:
       hit_rate = round((cache_cnt / total) * 100)
 
-    self._log.info(f'{self.name} cache hit rate: {cache_cnt}/{total} {hit_rate}%')
+    self._log.info(f'{self.name} cache hit rate: {hit_rate}% {cache_cnt}/{total}')
 
   def disconnect(self) -> None:
     self._registers.clear()
