@@ -61,6 +61,7 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
       quantity = 1,
       caching_time = 60,
       values = [42],
+      read_ts = time.time(),
     )
 
   def tearDown(self):
@@ -82,7 +83,10 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     self.cache_manager.save_to_cache({100: self.reg_100})
 
     # Retrieve
-    results = self.cache_manager.get_cached_registers({100: self.reg_100})
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = {100: self.reg_100},
+      current_ts = time.time(),
+    )
 
     self.assertIn(100, results)
     self.assertEqual(results[100].values, [42])
@@ -97,9 +101,29 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     # Reg 500: Short TTL (1s) -> should expire
     # Reg 600: Long TTL (60s) -> should stay
     # Reg 700: Long TTL (60s) -> should stay
-    short_ttl_reg = DeyeRegisterCacheData(500, 1, 1, [555])
-    long_ttl_reg1 = DeyeRegisterCacheData(600, 2, 30, [666, 777])
-    long_ttl_reg2 = DeyeRegisterCacheData(700, 1, 60, [888])
+    short_ttl_reg = DeyeRegisterCacheData(
+      address = 500,
+      quantity = 1,
+      caching_time = 1,
+      values = [555],
+      read_ts = time.time(),
+    )
+
+    long_ttl_reg1 = DeyeRegisterCacheData(
+      address = 600,
+      quantity = 2,
+      caching_time = 30,
+      values = [666, 777],
+      read_ts = time.time(),
+    )
+
+    long_ttl_reg2 = DeyeRegisterCacheData(
+      address = 700,
+      quantity = 1,
+      caching_time = 60,
+      values = [888],
+      read_ts = time.time(),
+    )
 
     registers_map = {
       short_ttl_reg.address: short_ttl_reg,
@@ -111,14 +135,21 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     self.cache_manager.save_to_cache(registers_map)
 
     # 3. Verify they all exist initially
-    res_initial = self.cache_manager.get_cached_registers(registers_map)
+    res_initial = self.cache_manager.get_cached_registers(
+      registers_to_check = registers_map,
+      current_ts = time.time(),
+    )
+
     self.assertEqual(len(res_initial), 3, "Initially all 3 registers should be in cache")
 
     # 4. Wait for the short TTL to expire (TTL=1, wait 2s for stability)
     time.sleep(3)
 
     # 5. Retrieve again
-    res_after = self.cache_manager.get_cached_registers(registers_map)
+    res_after = self.cache_manager.get_cached_registers(
+      registers_to_check = registers_map,
+      current_ts = time.time(),
+    )
 
     # 6. Assertions
     self.assertEqual(len(res_after), 2, "Only 2 registers should remain after partial expiration")
@@ -139,11 +170,25 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     self.cache_manager.save_to_cache({100: self.reg_100})
 
     # 2. Save second
-    reg_200 = DeyeRegisterCacheData(200, 1, 60, [84])
+    reg_200 = DeyeRegisterCacheData(
+      address = 200,
+      quantity = 1,
+      caching_time = 60,
+      values = [84],
+      read_ts = time.time(),
+    )
+
     self.cache_manager.save_to_cache({200: reg_200})
 
     # 3. Check both via base class method
-    results = self.cache_manager.get_cached_registers({100: self.reg_100, 200: reg_200})
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = {
+        100: self.reg_100,
+        200: reg_200
+      },
+      current_ts = time.time(),
+    )
+
     self.assertEqual(len(results), 2)
     self.assertEqual(results[100].values, [42])
     self.assertEqual(results[200].values, [84])
@@ -157,7 +202,10 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
       f.write("{ broken json ...")
 
     with self.assertRaises(DeyeCacheException) as cm:
-      self.cache_manager.get_cached_registers({100: self.reg_100})
+      self.cache_manager.get_cached_registers(
+        registers_to_check = {100: self.reg_100},
+        current_ts = time.time(),
+      )
 
     self.assertIn("json parse error", str(cm.exception))
 
@@ -168,7 +216,11 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     self.cache_manager.save_to_cache({100: self.reg_100})
     self.cache_manager.reset_cache()
 
-    results = self.cache_manager.get_cached_registers({100: self.reg_100})
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = {100: self.reg_100},
+      current_ts = time.time(),
+    )
+
     self.assertEqual(len(results), 0)
 
   def test_save_to_cache_permission_error_preserves_old_data(self):
@@ -176,7 +228,14 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     Test that old cache data is preserved when a permission error occurs during save.
     """
     # 1. Save valid data
-    reg = DeyeRegisterCacheData(100, 1, 60, [111])
+    reg = DeyeRegisterCacheData(
+      address = 100,
+      quantity = 1,
+      caching_time = 60,
+      values = [111],
+      read_ts = time.time(),
+    )
+
     self.cache_manager.save_to_cache({100: reg})
 
     # 2. Make file Read-Only
@@ -185,13 +244,26 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     try:
       # 3. Try to update - should fail
       with self.assertRaises(DeyeCacheException):
-        self.cache_manager.save_to_cache({100: DeyeRegisterCacheData(100, 1, 60, [999])})
+        self.cache_manager.save_to_cache({
+          100:
+          DeyeRegisterCacheData(
+            address = 100,
+            quantity = 1,
+            caching_time = 60,
+            values = [999],
+            read_ts = time.time(),
+          )
+        })
     finally:
       # Restore permissions for cleanup
       os.chmod(self.expected_file_path, 0o666)
 
     # 4. Check data is still 111
-    res = self.cache_manager.get_cached_registers({100: reg})
+    res = self.cache_manager.get_cached_registers(
+      registers_to_check = {100: reg},
+      current_ts = time.time(),
+    )
+
     self.assertEqual(res[100].values, [111])
 
   def test_empty_register_data_retrieval(self):
@@ -201,10 +273,20 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     """
     quantity = 2
     # Passing [] should result in [0, 0] due to class logic
-    empty_data_reg = DeyeRegisterCacheData(100, quantity, 60, [])
+    empty_data_reg = DeyeRegisterCacheData(
+      address = 100,
+      quantity = quantity,
+      caching_time = 60,
+      values = [],
+      read_ts = time.time(),
+    )
+
     self.cache_manager.save_to_cache({100: empty_data_reg})
 
-    results = self.cache_manager.get_cached_registers({100: empty_data_reg})
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = {100: empty_data_reg},
+      current_ts = time.time(),
+    )
 
     # Expecting the default zeros based on quantity
     self.assertEqual(results[100].values, [0] * quantity)
@@ -233,13 +315,33 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
     manager1._cache_filename = self.expected_file_path
     manager2._cache_filename = self.expected_file_path
 
-    reg1 = DeyeRegisterCacheData(101, 1, 60, [1])
-    reg2 = DeyeRegisterCacheData(102, 1, 60, [2])
+    reg1 = DeyeRegisterCacheData(
+      address = 101,
+      quantity = 1,
+      caching_time = 60,
+      values = [1],
+      read_ts = time.time(),
+    )
+
+    reg2 = DeyeRegisterCacheData(
+      address = 102,
+      quantity = 1,
+      caching_time = 60,
+      values = [2],
+      read_ts = time.time(),
+    )
 
     manager1.save_to_cache({101: reg1})
     manager2.save_to_cache({102: reg2})
 
-    results = manager1.get_cached_registers({101: reg1, 102: reg2})
+    results = manager1.get_cached_registers(
+      registers_to_check = {
+        101: reg1,
+        102: reg2
+      },
+      current_ts = time.time(),
+    )
+
     self.assertEqual(len(results), 2, "Should contain data from both managers")
 
   def test_dangerous_inverter_names(self):
