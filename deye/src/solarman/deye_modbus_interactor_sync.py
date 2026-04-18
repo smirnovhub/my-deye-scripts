@@ -183,7 +183,7 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
       request = f"/average/cache_hit_rate/{got_from_cache}/{got_from_inverter}"
       url = urljoin(self._loggers.remote_cache_server, request)
 
-      with self._session.get(url, timeout = 3) as response:
+      with self._session.post(url, timeout = 3) as response:
         response.raise_for_status()
         js = response.json()
 
