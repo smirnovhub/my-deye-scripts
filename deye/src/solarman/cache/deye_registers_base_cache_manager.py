@@ -64,7 +64,7 @@ class DeyeRegistersBaseCacheManager(ABC):
           cached_time = entry.get("reg_ts", 0)
 
           # Check if the cached data is still valid by time duration
-          if (current_time - cached_time) > reg.caching_time:
+          if (current_time - cached_time) > (reg.caching_time * self._ts_multiplier):
             continue
 
           # Check if midnight was crossed since the last cache update
