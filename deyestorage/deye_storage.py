@@ -23,6 +23,7 @@ config = DeyeStorageConfig()
 DATA_DIR = f"data/{config.LOG_NAME}"
 # Path for the persistent storage file
 STORAGE_FILE_PATH = os.path.join(DATA_DIR, "storage.json")
+CACHE_FILE_PATH = os.path.join(DATA_DIR, "cache.json")
 
 logger = LogUtils.setup_hourly_overwrite_file_logger(
   log_dir = DATA_DIR,
@@ -71,6 +72,7 @@ async def lifespan_handler(app: FastAPI):
 
   # Storage save logic
   storage_manager.save_to_file(STORAGE_FILE_PATH)
+  cache_manager.save_to_file(CACHE_FILE_PATH)
 
   # This code runs on shutdown
   logger.info("Deye Storage service is shutting down...")
