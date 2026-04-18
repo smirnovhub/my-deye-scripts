@@ -119,3 +119,13 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
       bool: True if cache is available for use or False if not available
     """
     return True
+
+  def update_cache_hit_rate(
+    self,
+    got_from_cache: int,
+    got_from_inverter: int,
+  ) -> None:
+    self._logger.warning("%s: cache hit rate update is not supported", self._name)
+
+  def reset_cache_hit_rate(self) -> None:
+    self._logger.warning("%s: cache hit rate reset is not supported", self._name)

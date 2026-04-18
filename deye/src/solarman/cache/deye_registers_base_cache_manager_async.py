@@ -222,3 +222,15 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
   @abstractmethod
   async def _reset(self) -> None:
     pass
+
+  @abstractmethod
+  async def update_cache_hit_rate(
+    self,
+    got_from_cache: int,
+    got_from_inverter: int,
+  ) -> None:
+    pass
+
+  @abstractmethod
+  async def reset_cache_hit_rate(self) -> None:
+    pass

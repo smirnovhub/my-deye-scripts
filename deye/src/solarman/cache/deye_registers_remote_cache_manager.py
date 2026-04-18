@@ -24,6 +24,8 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     self._remote_cache_server = remote_cache_server
     # Added inverter name to the endpoint path to match FastAPI routes
     self._inverter_cache_endpoint = urljoin(remote_cache_server, f"/cache/{self._name}-{self._serial}")
+    self._average_hit_rate_endpoint = urljoin(remote_cache_server, f"/average/{self._name}-{self._serial}")
+
     self._session = HttpSessionSingleton().session
 
     self._logger.info(f"{self._name} {self.__class__.__name__} initialized")
@@ -104,3 +106,33 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
     except Exception as e:
       raise DeyeCacheException(f"{self._name}: remote cache server "
                                f"{self._remote_cache_server} seems to be down") from e
+
+  def update_cache_hit_rate(
+    self,
+    got_from_cache: int,
+    got_from_inverter: int,
+  ) -> None:
+    try:
+      request = f"{got_from_cache}/{got_from_inverter}"
+      url = urljoin(self._average_hit_rate_endpoint, request)
+
+      with self._session.post(url, timeout = 3) as response:
+        response.raise_for_status()
+        js = response.json()
+
+      hit_rate = round(js.get("average", 0.0) * 100)
+      cache_cnt = js.get("total1", 0)
+      total = js.get("total1", 0) + js.get("total2", 0)
+
+      self._logger.info(f'{self._name} global cache hit rate: {hit_rate}% {cache_cnt:g}/{total:g}')
+    except Exception as e:
+      self._logger.error("%s: error updating cache hit rate: %s", self._name, e, exc_info = True)
+
+  def reset_cache_hit_rate(self) -> None:
+    try:
+      with self._session.delete(self._average_hit_rate_endpoint, timeout = 3) as response:
+        response.raise_for_status()
+
+      self._logger.info(f'{self._name} global cache reset successful')
+    except Exception as e:
+      self._logger.error("%s: error resetting cache hit rate: %s", self._name, e, exc_info = True)

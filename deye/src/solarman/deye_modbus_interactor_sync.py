@@ -1,13 +1,11 @@
 import time
 
 from typing import Dict
-from urllib.parse import urljoin
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_modbus_solarman import DeyeModbusSolarman
-from http_session_singleton import HttpSessionSingleton
 from deye_register_cache_data import DeyeRegisterCacheData
 from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
 from deye_registers_local_cache_manager import DeyeRegistersLocalCacheManager
@@ -25,7 +23,6 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     )
 
     self._solarman = DeyeModbusSolarman(logger, **kwargs)
-    self._session = HttpSessionSingleton().session
 
     # Initialize cache manager
     self._cache_manager: DeyeRegistersBaseCacheManager
@@ -87,10 +84,11 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     else:
       self._registers = cached_registers
 
-    self._update_cache_hit_rate(
-      got_from_cache = len(cached_registers),
-      got_from_inverter = len(uncached_registers),
-    )
+    if self._can_cache():
+      self._cache_manager.update_cache_hit_rate(
+        got_from_cache = len(cached_registers),
+        got_from_inverter = len(uncached_registers),
+      )
 
   def _read_from_inverter(
     self,
@@ -173,24 +171,4 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
 
   def reset_cache(self) -> None:
     self._cache_manager.reset_cache()
-
-  def _update_cache_hit_rate(
-    self,
-    got_from_cache: int,
-    got_from_inverter: int,
-  ) -> None:
-    try:
-      request = f"/average/cache_hit_rate/{got_from_cache}/{got_from_inverter}"
-      url = urljoin(self._loggers.remote_cache_server, request)
-
-      with self._session.post(url, timeout = 3) as response:
-        response.raise_for_status()
-        js = response.json()
-
-      hit_rate = round(js.get("average", 0.0) * 100)
-      cache_cnt = js.get("total1", 0)
-      total = js.get("total1", 0) + js.get("total2", 0)
-
-      self._log.info(f'global cache hit rate: {hit_rate}% {cache_cnt:g}/{total:g}')
-    except Exception as e:
-      self._log.error("%s: error updating cache hit rate: %s", self.name, e, exc_info = True)
+    self._cache_manager.reset_cache_hit_rate()

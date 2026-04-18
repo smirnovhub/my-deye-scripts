@@ -2,14 +2,12 @@ import time
 import asyncio
 
 from typing import Dict
-from urllib.parse import urljoin
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_modbus_solarman_async import DeyeModbusSolarmanAsync
 from deye_register_cache_data import DeyeRegisterCacheData
-from http_session_singleton_async import HttpSessionSingletonAsync
 from deye_registers_base_cache_manager_async import DeyeRegistersBaseCacheManagerAsync
 from deye_registers_local_cache_manager_async import DeyeRegistersLocalCacheManagerAsync
 from deye_registers_remote_cache_manager_async import DeyeRegistersRemoteCacheManagerAsync
@@ -88,11 +86,12 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
       self._registers = cached_registers
 
     # Launch the update in the background without blocking the current flow
-    asyncio.create_task(
-      self._update_cache_hit_rate(
-        got_from_cache = len(cached_registers),
-        got_from_inverter = len(uncached_registers),
-      ))
+    if self._can_cache():
+      asyncio.create_task(
+        self._cache_manager.update_cache_hit_rate(
+          got_from_cache = len(cached_registers),
+          got_from_inverter = len(uncached_registers),
+        ))
 
   async def _read_from_inverter(
     self,
@@ -174,25 +173,7 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
       await self._solarman.disconnect()
 
   async def reset_cache(self) -> None:
-    await self._cache_manager.reset_cache()
-
-  async def _update_cache_hit_rate(
-    self,
-    got_from_cache: int,
-    got_from_inverter: int,
-  ) -> None:
-    try:
-      session = await HttpSessionSingletonAsync.get_session()
-      request = f"/average/cache_hit_rate/{got_from_cache}/{got_from_inverter}"
-      url = urljoin(self._loggers.remote_cache_server, request)
-      async with session.post(url) as response:
-        response.raise_for_status()
-        js = await response.json()
-
-      hit_rate = round(js.get("average", 0.0) * 100)
-      cache_cnt = js.get("total1", 0)
-      total = js.get("total1", 0) + js.get("total2", 0)
-
-      self._log.info(f'global cache hit rate: {hit_rate}% {cache_cnt:g}/{total:g}')
-    except Exception as e:
-      self._log.error("%s: error updating cache hit rate: %s", self.name, e, exc_info = True)
+    await asyncio.gather(
+      self._cache_manager.reset_cache(),
+      self._cache_manager.reset_cache_hit_rate(),
+    )
