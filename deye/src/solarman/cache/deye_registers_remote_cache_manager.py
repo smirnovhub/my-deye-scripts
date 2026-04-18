@@ -114,7 +114,7 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
   ) -> None:
     try:
       request = f"{got_from_cache}/{got_from_inverter}"
-      url = urljoin(self._average_hit_rate_endpoint, request)
+      url = urljoin(f"{self._average_hit_rate_endpoint}/", request)
 
       with self._session.post(url, timeout = 3) as response:
         response.raise_for_status()
@@ -126,13 +126,15 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
 
       self._logger.info(f'{self._name} global cache hit rate: {hit_rate}% {cache_cnt:g}/{total:g}')
     except Exception as e:
-      self._logger.error("%s: error updating cache hit rate: %s", self._name, e, exc_info = True)
+      self._logger.error("%s: error updating global cache hit rate: %s", self._name, e, exc_info = True)
 
   def reset_cache_hit_rate(self) -> None:
     try:
       with self._session.delete(self._average_hit_rate_endpoint, timeout = 3) as response:
-        response.raise_for_status()
-
-      self._logger.info(f'{self._name} global cache reset successful')
+        if response.status_code == HTTPStatus.NOT_FOUND:
+          self._logger.warning(f'{self._name} global cache hit rate not found')
+        else:
+          response.raise_for_status()
+          self._logger.info(f'{self._name} global cache hit rate reset successful')
     except Exception as e:
-      self._logger.error("%s: error resetting cache hit rate: %s", self._name, e, exc_info = True)
+      self._logger.error("%s: error resetting global cache hit rate: %s", self._name, e, exc_info = True)
