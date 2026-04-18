@@ -175,6 +175,81 @@ class DeyeStorageManager:
     else:
       self._logger.warning(f"File {filename} doesn't exist.")
 
+  def get_average(self, key: str) -> Dict[str, Any]:
+    """
+    Retrieves the current average and totals for the specified key.
+    Returns the data directly from storage.
+    """
+    # Use existing get method to handle 404 if key is missing
+    data = self.get(key)
+
+    if not data:
+      raise HTTPException(status_code = 404, detail = "Key not found")
+
+    # Return only relevant statistical fields
+    return {
+      "key": key,
+      "average": data.get("average", 0.0),
+      "total1": data.get("total1", 0.0),
+      "total2": data.get("total2", 0.0),
+    }
+
+  async def update_average(
+    self,
+    key: str,
+    count1: float,
+    count2: float,
+    request: Request,
+  ) -> Dict[str, Any]:
+    """
+    Updates two totals and returns the calculated average in the response.
+    Formula: average = total1 / (total1 + total2)
+    """
+    async with self._locks_lock:
+      # Key initialization and storage limit check
+      if key not in self._locks:
+        if len(self._storage) >= self._config.MAX_KEYS_COUNT:
+          raise HTTPException(status_code = 403, detail = "Maximum number of keys exceeded")
+        self._locks[key] = asyncio.Lock()
+      lock = self._locks[key]
+
+    async with lock:
+      # Metadata for the update process
+      header = {
+        "last_update_ts": int(time.time()),
+        "last_update_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "last_update_by": request.client.host if request.client else "unknown",
+      }
+
+      # Get current state from storage or set defaults
+      current_data = self._storage.get(key, {
+        "total1": 0.0,
+        "total2": 0.0,
+        "average": 0.0,
+      })
+
+      # Add new incoming values to existing totals
+      current_data["total1"] += count1
+      current_data["total2"] += count2
+
+      # Calculate the weighted average (ratio)
+      # Guard against division by zero if both totals are zero
+      total = current_data["total1"] + current_data["total2"]
+      current_data["average"] = current_data["total1"] / total if total != 0 else 0.0
+
+      # Update storage and apply metadata
+      current_data.update(header)
+      self._storage[key] = current_data
+
+      # The response body will contain the new average immediately
+      return {
+        "status": "success",
+        "key": key,
+        "average": current_data["average"],
+        "total1": current_data["total1"],
+        "total2": current_data["total2"]
+      }
+
   def _deep_merge(
     self,
     source: Dict[str, Any],

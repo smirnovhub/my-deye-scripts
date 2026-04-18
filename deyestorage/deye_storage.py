@@ -189,6 +189,30 @@ async def remove_storage_by_key(key: str):
   """
   return await storage_manager.remove(key = key)
 
+#########################################
+### AVERAGE LOGIC (TEMPORARY STORAGE) ###
+#########################################
+
+@app.get("/average/{key}", tags = ["Average Operations"])
+async def get_average(key: str):
+  """
+  Get the current calculated average and both totals for the specified key.
+  """
+  return cache_manager.get_average(key)
+
+@app.post("/average/{key}/{count1}/{count2}", tags = ["Average Operations"])
+async def update_average(key: str, count1: float, count2: float, request: Request):
+  """
+  Update totals using path parameters: /average/my_key/10.5/20
+  Returns the calculated weighted average: total1 / (total1 + total2)
+  """
+  return await cache_manager.update_average(
+    key = key,
+    count1 = count1,
+    count2 = count2,
+    request = request,
+  )
+
 @app.options("/storage", tags = ["Storage Statistics Operations"])
 async def get_storage_stat():
   return storage_manager.get_stat()
