@@ -112,18 +112,18 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
   ) -> None:
     try:
       session = await HttpSessionSingletonAsync.get_session()
-      request = f"{got_from_cache}/{got_from_inverter}"
+      request = f"{got_from_cache}/{got_from_inverter}" # count1/count2
       url = urljoin(f"{self._average_hit_rate_endpoint}/", request)
 
       async with session.post(url) as response:
         response.raise_for_status()
         js = await response.json()
 
+      got_from_cache_cnt = js.get("count1", 0)
+      total = js.get("total", 0)
       hit_rate = round(js.get("average", 0.0) * 100)
-      cache_cnt = js.get("total1", 0)
-      total = js.get("total1", 0) + js.get("total2", 0)
 
-      self._logger.info(f'{self._name} global cache hit rate: {hit_rate}% {cache_cnt:g}/{total:g}')
+      self._logger.info(f'{self._name} global cache hit rate: {hit_rate}% {got_from_cache_cnt:g}/{total:g}')
     except Exception as e:
       self._logger.error("%s: error updating global cache hit rate: %s", self._name, e, exc_info = True)
 

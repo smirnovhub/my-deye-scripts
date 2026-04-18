@@ -190,8 +190,8 @@ class DeyeStorageManager:
     return {
       "key": key,
       "average": data.get("average", 0.0),
-      "total1": data.get("total1", 0.0),
-      "total2": data.get("total2", 0.0),
+      "count1": data.get("count1", 0.0),
+      "count2": data.get("count2", 0.0),
     }
 
   async def update_average(
@@ -203,7 +203,7 @@ class DeyeStorageManager:
   ) -> Dict[str, Any]:
     """
     Updates two totals and returns the calculated average in the response.
-    Formula: average = total1 / (total1 + total2)
+    Formula: average = count1 / (count1 + count2)
     """
     async with self._locks_lock:
       # Key initialization and storage limit check
@@ -223,19 +223,21 @@ class DeyeStorageManager:
 
       # Get current state from storage or set defaults
       current_data = self._storage.get(key, {
-        "total1": 0.0,
-        "total2": 0.0,
+        "count1": 0.0,
+        "count2": 0.0,
+        "total": 0.0,
         "average": 0.0,
       })
 
       # Add new incoming values to existing totals
-      current_data["total1"] += count1
-      current_data["total2"] += count2
+      current_data["count1"] += count1
+      current_data["count2"] += count2
 
       # Calculate the weighted average (ratio)
       # Guard against division by zero if both totals are zero
-      total = current_data["total1"] + current_data["total2"]
-      current_data["average"] = current_data["total1"] / total if total != 0 else 0.0
+      total = current_data["count1"] + current_data["count2"]
+      current_data["total"] = total
+      current_data["average"] = current_data["count1"] / total if total != 0 else 0.0
 
       # Update storage and apply metadata
       current_data.update(header)
@@ -245,9 +247,10 @@ class DeyeStorageManager:
       return {
         "status": "success",
         "key": key,
+        "count1": current_data["count1"],
+        "count2": current_data["count2"],
+        "total": current_data["total"],
         "average": current_data["average"],
-        "total1": current_data["total1"],
-        "total2": current_data["total2"]
       }
 
   def _deep_merge(
