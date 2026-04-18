@@ -12,9 +12,6 @@ from deye_registers_local_cache_manager import DeyeRegistersLocalCacheManager
 from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
 
 class DeyeModbusInteractorSync(DeyeModbusInteractor):
-  _TOTAL_REGISTERS_GOT_FROM_CACHE = 0
-  _TOTAL_REGISTERS_GOT_FROM_INVERTER = 0
-
   def __init__(
     self,
     logger: DeyeLogger,
@@ -87,8 +84,8 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     else:
       self._registers = cached_registers
 
-    DeyeModbusInteractorSync._TOTAL_REGISTERS_GOT_FROM_CACHE += len(cached_registers)
-    DeyeModbusInteractorSync._TOTAL_REGISTERS_GOT_FROM_INVERTER += len(uncached_registers)
+    DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_CACHE += len(cached_registers)
+    DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_INVERTER += len(uncached_registers)
 
     self._log_cache_hit_rate()
 
@@ -173,13 +170,3 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
 
   def reset_cache(self) -> None:
     self._cache_manager.reset_cache()
-
-  def _log_cache_hit_rate(self) -> None:
-    total = self._TOTAL_REGISTERS_GOT_FROM_CACHE + self._TOTAL_REGISTERS_GOT_FROM_INVERTER
-
-    if total == 0:
-      hit_rate = 0.0
-    else:
-      hit_rate = (self._TOTAL_REGISTERS_GOT_FROM_CACHE / total) * 100
-
-    self._log.info(f'{self.name} cache hit rate: {hit_rate:.2f}%')

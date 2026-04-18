@@ -8,6 +8,9 @@ from deye_loggers import DeyeLoggers
 from deye_register_cache_data import DeyeRegisterCacheData
 
 class DeyeModbusInteractor:
+  _TOTAL_REGISTERS_GOT_FROM_CACHE = 0
+  _TOTAL_REGISTERS_GOT_FROM_INVERTER = 0
+
   def __init__(
     self,
     logger: DeyeLogger,
@@ -104,6 +107,17 @@ class DeyeModbusInteractor:
     if_first_minutes = now.hour == 0 and now.minute <= 5
     if_last_minutes = now.hour == 23 and now.minute >= 55
     return not if_first_minutes and not if_last_minutes
+
+  def _log_cache_hit_rate(self) -> None:
+    total = DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_CACHE + \
+            DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_INVERTER
+
+    if total == 0:
+      hit_rate = 0
+    else:
+      hit_rate = round((DeyeModbusInteractor._TOTAL_REGISTERS_GOT_FROM_CACHE / total) * 100)
+
+    self._log.info(f'{self.name} cache hit rate: {hit_rate}%')
 
   def disconnect(self) -> None:
     self._registers.clear()
