@@ -61,7 +61,7 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
         addr_str = str(addr)
         if addr_str in cached_registry:
           entry = cached_registry[addr_str]
-          cached_time = entry.get("reg_ts", 0)
+          cached_time = entry.get("ts_label", 0)
 
           # Check if the cached data is still valid by time duration
           if (current_time - cached_time) > (reg.caching_time * self._ts_multiplier):
@@ -127,7 +127,7 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
           self._check_address_match(addr, reg.address)
           # Store using the address as a string key for JSON compatibility
           cache_content["registers"][str(addr)] = {
-            "reg_ts": int(reg.read_ts * self._ts_multiplier),
+            "ts_label": int(reg.read_ts * self._ts_multiplier),
             "data": reg.values,
           }
 

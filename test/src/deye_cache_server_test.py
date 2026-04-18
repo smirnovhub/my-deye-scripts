@@ -575,6 +575,101 @@ class TestDeyeCacheExtended(unittest.TestCase):
     final_res = self.session.get(f"{CACHE_URL}/{key}").json()
     self.assertEqual(final_res["metrics"]["temp"]["sub_temp"], 20)
 
+  def test_stale_data_ignored_by_timestamp(self):
+    """
+    LOGIC TEST:
+    Verify that incoming data is ignored if its 'ts_label' is older than or equal to the cached one.
+    """
+    key = "timestamp_test_dev"
+
+    # 1. Initial state with a specific timestamp
+    initial_payload = {
+      "data": {
+        "value": 100,
+        "ts_label": 1700000000 # Newer timestamp
+      }
+    }
+    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = initial_payload).status_code, 200)
+
+    # 2. Try to update with an OLDER timestamp
+    stale_payload = {
+      "data": {
+        "value": 50, # This change should be ignored
+        "ts_label": 1600000000 # Older timestamp
+      }
+    }
+    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = stale_payload).status_code, 200)
+
+    # Verify: value remains 100
+    res = self.session.get(f"{CACHE_URL}/{key}").json()
+    self.assertEqual(res["data"]["value"], 100)
+    self.assertEqual(res["data"]["ts_label"], 1700000000)
+
+    # 3. Try to update with an EQUAL timestamp
+    equal_payload = {
+      "data": {
+        "value": 200, # This change should also be ignored
+        "ts_label": 1700000000 # Same timestamp
+      }
+    }
+    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = equal_payload).status_code, 200)
+
+    # Verify: value still remains 100
+    res_equal = self.session.get(f"{CACHE_URL}/{key}").json()
+    self.assertEqual(res_equal["data"]["value"], 100)
+
+  def test_mixed_timestamp_update(self):
+    """
+    LOGIC TEST:
+    Verify that in a single request, only stale nested objects are ignored 
+    while fresh ones are updated.
+    """
+    key = "mixed_ts_test"
+
+    initial = {"sensor_a": {"val": 10, "ts_label": 1000}, "sensor_b": {"val": 20, "ts_label": 1000}}
+    self.session.post(f"{CACHE_URL}/{key}", json = initial)
+
+    # Update: sensor_a is NEW, sensor_b is STALE
+    mixed_update = {
+      "sensor_a": {
+        "val": 15,
+        "ts_label": 1100
+      }, # Should update
+      "sensor_b": {
+        "val": 99,
+        "ts_label": 900
+      } # Should be ignored
+    }
+    self.session.post(f"{CACHE_URL}/{key}", json = mixed_update)
+
+    res = self.session.get(f"{CACHE_URL}/{key}").json()
+
+    # sensor_a updated to 15
+    self.assertEqual(res["sensor_a"]["val"], 15)
+    # sensor_b stayed at 20
+    self.assertEqual(res["sensor_b"]["val"], 20)
+
+  def test_timestamp_with_different_types(self):
+    """
+    EDGE CASE:
+    Verify that the timestamp logic only triggers when both fields are numbers.
+    If 'ts_label' is missing or not a number, the merge should proceed as usual.
+    """
+    key = "ts_type_test"
+
+    # 1. Initial with integer ts
+    self.session.post(f"{CACHE_URL}/{key}", json = {"obj": {"val": 1, "ts_label": 100}})
+
+    # 2. Update with string ts (should ignore the ts logic and overwrite because it's not int/float)
+    # Based on: if isinstance(value_time, (int, float)) and isinstance(src_time, (int, float))
+    # If one is a string, the condition is False, and it falls through to the standard deep_merge.
+    update = {"obj": {"val": 2, "ts_label": "100"}}
+    self.session.post(f"{CACHE_URL}/{key}", json = update)
+
+    res = self.session.get(f"{CACHE_URL}/{key}").json()
+    self.assertEqual(res["obj"]["val"], 2)
+    self.assertEqual(res["obj"]["ts_label"], "100")
+
 if __name__ == "__main__":
   logging.basicConfig(
     level = logging.INFO,

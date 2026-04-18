@@ -191,8 +191,8 @@ class DeyeStorageManager:
 
       # Check if we are dealing with an object that has a timestamp
       if isinstance(value, dict) and isinstance(src_value, dict):
-        value_time = value.get("reg_ts")
-        src_time = src_value.get("reg_ts")
+        value_time = value.get("ts_label")
+        src_time = src_value.get("ts_label")
 
         # If the cached timestamp is newer or equal, skip updating this specific object.
         # This prevents older network packets from overwriting fresh data.
