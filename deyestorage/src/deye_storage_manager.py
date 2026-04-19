@@ -187,6 +187,7 @@ class DeyeStorageManager:
       raise HTTPException(status_code = 404, detail = "Key not found")
 
     return {
+      "status": "success",
       "key": key,
       "count1": self._clean_num(data.get("count1", 0.0)),
       "count2": self._clean_num(data.get("count2", 0.0)),
@@ -222,35 +223,30 @@ class DeyeStorageManager:
       }
 
       # Get current state from storage or set defaults
-      current_data = self._storage.get(key, {
-        "count1": 0.0,
-        "count2": 0.0,
-        "total": 0.0,
-        "average": 0.0,
-      })
+      data = self._storage.get(key, {})
 
-      # Add new incoming values to existing totals
-      current_data["count1"] += count1
-      current_data["count2"] += count2
+      new_count1 = data.get("count1", 0.0) + count1
+      new_count2 = data.get("count2", 0.0) + count2
 
-      # Calculate the weighted average (ratio)
-      # Guard against division by zero if both totals are zero
-      total = current_data["count1"] + current_data["count2"]
-      current_data["total"] = total
-      current_data["average"] = current_data["count1"] / total if total != 0 else 0.0
+      total = new_count1 + new_count2
+      average = new_count1 / total if total != 0 else 0.0
 
-      # Update storage and apply metadata
-      current_data.update(header)
-      self._storage[key] = current_data
+      raw_values = {
+        "count1": new_count1,
+        "count2": new_count2,
+        "total": total,
+        "average": average,
+      }
+
+      self._storage[key] = {**header, **raw_values}
+
+      clean_values = {k: self._clean_num(v) for k, v in raw_values.items()}
 
       # The response body will contain the new average immediately
       return {
         "status": "success",
         "key": key,
-        "count1": self._clean_num(current_data["count1"]),
-        "count2": self._clean_num(current_data["count2"]),
-        "total": self._clean_num(current_data["total"]),
-        "average": self._clean_num(current_data["average"]),
+        **clean_values,
       }
 
   def _deep_merge(
@@ -292,7 +288,7 @@ class DeyeStorageManager:
         # Otherwise, just overwrite or add the value
         source[key] = value
 
-  def _clean_num(self, v: float) -> Union[float, int]:
+  def _clean_num(self, v: Union[float, int]) -> Union[float, int]:
     """
     Normalizes a float value by rounding and type conversion.
     
@@ -308,5 +304,8 @@ class DeyeStorageManager:
     Returns:
         int | float: An integer if v has no fractional part, else a rounded float.
     """
+    if isinstance(v, int):
+      return v
+
     v = round(v, 10)
     return int(v) if v.is_integer() else v

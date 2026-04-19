@@ -222,7 +222,7 @@ async def remove_average(key: str):
 async def update_average(key: str, count1: float, count2: float, request: Request):
   """
   Update totals using path parameters: /average/my_key/10.5/20
-  Returns the calculated weighted average: total1 / (total1 + total2)
+  Returns the calculated weighted average: count1 / (count1 + count2)
   """
   return await average_manager.update_average(
     key = key,
