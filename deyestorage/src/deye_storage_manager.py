@@ -99,12 +99,7 @@ class DeyeStorageManager:
       lock = self._locks[key]
 
     async with lock:
-      header = {
-        "last_update_ts": int(time.time()),
-        "last_update_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "last_update_by": request.client.host if request.client else "unknown",
-      }
-
+      header = self._get_header(request)
       current_data = self._storage.get(key)
       if not current_data:
         current_data = header.copy()
@@ -215,13 +210,6 @@ class DeyeStorageManager:
       lock = self._locks[key]
 
     async with lock:
-      # Metadata for the update process
-      header = {
-        "last_update_ts": int(time.time()),
-        "last_update_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "last_update_by": request.client.host if request.client else "unknown",
-      }
-
       # Get current state from storage or set defaults
       data = self._storage.get(key, {})
 
@@ -238,7 +226,7 @@ class DeyeStorageManager:
         "average": average,
       }
 
-      self._storage[key] = {**header, **raw_values}
+      self._storage[key] = {**self._get_header(request), **raw_values}
 
       clean_values = {k: self._clean_num(v) for k, v in raw_values.items()}
 
@@ -287,6 +275,13 @@ class DeyeStorageManager:
       else:
         # Otherwise, just overwrite or add the value
         source[key] = value
+
+  def _get_header(self, request: Request) -> Dict[str, Any]:
+    return {
+      "last_update_ts": int(time.time()),
+      "last_update_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+      "last_update_by": request.client.host if request.client else "unknown",
+    }
 
   def _clean_num(self, v: Union[float, int]) -> Union[float, int]:
     """
