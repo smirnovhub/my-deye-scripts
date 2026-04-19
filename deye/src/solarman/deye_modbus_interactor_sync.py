@@ -60,8 +60,8 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     else:
       # Reset cache during the last and first 5 minutes of the day
       if self._verbose:
-        self._log.info(f'{self.name} resetting cache because midnight')
-      self._cache_manager.reset_cache()
+        self._log.info(f'{self.name} resetting cache because midnight...')
+      self.reset_cache()
 
     if self._verbose:
       registers_caching_time = {addr: reg.caching_time for addr, reg in self._registers.items()}
