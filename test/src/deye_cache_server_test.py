@@ -6,7 +6,7 @@ import unittest
 
 import concurrent.futures
 
-from typing import Any
+from typing import Any, Union
 from pathlib import Path
 
 base_path = '../..'
@@ -192,7 +192,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
 
   def test_storage_size_limit_per_key_cumulative(self):
     """
-    SECURITY: Test that the cumulative storage for a single key 
+    SECURITY: Test that the cumulative storage for a single key
     cannot exceed MAX_JSON_STORAGE_SIZE through multiple updates.
     """
     key = "cumulative_test_inverter"
@@ -347,7 +347,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
   def test_type_swapping_in_nesting(self):
     """
     ROBUSTNESS:
-    Tests what happens when a deep nested dict is suddenly replaced by a primitive, 
+    Tests what happens when a deep nested dict is suddenly replaced by a primitive,
     and then vice-versa.
     """
     key = "swap_test"
@@ -456,7 +456,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
   def test_docs_and_openapi_exposure(self):
     """
     SECURITY:
-    Check if FastAPI default documentation is enabled. 
+    Check if FastAPI default documentation is enabled.
     Usually, in production/critical services, /docs and /redoc should be disabled.
     """
     # FastAPI by default hosts these:
@@ -501,7 +501,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
   def test_trailing_slashes(self):
     """
     ROBUSTNESS:
-    Check behavior with trailing slashes. 
+    Check behavior with trailing slashes.
     FastAPI by default is sensitive to trailing slashes unless configured otherwise.
     """
     # /ping/ vs /ping
@@ -536,7 +536,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
     """
     LOGIC/STABILITY:
     Verify how the server handles 'null' (None in Python) during a deep merge.
-    In JSON, sending null often means 'clear this value'. 
+    In JSON, sending null often means 'clear this value'.
     We check if the server can store nulls without crashing the deep_merge function.
     """
     key = "null_logic_test"
@@ -621,7 +621,7 @@ class TestDeyeCacheExtended(unittest.TestCase):
   def test_mixed_timestamp_update(self):
     """
     LOGIC TEST:
-    Verify that in a single request, only stale nested objects are ignored 
+    Verify that in a single request, only stale nested objects are ignored
     while fresh ones are updated.
     """
     key = "mixed_ts_test"
@@ -669,6 +669,201 @@ class TestDeyeCacheExtended(unittest.TestCase):
     res = self.session.get(f"{CACHE_URL}/{key}").json()
     self.assertEqual(res["obj"]["val"], 2)
     self.assertEqual(res["obj"]["ts_label"], "100")
+
+  def test_update_and_get_average_int(self):
+    """
+    LOGIC TEST:
+    Verify that update_average correctly calculates cumulative totals
+    and the weighted average using path parameters.
+    """
+    key = "avg_path_test"
+
+    # 1. First update: /average/avg_path_test/10/30
+    # Total=40, Avg=10/40=0.25
+    c1, c2 = 10, 30
+    endpoint1 = f"{BASE_URL}/average/{key}/{c1}/{c2}"
+    res1 = self.session.post(endpoint1)
+    self.assertEqual(res1.status_code, 200)
+    data1 = res1.json()
+    self.assertEqual(data1["average"], c1 / (c1 + c2))
+    self.assertEqual(data1["total"], c1 + c2)
+
+    # 2. Second update: /average/avg_path_test/10/10
+    # New totals: count1=20, count2=40. Total=60, Avg=20/60=0.333...
+    c3, c4 = 10, 10
+    endpoint2 = f"{BASE_URL}/average/{key}/{c3}/{c4}"
+    res2 = self.session.post(endpoint2)
+    self.assertEqual(res2.status_code, 200)
+    data2 = res2.json()
+    self.assertAlmostEqual(data2["average"], (c1 + c3) / (c1 + c2 + c3 + c4), places = 5)
+
+    # 3. Verify via GET method: /average/avg_path_test
+    get_endpoint = f"{BASE_URL}/average/{key}"
+    res_get = self.session.get(get_endpoint)
+    self.assertEqual(res_get.status_code, 200)
+    data_get = res_get.json()
+    self.assertEqual(data_get["key"], key)
+    self.assertEqual(data_get["count1"], c1 + c3)
+    self.assertEqual(data_get["count2"], c2 + c4)
+
+  def test_update_average_small_floats(self):
+    """
+    LOGIC TEST: Small floats (1-10 range).
+    Sum = 1.25 + 3.75 = 5.0. Average = 1.25 / 5.0 = 0.25
+    """
+    key = "avg_small_floats"
+    c1, c2 = 1.25, 3.75
+
+    endpoint = f"{BASE_URL}/average/{key}/{c1}/{c2}"
+    res = self.session.post(endpoint)
+    self.assertEqual(res.status_code, 200)
+
+    data = res.json()
+    # Using formula in asserts
+    self.assertEqual(data["average"], c1 / (c1 + c2))
+    self.assertEqual(data["total"], c1 + c2)
+
+  def test_update_average_large_floats(self):
+    """
+    LOGIC TEST: Large floats (>100 range).
+    Sum = 120.5 + 379.5 = 500.0. Average = 120.5 / 500.0 = 0.241
+    """
+    key = "avg_large_floats"
+    c1, c2 = 120.5, 379.5
+
+    endpoint = f"{BASE_URL}/average/{key}/{c1}/{c2}"
+    res = self.session.post(endpoint)
+    self.assertEqual(res.status_code, 200)
+
+    data = res.json()
+    # Using formula in asserts
+    self.assertEqual(data["average"], c1 / (c1 + c2))
+    self.assertEqual(data["total"], c1 + c2)
+
+  def test_update_average_mixed_accumulation(self):
+    """
+    LOGIC TEST: Mixed ranges with accumulation.
+    1. Small: 1.1 + 0.9 = 2.0
+    2. Large addition: 148.9 + 249.1 = 398.0
+    Final Total: 2.0 + 398.0 = 400.0
+    Final Count1: 1.1 + 148.9 = 150.0
+    Final Avg: 150.0 / 400.0 = 0.375
+    """
+    key = "avg_mixed_accum"
+
+    # Step 1: Initial small values
+    c1_small, c2_small = 1.1, 0.9
+    self.session.post(f"{BASE_URL}/average/{key}/{c1_small}/{c2_small}")
+
+    # Step 2: Add large values
+    c1_large, c2_large = 148.9, 249.1
+    res = self.session.post(f"{BASE_URL}/average/{key}/{c1_large}/{c2_large}")
+    self.assertEqual(res.status_code, 200)
+
+    data = res.json()
+
+    # Formula-based expectations
+    expected_c1 = c1_small + c1_large
+    expected_c2 = c2_small + c2_large
+    expected_total = expected_c1 + expected_c2
+    expected_avg = expected_c1 / expected_total
+
+    self.assertEqual(data["count1"], expected_c1)
+    self.assertEqual(data["total"], expected_total)
+    self.assertEqual(data["average"], expected_avg)
+
+  def test_average_with_float_artifact(self):
+    """
+    EDGE CASE: Verify handling of tiny float artifacts (e.g., 150.00000000000003).
+    This occurs due to IEEE 754 precision limits.
+    """
+    key = "artifact_test"
+
+    # 1.1 + 2.2 in floating point is NOT 3.3, it's 3.3000000000000003
+    c1 = 1.1
+    c2 = 2.2
+
+    # Expected behavior if using clean_num without rounding:
+    # (c1 + c2) will be 3.3000000000000003
+    # .is_integer() will be False, and it will remain a float in JSON.
+
+    endpoint = f"{BASE_URL}/average/{key}/{c1}/{c2}"
+    res = self.session.post(endpoint)
+    self.assertEqual(res.status_code, 200)
+
+    data = res.json()
+
+    def clean_num(v: float) -> Union[float, int]:
+      """
+      Normalizes a float value by rounding and type conversion.
+      
+      Rounds the input to 10 decimal places to eliminate floating-point 
+      arithmetic artifacts (IEEE 754). If the resulting value is a 
+      whole number, it returns an integer to ensure a clean JSON 
+      representation without trailing zeros. Otherwise, returns the 
+      rounded float.
+      
+      Args:
+          v: The float value to be cleaned.
+          
+      Returns:
+          int | float: An integer if v has no fractional part, else a rounded float.
+      """
+      v = round(v, 10)
+      return int(v) if v.is_integer() else v
+
+    # Calculate the same artifact locally for comparison
+    expected_total = clean_num(c1 + c2)
+    expected_avg = clean_num(c1 / expected_total)
+
+    # Verify that the server returned the "dirty" float correctly
+    self.assertEqual(data["total"], expected_total)
+    self.assertAlmostEqual(data["average"], expected_avg)
+
+  def test_average_with_sum_to_integer_artifact(self):
+    """
+    EDGE CASE: When sums slightly exceed an integer.
+    Example: 100.00000000000003
+    """
+    key = "sum_artifact_key"
+
+    # This specific sum often results in a tiny tail
+    c1 = 100.00000000000001
+    c2 = 0.00000000000002
+
+    res = self.session.post(f"{BASE_URL}/average/{key}/{c1}/{c2}")
+    data = res.json()
+
+    # Total will be 100
+    self.assertTrue(float(data["total"]).is_integer())
+
+  def test_average_delete(self):
+    """
+    LOGIC TEST:
+    Verify that an average entry can be removed.
+    """
+    key = "delete_test_key"
+    # Create
+    self.session.post(f"{BASE_URL}/average/{key}/5/5")
+
+    # Delete
+    res_del = self.session.delete(f"{BASE_URL}/average/{key}")
+    self.assertEqual(res_del.status_code, 200)
+
+    # Verify 404
+    res_get = self.session.get(f"{BASE_URL}/average/{key}")
+    self.assertEqual(res_get.status_code, 404)
+
+  def test_average_division_by_zero_path(self):
+    """
+    EDGE CASE:
+    Verify zero values in path parameters.
+    """
+    key = "zero_path_test"
+    # /average/zero_path_test/0/0
+    res = self.session.post(f"{BASE_URL}/average/{key}/0/0")
+    self.assertEqual(res.status_code, 200)
+    self.assertEqual(res.json()["average"], 0.0)
 
 if __name__ == "__main__":
   logging.basicConfig(

@@ -4,7 +4,7 @@ import logging
 import time
 import asyncio
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from datetime import datetime
 from fastapi import HTTPException, Request
 
@@ -247,10 +247,10 @@ class DeyeStorageManager:
       return {
         "status": "success",
         "key": key,
-        "count1": current_data["count1"],
-        "count2": current_data["count2"],
-        "total": current_data["total"],
-        "average": current_data["average"],
+        "count1": self._clean_num(current_data["count1"]),
+        "count2": self._clean_num(current_data["count2"]),
+        "total": self._clean_num(current_data["total"]),
+        "average": self._clean_num(current_data["average"]),
       }
 
   def _deep_merge(
@@ -291,3 +291,22 @@ class DeyeStorageManager:
       else:
         # Otherwise, just overwrite or add the value
         source[key] = value
+
+  def _clean_num(self, v: float) -> Union[float, int]:
+    """
+    Normalizes a float value by rounding and type conversion.
+    
+    Rounds the input to 10 decimal places to eliminate floating-point 
+    arithmetic artifacts (IEEE 754). If the resulting value is a 
+    whole number, it returns an integer to ensure a clean JSON 
+    representation without trailing zeros. Otherwise, returns the 
+    rounded float.
+    
+    Args:
+        v: The float value to be cleaned.
+        
+    Returns:
+        int | float: An integer if v has no fractional part, else a rounded float.
+    """
+    v = round(v, 10)
+    return int(v) if v.is_integer() else v
