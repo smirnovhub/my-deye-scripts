@@ -186,12 +186,12 @@ class DeyeStorageManager:
     if not data:
       raise HTTPException(status_code = 404, detail = "Key not found")
 
-    # Return only relevant statistical fields
     return {
       "key": key,
-      "average": data.get("average", 0.0),
-      "count1": data.get("count1", 0.0),
-      "count2": data.get("count2", 0.0),
+      "count1": self._clean_num(data.get("count1", 0.0)),
+      "count2": self._clean_num(data.get("count2", 0.0)),
+      "total": self._clean_num(data.get("total", 0.0)),
+      "average": self._clean_num(data.get("average", 0.0)),
     }
 
   async def update_average(
