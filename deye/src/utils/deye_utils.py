@@ -324,9 +324,9 @@ class DeyeUtils:
     # SOC threshold -> max allowed charge current
     soc_charge_limits: Dict[int, int] = {
       100: 0,
-      99: 3,
-      98: 5,
-      97: 10,
+      99: 5,
+      98: 10,
+      97: 15,
     }
 
     for soc, limit in sorted(soc_charge_limits.items(), reverse = True):
