@@ -9,6 +9,7 @@ from deye_registers import DeyeRegisters
 from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_registers_holder import DeyeRegistersHolder
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 from deye_modbus_interactor_async import DeyeModbusInteractorAsync
 
 class DeyeRegistersHolderAsync(DeyeRegistersHolder):
@@ -56,6 +57,20 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
   @property
   def accumulated_registers(self) -> DeyeRegisters:
     return self._registers[self._all_loggers.accumulated_registers_prefix]
+
+  @property
+  def cache_hit_rates(self) -> Dict[str, DeyeRegisterCacheHitRate]:
+    return {interactor.name: interactor.cache_hit_rate for interactor in self._interactors}
+
+  async def get_cache_hit_rates(self) -> Dict[str, DeyeRegisterCacheHitRate]:
+    # Create a list of coroutines
+    tasks = [interactor.get_cache_hit_rate() for interactor in self._interactors]
+
+    # Run them concurrently and wait for all results
+    rates = await asyncio.gather(*tasks)
+
+    # Map interactor names to their respective results
+    return {interactor.name: rate for interactor, rate in zip(self._interactors, rates)}
 
   async def read_registers(self) -> None:
     # Get the first available DeyeRegisters object from the values

@@ -5,8 +5,9 @@ from contextlib import asynccontextmanager
 
 from deye_utils import DeyeUtils
 from deye_file_lock import DeyeFileLock
-from deye_registers_base_cache_manager_async import DeyeRegistersBaseCacheManagerAsync
 from lock_exceptions import DeyeLockNotHeldException
+from deye_registers_base_cache_manager_async import DeyeRegistersBaseCacheManagerAsync
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 
 # -----------------------------------------------------
 # Class for caching register data locally in JSON files
@@ -31,6 +32,7 @@ class DeyeRegistersLocalCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
     # Ensure cache file exists
     DeyeUtils.ensure_file_exists(self._cache_filename, mode = 0o666)
 
+    self._logger.warning("PLEASE USE REMOTE CACHE MANAGER INSTEAD!")
     self._logger.info(f"{self._name} {self.__class__.__name__} initialized")
     self._logger.info(f"Local cache file name: {self._cache_filename}")
 
@@ -118,3 +120,18 @@ class DeyeRegistersLocalCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
       bool: True if cache is available for use or False if not available
     """
     return True
+
+  async def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
+    self._logger.warning("%s: cache hit rate read is not supported", self._name)
+    return DeyeRegisterCacheHitRate.zero()
+
+  async def update_cache_hit_rate(
+    self,
+    got_from_cache: int,
+    got_from_inverter: int,
+  ) -> DeyeRegisterCacheHitRate:
+    self._logger.warning("%s: cache hit rate update is not supported", self._name)
+    return DeyeRegisterCacheHitRate.zero()
+
+  async def reset_cache_hit_rate(self) -> None:
+    self._logger.warning("%s: cache hit rate reset is not supported", self._name)

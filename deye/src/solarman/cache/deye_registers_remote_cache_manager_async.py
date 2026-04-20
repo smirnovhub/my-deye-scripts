@@ -5,6 +5,7 @@ from deye_utils import DeyeUtils
 from deye_exceptions import DeyeCacheException
 from deye_registers_base_cache_manager_async import DeyeRegistersBaseCacheManagerAsync
 from http_session_singleton_async import HttpSessionSingletonAsync
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 
 # ---------------------------------------------------------------
 # Class for caching register data remotely on JSON caching server
@@ -24,6 +25,7 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
     self._remote_cache_server = remote_cache_server
     # Added inverter name to the endpoint path to match FastAPI routes
     self._inverter_cache_endpoint = urljoin(remote_cache_server, f"/cache/{self._name}-{self._serial}")
+    self._average_hit_rate_endpoint = urljoin(remote_cache_server, f"/average/{self._name}-{self._serial}")
 
     self._logger.info(f"{self._name} {self.__class__.__name__} initialized")
     self._logger.info(f"{self._name} remote cache endpoint: {self._inverter_cache_endpoint}")
@@ -63,7 +65,11 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
       headers = {'Content-Type': 'application/json'}
       session = await HttpSessionSingletonAsync.get_session()
 
-      async with session.post(self._inverter_cache_endpoint, data = json_string, headers = headers) as response:
+      async with session.post(
+          self._inverter_cache_endpoint,
+          data = json_string,
+          headers = headers,
+      ) as response:
         response.raise_for_status()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(
@@ -103,3 +109,79 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
     except Exception as e:
       raise DeyeCacheException(f"{self._name}: remote cache server "
                                f"{self._remote_cache_server} seems to be down") from e
+
+  async def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
+    try:
+      session = await HttpSessionSingletonAsync.get_session()
+      async with session.get(self._average_hit_rate_endpoint) as response:
+        if response.status == HTTPStatus.NOT_FOUND:
+          self._logger.warning(f'{self._name} global cache hit rate not found')
+          return DeyeRegisterCacheHitRate.zero()
+        response.raise_for_status()
+        js = await response.json()
+
+      rate = DeyeRegisterCacheHitRate(
+        got_from_cache_count = js.get("count1", 0),
+        got_from_inverter_count = js.get("count2", 0),
+        total_count = js.get("total", 0),
+        cache_hit_rate = js.get("average", 0.0),
+      )
+
+      self._logger.info(
+        "%s global cache hit rate: %g%% %g/%g",
+        self._name,
+        rate.cache_hit_rate_percent,
+        rate.got_from_cache_count,
+        rate.total_count,
+      )
+
+      return rate
+    except Exception as e:
+      self._logger.error("%s: error getting global cache hit rate: %s", self._name, e, exc_info = True)
+      raise
+
+  async def update_cache_hit_rate(
+    self,
+    got_from_cache: int,
+    got_from_inverter: int,
+  ) -> DeyeRegisterCacheHitRate:
+    try:
+      session = await HttpSessionSingletonAsync.get_session()
+      request = f"{got_from_cache}/{got_from_inverter}" # count1/count2
+      url = urljoin(f"{self._average_hit_rate_endpoint}/", request)
+
+      async with session.post(url) as response:
+        response.raise_for_status()
+        js = await response.json()
+
+      rate = DeyeRegisterCacheHitRate(
+        got_from_cache_count = js.get("count1", 0),
+        got_from_inverter_count = js.get("count2", 0),
+        total_count = js.get("total", 0),
+        cache_hit_rate = js.get("average", 0.0),
+      )
+
+      self._logger.info(
+        "%s global cache hit rate: %g%% %g/%g",
+        self._name,
+        rate.cache_hit_rate_percent,
+        rate.got_from_cache_count,
+        rate.total_count,
+      )
+
+      return rate
+    except Exception as e:
+      self._logger.error("%s: error updating global cache hit rate: %s", self._name, e, exc_info = True)
+      raise
+
+  async def reset_cache_hit_rate(self) -> None:
+    try:
+      session = await HttpSessionSingletonAsync.get_session()
+      async with session.delete(self._average_hit_rate_endpoint) as response:
+        if response.status == HTTPStatus.NOT_FOUND:
+          self._logger.warning(f'{self._name} global cache hit rate not found')
+        else:
+          response.raise_for_status()
+          self._logger.info(f'{self._name} global cache hit rate reset successful')
+    except Exception as e:
+      self._logger.error("%s: error resetting global cache hit rate: %s", self._name, e, exc_info = True)

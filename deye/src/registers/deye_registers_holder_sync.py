@@ -8,6 +8,7 @@ from deye_registers import DeyeRegisters
 from deye_exceptions import DeyeValueException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_registers_holder import DeyeRegistersHolder
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 from deye_modbus_interactor_sync import DeyeModbusInteractorSync
 
 class DeyeRegistersHolderSync(DeyeRegistersHolder):
@@ -55,6 +56,13 @@ class DeyeRegistersHolderSync(DeyeRegistersHolder):
   @property
   def accumulated_registers(self) -> DeyeRegisters:
     return self._registers[self._all_loggers.accumulated_registers_prefix]
+
+  @property
+  def cache_hit_rates(self) -> Dict[str, DeyeRegisterCacheHitRate]:
+    return {interactor.name: interactor.cache_hit_rate for interactor in self._interactors}
+
+  def get_cache_hit_rates(self) -> Dict[str, DeyeRegisterCacheHitRate]:
+    return {interactor.name: interactor.get_cache_hit_rate() for interactor in self._interactors}
 
   def read_registers(self) -> None:
     # Get the first available DeyeRegisters object from the values

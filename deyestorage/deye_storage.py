@@ -23,6 +23,8 @@ config = DeyeStorageConfig()
 DATA_DIR = f"data/{config.LOG_NAME}"
 # Path for the persistent storage file
 STORAGE_FILE_PATH = os.path.join(DATA_DIR, "storage.json")
+CACHE_FILE_PATH = os.path.join(DATA_DIR, "cache.json")
+AVERAGE_FILE_PATH = os.path.join(DATA_DIR, "average.json")
 
 logger = LogUtils.setup_hourly_overwrite_file_logger(
   log_dir = DATA_DIR,
@@ -30,6 +32,11 @@ logger = LogUtils.setup_hourly_overwrite_file_logger(
 )
 
 cache_manager = DeyeStorageManager(
+  config = config,
+  logger = logger,
+)
+
+average_manager = DeyeStorageManager(
   config = config,
   logger = logger,
 )
@@ -71,6 +78,8 @@ async def lifespan_handler(app: FastAPI):
 
   # Storage save logic
   storage_manager.save_to_file(STORAGE_FILE_PATH)
+  cache_manager.save_to_file(CACHE_FILE_PATH)
+  average_manager.save_to_file(AVERAGE_FILE_PATH)
 
   # This code runs on shutdown
   logger.info("Deye Storage service is shutting down...")
@@ -190,6 +199,37 @@ async def remove_storage_by_key(key: str):
 @app.options("/storage", tags = ["Storage Statistics Operations"])
 async def get_storage_stat():
   return storage_manager.get_stat()
+
+#########################################
+### AVERAGE LOGIC (TEMPORARY STORAGE) ###
+#########################################
+
+@app.get("/average/{key}", tags = ["Average Operations"])
+async def get_average(key: str):
+  """
+  Get the current calculated average and both totals for the specified key.
+  """
+  return average_manager.get_average(key)
+
+@app.delete("/average/{key}", tags = ["Average Operations"])
+async def remove_average(key: str):
+  """
+  Remove the calculated average for the specified key.
+  """
+  return await average_manager.remove(key = key)
+
+@app.post("/average/{key}/{count1}/{count2}", tags = ["Average Operations"])
+async def update_average(key: str, count1: float, count2: float, request: Request):
+  """
+  Update totals using path parameters: /average/my_key/10.5/20
+  Returns the calculated weighted average: count1 / (count1 + count2)
+  """
+  return await average_manager.update_average(
+    key = key,
+    count1 = count1,
+    count2 = count2,
+    request = request,
+  )
 
 if __name__ == "__main__":
   config.print_usage(logger)

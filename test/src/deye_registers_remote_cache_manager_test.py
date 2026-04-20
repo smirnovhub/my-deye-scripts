@@ -67,7 +67,14 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
       self.fail(f"Failed to reset cache before test: {e}")
 
     # Shared test data
-    self.reg_100 = DeyeRegisterCacheData(100, 1, 60, [123])
+    self.reg_100 = DeyeRegisterCacheData(
+      address = 100,
+      quantity = 1,
+      caching_time = 60,
+      values = [123],
+      read_ts = time.time(),
+    )
+
     self.reg_100_json = {self.reg_100.address: self.reg_100}
 
   def tearDown(self):
@@ -89,7 +96,10 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
 
     # 2. Retrieve data
     # Base class calls _get_json() which should return the data we just saved
-    results = self.cache_manager.get_cached_registers(self.reg_100_json)
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = self.reg_100_json,
+      current_ts = time.time(),
+    )
 
     self.assertIn(self.reg_100.address, results)
     self.assertEqual(results[self.reg_100.address].values, self.reg_100.values)
@@ -104,7 +114,11 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     ghost_manager = DeyeRegistersRemoteCacheManager("UnknownInverter", 6263423454, CACHE_URL)
 
     # Should not raise exception, should return empty dict
-    results = ghost_manager.get_cached_registers(self.reg_100_json)
+    results = ghost_manager.get_cached_registers(
+      registers_to_check = self.reg_100_json,
+      current_ts = time.time(),
+    )
+
     self.assertEqual(results, {})
 
   def test_remote_ttl_enforcement_mixed_data(self):
@@ -116,9 +130,29 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     # Reg 500: Short TTL (1s) -> should expire
     # Reg 600: Long TTL (60s) -> should stay
     # Reg 700: Long TTL (60s) -> should stay
-    short_ttl_reg = DeyeRegisterCacheData(500, 1, 1, [555])
-    long_ttl_reg1 = DeyeRegisterCacheData(600, 3, 30, [666, 777, 100])
-    long_ttl_reg2 = DeyeRegisterCacheData(700, 2, 60, [888, 999])
+    short_ttl_reg = DeyeRegisterCacheData(
+      address = 500,
+      quantity = 1,
+      caching_time = 1,
+      values = [555],
+      read_ts = time.time(),
+    )
+
+    long_ttl_reg1 = DeyeRegisterCacheData(
+      address = 600,
+      quantity = 3,
+      caching_time = 30,
+      values = [666, 777, 100],
+      read_ts = time.time(),
+    )
+
+    long_ttl_reg2 = DeyeRegisterCacheData(
+      address = 700,
+      quantity = 2,
+      caching_time = 60,
+      values = [888, 999],
+      read_ts = time.time(),
+    )
 
     registers_map = {
       short_ttl_reg.address: short_ttl_reg,
@@ -130,14 +164,21 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     self.cache_manager.save_to_cache(registers_map)
 
     # 3. Verify they all exist initially
-    res_initial = self.cache_manager.get_cached_registers(registers_map)
+    res_initial = self.cache_manager.get_cached_registers(
+      registers_to_check = registers_map,
+      current_ts = time.time(),
+    )
+
     self.assertEqual(len(res_initial), 3, "Initially all 3 registers should be in cache")
 
     # 4. Wait for the short TTL to expire (TTL=1, wait 2s for stability)
     time.sleep(3)
 
     # 5. Retrieve again
-    res_after = self.cache_manager.get_cached_registers(registers_map)
+    res_after = self.cache_manager.get_cached_registers(
+      registers_to_check = registers_map,
+      current_ts = time.time(),
+    )
 
     # 6. Assertions
     self.assertEqual(len(res_after), 2, "Only 2 registers should remain after partial expiration")
@@ -155,15 +196,35 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     Since _read_json is empty, we rely entirely on server's dict.update().
     """
     # Save first register
-    reg1 = DeyeRegisterCacheData(101, 1, 60, [563])
+    reg1 = DeyeRegisterCacheData(
+      address = 101,
+      quantity = 1,
+      caching_time = 60,
+      values = [563],
+      read_ts = time.time(),
+    )
+
     self.cache_manager.save_to_cache({reg1.address: reg1})
 
     # Save second register separately
-    reg2 = DeyeRegisterCacheData(102, 1, 60, [154])
+    reg2 = DeyeRegisterCacheData(
+      address = 102,
+      quantity = 1,
+      caching_time = 60,
+      values = [154],
+      read_ts = time.time(),
+    )
+
     self.cache_manager.save_to_cache({reg2.address: reg2})
 
     # Request both - server should have merged them
-    results = self.cache_manager.get_cached_registers({reg1.address: reg1, reg2.address: reg2})
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = {
+        reg1.address: reg1,
+        reg2.address: reg2
+      },
+      current_ts = time.time(),
+    )
 
     self.assertEqual(len(results), 2)
     self.assertEqual(results[reg1.address].values, reg1.values)
@@ -176,7 +237,10 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     # Point to a completely invalid address
     manager = DeyeRegistersRemoteCacheManager(test_inverter_name, test_inverter_serial, "http://127.0.0.1:1")
     with self.assertRaises(DeyeCacheException):
-      manager.get_cached_registers(self.reg_100_json)
+      manager.get_cached_registers(
+        registers_to_check = self.reg_100_json,
+        current_ts = time.time(),
+      )
 
   def test_unknown_host_raises_exception(self):
     """
@@ -185,7 +249,139 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     # Point to a completely invalid address
     manager = DeyeRegistersRemoteCacheManager(test_inverter_name, test_inverter_serial, "http://some.unknown.host")
     with self.assertRaises(DeyeCacheException):
-      manager.get_cached_registers(self.reg_100_json)
+      manager.get_cached_registers(
+        registers_to_check = self.reg_100_json,
+        current_ts = time.time(),
+      )
+
+  def test_remote_stale_data_not_overwriting_new_on_server(self):
+    """
+    LOGIC: Verify that older data (by read_ts) does not overwrite newer data on the server.
+    This relies on the server-side deep_merge logic using 'reg_ts'.
+    """
+    address = 200
+    now = time.time()
+
+    # 1. Save "Fresh" data
+    fresh_reg = DeyeRegisterCacheData(
+      address = address,
+      quantity = 1,
+      caching_time = 60,
+      values = [999], # Newer value
+      read_ts = now,
+    )
+
+    self.cache_manager.save_to_cache({address: fresh_reg})
+
+    # 2. Attempt to save "Stale" data for the same address
+    stale_reg = DeyeRegisterCacheData(
+      address = address,
+      quantity = 1,
+      caching_time = 60,
+      values = [111], # Older value
+      read_ts = now - 100 # 100 seconds in the past
+    )
+    self.cache_manager.save_to_cache({address: stale_reg})
+
+    # 3. Retrieve and verify
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = {address: fresh_reg},
+      current_ts = time.time(),
+    )
+
+    self.assertEqual(results[address].values, [999])
+
+  def test_remote_equal_timestamp_not_overwriting(self):
+    """
+    LOGIC: Verify that data with the same timestamp is ignored by the server 
+    to prevent redundant writes.
+    """
+    address = 300
+    ts = time.time()
+
+    # 1. Initial save
+    reg_v1 = DeyeRegisterCacheData(
+      address = address,
+      quantity = 1,
+      caching_time = 60,
+      values = [10],
+      read_ts = ts,
+    )
+    self.cache_manager.save_to_cache({address: reg_v1})
+
+    # 2. Save same timestamp but different value
+    reg_v2 = DeyeRegisterCacheData(
+      address = address,
+      quantity = 1,
+      caching_time = 60,
+      values = [20],
+      read_ts = ts # Exact same timestamp
+    )
+    self.cache_manager.save_to_cache({address: reg_v2})
+
+    # 3. Retrieve and verify
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = {address: reg_v1},
+      current_ts = time.time(),
+    )
+
+    self.assertEqual(results[address].values, [10])
+
+  def test_remote_mixed_freshness_in_batch(self):
+    """
+    LOGIC: Verify that in a batch update, fresh registers are updated 
+    while stale ones in the same dictionary are ignored.
+    """
+    now = time.time()
+
+    # Pre-populate server with initial data
+    initial_map = {
+      401: DeyeRegisterCacheData(
+        address = 401,
+        quantity = 1,
+        caching_time = 60,
+        values = [1],
+        read_ts = now,
+      ),
+      402: DeyeRegisterCacheData(
+        address = 402,
+        quantity = 1,
+        caching_time = 60,
+        values = [2],
+        read_ts = now,
+      )
+    }
+    self.cache_manager.save_to_cache(initial_map)
+
+    # Batch update: 401 is fresh, 402 is stale
+    batch_update = {
+      401:
+      DeyeRegisterCacheData(
+        address = 401,
+        quantity = 1,
+        caching_time = 60,
+        values = [100],
+        read_ts = now + 10 # Newer
+      ),
+      402:
+      DeyeRegisterCacheData(
+        address = 402,
+        quantity = 1,
+        caching_time = 60,
+        values = [200],
+        read_ts = now - 10 # Older
+      )
+    }
+    self.cache_manager.save_to_cache(batch_update)
+
+    # Retrieve all
+    results = self.cache_manager.get_cached_registers(
+      registers_to_check = batch_update,
+      current_ts = time.time(),
+    )
+
+    self.assertEqual(results[401].values, [100])
+    self.assertEqual(results[402].values, [2])
 
 if __name__ == "__main__":
   logging.basicConfig(

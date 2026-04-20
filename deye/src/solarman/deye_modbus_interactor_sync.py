@@ -1,11 +1,13 @@
+import time
+
 from typing import Dict
-from datetime import datetime
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_modbus_solarman import DeyeModbusSolarman
 from deye_register_cache_data import DeyeRegisterCacheData
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
 from deye_registers_local_cache_manager import DeyeRegistersLocalCacheManager
 from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
@@ -44,23 +46,23 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     if self._default_caching_time < 1:
       # Do NOT use any caching on read
       self._registers = self._read_from_inverter(self._registers)
-      self._cache_manager.save_to_cache(self._registers)
-      return
 
-    now = datetime.now()
+      if self._can_cache():
+        self._cache_manager.save_to_cache(registers_to_save = self._registers)
+      return
 
     cached_registers: Dict[int, DeyeRegisterCacheData] = {}
 
-    # Reset cache during the last and first 5 minutes of the day
-    if_first_5_minutes = now.hour == 0 and now.minute <= 5
-    if_last_5_minutes = now.hour == 23 and now.minute >= 55
-
-    if if_first_5_minutes or if_last_5_minutes:
-      if self._verbose:
-        self._log.info(f'{self.name} resetting cache because midnight')
-      self._cache_manager.reset_cache()
+    if self._can_cache():
+      cached_registers = self._cache_manager.get_cached_registers(
+        registers_to_check = self._registers,
+        current_ts = time.time(),
+      )
     else:
-      cached_registers = self._cache_manager.get_cached_registers(self._registers)
+      # Reset cache during the last and first 5 minutes of the day
+      if self._verbose:
+        self._log.info(f'{self.name} resetting cache because midnight...')
+      self.reset_cache()
 
     if self._verbose:
       registers_caching_time = {addr: reg.caching_time for addr, reg in self._registers.items()}
@@ -76,10 +78,31 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
 
     if uncached_registers:
       polled_registers = self._read_from_inverter(uncached_registers)
-      self._cache_manager.save_to_cache(polled_registers)
+
+      if self._can_cache():
+        self._cache_manager.save_to_cache(registers_to_save = polled_registers)
       self._registers = {**cached_registers, **polled_registers}
     else:
       self._registers = cached_registers
+
+    if self._can_cache():
+      self._update_cache_hit_rate(
+        got_from_cache = len(cached_registers),
+        got_from_inverter = len(uncached_registers),
+      )
+
+  def _update_cache_hit_rate(
+    self,
+    got_from_cache: int,
+    got_from_inverter: int,
+  ) -> None:
+    try:
+      self._cache_hit_rate = self._cache_manager.update_cache_hit_rate(
+        got_from_cache = got_from_cache,
+        got_from_inverter = got_from_inverter,
+      )
+    except Exception:
+      pass
 
   def _read_from_inverter(
     self,
@@ -100,6 +123,11 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
         count = (last_item.address + last_item.quantity) - start
 
         data = self._solarman.read_holding_registers(address = start, quantity = count)
+        current_ts = time.time() # Should be exact after read_holding_registers() call
+
+        if len(data) != count:
+          raise RuntimeError(f'{self.name}: expected to read {count} values '
+                             f'at address {start}, but got {len(data)}')
 
         for reg in group:
           offset = reg.address - start
@@ -107,12 +135,15 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
             address = reg.address,
             quantity = reg.quantity,
             caching_time = reg.caching_time,
+            read_ts = current_ts,
             values = data[offset:offset + reg.quantity],
           )
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while reading registers') from e
     finally:
       self._solarman.disconnect()
+
+    self._log.info(f'{self.name} got {len(results)} registers from inverter')
 
     return results
 
@@ -123,6 +154,8 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     try:
       for reg in self._registers_to_write:
         result = self._solarman.write_multiple_holding_registers(reg.address, reg.values)
+        current_ts = time.time() # Should be exact after write_multiple_holding_registers() call
+
         if result != len(reg.values):
           raise RuntimeError(f'{self.name}: expected to write {len(reg.values)} values '
                              f'at address {reg.address}, but wrote {result}')
@@ -131,14 +164,30 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
         # This ensures subsequent reads within this session get the new value
         self._registers[reg.address] = reg
 
-        # Update the persistent JSON cache
-        self._cache_manager.save_to_cache({reg.address: reg})
+        updated_reg = DeyeRegisterCacheData(
+          address = reg.address,
+          quantity = reg.quantity,
+          caching_time = reg.caching_time,
+          read_ts = current_ts,
+          values = reg.values,
+        )
 
+        # Update the persistent JSON cache
+        if self._can_cache():
+          self._cache_manager.save_to_cache(registers_to_save = {reg.address: updated_reg})
+
+      self._log.info(f'{self.name} wrote {len(self._registers_to_write)} registers to inverter')
       self._registers_to_write.clear()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while writing registers') from e
     finally:
       self._solarman.disconnect()
 
+  def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
+    self._cache_hit_rate = self._cache_manager.get_cache_hit_rate()
+    return self._cache_hit_rate
+
   def reset_cache(self) -> None:
+    self._cache_hit_rate = DeyeRegisterCacheHitRate.zero()
     self._cache_manager.reset_cache()
+    self._cache_manager.reset_cache_hit_rate()

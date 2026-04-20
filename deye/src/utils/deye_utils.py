@@ -291,6 +291,13 @@ class DeyeUtils:
         bool: True if both timestamps represent the same year, month, and day; 
               False otherwise.
     """
+    # Detect if timestamps are in milliseconds (usually > 10 digits)
+    # 1e11 is a safe threshold (late 1973 if seconds, current era if ms)
+    if ts1 > 1e11:
+      ts1 /= 1000
+    if ts2 > 1e11:
+      ts2 /= 1000
+
     # Convert Unix timestamps to local datetime objects using system timezone
     dt1 = datetime.fromtimestamp(ts1)
     dt2 = datetime.fromtimestamp(ts2)
@@ -317,9 +324,9 @@ class DeyeUtils:
     # SOC threshold -> max allowed charge current
     soc_charge_limits: Dict[int, int] = {
       100: 0,
-      99: 3,
-      98: 5,
-      97: 10,
+      99: 5,
+      98: 10,
+      97: 15,
     }
 
     for soc, limit in sorted(soc_charge_limits.items(), reverse = True):
