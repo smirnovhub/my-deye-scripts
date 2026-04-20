@@ -111,6 +111,8 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
   def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
     try:
       with self._session.get(self._average_hit_rate_endpoint, timeout = 3) as response:
+        if response.status_code == HTTPStatus.NOT_FOUND:
+          return DeyeRegisterCacheHitRate.zero()
         response.raise_for_status()
         js = response.json()
       return DeyeRegisterCacheHitRate(
@@ -121,7 +123,7 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
       )
     except Exception as e:
       self._logger.error("%s: error getting global cache hit rate: %s", self._name, e, exc_info = True)
-      return DeyeRegisterCacheHitRate.zero()
+      raise
 
   def update_cache_hit_rate(
     self,
