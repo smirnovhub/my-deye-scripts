@@ -119,12 +119,23 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
           return DeyeRegisterCacheHitRate.zero()
         response.raise_for_status()
         js = await response.json()
-      return DeyeRegisterCacheHitRate(
+
+      rate = DeyeRegisterCacheHitRate(
         got_from_cache_count = js.get("count1", 0),
         got_from_inverter_count = js.get("count2", 0),
         total_count = js.get("total", 0),
         cache_hit_rate = js.get("average", 0.0),
       )
+
+      self._logger.info(
+        "%s global cache hit rate: %g%% %g/%g",
+        self._name,
+        rate.cache_hit_rate_percent,
+        rate.got_from_cache_count,
+        rate.total_count,
+      )
+
+      return rate
     except Exception as e:
       self._logger.error("%s: error getting global cache hit rate: %s", self._name, e, exc_info = True)
       raise
