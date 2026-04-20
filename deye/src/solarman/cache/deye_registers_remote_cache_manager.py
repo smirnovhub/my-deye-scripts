@@ -5,6 +5,7 @@ from deye_utils import DeyeUtils
 from deye_exceptions import DeyeCacheException
 from http_session_singleton import HttpSessionSingleton
 from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 
 # ---------------------------------------------------------------
 # Class for caching register data remotely on JSON caching server
@@ -107,11 +108,26 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
       raise DeyeCacheException(f"{self._name}: remote cache server "
                                f"{self._remote_cache_server} seems to be down") from e
 
+  def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
+    try:
+      with self._session.get(self._average_hit_rate_endpoint, timeout = 3) as response:
+        response.raise_for_status()
+        js = response.json()
+      return DeyeRegisterCacheHitRate(
+        got_from_cache_count = js.get("count1", 0),
+        got_from_inverter_count = js.get("count2", 0),
+        total_count = js.get("total", 0),
+        cache_hit_rate = js.get("average", 0.0),
+      )
+    except Exception as e:
+      self._logger.error("%s: error getting global cache hit rate: %s", self._name, e, exc_info = True)
+      return DeyeRegisterCacheHitRate.zero()
+
   def update_cache_hit_rate(
     self,
     got_from_cache: int,
     got_from_inverter: int,
-  ) -> None:
+  ) -> DeyeRegisterCacheHitRate:
     try:
       request = f"{got_from_cache}/{got_from_inverter}" # count1/count2
       url = urljoin(f"{self._average_hit_rate_endpoint}/", request)
@@ -120,13 +136,25 @@ class DeyeRegistersRemoteCacheManager(DeyeRegistersBaseCacheManager):
         response.raise_for_status()
         js = response.json()
 
-      got_from_cache_cnt = js.get("count1", 0)
-      total = js.get("total", 0)
-      hit_rate = round(js.get("average", 0.0) * 100)
+      rate = DeyeRegisterCacheHitRate(
+        got_from_cache_count = js.get("count1", 0),
+        got_from_inverter_count = js.get("count2", 0),
+        total_count = js.get("total", 0),
+        cache_hit_rate = js.get("average", 0.0),
+      )
 
-      self._logger.info(f'{self._name} global cache hit rate: {hit_rate}% {got_from_cache_cnt:g}/{total:g}')
+      self._logger.info(
+        "%s global cache hit rate: %g%% %g/%g",
+        self._name,
+        rate.cache_hit_rate_percent,
+        rate.got_from_cache_count,
+        rate.total_count,
+      )
+
+      return rate
     except Exception as e:
       self._logger.error("%s: error updating global cache hit rate: %s", self._name, e, exc_info = True)
+      return DeyeRegisterCacheHitRate.zero()
 
   def reset_cache_hit_rate(self) -> None:
     try:

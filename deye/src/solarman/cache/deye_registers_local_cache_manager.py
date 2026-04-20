@@ -5,8 +5,9 @@ from contextlib import contextmanager
 
 from deye_utils import DeyeUtils
 from deye_file_lock import DeyeFileLock
-from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
 from lock_exceptions import DeyeLockNotHeldException
+from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 
 # -----------------------------------------------------
 # Class for caching register data locally in JSON files
@@ -120,12 +121,17 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
     """
     return True
 
+  def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
+    self._logger.warning("%s: cache hit rate read is not supported", self._name)
+    return DeyeRegisterCacheHitRate.zero()
+
   def update_cache_hit_rate(
     self,
     got_from_cache: int,
     got_from_inverter: int,
-  ) -> None:
+  ) -> DeyeRegisterCacheHitRate:
     self._logger.warning("%s: cache hit rate update is not supported", self._name)
+    return DeyeRegisterCacheHitRate.zero()
 
   def reset_cache_hit_rate(self) -> None:
     self._logger.warning("%s: cache hit rate reset is not supported", self._name)

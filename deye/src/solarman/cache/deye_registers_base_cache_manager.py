@@ -138,9 +138,11 @@ class DeyeRegistersBaseCacheManager(ABC):
 
         self._save_json(json_string)
         self._logger.info(f'{self._name} saved {len(registers_to_save)} registers to cache')
-    except DeyeKnownException:
+    except DeyeKnownException as e:
+      self._logger.error("%s: cache write error: %s", self._name, e, exc_info = True)
       raise
     except Exception as ee:
+      self._logger.error("%s: cache write error: %s", self._name, ee, exc_info = True)
       raise DeyeCacheException(f"{self._name}: cache write error: {ee}") from ee
 
     end_time = time.perf_counter()
@@ -156,10 +158,10 @@ class DeyeRegistersBaseCacheManager(ABC):
         self._reset()
       self._logger.info(f'{self._name} cache reset successful')
     except DeyeKnownException as e:
-      self._logger.error("%s: cache write error: %s", self._name, e, exc_info = True)
+      self._logger.error("%s: cache reset error: %s", self._name, e, exc_info = True)
       raise
     except Exception as ee:
-      self._logger.error("%s: cache write error: %s", self._name, ee, exc_info = True)
+      self._logger.error("%s: cache reset error: %s", self._name, ee, exc_info = True)
       raise DeyeCacheException(f"{self._name}: cache reset error: {ee}") from ee
 
   def _check_address_match(self, key: int, address: int) -> None:
@@ -224,11 +226,15 @@ class DeyeRegistersBaseCacheManager(ABC):
     pass
 
   @abstractmethod
+  def get_cache_hit_rate(self) -> float:
+    pass
+
+  @abstractmethod
   def update_cache_hit_rate(
     self,
     got_from_cache: int,
     got_from_inverter: int,
-  ) -> None:
+  ) -> float:
     pass
 
   @abstractmethod

@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from deye_utils import DeyeUtils
 from deye_exceptions import DeyeCacheException, DeyeKnownException
 from deye_register_cache_data import DeyeRegisterCacheData
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 
 # ------------------------------------
 # Base class for caching register data
@@ -157,9 +158,11 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
       async with self._exclusive_lock_context():
         await self._reset()
       self._logger.info(f'{self._name} cache reset successful')
-    except DeyeKnownException:
+    except DeyeKnownException as e:
+      self._logger.error("%s: cache reset error: %s", self._name, e, exc_info = True)
       raise
     except Exception as ee:
+      self._logger.error("%s: cache reset error: %s", self._name, ee, exc_info = True)
       raise DeyeCacheException(f"{self._name}: cache reset error: {ee}") from ee
 
   def _check_address_match(self, key: int, address: int) -> None:
@@ -224,11 +227,15 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     pass
 
   @abstractmethod
+  async def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
+    pass
+
+  @abstractmethod
   async def update_cache_hit_rate(
     self,
     got_from_cache: int,
     got_from_inverter: int,
-  ) -> None:
+  ) -> DeyeRegisterCacheHitRate:
     pass
 
   @abstractmethod

@@ -7,6 +7,7 @@ from deye_logger import DeyeLogger
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_modbus_solarman import DeyeModbusSolarman
 from deye_register_cache_data import DeyeRegisterCacheData
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 from deye_registers_base_cache_manager import DeyeRegistersBaseCacheManager
 from deye_registers_local_cache_manager import DeyeRegistersLocalCacheManager
 from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
@@ -85,7 +86,7 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
       self._registers = cached_registers
 
     if self._can_cache():
-      self._cache_manager.update_cache_hit_rate(
+      self._cache_hit_rate = self._cache_manager.update_cache_hit_rate(
         got_from_cache = len(cached_registers),
         got_from_inverter = len(uncached_registers),
       )
@@ -169,6 +170,11 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     finally:
       self._solarman.disconnect()
 
+  def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
+    self._cache_hit_rate = self._cache_manager.get_cache_hit_rate()
+    return self._cache_hit_rate
+
   def reset_cache(self) -> None:
+    self._cache_hit_rate = DeyeRegisterCacheHitRate.zero()
     self._cache_manager.reset_cache()
     self._cache_manager.reset_cache_hit_rate()

@@ -1,12 +1,13 @@
 import logging
 
 from typing import Dict, List
+from abc import ABC, abstractmethod
 
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_registers import DeyeRegisters
 
-class DeyeRegistersHolder:
+class DeyeRegistersHolder(ABC):
   def __init__(
     self,
     loggers: List[DeyeLogger],
@@ -29,3 +30,8 @@ class DeyeRegistersHolder:
   @property
   def accumulated_registers(self) -> DeyeRegisters:
     return self._registers[self._all_loggers.accumulated_registers_prefix]
+
+  @property
+  @abstractmethod
+  def cache_hit_rates(self) -> Dict[str, float]:
+    pass

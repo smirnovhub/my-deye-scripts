@@ -8,6 +8,7 @@ from deye_logger import DeyeLogger
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_modbus_solarman_async import DeyeModbusSolarmanAsync
 from deye_register_cache_data import DeyeRegisterCacheData
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 from deye_registers_base_cache_manager_async import DeyeRegistersBaseCacheManagerAsync
 from deye_registers_local_cache_manager_async import DeyeRegistersLocalCacheManagerAsync
 from deye_registers_remote_cache_manager_async import DeyeRegistersRemoteCacheManagerAsync
@@ -88,10 +89,20 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
     # Launch the update in the background without blocking the current flow
     if self._can_cache():
       asyncio.create_task(
-        self._cache_manager.update_cache_hit_rate(
+        self._update_cache_hit_rate(
           got_from_cache = len(cached_registers),
           got_from_inverter = len(uncached_registers),
         ))
+
+  async def _update_cache_hit_rate(
+    self,
+    got_from_cache: int,
+    got_from_inverter: int,
+  ) -> None:
+    self._cache_hit_rate = await self._cache_manager.update_cache_hit_rate(
+      got_from_cache = got_from_cache,
+      got_from_inverter = got_from_inverter,
+    )
 
   async def _read_from_inverter(
     self,
@@ -172,7 +183,12 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
     finally:
       await self._solarman.disconnect()
 
+  async def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
+    self._cache_hit_rate = await self._cache_manager.get_cache_hit_rate()
+    return self._cache_hit_rate
+
   async def reset_cache(self) -> None:
+    self._cache_hit_rate = DeyeRegisterCacheHitRate.zero()
     await asyncio.gather(
       self._cache_manager.reset_cache(),
       self._cache_manager.reset_cache_hit_rate(),

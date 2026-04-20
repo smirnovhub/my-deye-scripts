@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
 from deye_register_cache_data import DeyeRegisterCacheData
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 
 class DeyeModbusInteractor:
   def __init__(
@@ -24,6 +25,7 @@ class DeyeModbusInteractor:
     self._verbose = bool(kwargs.get('verbose', False))
     self._default_caching_time = max(0, int(kwargs.get('caching_time', 3)))
     self._max_register_count = 120
+    self._cache_hit_rate: DeyeRegisterCacheHitRate = DeyeRegisterCacheHitRate.zero()
 
   @property
   def name(self) -> str:
@@ -32,6 +34,10 @@ class DeyeModbusInteractor:
   @property
   def is_master(self) -> bool:
     return self._logger.name == self._loggers.master.name
+
+  @property
+  def cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
+    return self._cache_hit_rate
 
   def enqueue_register(
     self,
