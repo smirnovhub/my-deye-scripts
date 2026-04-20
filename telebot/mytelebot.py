@@ -35,6 +35,7 @@ from telebot_menu_writable_registers import TelebotMenuWritableRegisters
 from telebot_menu_master_today_stat import TelebotMenuMasterTodayStat
 from telebot_menu_master_total_stat import TelebotMenuMasterTotalStat
 from testable_telebot import TestableTelebot
+from telebot_menu_cache import TelebotMenuCache
 from telebot_menu_revert import TelebotMenuRevert
 from telebot_menu_update import TelebotMenuUpdate
 from telebot_menu_test import TelebotMenuTest
@@ -198,6 +199,7 @@ class MyTelebot:
       TelebotMenuSyncTime(bot, runner),
       TelebotMenuRestart(bot),
       TelebotMenuRevert(bot),
+      TelebotMenuCache(bot, runner),
       TelebotMenuUpdate(bot, runner),
       TelebotMenuTest(bot),
     ]
