@@ -123,7 +123,10 @@ class BatterySettingsMainPage(TelebotNavigationPage):
       holder.disconnect()
 
   def _get_data_as_text(self, values: Dict[BatterySettingsPage, int]) -> str:
-    result = "<pre>"
+    # Calculate the maximum length of page.title
+    max_len = max(len(page.title) for page in values.keys()) if values else 0
+
+    result = ""
     for page, value in values.items():
-      result += f"{page.title}: {value}%\n"
-    return f"{result}</pre>"
+      result += f"{page.title:<{max_len}} : {value}%\n"
+    return f"<pre>{result}</pre>"
