@@ -115,6 +115,7 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
       session = await HttpSessionSingletonAsync.get_session()
       async with session.get(self._average_hit_rate_endpoint) as response:
         if response.status == HTTPStatus.NOT_FOUND:
+          self._logger.warning(f'{self._name} global cache hit rate not found')
           return DeyeRegisterCacheHitRate.zero()
         response.raise_for_status()
         js = await response.json()
@@ -160,7 +161,7 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
       return rate
     except Exception as e:
       self._logger.error("%s: error updating global cache hit rate: %s", self._name, e, exc_info = True)
-      return DeyeRegisterCacheHitRate.zero()
+      raise
 
   async def reset_cache_hit_rate(self) -> None:
     try:

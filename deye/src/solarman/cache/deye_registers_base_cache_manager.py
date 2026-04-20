@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from deye_utils import DeyeUtils
 from deye_exceptions import DeyeCacheException, DeyeKnownException
 from deye_register_cache_data import DeyeRegisterCacheData
+from deye_register_cache_hit_rate import DeyeRegisterCacheHitRate
 
 # ------------------------------------
 # Base class for caching register data
@@ -226,7 +227,7 @@ class DeyeRegistersBaseCacheManager(ABC):
     pass
 
   @abstractmethod
-  def get_cache_hit_rate(self) -> float:
+  def get_cache_hit_rate(self) -> DeyeRegisterCacheHitRate:
     pass
 
   @abstractmethod
@@ -234,7 +235,7 @@ class DeyeRegistersBaseCacheManager(ABC):
     self,
     got_from_cache: int,
     got_from_inverter: int,
-  ) -> float:
+  ) -> DeyeRegisterCacheHitRate:
     pass
 
   @abstractmethod

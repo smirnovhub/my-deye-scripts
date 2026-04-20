@@ -99,10 +99,13 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
     got_from_cache: int,
     got_from_inverter: int,
   ) -> None:
-    self._cache_hit_rate = await self._cache_manager.update_cache_hit_rate(
-      got_from_cache = got_from_cache,
-      got_from_inverter = got_from_inverter,
-    )
+    try:
+      self._cache_hit_rate = await self._cache_manager.update_cache_hit_rate(
+        got_from_cache = got_from_cache,
+        got_from_inverter = got_from_inverter,
+      )
+    except Exception:
+      pass
 
   async def _read_from_inverter(
     self,

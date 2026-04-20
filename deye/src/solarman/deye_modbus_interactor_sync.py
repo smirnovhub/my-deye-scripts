@@ -86,10 +86,23 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
       self._registers = cached_registers
 
     if self._can_cache():
-      self._cache_hit_rate = self._cache_manager.update_cache_hit_rate(
+      self._update_cache_hit_rate(
         got_from_cache = len(cached_registers),
         got_from_inverter = len(uncached_registers),
       )
+
+  def _update_cache_hit_rate(
+    self,
+    got_from_cache: int,
+    got_from_inverter: int,
+  ) -> None:
+    try:
+      self._cache_hit_rate = self._cache_manager.update_cache_hit_rate(
+        got_from_cache = got_from_cache,
+        got_from_inverter = got_from_inverter,
+      )
+    except Exception:
+      pass
 
   def _read_from_inverter(
     self,
