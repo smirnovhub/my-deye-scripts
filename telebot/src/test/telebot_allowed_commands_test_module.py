@@ -39,7 +39,7 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'allowed commands test'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -82,14 +82,14 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
 
       if command in disabled_registers:
         register = registers.get_register_by_name(command)
-        self.wait_for_text_regex(f"You can't change.+{register.description}")
+        await self.wait_for_text_regex(f"You can't change.+{register.description}")
       elif command in allowed_registers:
         register = registers.get_register_by_name(command)
-        self.wait_for_text_regex(f"Current.+{register.description}.+value:.*Enter new value")
+        await self.wait_for_text_regex(f"Current.+{register.description}.+value:.*Enter new value")
       elif command in allowed_commands:
-        self.wait_for_text_regex(':|'.join(titles))
+        await self.wait_for_text_regex(':|'.join(titles))
       else:
-        self.wait_for_text('Command is not allowed')
+        await self.wait_for_text('Command is not allowed')
 
     self.log.info('Checking commands with arguments...')
 
@@ -103,8 +103,8 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
 
       if command in disabled_registers:
         register = registers.get_register_by_name(command)
-        self.wait_for_text_regex(f"You can't change.+{register.description}")
+        await self.wait_for_text_regex(f"You can't change.+{register.description}")
       else:
-        self.wait_for_text('Command is not allowed')
+        await self.wait_for_text('Command is not allowed')
 
     self.log.info('Seems commands access rights processed correctly')

@@ -90,7 +90,7 @@ class MyTelebot:
 
     default_menu_items = self.get_default_menu_items(bot)
     authorized_menu_items = self.get_authorized_menu_items(bot = bot, runner = runner)
-    authorized_menu_items.extend(self.get_writable_registers_menu_items(bot))
+    authorized_menu_items.extend(self.get_writable_registers_menu_items(bot = bot, runner = runner))
 
     # unknown command handler should be always last
     authorized_menu_items.append(TelebotMenuUnknownCommandHandler(bot))
@@ -204,14 +204,18 @@ class MyTelebot:
       TelebotMenuTest(bot),
     ]
 
-  def get_writable_registers_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
+  def get_writable_registers_menu_items(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ) -> List[TelebotMenuItemHandler]:
     return [
-      TelebotMenuWritableRegisters(bot),
+      TelebotMenuWritableRegisters(bot, runner),
     ]
 
-  def run_tests(self):
+  async def run_tests(self):
     if not isinstance(self.bot, TestableTelebot):
       raise TypeError(f"Can't run tests because telebot is not {TestableTelebot.__name__}")
 
     teletest = TeleTest(self.bot)
-    teletest.run_tests()
+    await teletest.run_tests()

@@ -35,7 +35,7 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers test 2'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     user = TelebotTestUsers().test_user1
 
     registers = DeyeRegisters()
@@ -74,7 +74,7 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
 
       self.send_text(user, command)
 
-    self.call_with_retry(self._check_results, master_server, processed_registers)
+    await self.call_with_retry(self._check_results, master_server, processed_registers)
 
     # Process enum registers
     for register in registers.all_registers:
@@ -96,11 +96,11 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
 
       self.send_text(user, command)
 
-      self.wait_for_text('Do you really want to change')
+      await self.wait_for_text('Do you really want to change')
       self.send_text(user, 'yes')
 
-      self.wait_for_server_changes(master_server, register)
-      self.wait_for_text_regex(rf'{register.description}.+changed from .+ to ')
+      await self.wait_for_server_changes(master_server, register)
+      await self.wait_for_text_regex(rf'{register.description}.+changed from .+ to ')
 
     self.log.info('Seems all writable registers processed correctly')
 

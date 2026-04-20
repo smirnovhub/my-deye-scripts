@@ -39,7 +39,7 @@ class TelebotWritableRegistersButtonsTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers buttons test'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -59,7 +59,7 @@ class TelebotWritableRegistersButtonsTestModule(TelebotBaseTestModule):
       self.log.info(f"Sending command '{command}'")
 
       self.send_text(user, command)
-      data = self.wait_for_text_regex_and_get_buttons_data(rf'Current.+{register.description}.+value.*Enter new value')
+      data = await self.wait_for_text_regex_and_get_buttons_data(rf'Current.+{register.description}.+value.*Enter new value')
 
       for cmd_str in data:
         if not cmd_str.startswith('/'):

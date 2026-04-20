@@ -35,7 +35,7 @@ class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers test 1'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -58,15 +58,15 @@ class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
       self.log.info(f"Sending command '{command}'")
 
       self.send_text(user, command)
-      self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
+      await self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
 
       self.send_text(user, value)
 
       if isinstance(register.value, DeyeBaseEnum):
-        self.wait_for_text('Do you really want to change')
+        await self.wait_for_text('Do you really want to change')
         self.send_text(user, 'yes')
 
-      self.wait_for_server_changes(master_server, register)
-      self.wait_for_text_regex(rf'{register.description}.+changed from .+ to ')
+      await self.wait_for_server_changes(master_server, register)
+      await self.wait_for_text_regex(rf'{register.description}.+changed from .+ to ')
 
     self.log.info('Seems all writable registers processed correctly')

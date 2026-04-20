@@ -30,7 +30,7 @@ class TelebotBlockedUserTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'blocked user test'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -41,6 +41,6 @@ class TelebotBlockedUserTestModule(TelebotBaseTestModule):
         self.log.info(f"Sending command '/{command}' from user {user.id}")
 
         self.send_text(user, f'/{command}')
-        self.wait_for_text('Command is not allowed for this user')
+        await self.wait_for_text('Command is not allowed for this user')
 
     self.log.info('Seems blocked users processed correctly')

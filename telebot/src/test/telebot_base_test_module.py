@@ -1,4 +1,4 @@
-import time
+import asyncio
 import logging
 import telebot
 
@@ -25,7 +25,7 @@ class TelebotBaseTestModule:
   def description(self) -> str:
     raise NotImplementedError(f'{self.__class__.__name__}: description() is not implemented')
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     raise NotImplementedError(f'{self.__class__.__name__}: run_tests() is not implemented')
 
   def get_master_server(self, servers: List[SolarmanTestServer]) -> SolarmanTestServer:
@@ -89,27 +89,27 @@ class TelebotBaseTestModule:
 
     self.bot.process_new_callback_query([query])
 
-  def wait_for_text(self, text: str):
+  async def wait_for_text(self, text: str):
     def check_message():
       if not self.bot.is_messages_contains(text):
         raise DeyeKnownException(f"Waiting for message '{text}'...")
 
     self.log.info(f"Waiting for message '{text}'...")
-    self.call_with_retry(check_message)
+    await self.call_with_retry(check_message)
     self.log.info(f"Received message '{text}'")
     self.bot.clear_messages()
 
-  def wait_for_text_regex(self, text: str):
+  async def wait_for_text_regex(self, text: str):
     def check_message():
       if not self.bot.is_messages_contains_regex(text):
         raise DeyeKnownException(f"Waiting for message '{text}'...")
 
     self.log.info(f"Waiting for message '{text}'...")
-    self.call_with_retry(check_message)
+    await self.call_with_retry(check_message)
     self.log.info(f"Received message '{text}'")
     self.bot.clear_messages()
 
-  def wait_for_text_regex_and_get_undo_data(self, text: str) -> str:
+  async def wait_for_text_regex_and_get_undo_data(self, text: str) -> str:
     def check_message() -> str:
       data = self.bot.get_undo_data_regex(text)
       if data is None:
@@ -117,13 +117,13 @@ class TelebotBaseTestModule:
       return str(data)
 
     self.log.info(f"Waiting for message with undo '{text}'...")
-    result = self.call_with_retry(check_message)
+    result = await self.call_with_retry(check_message)
     self.log.info(f"Received message with undo '{text}'")
     self.bot.clear_messages()
 
     return str(result)
 
-  def wait_for_text_regex_and_get_buttons_data(self, text: str) -> List[str]:
+  async def wait_for_text_regex_and_get_buttons_data(self, text: str) -> List[str]:
     def check_message() -> List[str]:
       data = self.bot.get_buttons_data_regex(text)
       if data is None:
@@ -131,22 +131,22 @@ class TelebotBaseTestModule:
       return data
 
     self.log.info(f"Waiting for message with buttons '{text}'...")
-    result = self.call_with_retry(check_message)
+    result = await self.call_with_retry(check_message)
     self.log.info(f"Received message with buttons '{text}'")
     self.bot.clear_messages()
 
     return result
 
-  def wait_for_server_changes(self, server: SolarmanTestServer, register: DeyeRegister):
+  async def wait_for_server_changes(self, server: SolarmanTestServer, register: DeyeRegister):
     def check_server():
       if not server.is_registers_written(register.address, register.quantity):
         raise DeyeKnownException(f"Waiting for register '{register.name}' change on server side...")
 
     self.log.info(f"Waiting for register '{register.name}' change on server side...")
-    self.call_with_retry(check_server)
+    await self.call_with_retry(check_server)
     self.log.info(f"Register '{register.name}' changed on server side")
 
-  def call_with_retry(
+  async def call_with_retry(
     self,
     func: Callable,
     *args,
@@ -181,7 +181,7 @@ class TelebotBaseTestModule:
       try:
         return func(*args, **kwargs)
       except Exception as e:
-        time.sleep(retry_delay_sec)
+        await asyncio.sleep(retry_delay_sec)
         last_exception = e
         if total_retry_time - last_print_time > 1:
           last_print_time = total_retry_time

@@ -53,7 +53,7 @@ class TelebotWritableRegistersTest4Module(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers test 4'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     user = TelebotTestUsers().test_user1
 
     registers = DeyeRegisters()
@@ -89,11 +89,12 @@ class TelebotWritableRegistersTest4Module(TelebotBaseTestModule):
       self.log.info(f"Sending command '{command}'")
 
       self.send_text(user, command)
-      self.wait_for_text_regex(rf'Current.+{register.description}.+value: {random_value.value.pretty}.*Enter new value')
+      await self.wait_for_text_regex(
+        rf'Current.+{register.description}.+value: {random_value.value.pretty}.*Enter new value')
 
       self.send_text(user, value)
 
-      self.wait_for_text_regex(rf'Enum value for .*{register.description}.* is unknown')
+      await self.wait_for_text_regex(rf'Enum value for .*{register.description}.* is unknown')
 
       value = ''.join(random.choices(string.ascii_letters, k = 8))
       command = f'/{register.name} {value}'
@@ -101,7 +102,7 @@ class TelebotWritableRegistersTest4Module(TelebotBaseTestModule):
       self.log.info(f"Sending command '{command}'")
 
       self.send_text(user, command)
-      self.wait_for_text_regex(rf'Enum value for .*{register.description}.* is unknown')
+      await self.wait_for_text_regex(rf'Enum value for .*{register.description}.* is unknown')
 
       if master_server.is_something_written():
         self.error(f"Register '{register.name}' should not be written with wrong enum value")

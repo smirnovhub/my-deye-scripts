@@ -34,7 +34,7 @@ class TelebotUnauthorizedUserTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'unauthorized user test'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -49,8 +49,8 @@ class TelebotUnauthorizedUserTestModule(TelebotBaseTestModule):
       self.send_text(user, f'/{command}')
 
       if command == TelebotMenuItem.start.command:
-        self.wait_for_text(f'Access requested for user {user.id}')
+        await self.wait_for_text(f'Access requested for user {user.id}')
       else:
-        self.wait_for_text(f'User {user.id} is not authorized')
+        await self.wait_for_text(f'User {user.id} is not authorized')
 
     self.log.info('Seems unauthorized users processed correctly')

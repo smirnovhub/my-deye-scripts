@@ -37,7 +37,7 @@ class TelebotWritableRegistersTest3Module(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers test 3'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     user = TelebotTestUsers().test_user1
 
     registers = DeyeRegisters()
@@ -75,6 +75,6 @@ class TelebotWritableRegistersTest3Module(TelebotBaseTestModule):
       self.send_text(user, command)
 
       suffix = f' {register.suffix}'.rstrip()
-      self.wait_for_text(rf'New value ({value}{suffix}) is the same as old value. Nothing changed')
+      await self.wait_for_text(rf'New value ({value}{suffix}) is the same as old value. Nothing changed')
 
     self.log.info('Seems all writable registers processed correctly')
