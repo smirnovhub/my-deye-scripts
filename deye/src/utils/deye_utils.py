@@ -341,8 +341,8 @@ class DeyeUtils:
   def get_quantity(registers: Dict[int, DeyeRegisterCacheData]) -> int:
     return sum(item.quantity for item in registers.values())
 
+  @staticmethod
   async def wait_for_solarman_servers_ready(
-    self,
     loggers: List[DeyeLogger],
     timeout: float = 5,
   ) -> bool:
