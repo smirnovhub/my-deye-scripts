@@ -89,7 +89,8 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     end_time = time.perf_counter()
     duration_ms = round((end_time - start_time) * 1000)
     self._logger.info(f"{self._name} cache read took {duration_ms} ms")
-    self._logger.info(f'{self._name} got {len(results)} registers from cache')
+
+    self._logger.info(f'{self._name} got {DeyeUtils.get_quantity(results)} registers from cache')
 
     return results
 
@@ -138,7 +139,8 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
         )
 
         await self._save_json(json_string)
-        self._logger.info(f'{self._name} saved {len(registers_to_save)} registers to cache')
+
+        self._logger.info(f'{self._name} saved {DeyeUtils.get_quantity(registers_to_save)} registers to cache')
     except DeyeKnownException as e:
       self._logger.error("%s: cache write error: %s", self._name, e, exc_info = True)
       raise

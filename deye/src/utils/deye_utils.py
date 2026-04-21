@@ -12,6 +12,7 @@ from typing import Dict, Optional, Union, List
 
 from datetime import datetime, timedelta
 from pysolarmanv5 import NoSocketAvailableError
+from deye_register_cache_data import DeyeRegisterCacheData
 
 from deye_exceptions import (
   DeyeConnectionErrorException,
@@ -334,3 +335,7 @@ class DeyeUtils:
         return limit
 
     return max_current
+
+  @staticmethod
+  def get_quantity(registers: Dict[int, DeyeRegisterCacheData]) -> int:
+    return sum(item.quantity for item in registers.values())

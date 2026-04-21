@@ -87,19 +87,19 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
 
     if self._can_cache():
       self._update_cache_hit_rate(
-        got_from_cache = len(cached_registers),
-        got_from_inverter = len(uncached_registers),
+        got_from_cache = cached_registers,
+        got_from_inverter = uncached_registers,
       )
 
   def _update_cache_hit_rate(
     self,
-    got_from_cache: int,
-    got_from_inverter: int,
+    got_from_cache: Dict[int, DeyeRegisterCacheData],
+    got_from_inverter: Dict[int, DeyeRegisterCacheData],
   ) -> None:
     try:
       self._cache_hit_rate = self._cache_manager.update_cache_hit_rate(
-        got_from_cache = got_from_cache,
-        got_from_inverter = got_from_inverter,
+        got_from_cache = sum(item.quantity for item in got_from_cache.values()),
+        got_from_inverter = sum(item.quantity for item in got_from_inverter.values()),
       )
     except Exception:
       pass
@@ -143,7 +143,7 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     finally:
       self._solarman.disconnect()
 
-    self._log.info(f'{self.name} got {len(results)} registers from inverter')
+    self._log.info(f'{self.name} got {DeyeUtils.get_quantity(results)} registers from inverter')
 
     return results
 
@@ -152,7 +152,7 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
       return
 
     try:
-      for reg in self._registers_to_write:
+      for reg in self._registers_to_write.values():
         result = self._solarman.write_multiple_holding_registers(reg.address, reg.values)
         current_ts = time.time() # Should be exact after write_multiple_holding_registers() call
 
@@ -176,7 +176,7 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
         if self._can_cache():
           self._cache_manager.save_to_cache(registers_to_save = {reg.address: updated_reg})
 
-      self._log.info(f'{self.name} wrote {len(self._registers_to_write)} registers to inverter')
+      self._log.info(f'{self.name} wrote {DeyeUtils.get_quantity(self._registers_to_write)} registers to inverter')
       self._registers_to_write.clear()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while writing registers') from e
