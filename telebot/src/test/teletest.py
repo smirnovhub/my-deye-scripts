@@ -4,8 +4,8 @@ import logging
 
 from typing import List
 
-from deye_logger import DeyeLogger
 from deye_loggers import DeyeLoggers
+from deye_utils import DeyeUtils
 from debug_timer import DebugTimerWithLog
 from all_settings_registers import AllSettingsRegisters
 from master_settings_registers import MasterSettingsRegisters
@@ -57,7 +57,7 @@ class TeleTest:
           port = logger.port,
         ))
 
-    await self._wait_for_solarman_servers_ready(self.loggers.loggers)
+    await DeyeUtils.wait_for_solarman_servers_ready(self.loggers.loggers)
 
     log = logging.getLogger()
     modules = self._get_test_modules(self.bot)
@@ -200,49 +200,3 @@ class TeleTest:
       ])
 
     return modules
-
-  async def _wait_for_solarman_servers_ready(
-    self,
-    loggers: List[DeyeLogger],
-    timeout: float = 5,
-  ) -> bool:
-    """
-    Wait until all solarman server ports for all loggers are open.
-    """
-    logger_tools = logging.getLogger()
-    logger_tools.info(f"Waiting for {len(loggers)} solarman server(s) to be ready...")
-
-    async def check_single_logger(deye_logger: DeyeLogger) -> bool:
-      """
-      Internal helper to check one specific logger with a timeout.
-      """
-      start_time = asyncio.get_running_loop().time()
-      while asyncio.get_running_loop().time() - start_time < timeout:
-        try:
-          # Try to open a connection to the specific logger's address and port
-          reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(
-              deye_logger.address,
-              deye_logger.port,
-            ),
-            timeout = 0.5,
-          )
-          writer.close()
-          await writer.wait_closed()
-          return True
-        except (ConnectionRefusedError, OSError, asyncio.TimeoutError):
-          await asyncio.sleep(0.2)
-
-      logger_tools.error(
-        f"Logger '{deye_logger.name}' ({deye_logger.address}:{deye_logger.port}) did not become ready.")
-      return False
-
-    # Run all checks concurrently
-    results = await asyncio.gather(*(check_single_logger(l) for l in loggers))
-
-    # Return True only if ALL loggers are ready
-    if all(results):
-      logger_tools.info("All solarman servers are ready!")
-      return True
-
-    return False
