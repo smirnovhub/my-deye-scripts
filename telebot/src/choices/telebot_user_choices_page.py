@@ -1,8 +1,11 @@
+import asyncio
+
 from enum import Enum, auto
-from typing import Callable, List
+from typing import Any, Callable, Coroutine, List, Optional, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 
@@ -15,12 +18,16 @@ class UserChoicePage(TelebotNavigationPage):
     text: str,
     options: List[ButtonNode],
     chat_id: int,
-    callback: Callable[[int, ButtonNode], None],
+    callback: Union[
+      Callable[[int, ButtonNode], None],
+      Callable[[int, ButtonNode], Coroutine[Any, Any, None]],
+    ],
+    runner: Optional[TelebotAsyncRunner] = None,
     max_per_row: int = 5,
     accept_wrong_choice_from_user_input: bool = False,
     wrong_choice_text: str = 'No such option',
   ):
-    super().__init__()
+    super().__init__(runner = runner)
     self._text = text
     self._options = options
     self._chat_id = chat_id
@@ -56,7 +63,10 @@ class UserChoicePage(TelebotNavigationPage):
 
   def _handle_selection(self, navigator: TelebotPageNavigator, button: ButtonNode):
     navigator.stop()
-    self._callback(self._chat_id, button)
+    if asyncio.iscoroutinefunction(self._callback):
+      self.runner.run(self._callback(self._chat_id, button))
+    else:
+      self._callback(self._chat_id, button)
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     text_lower = text.lower()

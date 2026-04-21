@@ -268,26 +268,26 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
       old_value = register.value
       old_pretty_value = register.pretty_value
 
-      def on_user_confirmation(chat_id: int, result: bool):
+      async def on_user_confirmation(chat_id: int, result: bool):
         if not result:
           self.bot.send_message(message.chat.id, 'Nothing changed')
-        else:
-          try:
-            task = self.runner.run(holder.write_register(register, value))
-            task.result()
-            self.print_result_after_write_register(
-              register,
-              message,
-              old_value = old_value,
-              old_pretty_value = old_pretty_value,
-            )
-          except DeyeKnownException as e:
-            self.bot.send_message(message.chat.id, str(e))
-          except Exception as e:
-            self.bot.send_message(message.chat.id, str(e))
-            self.logger.info(traceback.format_exc())
-          finally:
-            holder.disconnect()
+          return
+
+        try:
+          await holder.write_register(register, value)
+          self.print_result_after_write_register(
+            register,
+            message,
+            old_value = old_value,
+            old_pretty_value = old_pretty_value,
+          )
+        except DeyeKnownException as e:
+          self.bot.send_message(message.chat.id, str(e))
+        except Exception as e:
+          self.bot.send_message(message.chat.id, str(e))
+          self.logger.info(traceback.format_exc())
+        finally:
+          holder.disconnect()
 
       is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(
         message,
@@ -302,6 +302,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
           f'Do you really want to change <b>{register.description}</b> '
           f'to {value.pretty}{suffix}?',
           on_user_confirmation,
+          runner = self.runner,
         )
         return
 

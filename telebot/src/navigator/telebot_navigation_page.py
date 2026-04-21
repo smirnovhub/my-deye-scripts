@@ -33,6 +33,12 @@ class TelebotNavigationPage(ABC):
     self._logger = logging.getLogger()
 
   @property
+  def runner(self) -> TelebotAsyncRunner:
+    if not self._runner:
+      raise RuntimeError("Async runner is not set")
+    return self._runner
+
+  @property
   @abstractmethod
   def page_type(self) -> Enum:
     """
@@ -122,11 +128,9 @@ class TelebotNavigationPage(ABC):
       result = handler(navigator) # type: ignore
 
     if inspect.iscoroutine(result):
-      if not self._runner:
-        raise RuntimeError("Async runner is not set")
       self._logger.info(f"{self.__class__.__name__}: running async handler for button "
                         f"text={button.text}, data={button.data}")
-      self._runner.run(result)
+      self.runner.run(result)
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     pass
