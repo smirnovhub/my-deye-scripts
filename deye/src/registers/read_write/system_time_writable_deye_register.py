@@ -64,8 +64,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
     values = DeyeUtils.to_inv_time([year - 2000, month, day, hour, minute, second])
 
-    if interactor.write_register(self.address, values) != len(values):
-      self.error(f'write(): something went wrong while writing {self.description}')
+    interactor.write_register(self.address, values)
 
     self._value = date
 

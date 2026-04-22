@@ -41,7 +41,6 @@ class IntWritableDeyeRegister(IntDeyeRegister):
     if value < self.min_value or value > self.max_value:
       self.error(f'write(): value should be from {self.min_value} to {self.max_value}')
 
-    if interactor.write_register(self.address, [value]) != 1:
-      self.error(f'write(): something went wrong while writing {self.description}')
+    interactor.write_register(self.address, [value])
 
     self._value = value

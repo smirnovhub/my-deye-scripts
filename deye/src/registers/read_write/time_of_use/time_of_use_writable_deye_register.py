@@ -168,21 +168,17 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
         for charge in value.charges.values
       ]
 
-      if interactor.write_register(self.charge_address, charges) != len(charges):
-        self.error(f'write(): something went wrong while writing charges in {self.description}')
+      interactor.write_register(self.charge_address, charges)
 
     if value.times.values:
       times = [time.hour * 100 + time.minute for time in value.times.values]
-      if interactor.write_register(self.time_address, times) != len(times):
-        self.error(f'write(): something went wrong while writing times in {self.description}')
+      interactor.write_register(self.time_address, times)
 
     if value.powers.values:
-      if interactor.write_register(self.power_address, value.powers.values) != len(value.powers.values):
-        self.error(f'write(): something went wrong while writing powers in {self.description}')
+      interactor.write_register(self.power_address, value.powers.values)
 
     if value.socs.values:
-      if interactor.write_register(self.soc_address, value.socs.values) != len(value.socs.values):
-        self.error(f'write(): something went wrong while writing socs in {self.description}')
+      interactor.write_register(self.soc_address, value.socs.values)
 
     if value.weeks.values:
       weekly = ((int(value.week.enabled) << 0) | #
@@ -195,7 +191,6 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
                 (int(value.week.sunday) << 7) #
                 )
 
-      if interactor.write_register(self.weekly_address, [weekly]) != 1:
-        self.error(f'write(): something went wrong while writing weekly in {self.description}')
+      interactor.write_register(self.weekly_address, [weekly])
 
     self._value = value

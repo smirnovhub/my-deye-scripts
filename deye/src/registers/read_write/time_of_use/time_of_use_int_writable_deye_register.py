@@ -45,7 +45,6 @@ class TimeOfUseIntWritableDeyeRegister(IntWritableDeyeRegister):
 
     socs = [value] * self.quantity
 
-    if interactor.write_register(self.address, socs) != len(socs):
-      self.error(f'write(): something went wrong while writing {self.description}')
+    interactor.write_register(self.address, socs)
 
     self._value = value

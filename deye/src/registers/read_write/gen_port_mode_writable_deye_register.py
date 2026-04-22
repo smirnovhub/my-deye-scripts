@@ -45,7 +45,6 @@ class GenPortModeWritableDeyeRegister(IntDeyeRegister):
     if value.value < 0:
       self.error(f'write(): value of {DeyeGenPortMode.__name__} should be >= 0')
 
-    if interactor.write_register(self.address, [value.value]) != 1:
-      self.error(f'write(): something went wrong while writing {self.description}')
+    interactor.write_register(self.address, [value.value])
 
     self._value = value
