@@ -135,7 +135,7 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
 
     return data
 
-  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> None:
     if not isinstance(value, TimeOfUseData):
       self.error(f'write(): value should be of type {TimeOfUseData.__name__}')
 
@@ -199,4 +199,3 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
         self.error(f'write(): something went wrong while writing weekly in {self.description}')
 
     self._value = value
-    return value

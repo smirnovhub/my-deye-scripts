@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from deye_register import DeyeRegister
 from deye_register_group import DeyeRegisterGroup
@@ -35,9 +35,9 @@ class BaseEnergyCostRegister(FloatDeyeRegister):
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     self._energy_register.enqueue(interactor)
 
-  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
+  def read(self, interactors: List[DeyeModbusInteractor]) -> None:
     self._energy_register.read(interactors)
-    return super().read(interactors)
+    super().read(interactors)
 
   @property
   def energy_costs(self) -> Dict[int, float]:

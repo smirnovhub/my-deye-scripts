@@ -46,7 +46,7 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
 
     return value
 
-  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> None:
     val = str(value)
 
     if not re.match(r'^\d{4}\-\d{2}\-\d{2}\s\d{2}\:\d{2}\:\d{2}$', val):
@@ -68,7 +68,6 @@ class SystemTimeWritableDeyeRegister(BaseDeyeRegister):
       self.error(f'write(): something went wrong while writing {self.description}')
 
     self._value = date
-    return self._value
 
   @property
   def caching_time(self) -> Optional[timedelta]:

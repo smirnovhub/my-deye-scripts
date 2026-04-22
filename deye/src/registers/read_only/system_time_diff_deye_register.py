@@ -36,9 +36,9 @@ class SystemTimeDiffDeyeRegister(IntDeyeRegister):
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     self._system_time_register.enqueue(interactor)
 
-  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
+  def read(self, interactors: List[DeyeModbusInteractor]) -> None:
     self._system_time_register.read(interactors)
-    return super().read(interactors)
+    super().read(interactors)
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     value = self._system_time_register.read_internal(interactor)

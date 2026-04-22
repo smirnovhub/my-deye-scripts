@@ -35,7 +35,7 @@ class GenPortModeWritableDeyeRegister(IntDeyeRegister):
         return mode
     return DeyeGenPortMode.unknown
 
-  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> None:
     if not isinstance(value, DeyeGenPortMode):
       self.error(f'write(): value should be of type {DeyeGenPortMode.__name__}')
 
@@ -49,4 +49,3 @@ class GenPortModeWritableDeyeRegister(IntDeyeRegister):
       self.error(f'write(): something went wrong while writing {self.description}')
 
     self._value = value
-    return value

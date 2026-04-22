@@ -32,7 +32,7 @@ class IntWritableDeyeRegister(IntDeyeRegister):
   def can_write(self) -> bool:
     return True
 
-  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> None:
     try:
       value = int(value)
     except Exception:
@@ -45,4 +45,3 @@ class IntWritableDeyeRegister(IntDeyeRegister):
       self.error(f'write(): something went wrong while writing {self.description}')
 
     self._value = value
-    return value

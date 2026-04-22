@@ -24,18 +24,16 @@ class GridStateDeyeRegister(IntDeyeRegister):
     )
     self._value = DeyeGridState.unknown
 
-  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
+  def read(self, interactors: List[DeyeModbusInteractor]) -> None:
     if self._avg == DeyeRegisterAverageType.none or len(interactors) == 1:
       self._value = self.read_from_master_interactor(interactors)
-      return self._value
+      return
 
     self._value = DeyeGridState.on_grid
     for interactor in interactors:
       value = self.read_internal(interactor)
       if value != DeyeGridState.on_grid:
         self._value = DeyeGridState.off_grid
-
-    return self._value
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     value = super().read_internal(interactor)

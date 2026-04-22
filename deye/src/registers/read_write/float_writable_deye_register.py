@@ -30,7 +30,7 @@ class FloatWritableDeyeRegister(FloatDeyeRegister):
   def can_write(self) -> bool:
     return True
 
-  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> None:
     try:
       value = float(value)
     except Exception as e:
@@ -45,4 +45,3 @@ class FloatWritableDeyeRegister(FloatDeyeRegister):
       self.error(f'write(): something went wrong while writing {self.description}')
 
     self._value = value / self.scale
-    return self._value
