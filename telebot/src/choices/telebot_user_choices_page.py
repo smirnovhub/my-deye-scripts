@@ -63,22 +63,25 @@ class UserChoicePage(TelebotNavigationPage):
 
   def _handle_selection(self, navigator: TelebotPageNavigator, button: ButtonNode):
     navigator.stop()
-    if asyncio.iscoroutinefunction(self._callback):
-      self.runner.run(self._callback(self._chat_id, button))
-    else:
-      self._callback(self._chat_id, button)
+    self._run_callback(button)
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     text_lower = text.lower()
     for button in self.buttons:
       if button.text.lower() == text_lower:
         navigator.stop()
-        self._callback(self._chat_id, button)
+        self._run_callback(button)
         return
 
     if self._accept_wrong_choice_from_user_input:
       navigator.stop()
-      self._callback(self._chat_id, ButtonNode(text = text))
+      self._run_callback(ButtonNode(text = text))
     else:
       navigator.send_message(self._wrong_choice_text)
       navigator.stop()
+
+  def _run_callback(self, button: ButtonNode):
+    if asyncio.iscoroutinefunction(self._callback):
+      self.runner.run(self._callback(self._chat_id, button))
+    else:
+      self._callback(self._chat_id, button)

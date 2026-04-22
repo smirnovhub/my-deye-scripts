@@ -23,6 +23,11 @@ class UserChoices:
     # Check if the original callback is async at the very beginning
     is_async = asyncio.iscoroutinefunction(callback)
 
+    final_callback: Union[
+      Callable[[int, ButtonNode], None],
+      Callable[[int, ButtonNode], Coroutine[Any, Any, None]],
+    ]
+
     if is_async:
       async_cb = cast(Callable[[int, bool], Coroutine[Any, Any, None]], callback)
 
