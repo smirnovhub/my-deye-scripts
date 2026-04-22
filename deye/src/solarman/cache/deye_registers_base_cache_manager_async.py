@@ -24,7 +24,6 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
   ):
     self._name = re.sub(r'[^a-zA-Z0-9-]+', '-', name).strip('-')
     self._serial = abs(serial)
-    self._cache_available = False
     self._logger = logging.getLogger()
     # 1000 means milliseconds
     self._ts_multiplier = 1000
@@ -34,9 +33,6 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     registers_to_check: Dict[int, DeyeRegisterCacheData],
     current_ts: float,
   ) -> Dict[int, DeyeRegisterCacheData]:
-    if not self._cache_available:
-      self._cache_available = await self._is_cache_available()
-
     start_time = time.perf_counter()
     results: Dict[int, DeyeRegisterCacheData] = {}
 
@@ -101,9 +97,6 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     if not registers_to_save:
       return
 
-    if not self._cache_available:
-      self._cache_available = await self._is_cache_available()
-
     start_time = time.perf_counter()
 
     try:
@@ -153,9 +146,6 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     self._logger.info(f"{self._name} cache save took {duration_ms} ms")
 
   async def reset_cache(self) -> None:
-    if not self._cache_available:
-      self._cache_available = await self._is_cache_available()
-
     try:
       async with self._exclusive_lock_context():
         await self._reset()
@@ -184,7 +174,7 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
                                f"dictionary key is {key}, but register address is {address}")
 
   @abstractmethod
-  async def _is_cache_available(self) -> bool:
+  async def is_cache_available(self) -> bool:
     """
     Check if the cache is available.
 

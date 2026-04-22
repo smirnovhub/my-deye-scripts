@@ -89,7 +89,7 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
         e, f"{self._name}: error resetting remote cache "
         f"for {self._inverter_cache_endpoint}") from e
 
-  async def _is_cache_available(self) -> bool:
+  async def is_cache_available(self) -> bool:
     """
     Check if the remote cache server is available by sending a ping request.
 

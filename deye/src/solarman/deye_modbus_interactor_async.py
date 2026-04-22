@@ -40,6 +40,9 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
         serial = self._logger.serial,
       )
 
+  async def is_cache_available(self) -> bool:
+    return await self._cache_manager.is_cache_available()
+
   async def process_enqueued_registers(self) -> None:
     if not self._registers:
       return

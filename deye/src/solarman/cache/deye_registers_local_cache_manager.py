@@ -110,7 +110,7 @@ class DeyeRegistersLocalCacheManager(DeyeRegistersBaseCacheManager):
     # Flush to physical storage
     f.flush()
 
-  def _is_cache_available(self) -> bool:
+  def is_cache_available(self) -> bool:
     """
     Check if the cache is available.
 
