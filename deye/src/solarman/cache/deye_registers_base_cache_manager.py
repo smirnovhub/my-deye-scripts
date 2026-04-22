@@ -24,7 +24,6 @@ class DeyeRegistersBaseCacheManager(ABC):
   ):
     self._name = re.sub(r'[^a-zA-Z0-9-]+', '-', name).strip('-')
     self._serial = abs(serial)
-    self._cache_available = False
     self._logger = logging.getLogger()
     # 1000 means milliseconds
     self._ts_multiplier = 1000
@@ -34,9 +33,6 @@ class DeyeRegistersBaseCacheManager(ABC):
     registers_to_check: Dict[int, DeyeRegisterCacheData],
     current_ts: float,
   ) -> Dict[int, DeyeRegisterCacheData]:
-    if not self._cache_available:
-      self._cache_available = self._is_cache_available()
-
     start_time = time.perf_counter()
     results: Dict[int, DeyeRegisterCacheData] = {}
 
@@ -89,7 +85,8 @@ class DeyeRegistersBaseCacheManager(ABC):
     end_time = time.perf_counter()
     duration_ms = round((end_time - start_time) * 1000)
     self._logger.info(f"{self._name} cache read took {duration_ms} ms")
-    self._logger.info(f'{self._name} got {len(results)} registers from cache')
+
+    self._logger.info(f'{self._name} got {DeyeUtils.get_quantity(results)} registers from cache')
 
     return results
 
@@ -99,9 +96,6 @@ class DeyeRegistersBaseCacheManager(ABC):
   ) -> None:
     if not registers_to_save:
       return
-
-    if not self._cache_available:
-      self._cache_available = self._is_cache_available()
 
     start_time = time.perf_counter()
 
@@ -138,7 +132,8 @@ class DeyeRegistersBaseCacheManager(ABC):
         )
 
         self._save_json(json_string)
-        self._logger.info(f'{self._name} saved {len(registers_to_save)} registers to cache')
+
+        self._logger.info(f'{self._name} saved {DeyeUtils.get_quantity(registers_to_save)} registers to cache')
     except DeyeKnownException as e:
       self._logger.error("%s: cache write error: %s", self._name, e, exc_info = True)
       raise
@@ -151,9 +146,6 @@ class DeyeRegistersBaseCacheManager(ABC):
     self._logger.info(f"{self._name} cache save took {duration_ms} ms")
 
   def reset_cache(self) -> None:
-    if not self._cache_available:
-      self._cache_available = self._is_cache_available()
-
     try:
       with self._exclusive_lock_context():
         self._reset()
@@ -182,7 +174,7 @@ class DeyeRegistersBaseCacheManager(ABC):
                                f"dictionary key is {key}, but register address is {address}")
 
   @abstractmethod
-  def _is_cache_available(self) -> bool:
+  def is_cache_available(self) -> bool:
     """
     Check if the cache is available.
 

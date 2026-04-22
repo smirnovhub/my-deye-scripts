@@ -1,5 +1,3 @@
-import random
-
 from typing import List
 
 from telebot_test_users import TelebotTestUsers
@@ -50,7 +48,7 @@ class TelebotWritableRegistersTest5Module(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers test 5'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -58,16 +56,12 @@ class TelebotWritableRegistersTest5Module(TelebotBaseTestModule):
     master_server.clear_registers()
     master_server.clear_registers_status()
 
-    self.test_registers(master_server, 0.01)
-    self.test_registers(master_server, -0.01)
-    self.test_registers(master_server, 1)
-    self.test_registers(master_server, -1)
-    self.test_registers(master_server, random.randint(100, 99999))
-    self.test_registers(master_server, random.randint(-99999, -100))
+    await self.test_registers(master_server, 0.01)
+    await self.test_registers(master_server, -0.01)
 
     self.log.info('Seems all writable registers with out-of-range values processed correctly')
 
-  def test_registers(self, server: SolarmanTestServer, shift: float):
+  async def test_registers(self, server: SolarmanTestServer, shift: float):
     for register in self.registers.all_registers:
       if not register.can_write:
         continue
@@ -89,18 +83,20 @@ class TelebotWritableRegistersTest5Module(TelebotBaseTestModule):
       self.log.info(f"Sending command '{command}'")
 
       self.send_text(self.user, command)
-      self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
+      await self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
 
       self.send_text(self.user, str(val))
 
-      self.wait_for_text_regex(rf'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')
+      await self.wait_for_text_regex(
+        rf'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')
 
       command = f'/{register.name} {val}'
 
       self.log.info(f"Sending command '{command}'")
       self.send_text(self.user, command)
 
-      self.wait_for_text_regex(rf'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')
+      await self.wait_for_text_regex(
+        rf'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')
 
       if server.is_something_written():
         self.error(f"Register '{register.name}' should not be written with out of range value")

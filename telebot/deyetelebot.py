@@ -100,7 +100,9 @@ def main():
         logger = logger,
       )
 
-      mybot.run_tests()
+      future = runner.run(mybot.run_tests())
+      future.result()
+
       sys.exit(0)
 
     Telegram.send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')

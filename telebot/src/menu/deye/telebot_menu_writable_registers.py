@@ -10,20 +10,25 @@ from custom_single_registers import CustomSingleRegisters
 from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeValueException
 from deye_base_enum import DeyeBaseEnum
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
-from deye_registers_holder_sync import DeyeRegistersHolderSync
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from telebot_fake_message import TelebotFakeMessage
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 from deye_registers import DeyeRegisters
 from telebot_user_choices import UserChoices
 from telebot_command_choice import CommandChoice
 
-class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
-  def __init__(self, bot: telebot.TeleBot):
-    super().__init__(bot)
+class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ):
+    super().__init__(bot = bot, runner = runner)
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -62,10 +67,10 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
     from deye_registers import DeyeRegisters
     @self.bot.message_handler(commands = ['{register_name}'])
     def set_{register_name}(message):
-      self.process_read_write_register_step1(message, registers, '{register_name}', set_{register_name}_step2)
+      self._runner.run(self.process_read_write_register_step1(message, registers, '{register_name}', set_{register_name}_step2))
 
     def set_{register_name}_step2(message, message_id: int, registers: DeyeRegisters):
-      self.process_read_write_register_step2(message, message_id, registers, '{register_name}')
+      self._runner.run(self.process_read_write_register_step2(message, message_id, registers, '{register_name}'))
   ''').format(register_name = register.name)
 
   def create_keyboard_for_register(
@@ -87,7 +92,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
 
     return TelebotDeyeHelper.get_keyboard_for_register(registers, register)
 
-  def process_read_write_register_step1(
+  async def process_read_write_register_step1(
     self,
     message: telebot.types.Message,
     registers: DeyeRegisters,
@@ -129,7 +134,8 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
           param,
           message.from_user,
         )
-        self.process_read_write_register_step2(
+
+        await self.process_read_write_register_step2(
           fake_message,
           message.id,
           registers,
@@ -138,7 +144,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
         return
 
     try:
-      text = self.get_register_value(register)
+      text = await self.get_register_value(register)
       keyboard = self.create_keyboard_for_register(registers, register)
       sent = self.bot.send_message(message.chat.id, text, reply_markup = keyboard, parse_mode = 'HTML')
       self.bot.clear_step_handler_by_chat_id(message.chat.id)
@@ -149,7 +155,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
       self.bot.send_message(message.chat.id, str(e))
       self.logger.info(traceback.format_exc())
 
-  def process_read_write_register_step2(
+  async def process_read_write_register_step2(
     self,
     message: telebot.types.Message,
     message_id: int,
@@ -182,23 +188,23 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
       return
 
     try:
-      self.write_register(register, message)
+      await self.write_register(register, message)
     except DeyeKnownException as e:
       self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
       self.logger.info(traceback.format_exc())
 
-  def get_register_value(self, register: DeyeRegister) -> str:
+  async def get_register_value(self, register: DeyeRegister) -> str:
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolderSync(
+    holder = DeyeRegistersHolderAsync(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
     finally:
       holder.disconnect()
 
@@ -212,7 +218,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
 
     return result
 
-  def write_register(
+  async def write_register(
     self,
     register: DeyeRegister,
     message: telebot.types.Message,
@@ -221,14 +227,14 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
       raise DeyeValueException('Message text is empty')
 
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolderSync(
+    holder = DeyeRegistersHolderAsync(
       loggers = [self.loggers.master],
       register_creator = lambda prefix: CustomSingleRegisters(register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
 
       value: Any = 0
 
@@ -262,25 +268,26 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
       old_value = register.value
       old_pretty_value = register.pretty_value
 
-      def on_user_confirmation(chat_id: int, result: bool):
+      async def on_user_confirmation(chat_id: int, result: bool):
         if not result:
           self.bot.send_message(message.chat.id, 'Nothing changed')
-        else:
-          try:
-            holder.write_register(register, value)
-            self.print_result_after_write_register(
-              register,
-              message,
-              old_value = old_value,
-              old_pretty_value = old_pretty_value,
-            )
-          except DeyeKnownException as e:
-            self.bot.send_message(message.chat.id, str(e))
-          except Exception as e:
-            self.bot.send_message(message.chat.id, str(e))
-            self.logger.info(traceback.format_exc())
-          finally:
-            holder.disconnect()
+          return
+
+        try:
+          await holder.write_register(register, value)
+          self.print_result_after_write_register(
+            register,
+            message,
+            old_value = old_value,
+            old_pretty_value = old_pretty_value,
+          )
+        except DeyeKnownException as e:
+          self.bot.send_message(message.chat.id, str(e))
+        except Exception as e:
+          self.bot.send_message(message.chat.id, str(e))
+          self.logger.info(traceback.format_exc())
+        finally:
+          holder.disconnect()
 
       is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(
         message,
@@ -295,10 +302,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerSync):
           f'Do you really want to change <b>{register.description}</b> '
           f'to {value.pretty}{suffix}?',
           on_user_confirmation,
+          runner = self.runner,
         )
         return
 
-      holder.write_register(register, value)
+      await holder.write_register(register, value)
       self.print_result_after_write_register(
         register,
         message,

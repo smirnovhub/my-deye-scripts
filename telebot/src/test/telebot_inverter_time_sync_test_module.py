@@ -39,7 +39,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'inverter time sync test'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     user = TelebotTestUsers().test_user1
 
     if not self.loggers.is_test_loggers:
@@ -68,8 +68,8 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.send_text(user, command)
 
     if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
-      self.wait_for_text_regex(f'The difference is about {diff_seconds} seconds'
-                               '.+Are you sure to sync inverter time')
+      await self.wait_for_text_regex(f'The difference is about {diff_seconds} seconds'
+                                     '.+Are you sure to sync inverter time')
 
       self.log.info(f"Replying 'yes' for time sync confirmation...")
       self.send_text(user, 'yes')
@@ -79,8 +79,8 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
                        f'from {rnd.value} '
                        f'to {changed_to}')
 
-    self.wait_for_text_regex(changed_pattern)
-    self.wait_for_server_changes(master_server, register)
+    await self.wait_for_text_regex(changed_pattern)
+    await self.wait_for_server_changes(master_server, register)
 
     self.log.info(f'Run command from button: {command}')
 
@@ -104,8 +104,8 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     self.send_button_click(user, command)
 
     if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
-      self.wait_for_text_regex(f'The difference is about {diff_seconds} seconds'
-                               '.+Are you sure to sync inverter time')
+      await self.wait_for_text_regex(f'The difference is about {diff_seconds} seconds'
+                                     '.+Are you sure to sync inverter time')
 
       self.log.info(f"Replying 'yes' for time sync confirmation...")
       self.send_text(user, 'yes')
@@ -114,7 +114,7 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
                        f'from {rnd.value} '
                        f'to {changed_to}')
 
-    self.wait_for_text_regex(changed_pattern)
-    self.wait_for_server_changes(master_server, register)
+    await self.wait_for_text_regex(changed_pattern)
+    await self.wait_for_server_changes(master_server, register)
 
     self.log.info('Seems inverter time sync works correctly')

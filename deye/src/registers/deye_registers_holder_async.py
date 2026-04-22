@@ -26,6 +26,7 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
 
     self._interactors: List[DeyeModbusInteractorAsync] = []
     self._master_interactor: Optional[DeyeModbusInteractorAsync] = None
+    self._cache_available = False
 
     for logger in self._loggers:
       interactor = DeyeModbusInteractorAsync(logger = logger, **kwargs)
@@ -73,6 +74,12 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
     return {interactor.name: rate for interactor, rate in zip(self._interactors, rates)}
 
   async def read_registers(self) -> None:
+    if not self._interactors:
+      raise DeyeValueException(f'{type(self).__name__}: interactors list is empty')
+
+    if not self._cache_available:
+      self._cache_available = await self._interactors[0].is_cache_available()
+
     # Get the first available DeyeRegisters object from the values
     registers = next(iter(self.all_registers.values())).all_registers
 
@@ -167,6 +174,9 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
     if self._master_interactor == None:
       raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
 
+    if not self._cache_available:
+      self._cache_available = await self._master_interactor.is_cache_available()
+
     try:
       value = register.write(self._master_interactor, value)
       await self._master_interactor.write_registers_to_inverter()
@@ -179,6 +189,8 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
     await asyncio.gather(*tasks)
 
   def disconnect(self) -> None:
+    self._cache_available = False
+
     last_exception = None
 
     for interactor in self._interactors:

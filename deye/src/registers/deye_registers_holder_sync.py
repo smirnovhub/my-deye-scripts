@@ -25,6 +25,7 @@ class DeyeRegistersHolderSync(DeyeRegistersHolder):
 
     self._interactors: List[DeyeModbusInteractorSync] = []
     self._master_interactor: Optional[DeyeModbusInteractorSync] = None
+    self._cache_available = False
 
     for logger in self._loggers:
       interactor = DeyeModbusInteractorSync(logger = logger, **kwargs)
@@ -65,6 +66,12 @@ class DeyeRegistersHolderSync(DeyeRegistersHolder):
     return {interactor.name: interactor.get_cache_hit_rate() for interactor in self._interactors}
 
   def read_registers(self) -> None:
+    if not self._interactors:
+      raise DeyeValueException(f'{type(self).__name__}: interactors list is empty')
+
+    if not self._cache_available:
+      self._cache_available = self._interactors[0].is_cache_available()
+
     # Get the first available DeyeRegisters object from the values
     registers = next(iter(self.all_registers.values())).all_registers
 
@@ -132,6 +139,9 @@ class DeyeRegistersHolderSync(DeyeRegistersHolder):
     if self._master_interactor == None:
       raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
 
+    if not self._cache_available:
+      self._cache_available = self._master_interactor.is_cache_available()
+
     try:
       value = register.write(self._master_interactor, value)
       self._master_interactor.write_registers_to_inverter()
@@ -144,6 +154,8 @@ class DeyeRegistersHolderSync(DeyeRegistersHolder):
       interactor.reset_cache()
 
   def disconnect(self) -> None:
+    self._cache_available = False
+
     last_exception = None
 
     for interactor in self._interactors:

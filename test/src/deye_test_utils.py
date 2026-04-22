@@ -14,6 +14,7 @@ from typing import AsyncGenerator, AsyncIterator, List
 
 from pathlib import Path
 from env_utils import EnvUtils
+from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
 from solarman_test_server import SolarmanTestServer
 from contextlib import asynccontextmanager, contextmanager, redirect_stdout
@@ -172,49 +173,6 @@ class DeyeTestUtils:
         await asyncio.gather(*stop_tasks, return_exceptions = True)
 
   @staticmethod
-  async def wait_for_solarman_servers_ready(loggers: List[DeyeLogger], timeout: float = 5) -> bool:
-    """
-    Wait until all solarman server ports for all loggers are open.
-    """
-    logger_tools = logging.getLogger()
-    logger_tools.info(f"Waiting for {len(loggers)} solarman server(s) to be ready...")
-
-    async def check_single_logger(deye_logger: DeyeLogger) -> bool:
-      """
-      Internal helper to check one specific logger with a timeout.
-      """
-      start_time = asyncio.get_running_loop().time()
-      while asyncio.get_running_loop().time() - start_time < timeout:
-        try:
-          # Try to open a connection to the specific logger's address and port
-          reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(
-              deye_logger.address,
-              deye_logger.port,
-            ),
-            timeout = 0.5,
-          )
-          writer.close()
-          await writer.wait_closed()
-          return True
-        except (ConnectionRefusedError, OSError, asyncio.TimeoutError):
-          await asyncio.sleep(0.2)
-
-      logger_tools.error(
-        f"Logger '{deye_logger.name}' ({deye_logger.address}:{deye_logger.port}) did not become ready.")
-      return False
-
-    # Run all checks concurrently
-    results = await asyncio.gather(*(check_single_logger(l) for l in loggers))
-
-    # Return True only if ALL loggers are ready
-    if all(results):
-      logger_tools.info("All solarman servers are ready!")
-      return True
-
-    return False
-
-  @staticmethod
   @asynccontextmanager
   async def collect_output() -> AsyncGenerator[io.StringIO, None]:
     output_buffer = io.StringIO()
@@ -233,7 +191,7 @@ class DeyeTestUtils:
       port = logger.port,
     )
 
-    if not await DeyeTestUtils.wait_for_solarman_servers_ready([logger]):
+    if not await DeyeUtils.wait_for_solarman_servers_ready([logger]):
       raise RuntimeError("Can't start solarman test server")
 
     return server
@@ -252,7 +210,7 @@ class DeyeTestUtils:
 
       servers.append(server)
 
-    if not await DeyeTestUtils.wait_for_solarman_servers_ready(loggers):
+    if not await DeyeUtils.wait_for_solarman_servers_ready(loggers):
       raise RuntimeError("Can't start solarman test servers")
 
     return servers

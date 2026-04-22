@@ -21,7 +21,7 @@ class DeyeModbusInteractor:
     self._loggers = DeyeLoggers()
     self._log = logging.getLogger()
     self._registers: Dict[int, DeyeRegisterCacheData] = dict()
-    self._registers_to_write: List[DeyeRegisterCacheData] = []
+    self._registers_to_write: Dict[int, DeyeRegisterCacheData] = dict()
     self._verbose = bool(kwargs.get('verbose', False))
     self._default_caching_time = max(0, int(kwargs.get('caching_time', 3)))
     self._max_register_count = 120
@@ -68,7 +68,7 @@ class DeyeModbusInteractor:
       values = values,
     )
 
-    self._registers_to_write.append(updated_register)
+    self._registers_to_write[address] = updated_register
     return len(values)
 
   def _get_register_groups(

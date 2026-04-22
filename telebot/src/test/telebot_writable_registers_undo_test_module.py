@@ -34,7 +34,7 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return 'writable registers undo button test'
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -72,16 +72,16 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
       self.log.info(f"Sending command '{command}'")
 
       self.send_text(user, command)
-      self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
+      await self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
 
       self.send_text(user, new_random_value)
 
       if isinstance(register.value, DeyeBaseEnum):
-        self.wait_for_text('Do you really want to change')
+        await self.wait_for_text('Do you really want to change')
         self.send_text(user, 'yes')
 
-      self.wait_for_server_changes(master_server, register)
-      undo_data = self.wait_for_text_regex_and_get_undo_data(rf'{register.description}.+changed from .+ to ')
+      await self.wait_for_server_changes(master_server, register)
+      undo_data = await self.wait_for_text_regex_and_get_undo_data(rf'{register.description}.+changed from .+ to ')
 
       expected = f'/{register.name} {old_random_value.value}'
       self.log.info(f"Checking expected undo data '{expected}' for register '{register.name}'...")

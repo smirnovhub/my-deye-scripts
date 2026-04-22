@@ -29,7 +29,6 @@ import_dirs(
 from deye_utils import DeyeUtils
 from deye_loggers import DeyeLoggers
 from deye_test_utils import DeyeTestUtils
-from deye_exceptions import DeyeCacheException
 from deye_register_cache_data import DeyeRegisterCacheData
 from deye_registers_remote_cache_manager import DeyeRegistersRemoteCacheManager
 
@@ -229,30 +228,6 @@ class TestDeyeRegistersRemoteCacheManager(unittest.TestCase):
     self.assertEqual(len(results), 2)
     self.assertEqual(results[reg1.address].values, reg1.values)
     self.assertEqual(results[reg2.address].values, reg2.values)
-
-  def test_server_unavailable_raises_exception(self):
-    """
-    ROBUSTNESS: Verify that if the server disappears, we get an DeyeCacheException.
-    """
-    # Point to a completely invalid address
-    manager = DeyeRegistersRemoteCacheManager(test_inverter_name, test_inverter_serial, "http://127.0.0.1:1")
-    with self.assertRaises(DeyeCacheException):
-      manager.get_cached_registers(
-        registers_to_check = self.reg_100_json,
-        current_ts = time.time(),
-      )
-
-  def test_unknown_host_raises_exception(self):
-    """
-    ROBUSTNESS: Verify that if the cache server's host is unknown, we get an DeyeCacheException.
-    """
-    # Point to a completely invalid address
-    manager = DeyeRegistersRemoteCacheManager(test_inverter_name, test_inverter_serial, "http://some.unknown.host")
-    with self.assertRaises(DeyeCacheException):
-      manager.get_cached_registers(
-        registers_to_check = self.reg_100_json,
-        current_ts = time.time(),
-      )
 
   def test_remote_stale_data_not_overwriting_new_on_server(self):
     """

@@ -8,7 +8,7 @@ from telebot_base_test_module import TelebotBaseTestModule
 from testable_telebot import TestableTelebot
 from deye_registers import DeyeRegisters
 from telebot_deye_helper import TelebotDeyeHelper
-from deye_registers_holder_sync import DeyeRegistersHolderSync
+from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_test_helper import DeyeTestHelper
 from deye_exceptions import DeyeKnownException
 
@@ -31,7 +31,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
   def description(self) -> str:
     return f"{self.command.command.format(self.name).replace('_', ' ')} test"
 
-  def run_tests(self, servers: List[SolarmanTestServer]):
+  async def run_tests(self, servers: List[SolarmanTestServer]):
     if not self.loggers.is_test_loggers:
       self.error('Your loggers are not test loggers')
 
@@ -46,19 +46,19 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
 
     self.log.info(f'Run regular command: {command}')
 
-    holder = self._init_registers(servers)
+    holder = await self._init_registers(servers)
     self.send_text(user, command)
-    self.call_with_retry(self._check_results, holder)
+    await self.call_with_retry(self._check_results, holder)
 
     self.log.info(f'Run command from button: {command}')
 
     self.bot.clear_messages()
 
-    holder = self._init_registers(servers)
+    holder = await self._init_registers(servers)
     self.send_button_click(user, command)
-    self.call_with_retry(self._check_results, holder)
+    await self.call_with_retry(self._check_results, holder)
 
-  def _init_registers(self, servers: List[SolarmanTestServer]) -> DeyeRegistersHolderSync:
+  async def _init_registers(self, servers: List[SolarmanTestServer]) -> DeyeRegistersHolderAsync:
     for server in servers:
       server.clear_registers()
       server.clear_registers_status()
@@ -78,20 +78,20 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
         server.set_register_values(random_value.register.addresses, random_value.values)
 
     # should be local to avoid issues with locks
-    holder = DeyeRegistersHolderSync(
+    holder = DeyeRegistersHolderAsync(
       loggers = self.loggers.loggers,
       register_creator = self.register_creator,
       **TelebotDeyeHelper.holder_kwargs,
     )
 
     try:
-      holder.read_registers()
+      await holder.read_registers()
     finally:
       holder.disconnect()
 
     return holder
 
-  def _check_results(self, holder: DeyeRegistersHolderSync):
+  def _check_results(self, holder: DeyeRegistersHolderAsync):
     pattern = f'{self.title}: {self.name}|{self.name} settings:'
     if not self.bot.is_messages_contains_regex(pattern):
       raise DeyeKnownException(f"Messages don't contain expected title '{pattern}'")

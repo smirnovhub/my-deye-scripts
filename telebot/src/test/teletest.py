@@ -1,10 +1,12 @@
 import sys
-import time
+import asyncio
 import logging
 
 from typing import List
 
 from deye_loggers import DeyeLoggers
+from deye_utils import DeyeUtils
+from debug_timer import DebugTimerWithLog
 from all_settings_registers import AllSettingsRegisters
 from master_settings_registers import MasterSettingsRegisters
 from common_utils import CommonUtils
@@ -40,7 +42,7 @@ class TeleTest:
     self.bot = bot
     self.loggers = DeyeLoggers()
 
-  def run_tests(self):
+  async def run_tests(self):
     if not self.loggers.is_test_loggers:
       raise ValueError('Your loggers are not test loggers')
 
@@ -55,6 +57,8 @@ class TeleTest:
           port = logger.port,
         ))
 
+    await DeyeUtils.wait_for_solarman_servers_ready(self.loggers.loggers)
+
     log = logging.getLogger()
     modules = self._get_test_modules(self.bot)
 
@@ -62,7 +66,8 @@ class TeleTest:
       for module in modules:
         self._clear_data(servers, log)
         log.info(f'Running module {type(module).__name__}...')
-        module.run_tests(servers)
+        with DebugTimerWithLog(type(module).__name__):
+          await module.run_tests(servers)
         log.info(f'Module {type(module).__name__} done successfully')
       log.info(DeyeTestHelper.test_success_str)
     except Exception as e:
@@ -72,10 +77,10 @@ class TeleTest:
                 f'register_creator = {type(module.register_creator(module.name)).__name__})')
       msg = f'An exception occurred while running {type(module).__name__}{info}: {str(e)}'
       log.info(msg)
-      time.sleep(1)
+      await asyncio.sleep(1)
       Telegram.send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} '
-                                    f'<b>Telebot test failed</b> while running '
-                                    f'{type(module).__name__}{info}: {str(e)}')
+                                             f'<b>Telebot test failed</b> while running '
+                                             f'{type(module).__name__}{info}: {str(e)}')
       sys.exit(1)
 
   def _clear_data(self, servers: List[SolarmanTestServer], log: logging.Logger):

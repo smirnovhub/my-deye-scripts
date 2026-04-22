@@ -329,7 +329,8 @@ class TelebotPageNavigator:
 
     self._id = -1
     self._message = None
-    self._chat_id = None
+    # Do not reset chat it to be able to send error messages
+    #self._chat_id = None
     self._current_page = None
     self._main_page = None
     self._pages.clear()
