@@ -59,7 +59,7 @@ class DeyeModbusInteractor:
     reg = self._registers.get(address)
     return reg.values[:quantity] if reg else [0] * quantity
 
-  def write_register(self, address: int, values: List[int]) -> int:
+  def write_register(self, address: int, values: List[int]) -> None:
     # Create a new data object for the updated register
     updated_register = DeyeRegisterCacheData(
       address = address,
@@ -69,7 +69,6 @@ class DeyeModbusInteractor:
     )
 
     self._registers_to_write[address] = updated_register
-    return len(values)
 
   def _get_register_groups(
     self,

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, cast
+from typing import Callable, Dict, List, Optional, cast
 from concurrent.futures import Future, ThreadPoolExecutor, wait, ALL_COMPLETED
 
 from deye_utils import DeyeUtils
@@ -135,7 +135,7 @@ class DeyeRegistersHolderSync(DeyeRegistersHolder):
         raise DeyeUtils.get_reraised_exception(
           e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
-  def write_register(self, register: DeyeRegister, value) -> Any:
+  def write_register(self, register: DeyeRegister, value) -> None:
     if self._master_interactor == None:
       raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
 
@@ -143,9 +143,8 @@ class DeyeRegistersHolderSync(DeyeRegistersHolder):
       self._cache_available = self._master_interactor.is_cache_available()
 
     try:
-      value = register.write(self._master_interactor, value)
+      register.write(self._master_interactor, value)
       self._master_interactor.write_registers_to_inverter()
-      return value
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while writing register') from e
 

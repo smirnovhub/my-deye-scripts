@@ -47,8 +47,16 @@ from src.deye_proxy_config import DeyeProxyConfig
 config = DeyeProxyConfig()
 
 logger = LogUtils.setup_hourly_overwrite_file_logger(
+  name = "deye-proxy-main",
   log_dir = f"data/{config.LOG_NAME}",
   log_file_template = "deye-proxy-{0}.log",
+)
+
+logger_wait = LogUtils.setup_hourly_overwrite_file_logger(
+  name = "deye-proxy-wait",
+  log_dir = f"data/{config.LOG_NAME}",
+  log_file_template = "deye-proxy-wait-{0}.log",
+  clear_handlers = False,
 )
 
 config.validate_or_exit()
@@ -144,6 +152,9 @@ def handle_client(client_sock: socket.socket, client_ip: str, client_port: int) 
 
     logger.info(f"{client_ip}:{client_port} Lock acquired "
                 f"(waited {wait_duration:.2f}s). Connecting to logger...")
+
+    if wait_duration > 0.1:
+      logger_wait.warning(f"{client_ip}:{client_port} Wait duration: {wait_duration:.2f}s")
 
     # Open connection to the real hardware
     logger_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

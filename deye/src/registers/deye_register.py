@@ -14,14 +14,14 @@ class DeyeRegister(ABC):
     pass
 
   @abstractmethod
-  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
+  def read(self, interactors: List[DeyeModbusInteractor]) -> None:
     pass
 
   @abstractmethod
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     pass
 
-  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> None:
     DeyeNotImplementedException(f'{type(self).__name__} write() is not implemented')
 
   @property

@@ -1,6 +1,6 @@
 import asyncio
 
-from typing import Any, Callable, Dict, List, Optional, cast
+from typing import Callable, Dict, List, Optional, cast
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
@@ -170,7 +170,7 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
         raise DeyeUtils.get_reraised_exception(
           e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
-  async def write_register(self, register: DeyeRegister, value) -> Any:
+  async def write_register(self, register: DeyeRegister, value) -> None:
     if self._master_interactor == None:
       raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
 
@@ -178,9 +178,8 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
       self._cache_available = await self._master_interactor.is_cache_available()
 
     try:
-      value = register.write(self._master_interactor, value)
+      register.write(self._master_interactor, value)
       await self._master_interactor.write_registers_to_inverter()
-      return value
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while writing register') from e
 

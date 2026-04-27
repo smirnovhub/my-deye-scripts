@@ -302,9 +302,9 @@ class DeyeTestHelper:
   def _handle_float_value(register: DeyeRegister, skip_zero: bool) -> str:
     while True:
       value = random.uniform(register.min_value, register.max_value)
-      if not skip_zero or abs(value) > 0.01:
+      if not skip_zero or abs(value) > 0.1:
         break
-    return DeyeUtils.custom_round(value)
+    return DeyeUtils.custom_round(value, 1)
 
   @staticmethod
   def _handle_enum_value(value: DeyeBaseEnum, skip_zero: bool) -> str:

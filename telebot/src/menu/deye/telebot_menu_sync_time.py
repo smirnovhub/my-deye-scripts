@@ -103,44 +103,45 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
     chat_id: int,
     result: bool,
   ):
-    if result:
-      try:
-        old_value = register.value
-        value = DeyeUtils.get_current_time().strftime(DeyeUtils.time_format_str)
-
-        # should be local to avoid issues with locks
-        holder = DeyeRegistersHolderAsync(
-          loggers = [self.loggers.master],
-          **TelebotDeyeHelper.holder_kwargs,
-        )
-
-        try:
-          result = await holder.write_register(register, value)
-        finally:
-          holder.disconnect()
-
-        text = (f'<b>{register.description}</b> changed from {old_value} '
-                f'to {result} {register.suffix}')
-
-        sent = CommandChoice.ask_command_choice(
-          self.bot,
-          chat_id,
-          text,
-          {TelebotConstants.undo_button_name: f'/{register.name} {old_value}'},
-          max_per_row = 2,
-        )
-
-        TelebotUtils.remove_inline_buttons_with_delay(
-          bot = self.bot,
-          chat_id = chat_id,
-          message_id = sent.message_id,
-          delay = TelebotConstants.undo_button_remove_delay_sec,
-        )
-
-      except DeyeKnownException as e:
-        self.bot.send_message(chat_id, str(e))
-      except Exception as e:
-        self.bot.send_message(chat_id, str(e))
-        self.logger.info(traceback.format_exc())
-    else:
+    if not result:
       self.bot.send_message(chat_id, 'Time sync cancelled')
+      return
+
+    try:
+      old_value = register.value
+      value = DeyeUtils.get_current_time().strftime(DeyeUtils.time_format_str)
+
+      # should be local to avoid issues with locks
+      holder = DeyeRegistersHolderAsync(
+        loggers = [self.loggers.master],
+        **TelebotDeyeHelper.holder_kwargs,
+      )
+
+      try:
+        await holder.write_register(register, value)
+      finally:
+        holder.disconnect()
+
+      text = (f'<b>{register.description}</b> changed from {old_value} '
+              f'to {value} {register.suffix}')
+
+      sent = CommandChoice.ask_command_choice(
+        self.bot,
+        chat_id,
+        text,
+        {TelebotConstants.undo_button_name: f'/{register.name} {old_value}'},
+        max_per_row = 2,
+      )
+
+      TelebotUtils.remove_inline_buttons_with_delay(
+        bot = self.bot,
+        chat_id = chat_id,
+        message_id = sent.message_id,
+        delay = TelebotConstants.undo_button_remove_delay_sec,
+      )
+
+    except DeyeKnownException as e:
+      self.bot.send_message(chat_id, str(e))
+    except Exception as e:
+      self.bot.send_message(chat_id, str(e))
+      self.logger.info(traceback.format_exc())

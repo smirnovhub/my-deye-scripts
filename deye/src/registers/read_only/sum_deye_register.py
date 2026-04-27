@@ -37,10 +37,10 @@ class SumDeyeRegister(BaseDeyeRegister):
     for register in self._registers:
       register.enqueue(interactor)
 
-  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
+  def read(self, interactors: List[DeyeModbusInteractor]) -> None:
     for register in self._registers:
       register.read(interactors)
-    return super().read(interactors)
+    super().read(interactors)
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     return sum(register.value for register in self._registers)

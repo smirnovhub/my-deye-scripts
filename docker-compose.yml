@@ -390,8 +390,8 @@ services:
           pids: ${GLOBAL_PIDS_LIMIT}
           memory: ${GLOBAL_MEMORY_LIMIT}
     volumes:
-      # Mount shared folder with read-write permissions
-      - deye_shared_volume:/var/www/html
+      # Mount shared folder with read-only permissions
+      - deye_shared_volume:/var/www/html:ro
 
 volumes:
   deye_shared_volume: {}

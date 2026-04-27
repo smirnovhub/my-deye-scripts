@@ -34,7 +34,7 @@ class TimeOfUseIntWritableDeyeRegister(IntWritableDeyeRegister):
     # Rounding to 2 decimals ensures stable, repeatable test outcomes.
     return round(sum(data) / len(data))
 
-  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> None:
     try:
       value = int(value)
     except Exception as e:
@@ -45,8 +45,6 @@ class TimeOfUseIntWritableDeyeRegister(IntWritableDeyeRegister):
 
     socs = [value] * self.quantity
 
-    if interactor.write_register(self.address, socs) != len(socs):
-      self.error(f'write(): something went wrong while writing {self.description}')
+    interactor.write_register(self.address, socs)
 
     self._value = value
-    return value

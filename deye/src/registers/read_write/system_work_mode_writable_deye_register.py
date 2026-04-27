@@ -35,7 +35,7 @@ class SystemWorkModeWritableDeyeRegister(IntDeyeRegister):
         return mode
     return DeyeSystemWorkMode.unknown
 
-  def write(self, interactor: DeyeModbusInteractor, value: Any) -> Any:
+  def write(self, interactor: DeyeModbusInteractor, value: Any) -> None:
     if not isinstance(value, DeyeSystemWorkMode):
       self.error(f'write(): value should be of type {DeyeSystemWorkMode.__name__}')
 
@@ -45,8 +45,6 @@ class SystemWorkModeWritableDeyeRegister(IntDeyeRegister):
     if value.value < 0:
       self.error(f'write(): value of {DeyeSystemWorkMode.__name__} should be >= 0')
 
-    if interactor.write_register(self.address, [value.value]) != 1:
-      self.error(f'write(): something went wrong while writing {self.description}')
+    interactor.write_register(self.address, [value.value])
 
     self._value = value
-    return value

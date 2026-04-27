@@ -68,10 +68,15 @@ async def main_test_logic(
       log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
       log.info(f'Trying to write: {register_value}')
 
+      write_value = value
+
       if isinstance(register.value, DeyeBaseEnum):
-        write_values[register.name] = await holder.write_register(register, register.value.parse(value))
+        val = register.value.parse(value)
+        await holder.write_register(register, val)
+        write_values[register.name] = val.pretty
       else:
-        write_values[register.name] = await holder.write_register(register, value)
+        await holder.write_register(register, write_value)
+        write_values[register.name] = write_value
 
     log.info(f'Reading of all registers...')
 
@@ -83,8 +88,8 @@ async def main_test_logic(
     if not register.can_write:
       continue
 
-    if register.value != write_values[register.name]:
-      log.error(f"Register value after read {register.value} doesn't match "
+    if register.pretty_value != write_values[register.name]:
+      log.error(f"Register value after read {register.pretty_value} doesn't match "
                 f"value after write {write_values[register.name]} for '{register.name}'")
       sys.exit(1)
     else:

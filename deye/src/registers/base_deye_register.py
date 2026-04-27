@@ -43,10 +43,10 @@ class BaseDeyeRegister(DeyeRegister):
                                 and self._avg != DeyeRegisterAverageType.fake_accumulate):
       interactor.enqueue_register(self.address, self.quantity, self.caching_time)
 
-  def read(self, interactors: List[DeyeModbusInteractor]) -> Any:
+  def read(self, interactors: List[DeyeModbusInteractor]) -> None:
     if len(interactors) == 1:
       self._value = self.read_from_master_interactor(interactors)
-      return self._value
+      return
 
     if self._avg == DeyeRegisterAverageType.fake_accumulate:
       value = self.read_from_master_interactor(interactors)
@@ -61,7 +61,7 @@ class BaseDeyeRegister(DeyeRegister):
                                  f"numeric registers, but got {type(value).__name__}")
 
       self._value = value
-      return self._value
+      return
 
     if self._avg == DeyeRegisterAverageType.accumulate:
       total: Union[int, float]
@@ -74,7 +74,7 @@ class BaseDeyeRegister(DeyeRegister):
       for interactor in interactors:
         total += self.read_internal(interactor)
       self._value = total
-      return self._value
+      return
     elif self._avg == DeyeRegisterAverageType.average:
       total = 0.0
       divider = len(interactors)
@@ -92,10 +92,9 @@ class BaseDeyeRegister(DeyeRegister):
       if isinstance(self, IntDeyeRegister):
         self._value = round(self._value)
 
-      return self._value
+      return
 
     self._value = self.read_from_master_interactor(interactors)
-    return self._value
 
   def read_from_master_interactor(self, interactors: List[DeyeModbusInteractor]) -> Any:
     master_interactor = None
