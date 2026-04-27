@@ -47,13 +47,16 @@ from src.deye_proxy_config import DeyeProxyConfig
 config = DeyeProxyConfig()
 
 logger = LogUtils.setup_hourly_overwrite_file_logger(
+  name = "deye-proxy-main",
   log_dir = f"data/{config.LOG_NAME}",
   log_file_template = "deye-proxy-{0}.log",
 )
 
 logger_wait = LogUtils.setup_hourly_overwrite_file_logger(
+  name = "deye-proxy-wait",
   log_dir = f"data/{config.LOG_NAME}",
   log_file_template = "deye-proxy-wait-{0}.log",
+  clear_handlers = False,
 )
 
 config.validate_or_exit()

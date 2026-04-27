@@ -9,12 +9,14 @@ class LogUtils:
     log_dir: str,
     log_file_template: str,
     log_level: int = logging.INFO,
+    name: str = "",
+    clear_handlers = True,
     log_to_console = True,
   ) -> logging.Logger:
-    logger = logging.getLogger()
+    logger = logging.getLogger(name)
 
     # Clear existing handlers to prevent duplicate logs
-    if logger.hasHandlers():
+    if clear_handlers and logger.hasHandlers():
       logger.handlers.clear()
 
     logger.setLevel(log_level)
