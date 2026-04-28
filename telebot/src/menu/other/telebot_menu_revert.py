@@ -104,7 +104,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     if message.text is not None:
       commit_hash = re.sub(r'[^0-9a-f]', '', message.text)
       if len(commit_hash) >= 32:
-        self.runner.run(self._do_revert(message.chat.id, message.text))
+        self.run_async(self._do_revert(message.chat.id, message.text))
       else:
         self.bot.send_message(message.chat.id, f'Wrong commit hash')
 
