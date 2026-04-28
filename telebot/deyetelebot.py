@@ -125,7 +125,7 @@ def main():
       Telegram.send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
                                              f"Telebot unexpectedly stopped working:\n"
                                              f"<code>{stack_trace}</code>")
-      time.sleep(30)
+      time.sleep(60)
     raise
 
 if __name__ == "__main__":
