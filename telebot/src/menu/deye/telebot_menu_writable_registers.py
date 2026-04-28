@@ -268,7 +268,10 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
       old_value = register.value
       old_pretty_value = register.pretty_value
 
-      async def on_user_confirmation(chat_id: int, result: bool):
+      def on_user_confirmation(chat_id: int, result: bool):
+        self.run_async(on_user_confirmation_async(chat_id, result))
+
+      async def on_user_confirmation_async(chat_id: int, result: bool):
         if not result:
           self.bot.send_message(message.chat.id, 'Nothing changed')
           return
@@ -302,7 +305,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
           f'Do you really want to change <b>{register.description}</b> '
           f'to {value.pretty}{suffix}?',
           on_user_confirmation,
-          runner = self.runner,
         )
         return
 
