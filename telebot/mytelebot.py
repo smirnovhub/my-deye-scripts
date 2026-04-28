@@ -198,7 +198,7 @@ class MyTelebot:
       TelebotMenuBatteryForecastByTime(bot, runner),
       TelebotMenuSyncTime(bot, runner),
       TelebotMenuRestart(bot),
-      TelebotMenuRevert(bot),
+      TelebotMenuRevert(bot, runner),
       TelebotMenuCache(bot, runner),
       TelebotMenuUpdate(bot, runner),
       TelebotMenuTest(bot),
