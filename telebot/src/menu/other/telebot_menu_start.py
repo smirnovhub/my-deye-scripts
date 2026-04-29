@@ -60,7 +60,7 @@ class TelebotMenuStart(TelebotMenuItemHandlerSync):
     if self.users.is_user_blocked(user.id) or self.users.is_user_allowed(user.id):
       self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
     else:
-      result = self.add_user_to_file(f'{self._data_dir}/access_requests.txt', user.id, name)
+      result = self._add_user_to_file(f'{self._data_dir}/access_requests.txt', user.id, name)
       if result:
         self.bot.send_message(message.chat.id, f'Access requested for user {user.id}')
         if not EnvUtils.is_tests_on():
@@ -72,7 +72,7 @@ class TelebotMenuStart(TelebotMenuItemHandlerSync):
   # If user_id already exists → return False.
   # If not → append the entry and return True.
   # Entry format: YYYY-MM-DD HH:MM:SS USER_ID
-  def add_user_to_file(self, file_path: str, user_id: int, user_name: str) -> bool:
+  def _add_user_to_file(self, file_path: str, user_id: int, user_name: str) -> bool:
     if EnvUtils.is_tests_on():
       return True
 

@@ -65,20 +65,20 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
       buttons.extend(today_buttons)
       buttons.append(BreakButtonNode())
 
-    for index, graph_date in enumerate(self._provider.dates):
-      if (index % 2) == 0:
-        buttons.append(BreakButtonNode())
+    # for index, graph_date in enumerate(self._provider.dates):
+    #   if (index % 2) == 0:
+    #     buttons.append(BreakButtonNode())
 
-      buttons.append(
-        self.register_button_handler(
-          ButtonNode(graph_date.isoformat()),
-          self._create_navigation_handler(
-            target_page = DeyeGraphsPage.inverter,
-            graph_date = graph_date,
-          ),
-        ))
+    #   buttons.append(
+    #     self.register_button_handler(
+    #       ButtonNode(graph_date.isoformat()),
+    #       self._create_navigation_handler(
+    #         target_page = DeyeGraphsPage.inverter,
+    #         graph_date = graph_date,
+    #       ),
+    #     ))
 
-    buttons.append(BreakButtonNode())
+    # buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
 
     self._buttons = buttons
