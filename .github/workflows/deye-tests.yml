@@ -62,3 +62,8 @@ jobs:
           python -u test/src/deye_registers_remote_cache_manager_test.py
           python -u test/src/deye_registers_remote_cache_test.py
 
+      - name: Run other tests
+        env:
+          DEYE_LOG_NAME: deye_other_tests
+        run: |
+          python -u test/src/suntime_test.py
