@@ -194,7 +194,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   @cached_property
   def battery_soh_register(self) -> DeyeRegister:
     return IntDeyeRegister(
-      address = 10006,
+      address = 197,
       description = 'Battery SOH',
       suffix = '%',
       group = DeyeRegisterGroup.battery,
