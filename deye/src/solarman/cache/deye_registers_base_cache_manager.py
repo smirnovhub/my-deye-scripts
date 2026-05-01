@@ -69,12 +69,15 @@ class DeyeRegistersBaseCacheManager(ABC):
           if not DeyeUtils.is_same_day(cached_time, current_time):
             continue
 
-          results[addr] = DeyeRegisterCacheData(
-            address = reg.address,
-            quantity = reg.quantity,
-            caching_time = reg.caching_time,
-            values = entry.get("data", []),
-          )
+          try:
+            results[addr] = DeyeRegisterCacheData(
+              address = reg.address,
+              quantity = reg.quantity,
+              caching_time = reg.caching_time,
+              values = entry.get("data", []),
+            )
+          except Exception as eee:
+            self._logger.error("%s: wrong cached register: %s", self._name, eee, exc_info = True)
     except DeyeKnownException as e:
       self._logger.error("%s: cache read error: %s", self._name, e, exc_info = True)
       raise
