@@ -1,5 +1,4 @@
 from typing import Any
-from datetime import timedelta
 
 from base_deye_register import BaseDeyeRegister
 from deye_register_group import DeyeRegisterGroup
@@ -21,7 +20,6 @@ class TestDeyeRegister(BaseDeyeRegister):
       description = description,
       suffix = suffix,
       group = group,
-      caching_time = timedelta(seconds = 0),
     )
     self._value = 0
 
