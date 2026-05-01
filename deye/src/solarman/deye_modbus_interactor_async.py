@@ -17,6 +17,7 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
   def __init__(
     self,
     logger: DeyeLogger,
+    wait_bg_tasks: bool = False,
     **kwargs,
   ):
     super().__init__(
@@ -25,6 +26,7 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
     )
 
     self._solarman = DeyeModbusSolarmanAsync(logger, **kwargs)
+    self._wait_bg_tasks = wait_bg_tasks
 
     # Initialize cache manager
     self._cache_manager: DeyeRegistersBaseCacheManagerAsync
@@ -91,11 +93,14 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
 
     # Launch the update in the background without blocking the current flow
     if self._can_cache():
-      asyncio.create_task(
+      task = asyncio.create_task(
         self._update_cache_hit_rate(
           got_from_cache = cached_registers,
           got_from_inverter = uncached_registers,
         ))
+
+      if self._wait_bg_tasks:
+        await task
 
   async def _update_cache_hit_rate(
     self,
