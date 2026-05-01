@@ -57,7 +57,37 @@ class DeyeModbusInteractor:
 
   def read_register(self, address: int, quantity: int) -> List[int]:
     reg = self._registers.get(address)
-    return reg.values[:quantity] if reg else [0] * quantity
+    if reg and len(reg.values) >= quantity:
+      return reg.values[:quantity]
+
+    # Initialize the result array with zeros of the requested size
+    result = [0] * quantity
+    requested_end = address + quantity
+
+    # Iterate through all available registers to find overlaps
+    for reg_addr, reg in self._registers.items():
+      reg_end = reg_addr + reg.quantity
+
+      # Check if current register overlaps with the requested range
+      # Overlap exists if: (start1 < end2) AND (end1 > start2)
+      if address < reg_end and requested_end > reg_addr:
+        # Determine the intersection range
+        intersect_start = max(address, reg_addr)
+        intersect_end = min(requested_end, reg_end)
+
+        # Calculate offsets
+        # Where to take from in the source register
+        src_offset = intersect_start - reg_addr
+        # Where to put in the result array
+        dest_offset = intersect_start - address
+
+        # Number of registers to copy in this intersection
+        copy_len = intersect_end - intersect_start
+
+        # Map the values into the result array
+        result[dest_offset:dest_offset + copy_len] = reg.values[src_offset:src_offset + copy_len]
+
+    return result
 
   def write_register(self, address: int, values: List[int]) -> None:
     # Create a new data object for the updated register
@@ -74,25 +104,48 @@ class DeyeModbusInteractor:
     self,
     registers: Dict[int, DeyeRegisterCacheData],
   ) -> List[List[DeyeRegisterCacheData]]:
+    if not registers:
+      return []
+
     groups: List[List[DeyeRegisterCacheData]] = []
     current_group: List[DeyeRegisterCacheData] = []
 
+    # Sort registers by starting address to process them linearly
     sorted_addrs = sorted(registers.keys())
+    sorted_regs = [registers[addr] for addr in sorted_addrs]
 
-    for addr in sorted_addrs:
-      reg = registers[addr]
+    # Initialize trackers for the current physical block
+    group_start = -1
+    current_max_end = -1
+
+    for reg in sorted_regs:
+      reg_end = reg.address + reg.quantity
+
+      # Start the very first group
       if not current_group:
         current_group.append(reg)
+        group_start = reg.address
+        current_max_end = reg_end
         continue
 
-      group_start = current_group[0].address
-      block_end = reg.address + reg.quantity
+      # Check if this register is already fully covered by the current range
+      if reg.address >= group_start and reg_end <= current_max_end:
+        # Skip adding to physical read list, but keep it for data mapping logic if needed
+        # For now, we skip it to avoid redundant bus commands
+        continue
 
-      if (block_end - group_start) <= self._max_register_count:
+      # Check if expanding to this register stays within max_count
+      potential_end = max(current_max_end, reg_end)
+
+      if (potential_end - group_start) <= self._max_register_count:
         current_group.append(reg)
+        current_max_end = potential_end
       else:
+        # Gap too large or exceeds max_count, finalize current group
         groups.append(current_group)
         current_group = [reg]
+        group_start = reg.address
+        current_max_end = reg_end
 
     if current_group:
       groups.append(current_group)
