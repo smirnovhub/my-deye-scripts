@@ -4,6 +4,7 @@ import telebot
 
 from typing import Optional
 
+from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from button_node import ButtonNode
 from common_utils import CommonUtils
@@ -54,6 +55,9 @@ class TelebotLocalUpdateChecker:
     Returns:
         bool: True if a user prompt was sent, False otherwise.
     """
+    if EnvUtils.is_tests_on():
+      return False
+
     if not force:
       last_ask_time = self._load_last_local_update_ask_time()
       if time.time() - last_ask_time < TelebotConstants.git_repository_local_check_period_sec:

@@ -2,6 +2,7 @@ import time
 import logging
 import telebot
 
+from env_utils import EnvUtils
 from git_helper import GitHelper
 from deye_utils import DeyeUtils
 from telebot_utils import TelebotUtils
@@ -29,6 +30,9 @@ class TelebotRemoteUpdateChecker:
     DeyeUtils.ensure_dir_and_file_exists(self._ask_file_name)
 
   def is_on_branch(self):
+    if EnvUtils.is_tests_on():
+      return True
+
     last_ask_time = self._load_last_remote_update_ask_time()
     if time.time() - last_ask_time < TelebotConstants.git_repository_remote_check_period_sec:
       # Too soon since the last check; skip
@@ -59,6 +63,9 @@ class TelebotRemoteUpdateChecker:
     Returns:
         bool: True if a user prompt was sent, False otherwise.
     """
+    if EnvUtils.is_tests_on():
+      return False
+
     last_ask_time = self._load_last_remote_update_ask_time()
     if time.time() - last_ask_time < TelebotConstants.git_repository_remote_check_period_sec:
       # Too soon since the last check; skip
