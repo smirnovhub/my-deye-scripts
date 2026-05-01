@@ -151,8 +151,13 @@ class DeyeModbusInteractor:
       groups.append(current_group)
 
     if self._verbose:
-      simple_groups = [[reg.address for reg in group] for group in groups]
-      grp = str(simple_groups).replace("], ", "],\n  ").replace("[[", "[\n  [").replace("]]", "]\n]")
+      formatted_groups = []
+      for group in groups:
+        group_str = ", ".join([f"{reg.address}={reg.quantity}" for reg in group])
+        formatted_groups.append(f"  [{group_str}]")
+
+      # Join all groups with newlines and wrap in square brackets
+      grp = "[\n" + ",\n".join(formatted_groups) + "\n]"
       self._log.info(f'register groups to read from {self.name}:\n{grp}')
 
     return groups
