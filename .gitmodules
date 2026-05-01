@@ -14,3 +14,7 @@
 	path = modules/dateutil
 	url = https://github.com/smirnovhub/dateutil.git
 	branch = master
+[submodule "modules/suntime"]
+	path = modules/suntime
+	url = https://github.com/smirnovhub/suntime.git
+	branch = master
