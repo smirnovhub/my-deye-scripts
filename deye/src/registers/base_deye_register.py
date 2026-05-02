@@ -31,7 +31,7 @@ class BaseDeyeRegister(DeyeRegister):
     self._suffix = suffix
     self._group = group
     self._avg = avg
-    self._value: Union[int, float, str, datetime, DeyeBaseEnum] = 0
+    self._value: Union[int, float, str, datetime, DeyeBaseEnum, List[int]] = 0
     self._min_value: Union[int, float] = 0
     self._max_value: Union[int, float] = 0
     self._caching_time = caching_time
