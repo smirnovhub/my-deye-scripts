@@ -98,6 +98,8 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     self,
     registers_to_save: Dict[int, DeyeRegisterCacheData],
   ) -> None:
+    registers_to_save = {addr: reg for addr, reg in registers_to_save.items() if reg.caching_time > 0}
+
     if not registers_to_save:
       return
 
@@ -120,9 +122,6 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
 
         # Now iterating over dictionary items
         for addr, reg in registers_to_save.items():
-          if reg.caching_time <= 0:
-            continue
-
           if reg.read_ts < 1776451743: # It's just my current time)
             raise RuntimeError("Register read timestamp is empty")
 
