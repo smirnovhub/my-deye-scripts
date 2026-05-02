@@ -48,6 +48,7 @@ jobs:
         env:
           DEYE_LOG_NAME: write_registers_tests
         run: |
+          python -u test/src/deye_register_grouping_logic_test.py
           python -u test/src/deye_write_registers_test_1.py
           python -u test/src/deye_write_registers_test_2.py
           python -u test/src/deye_write_registers_test_3.py
