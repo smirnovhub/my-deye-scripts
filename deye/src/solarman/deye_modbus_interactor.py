@@ -47,7 +47,8 @@ class DeyeModbusInteractor:
     caching_time: Optional[timedelta],
   ) -> None:
     cache_time = self._default_caching_time
-    if cache_time > 0 and caching_time is not None:
+
+    if caching_time is not None:
       cache_time = int(caching_time.total_seconds())
 
     # Split very long registers into multiple chunks to enqueue each separately
