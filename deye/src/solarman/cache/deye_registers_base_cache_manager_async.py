@@ -98,7 +98,7 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     self,
     registers_to_save: Dict[int, DeyeRegisterCacheData],
   ) -> None:
-    registers_to_save = {addr: reg for addr, reg in registers_to_save.items() if reg.caching_time > 0}
+    registers_to_save = {addr: reg for addr, reg in registers_to_save.items() if reg.caching_time >= 0}
 
     if not registers_to_save:
       return

@@ -902,7 +902,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       description = 'Test1',
       suffix = '',
       group = DeyeRegisterGroup.test,
-      caching_time = timedelta(seconds = 0),
+      caching_time = timedelta(seconds = -1),
     )
 
   @cached_property
@@ -913,7 +913,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       description = 'Test2',
       suffix = '',
       group = DeyeRegisterGroup.test,
-      caching_time = timedelta(seconds = 0),
+      caching_time = timedelta(seconds = -1),
     )
 
   @cached_property
@@ -923,7 +923,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       description = 'Test3',
       suffix = '',
       group = DeyeRegisterGroup.test,
-      caching_time = timedelta(seconds = 0),
+      caching_time = timedelta(seconds = -1),
     )
 
   @cached_property
