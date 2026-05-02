@@ -5,7 +5,7 @@ from deye_logger import DeyeLogger
 from common_utils import CommonUtils
 from deye_register import DeyeRegister
 from time_of_use_data import TimeOfUseData
-from custom_single_registers import CustomSingleRegisters
+from deye_custom_single_registers import DeyeCustomSingleRegisters
 from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 
@@ -35,7 +35,7 @@ class TimeOfUseHelper:
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolderAsync(
       loggers = [master_logger],
-      register_creator = lambda prefix: CustomSingleRegisters(tou_register, prefix),
+      register_creator = lambda prefix: DeyeCustomSingleRegisters(tou_register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )
 
