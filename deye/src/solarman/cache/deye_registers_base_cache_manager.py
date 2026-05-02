@@ -120,6 +120,9 @@ class DeyeRegistersBaseCacheManager(ABC):
 
         # Now iterating over dictionary items
         for addr, reg in registers_to_save.items():
+          if reg.caching_time <= 0:
+            continue
+
           if reg.read_ts < 1776451743: # It's just my current time)
             raise RuntimeError("Register read timestamp is empty")
 
