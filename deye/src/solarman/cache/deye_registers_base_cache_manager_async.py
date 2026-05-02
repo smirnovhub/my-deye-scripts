@@ -70,11 +70,12 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
             continue
 
           try:
+            raw_data = entry.get("data", [])
             results[addr] = DeyeRegisterCacheData(
               address = reg.address,
               quantity = reg.quantity,
               caching_time = reg.caching_time,
-              values = entry.get("data", []),
+              values = raw_data[:reg.quantity],
             )
           except Exception as eee:
             self._logger.error("%s: wrong cached register: %s", self._name, eee, exc_info = True)
