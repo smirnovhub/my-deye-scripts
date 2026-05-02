@@ -22,7 +22,8 @@ from sum_deye_register import SumDeyeRegister
 from system_time_diff_deye_register import SystemTimeDiffDeyeRegister
 from system_time_writable_deye_register import SystemTimeWritableDeyeRegister
 from temperature_deye_register import TemperatureDeyeRegister
-from test_deye_register import TestDeyeRegister
+from test1_deye_register import Test1DeyeRegister
+from test2_deye_register import Test2DeyeRegister
 from time_of_use_int_writable_deye_register import TimeOfUseIntWritableDeyeRegister
 from time_of_use_writable_deye_register import TimeOfUseWritableDeyeRegister
 from today_energy_cost_register import TodayEnergyCostRegister
@@ -895,8 +896,9 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
 
   @cached_property
   def test1_register(self) -> DeyeRegister:
-    return IntDeyeRegister(
-      address = 316,
+    return Test1DeyeRegister(
+      address = 50,
+      quantity = 350,
       description = 'Test1',
       suffix = '',
       group = DeyeRegisterGroup.test,
@@ -905,7 +907,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
 
   @cached_property
   def test2_register(self) -> DeyeRegister:
-    return TestDeyeRegister(
+    return Test2DeyeRegister(
       address = 50,
       quantity = 350,
       description = 'Test2',
@@ -915,5 +917,15 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     )
 
   @cached_property
+  def test3_register(self) -> DeyeRegister:
+    return IntDeyeRegister(
+      address = 316,
+      description = 'Test3',
+      suffix = '',
+      group = DeyeRegisterGroup.test,
+      caching_time = timedelta(seconds = 0),
+    )
+
+  @cached_property
   def test_registers(self) -> List[DeyeRegister]:
-    return [self.test1_register, self.test2_register]
+    return [self.test2_register, self.test3_register]

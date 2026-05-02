@@ -5,7 +5,7 @@ from base_deye_register import BaseDeyeRegister
 from deye_register_group import DeyeRegisterGroup
 from deye_modbus_interactor import DeyeModbusInteractor
 
-class TestDeyeRegister(BaseDeyeRegister):
+class Test2DeyeRegister(BaseDeyeRegister):
   def __init__(
     self,
     address: int,
