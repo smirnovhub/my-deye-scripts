@@ -66,6 +66,9 @@ class DeyeModbusInteractor:
     if reg and len(reg.values) >= quantity:
       return reg.values[:quantity]
 
+    if self._verbose:
+      self._log.warning(f'constructing register at address {address}, quantity {quantity} from pieces')
+
     # Initialize the result array with zeros of the requested size
     result = [0] * quantity
     requested_end = address + quantity
