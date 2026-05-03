@@ -8,8 +8,7 @@ from env_vars import EnvVars
 
 class DataCollectorConfig:
   def __init__(self):
-    self.__data_collecting_interval_minutes = EnvVar("DATA_COLLECTING_INTERVAL_MINUTES", "180",
-                                                     "Data collecting interval, sec")
+    self.__data_collecting_interval_sec = EnvVar("DATA_COLLECTING_INTERVAL_SEC", "180", "Data collecting interval, sec")
     self.__data_retention_days = EnvVar("DATA_RETENTION_DAYS", "10", "Data retention time, days")
     self.__connection_lost_notify_after_minutes = EnvVar("CONN_LOST_NOTIFY_AFTER_MINUTES", "30",
                                                          "Notify about connection lost after, minutes")
@@ -19,7 +18,7 @@ class DataCollectorConfig:
     self.__all_vars: List[EnvVar] = [
       EnvVars.DEYE_LOG_NAME,
       EnvVars.DEYE_DATA_COLLECTOR_DIR,
-      self.__data_collecting_interval_minutes,
+      self.__data_collecting_interval_sec,
       self.__data_retention_days,
       self.__connection_lost_notify_after_minutes,
       self.__connection_lost_notify_interval_minutes,
@@ -34,10 +33,10 @@ class DataCollectorConfig:
     return EnvVars.DEYE_DATA_COLLECTOR_DIR.value
 
   @property
-  def DATA_COLLECTING_INTERVAL_MINUTES(self) -> int:
-    value = self.__data_collecting_interval_minutes.as_int()
+  def DATA_COLLECTING_INTERVAL_SEC(self) -> int:
+    value = self.__data_collecting_interval_sec.as_int()
     if not (60 <= value <= 900):
-      raise ValueError(f"{self.__data_collecting_interval_minutes.name} should be from 60 to 900 sec")
+      raise ValueError(f"{self.__data_collecting_interval_sec.name} should be from 60 to 900 sec")
     return value
 
   @property

@@ -1,10 +1,11 @@
-from typing import Any
+from typing import Any, Optional
+from datetime import timedelta
 
 from base_deye_register import BaseDeyeRegister
 from deye_register_group import DeyeRegisterGroup
 from deye_modbus_interactor import DeyeModbusInteractor
 
-class TestDeyeRegister(BaseDeyeRegister):
+class Test2DeyeRegister(BaseDeyeRegister):
   def __init__(
     self,
     address: int,
@@ -12,6 +13,7 @@ class TestDeyeRegister(BaseDeyeRegister):
     description: str,
     suffix: str,
     group: DeyeRegisterGroup,
+    caching_time: Optional[timedelta] = None,
   ):
     super().__init__(
       address = address,
@@ -19,14 +21,13 @@ class TestDeyeRegister(BaseDeyeRegister):
       description = description,
       suffix = suffix,
       group = group,
+      caching_time = caching_time,
     )
     self._value = 0
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     values = interactor.read_register(self.address, self.quantity)
+    for index, value in enumerate(values):
+      print(f"{self.address + index} = {value}")
 
-    for idx, x in enumerate(values):
-      print(self.address + idx, '=', x)
-
-    value = 0
-    return value
+    return 0

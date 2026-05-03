@@ -122,8 +122,10 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
     try:
       for group in groups:
         start = group[0].address
-        last_item = group[-1]
-        count = (last_item.address + last_item.quantity) - start
+
+        # Calculate the furthest point covered by any register in this group
+        max_end = max(reg.address + reg.quantity for reg in group)
+        count = max_end - start
 
         data = self._solarman.read_holding_registers(address = start, quantity = count)
         current_ts = time.time() # Should be exact after read_holding_registers() call

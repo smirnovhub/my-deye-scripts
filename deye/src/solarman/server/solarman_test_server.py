@@ -30,6 +30,7 @@ class SolarmanTestServer(SolarmanBaseServer):
     self._readed_registers: Set[int] = set()
     self._written_registers: Set[int] = set()
     self._random_values_on_read: bool = False
+    self._sequential_values_on_read: bool = False
     self._lock = threading.Lock()
 
   def set_random_mode(self, rnd_mode: bool) -> None:
@@ -43,6 +44,9 @@ class SolarmanTestServer(SolarmanBaseServer):
     :param rnd_mode: True to enable random values on read, False to disable.
     """
     self._random_values_on_read = rnd_mode
+
+  def set_sequential_mode(self, seq_mode: bool) -> None:
+    self._sequential_values_on_read = seq_mode
 
   def set_register_value(self, address: int, value: int) -> None:
     """
@@ -224,6 +228,8 @@ class SolarmanTestServer(SolarmanBaseServer):
 
     if self._random_values_on_read:
       read_values = [random.randint(0, 2**16 - 1) for x in range(func.quantity)]
+    elif self._sequential_values_on_read:
+      read_values = [int(func.starting_address) + x for x in range(func.quantity)]
     else:
       read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
 

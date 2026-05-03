@@ -1,4 +1,5 @@
 from typing import List, Optional
+from datetime import datetime
 
 from deye_exceptions import DeyeCacheException
 
@@ -41,3 +42,14 @@ class DeyeRegisterCacheData:
   @property
   def values(self) -> List[int]:
     return self._values
+
+  def __repr__(self) -> str:
+    # Convert timestamp to human-readable format if it exists
+    ts_str = datetime.fromtimestamp(self._read_ts).strftime('%Y-%m-%d %H:%M:%S') if self._read_ts > 0 else "N/A"
+
+    # Return formatted string representation of the register data
+    return (f"Register(address: {self._address}, "
+            f"quantity: {self._quantity}, "
+            f"values: {self._values}, "
+            f"caching_time: {self._caching_time}s, "
+            f"read_at: {ts_str})")

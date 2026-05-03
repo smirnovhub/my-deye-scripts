@@ -25,6 +25,7 @@ class DeyeModbusInteractor:
     self._verbose = bool(kwargs.get('verbose', False))
     self._default_caching_time = max(0, int(kwargs.get('caching_time', 3)))
     self._max_register_count = 120
+    self._max_register_length = 10
     self._cache_hit_rate: DeyeRegisterCacheHitRate = DeyeRegisterCacheHitRate.zero()
 
   @property
@@ -46,18 +47,56 @@ class DeyeModbusInteractor:
     caching_time: Optional[timedelta],
   ) -> None:
     cache_time = self._default_caching_time
-    if cache_time > 0 and caching_time:
+
+    if caching_time is not None:
       cache_time = int(caching_time.total_seconds())
 
-    self._registers[address] = DeyeRegisterCacheData(
-      address = address,
-      quantity = quantity,
-      caching_time = cache_time,
-    )
+    # Split very long registers into multiple chunks to enqueue each separately
+    for i in range(0, quantity, self._max_register_length):
+      chunk_addr = address + i
+      chunk_quantity = min(self._max_register_length, quantity - i)
+
+      self._registers[chunk_addr] = DeyeRegisterCacheData(
+        address = chunk_addr,
+        quantity = chunk_quantity,
+        caching_time = cache_time,
+      )
 
   def read_register(self, address: int, quantity: int) -> List[int]:
     reg = self._registers.get(address)
-    return reg.values[:quantity] if reg else [0] * quantity
+    if reg and len(reg.values) >= quantity:
+      return reg.values[:quantity]
+
+    self._log.warning(f'{self.name} constructing register at address {address}, quantity {quantity} from pieces')
+
+    # Initialize the result array with zeros of the requested size
+    result = [0] * quantity
+    requested_end = address + quantity
+
+    # Iterate through all available registers to find overlaps
+    for reg_addr, reg in self._registers.items():
+      reg_end = reg_addr + reg.quantity
+
+      # Check if current register overlaps with the requested range
+      # Overlap exists if: (start1 < end2) AND (end1 > start2)
+      if address < reg_end and requested_end > reg_addr:
+        # Determine the intersection range
+        intersect_start = max(address, reg_addr)
+        intersect_end = min(requested_end, reg_end)
+
+        # Calculate offsets
+        # Where to take from in the source register
+        src_offset = intersect_start - reg_addr
+        # Where to put in the result array
+        dest_offset = intersect_start - address
+
+        # Number of registers to copy in this intersection
+        copy_len = intersect_end - intersect_start
+
+        # Map the values into the result array
+        result[dest_offset:dest_offset + copy_len] = reg.values[src_offset:src_offset + copy_len]
+
+    return result
 
   def write_register(self, address: int, values: List[int]) -> None:
     # Create a new data object for the updated register
@@ -98,8 +137,13 @@ class DeyeModbusInteractor:
       groups.append(current_group)
 
     if self._verbose:
-      simple_groups = [[reg.address for reg in group] for group in groups]
-      grp = str(simple_groups).replace("], ", "],\n  ").replace("[[", "[\n  [").replace("]]", "]\n]")
+      formatted_groups = []
+      for group in groups:
+        group_str = ", ".join([f"{reg.address}={reg.quantity}" for reg in group])
+        formatted_groups.append(f"  [{group_str}]")
+
+      # Join all groups with newlines and wrap in square brackets
+      grp = "[\n" + ",\n".join(formatted_groups) + "\n]"
       self._log.info(f'register groups to read from {self.name}:\n{grp}')
 
     return groups
