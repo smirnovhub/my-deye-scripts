@@ -39,13 +39,12 @@ class BaseDeyeRegister(DeyeRegister):
     self._writable_registers_caching_time = timedelta(hours = 12)
 
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
-    if interactor.is_master or (self._avg != DeyeRegisterAverageType.only_master
-                                and self._avg != DeyeRegisterAverageType.fake_accumulate):
+    if self.can_read(interactor):
       interactor.enqueue_register(self.address, self.quantity, self.caching_time)
 
   def read(self, interactors: List[DeyeModbusInteractor]) -> None:
     if len(interactors) == 1:
-      self._value = self.read_from_master_interactor(interactors)
+      self._value = self.read_internal(interactors[0])
       return
 
     if self._avg == DeyeRegisterAverageType.fake_accumulate:
@@ -61,9 +60,7 @@ class BaseDeyeRegister(DeyeRegister):
                                  f"numeric registers, but got {type(value).__name__}")
 
       self._value = value
-      return
-
-    if self._avg == DeyeRegisterAverageType.accumulate:
+    elif self._avg == DeyeRegisterAverageType.accumulate:
       total: Union[int, float]
 
       if isinstance(self._value, int):
@@ -74,7 +71,6 @@ class BaseDeyeRegister(DeyeRegister):
       for interactor in interactors:
         total += self.read_internal(interactor)
       self._value = total
-      return
     elif self._avg == DeyeRegisterAverageType.average:
       total = 0.0
       divider = len(interactors)
@@ -91,10 +87,8 @@ class BaseDeyeRegister(DeyeRegister):
 
       if isinstance(self, IntDeyeRegister):
         self._value = round(self._value)
-
-      return
-
-    self._value = self.read_from_master_interactor(interactors)
+    else:
+      self._value = self.read_from_master_interactor(interactors)
 
   def read_from_master_interactor(self, interactors: List[DeyeModbusInteractor]) -> Any:
     master_interactor = None
@@ -103,7 +97,7 @@ class BaseDeyeRegister(DeyeRegister):
         master_interactor = interactor
 
     if master_interactor == None:
-      master_interactor = interactors[0]
+      raise RuntimeError(f"Master interactor not found for register {self.address} {self.name}")
 
     return self.read_internal(master_interactor)
 

@@ -24,6 +24,10 @@ class DeyeRegister(ABC):
   def write(self, interactor: DeyeModbusInteractor, value: Any) -> None:
     DeyeNotImplementedException(f'{type(self).__name__} write() is not implemented')
 
+  def can_read(self, interactor: DeyeModbusInteractor) -> bool:
+    return interactor.is_master or (self.avg_type != DeyeRegisterAverageType.only_master
+                                    and self.avg_type != DeyeRegisterAverageType.fake_accumulate)
+
   @property
   def can_write(self) -> bool:
     return False
