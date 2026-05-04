@@ -236,9 +236,10 @@ class EcoflowDeviceAggregatorAsync:
   async def _get_cached_power(self, device: EcoflowDevice) -> int:
     last_update = self._power_cache_last_update.get(device.serial, datetime.min)
     if datetime.now() - last_update > self._power_cache_update_interval:
-      self._power_cache[device.serial] = await self._interactor.get_power(device)
+      power = await self._interactor.get_power(device)
+      self._power_cache[device.serial] = power
       self._power_cache_last_update[device.serial] = datetime.now()
-      self._logger.info(f"Cached power for {device.name} has been updated.")
+      self._logger.info(f"Cached power for {device.name} has been updated to {power} W.")
     return self._power_cache.get(device.serial, -1)
 
   def _set_cached_power(self, device: EcoflowDevice, power: int) -> None:
