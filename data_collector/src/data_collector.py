@@ -1,5 +1,6 @@
 import os
 import time
+import asyncio
 import logging
 
 from typing import Dict
@@ -116,7 +117,7 @@ class DataCollector:
         holder.disconnect()
 
       if attempt < retry_attempts - 1:
-        time.sleep(retry_delay_sec)
+        await asyncio.sleep(retry_delay_sec)
 
     # Raise exception if all attempts failed
     if last_exception:

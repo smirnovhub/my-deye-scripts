@@ -121,7 +121,8 @@ class DeyeRegistersHolderSync(DeyeRegistersHolder):
       try:
         # Assuming interactor.name matches the keys in self._registers
         for register in self._registers[interactor.name].all_registers:
-          register.read([interactor])
+          if register.can_read(interactor):
+            register.read([interactor])
       except Exception as e:
         raise DeyeUtils.get_reraised_exception(
           e, f'{type(self).__name__}: error while reading {interactor.name} registers') from e
