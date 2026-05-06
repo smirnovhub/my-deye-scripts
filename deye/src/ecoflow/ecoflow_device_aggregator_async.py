@@ -39,9 +39,8 @@ class EcoflowDeviceAggregatorAsync:
     self._verbose = kwargs.get('verbose', False)
     self._power_cache: Dict[str, int] = {}
     self._power_cache_last_update: Dict[str, datetime] = {}
-    self._power_cache_update_interval = timedelta(minutes = 5, seconds = 5)
+    self._power_cache_update_interval = timedelta(minutes = 10)
     self._logger = logging.getLogger()
-    self._logger.setLevel(logging.INFO)
 
   @property
   def max_power(self) -> int:
