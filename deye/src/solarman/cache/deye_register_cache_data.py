@@ -20,7 +20,7 @@ class DeyeRegisterCacheData:
     self._values = values if values is not None else [0] * quantity
 
     if self._quantity != len(self._values):
-      raise DeyeCacheException(f"Quantity mismatch for register {address}: "
+      raise DeyeCacheException(f"quantity mismatch for register {address}: "
                                f"expected {self._quantity}, but got {len(self._values)} values.")
 
   @property
