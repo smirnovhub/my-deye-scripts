@@ -36,7 +36,7 @@ class BaseDeyeRegister(DeyeRegister):
     self._max_value: Union[int, float] = 0
     self._caching_time = caching_time
     self._loggers = DeyeLoggers()
-    self._writable_registers_caching_time = timedelta(hours = 12)
+    self._writable_registers_caching_time = timedelta(minutes = 30)
 
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     if self.can_read(interactor):
