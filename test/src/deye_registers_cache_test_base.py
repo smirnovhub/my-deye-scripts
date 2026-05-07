@@ -219,7 +219,7 @@ async def main_test_write_logic(
     logger = logger,
     server = server,
     register = write_register,
-    cache_time = 60,
+    cache_time = 0,
     expected_value = value_initial,
     should_read_server = True,
   )
