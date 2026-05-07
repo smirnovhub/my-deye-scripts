@@ -13,7 +13,6 @@ from deye_base_enum import DeyeBaseEnum
 from deye_exceptions import DeyeKnownException
 from deye_modbus_interactor import DeyeModbusInteractor
 from deye_modbus_interactor_async import DeyeModbusInteractorAsync
-from deye_register_average_type import DeyeRegisterAverageType
 
 class DeyeRegisterProcessor:
   def __init__(self):
@@ -89,8 +88,7 @@ class DeyeRegisterProcessor:
       for interactor in self.interactors:
         for register in self.get_registers_to_process(args):
           try:
-            if interactor.is_master or (register.avg_type != DeyeRegisterAverageType.only_master
-                                        and register.avg_type != DeyeRegisterAverageType.fake_accumulate):
+            if register.can_read(interactor):
               register.read([interactor])
               addr_list = ' ' + str(register.addresses) if args.print_addresses else ''
               suffix = f' {register.suffix}'.rstrip()
