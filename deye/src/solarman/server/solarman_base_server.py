@@ -160,17 +160,17 @@ class SolarmanBaseServer():
       else:
         sol.sequence_number = data[5]
         self._log.debug(f"{self._name}: RECD: {data.hex(' ')}")
-        data = bytearray(data)
-        data[3] = 0x10
-        data[4] = PySolarmanV5._get_response_code(CONTROL_CODE.REQUEST)
+        buffer = bytearray(data)
+        buffer[3] = 0x10
+        buffer[4] = PySolarmanV5._get_response_code(CONTROL_CODE.REQUEST)
         try:
-          checksum = sol._calculate_v5_frame_checksum(bytes(data))
+          checksum = sol._calculate_v5_frame_checksum(bytes(buffer))
         except:
           writer.write(b"")
           await writer.drain()
           break
-        data[-2:-1] = checksum.to_bytes(1, byteorder = "big")
-        data = bytes(data)
+        buffer[-2:-1] = checksum.to_bytes(1, byteorder = "big")
+        data = bytes(buffer)
         self._log.debug(f"{self._name}: DEC: {data.hex(' ')}")
 
         try:
