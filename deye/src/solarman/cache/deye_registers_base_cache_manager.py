@@ -78,7 +78,7 @@ class DeyeRegistersBaseCacheManager(ABC):
               values = raw_data[:reg.quantity],
             )
           except Exception as eee:
-            self._logger.error("%s: wrong cached register: %s", self._name, eee, exc_info = True)
+            self._logger.warning("%s: wrong cached register: %s", self._name, eee, exc_info = True)
     except DeyeKnownException as e:
       self._logger.error("%s: cache read error: %s", self._name, e, exc_info = True)
       raise
