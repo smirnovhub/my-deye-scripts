@@ -177,11 +177,10 @@ class DeyeModbusInteractorSync(DeyeModbusInteractor):
           values = reg.values,
         )
 
-        # Update the persistent JSON cache
-        if self._can_cache():
-          self._cache_manager.save_to_cache(registers_to_save = {reg.address: updated_reg})
-
-      self._log.info(f'{self.name} wrote {DeyeUtils.get_quantity(self._registers_to_write)} registers to inverter')
+        # Remove saved registers from the cache to prevent desynchronization between
+        # the cache and the inverter. These registers will be fetched directly
+        # from the inverter during the next read cycle.
+        self._cache_manager.remove_from_cache(registers_to_remove = {reg.address: updated_reg})
       self._registers_to_write.clear()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while writing registers') from e

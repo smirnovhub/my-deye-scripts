@@ -95,41 +95,41 @@ async def read_and_check(
     log.error(f"Register value {expected_value} not found for '{register.name}'")
     sys.exit(1)
 
-async def main_test_logic(
+async def main_test_read_logic(
   server: SolarmanTestServer,
   logger: DeyeLogger,
   log: logging.Logger,
 ):
-  # ---- MAIN TEST LOGIC ----
+  # ---- MAIN TEST READ LOGIC ----
   randoms: List[DeyeRegisterRandomValue] = []
 
   registers = DeyeRegisters()
 
-  for register in registers.all_registers:
-    log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
+  for read_register in registers.all_registers:
+    log.info(f"Processing register '{read_register.name}' with type {type(read_register).__name__}")
 
-    random_value = DeyeTestHelper.get_random_by_register_type(register, randoms)
+    random_value = DeyeTestHelper.get_random_by_register_type(read_register, randoms)
     if random_value is None:
-      log.info(f"Register '{register.name}' is skipped")
+      log.info(f"Register '{read_register.name}' is skipped")
       continue
 
     randoms.append(random_value)
 
-    suffix = f' {register.suffix}'.rstrip()
-    log.info(f"Generated random value for register '{register.name}' is {random_value.value}{suffix}...")
+    suffix = f' {read_register.suffix}'.rstrip()
+    log.info(f"Generated random value for register '{read_register.name}' is {random_value.value}{suffix}...")
 
     server.clear_registers_status()
     if random_value.register.address > 0:
       server.set_register_values(random_value.register.addresses, random_value.values)
 
-  register = registers.load_power_register
+  read_register = registers.load_power_register
 
   # 1. First read (no cache yet)
   value1 = 12345
   await read_and_check(
     logger = logger,
     server = server,
-    register = register,
+    register = read_register,
     cache_time = 0,
     expected_value = value1,
     should_read_server = True,
@@ -139,7 +139,7 @@ async def main_test_logic(
   await read_and_check(
     logger = logger,
     server = server,
-    register = register,
+    register = read_register,
     cache_time = 15,
     expected_value = value1,
     should_read_server = False,
@@ -150,7 +150,7 @@ async def main_test_logic(
   await read_and_check(
     logger = logger,
     server = server,
-    register = register,
+    register = read_register,
     cache_time = 15,
     expected_value = value1,
     should_read_server = False,
@@ -166,7 +166,7 @@ async def main_test_logic(
   await read_and_check(
     logger = logger,
     server = server,
-    register = register,
+    register = read_register,
     cache_time = 3,
     expected_value = value3,
     should_read_server = True,
@@ -176,10 +176,92 @@ async def main_test_logic(
   await read_and_check(
     logger = logger,
     server = server,
-    register = register,
+    register = read_register,
     cache_time = 25,
     expected_value = value3,
     should_read_server = False,
+    delay_before = 1,
+  )
+
+async def main_test_write_logic(
+  server: SolarmanTestServer,
+  logger: DeyeLogger,
+  log: logging.Logger,
+):
+  # ---- MAIN TEST WRITE LOGIC ----
+  randoms: List[DeyeRegisterRandomValue] = []
+
+  registers = DeyeRegisters()
+
+  for read_register in registers.all_registers:
+    log.info(f"Processing register '{read_register.name}' with type {type(read_register).__name__}")
+
+    random_value = DeyeTestHelper.get_random_by_register_type(read_register, randoms)
+    if random_value is None:
+      log.info(f"Register '{read_register.name}' is skipped")
+      continue
+
+    randoms.append(random_value)
+
+    suffix = f' {read_register.suffix}'.rstrip()
+    log.info(f"Generated random value for register '{read_register.name}' is {random_value.value}{suffix}...")
+
+    server.clear_registers_status()
+    if random_value.register.address > 0:
+      server.set_register_values(random_value.register.addresses, random_value.values)
+
+  log.info('Testing cache invalidation after write...')
+
+  write_register = registers.battery_max_charge_current_register
+
+  value_initial = 10
+  await read_and_check(
+    logger = logger,
+    server = server,
+    register = write_register,
+    cache_time = 60,
+    expected_value = value_initial,
+    should_read_server = True,
+  )
+
+  # Confirm it is in cache
+  await read_and_check(
+    logger = logger,
+    server = server,
+    register = write_register,
+    cache_time = 60,
+    expected_value = value_initial,
+    should_read_server = False,
+    delay_before = 1,
+  )
+
+  # Perform a write operation to trigger cache removal
+  # Remove saved registers from the cache to prevent desynchronization between
+  # the cache and the inverter. These registers will be fetched directly
+  # from the inverter during the next read cycle.
+  new_value_to_set = 20
+  write_args = [
+    '-v',
+    f'-i {logger.name}',
+    f'--set-{write_register.name.replace("_", "-")}',
+    str(new_value_to_set),
+  ]
+
+  log.info(f'Executing write command: {" ".join(write_args)}')
+  async with DeyeTestUtils.collect_output():
+    try:
+      await deye_main(write_args)
+    except SystemExit:
+      pass
+
+  # Read again - should ignore cache and go to server because of the write operation
+  await read_and_check(
+    logger = logger,
+    server = server,
+    register = write_register,
+    cache_time = 60,
+    expected_value = new_value_to_set,
+    should_read_server = True, # Must be True if invalidation works
     delay_before = 1,
   )
 
