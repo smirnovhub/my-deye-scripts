@@ -204,16 +204,14 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
             "data": [], # Just pass empty data. Register will be skipped on the next read cycle
           }
 
+          self._logger.info(f'{self._name} removed register at address {addr} from cache')
+
         json_string = json.dumps(
           cache_content,
           ensure_ascii = False,
         )
 
         await self._save_json(json_string)
-
-        removed_count = DeyeUtils.get_quantity(registers_to_remove)
-        self._logger.info(f'{self._name} removed {removed_count} registers from cache')
-
     except DeyeKnownException as e:
       self._logger.error("%s: cache remove error: %s", self._name, e, exc_info = True)
       raise
