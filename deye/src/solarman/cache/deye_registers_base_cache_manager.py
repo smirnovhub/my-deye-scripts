@@ -211,7 +211,7 @@ class DeyeRegistersBaseCacheManager(ABC):
 
         self._save_json(json_string)
 
-        removed_count = len(registers_to_remove)
+        removed_count = DeyeUtils.get_quantity(registers_to_remove)
         self._logger.info(f'{self._name} removed {removed_count} registers from cache')
 
     except DeyeKnownException as e:
