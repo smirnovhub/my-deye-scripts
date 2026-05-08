@@ -21,7 +21,7 @@ class DeyeRegisterCacheData:
 
     if self._quantity != len(self._values):
       raise DeyeCacheException(f"quantity mismatch for register {address}: "
-                               f"expected {self._quantity}, but got {len(self._values)} values.")
+                               f"expected {self._quantity}, but got {len(self._values)} values")
 
   @property
   def address(self) -> int:
