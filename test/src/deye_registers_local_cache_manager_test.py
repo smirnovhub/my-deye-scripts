@@ -266,18 +266,29 @@ class TestDeyeRegistersLocalCacheManager(unittest.TestCase):
 
     self.assertEqual(res[100].values, [111])
 
-  def test_empty_register_data_retrieval(self):
+  def test_empty_register_data(self):
+    # Passing [] should raise
+    with self.assertRaises(DeyeCacheException):
+      DeyeRegisterCacheData(
+        address = 100,
+        quantity = 3,
+        caching_time = 60,
+        values = [],
+        read_ts = time.time(),
+      )
+
+  def test_none_register_data_retrieval(self):
     """
     EDGE CASE: Verify handling of empty data lists.
     The class defaults empty values to [0] * quantity.
     """
     quantity = 2
-    # Passing [] should result in [0, 0] due to class logic
+    # Passing None should result in [0, 0] due to class logic
     empty_data_reg = DeyeRegisterCacheData(
       address = 100,
       quantity = quantity,
       caching_time = 60,
-      values = [],
+      values = None,
       read_ts = time.time(),
     )
 

@@ -56,6 +56,11 @@ class DeyeModbusInteractor:
       chunk_addr = address + i
       chunk_quantity = min(self._max_register_length, quantity - i)
 
+      # Don't re-enqueue register at same address with less quantity
+      existing_reg = self._registers.get(chunk_addr)
+      if existing_reg and existing_reg.quantity >= chunk_quantity:
+        continue
+
       self._registers[chunk_addr] = DeyeRegisterCacheData(
         address = chunk_addr,
         quantity = chunk_quantity,

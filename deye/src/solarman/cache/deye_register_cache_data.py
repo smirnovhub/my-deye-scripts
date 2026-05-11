@@ -17,11 +17,11 @@ class DeyeRegisterCacheData:
     self._quantity = quantity
     self._caching_time = caching_time
     self._read_ts = read_ts
-    self._values = values if values else [0] * quantity
+    self._values = values if values is not None else [0] * quantity
 
     if self._quantity != len(self._values):
-      raise DeyeCacheException(f"Quantity mismatch for register {address}: "
-                               f"expected {self._quantity}, but got {len(self._values)} values.")
+      raise DeyeCacheException(f"quantity mismatch for register {address}: "
+                               f"expected {self._quantity}, but got {len(self._values)} values")
 
   @property
   def address(self) -> int:

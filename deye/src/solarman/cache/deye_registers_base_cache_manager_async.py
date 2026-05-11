@@ -78,7 +78,7 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
               values = raw_data[:reg.quantity],
             )
           except Exception as eee:
-            self._logger.error("%s: wrong cached register: %s", self._name, eee, exc_info = True)
+            self._logger.warning("%s: wrong cached register skipped: %s", self._name, eee)
     except DeyeKnownException as e:
       self._logger.error("%s: cache read error: %s", self._name, e, exc_info = True)
       raise
@@ -150,6 +150,78 @@ class DeyeRegistersBaseCacheManagerAsync(ABC):
     end_time = time.perf_counter()
     duration_ms = round((end_time - start_time) * 1000)
     self._logger.info(f"{self._name} cache save took {duration_ms} ms")
+
+  async def remove_from_cache(
+    self,
+    registers_to_remove: Dict[int, DeyeRegisterCacheData],
+  ) -> None:
+    """
+    Invalidates specified registers in the cache by overwriting them with empty data.
+
+    This method implements a 'poison pill' strategy to handle remote storage backends 
+    that use deep merge logic. Instead of just deleting the keys locally, it saves 
+    entries with an empty 'data' list and an updated timestamp.
+    
+    Mechanism:
+    - Overwrites the register's 'data' field with an empty list [].
+    - During the next cache retrieval cycle, the data container constructor will 
+      detect a quantity mismatch (expected N values, got 0).
+    - This triggers an exception, which is caught and logged as a validation error, 
+      causing the register to be skipped.
+    - Since the register is missing from the results, the system will fetch 
+      fresh data directly from the inverter.
+
+    Args:
+      registers_to_remove (Dict[int, DeyeRegisterCacheData]): A dictionary of registers 
+        to be invalidated, where the key is the address and the value contains 
+        metadata including the current timestamp.
+    """
+    if not registers_to_remove:
+      return
+
+    start_time = time.perf_counter()
+
+    try:
+      async with self._exclusive_lock_context():
+        cache_content: Dict[str, Any] = {
+          "inverter": self._name,
+          "serial": self._serial,
+          "registers": {},
+        }
+
+        content = await self._read_json()
+        if content:
+          try:
+            cache_content = json.loads(content)
+          except (json.JSONDecodeError, ValueError) as e:
+            raise DeyeCacheException(f"{self._name}: cache json parse error after read: {e}") from e
+
+        # Now iterating over dictionary items
+        for addr, reg in registers_to_remove.items():
+          self._check_address_match(addr, registers_to_remove[addr].address)
+          cache_content["registers"][str(addr)] = {
+            "ts_label": int(reg.read_ts * self._ts_multiplier),
+            "data": [], # Just pass empty data. Register will be skipped on the next read cycle
+          }
+
+          self._logger.info(f'{self._name} removed register at address {addr} from cache')
+
+        json_string = json.dumps(
+          cache_content,
+          ensure_ascii = False,
+        )
+
+        await self._save_json(json_string)
+    except DeyeKnownException as e:
+      self._logger.error("%s: cache remove error: %s", self._name, e, exc_info = True)
+      raise
+    except Exception as ee:
+      self._logger.error("%s: cache remove error: %s", self._name, ee, exc_info = True)
+      raise DeyeCacheException(f"{self._name}: cache remove error: {ee}") from ee
+
+    end_time = time.perf_counter()
+    duration_ms = round((end_time - start_time) * 1000)
+    self._logger.info(f"{self._name} cache removal took {duration_ms} ms")
 
   async def reset_cache(self) -> None:
     try:

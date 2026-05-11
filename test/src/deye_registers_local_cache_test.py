@@ -30,7 +30,8 @@ from deye_test_utils import DeyeTestUtils
 
 DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
 
-from deye_registers_cache_test_base import main_test_logic
+from deye_registers_cache_test_base import main_test_read_logic
+from deye_registers_cache_test_base import main_test_write_logic
 
 async def main():
   DeyeTestUtils.setup_test_environment(log_name = Path(__file__).stem)
@@ -51,9 +52,16 @@ async def main():
   logger = random.choice(loggers.loggers)
 
   async with DeyeTestUtils.solarman_server(logger) as server:
-    await main_test_logic(
+    await main_test_read_logic(
       server = server,
       logger = logger,
+      log = log,
+    )
+
+  async with DeyeTestUtils.solarman_server(loggers.master) as server:
+    await main_test_write_logic(
+      server = server,
+      logger = loggers.master,
       log = log,
     )
 

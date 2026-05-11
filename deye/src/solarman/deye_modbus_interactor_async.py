@@ -169,6 +169,8 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
         result = await self._solarman.write_multiple_holding_registers(reg.address, reg.values)
         current_ts = time.time() # Should be exact after write_multiple_holding_registers() call
 
+        self._log.info(f'{self.name} wrote register at address {reg.address} with data {reg.values} to inverter')
+
         if result != len(reg.values):
           raise RuntimeError(f'{self.name}: expected to write {len(reg.values)} values '
                              f'at address {reg.address}, but wrote {result}')
@@ -185,11 +187,11 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
           values = reg.values,
         )
 
-        # Update the persistent JSON cache
-        if self._can_cache():
-          await self._cache_manager.save_to_cache(registers_to_save = {reg.address: updated_reg})
+        # Remove saved registers from the cache to prevent desynchronization between
+        # the cache and the inverter. These registers will be fetched directly
+        # from the inverter during the next read cycle.
+        await self._cache_manager.remove_from_cache(registers_to_remove = {reg.address: updated_reg})
 
-      self._log.info(f'{self.name} wrote {DeyeUtils.get_quantity(self._registers_to_write)} registers to inverter')
       self._registers_to_write.clear()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(e, f'{self.name}: error while writing registers') from e
