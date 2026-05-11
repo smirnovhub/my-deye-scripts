@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install flake8 codespell mypy types-requests
+          python -m pip install flake8 codespell
 
       - name: Run flake8 checks
         run: |
@@ -33,47 +33,39 @@ jobs:
         run: |
           codespell . --skip="./modules/*,JsHttpRequest.php,JsHttpRequest.js,*.svg,*.log"
 
-      - name: Run mypy for common
-        working-directory: common
-        run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} .
+  mypy-checks:
+    needs: code-checks
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.14"]
+        project:
+          - { dir: "common", path: "." }
+          - { dir: "data_collector", path: "src" }
+          - { dir: "deye", path: "src" }
+          - { dir: "deye_graph_server", path: "src" }
+          - { dir: "deyeproxy", path: "src" }
+          - { dir: "deyestorage", path: "src" }
+          - { dir: "deyeweb", path: "src" }
+          - { dir: "telebot", path: "src" }
+          - { dir: "test", path: "src" }
 
-      - name: Run mypy for data collector
-        working-directory: data_collector
-        run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Run mypy for deye
-        working-directory: deye
-        run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.matrix.python-version }}
 
-      - name: Run mypy for deye graph server
-        working-directory: deye_graph_server
+      - name: Install dependencies
         run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
+          python -m pip install --upgrade pip
+          python -m pip install mypy types-requests
 
-      - name: Run mypy for deye proxy
-        working-directory: deyeproxy
+      - name: Run mypy for ${{ matrix.project.dir }}
+        working-directory: ${{ matrix.project.dir }}
         run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
-
-      - name: Run mypy for deye storage
-        working-directory: deyestorage
-        run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
-
-      - name: Run mypy for deye web
-        working-directory: deyeweb
-        run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
-
-      - name: Run mypy for telebot
-        working-directory: telebot
-        run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
-
-      - name: Run mypy for test
-        working-directory: test
-        run: |
-          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} src
+          mypy --ignore-missing-imports --check-untyped-defs --python-version=${{ matrix.python-version }} ${{ matrix.project.path }}
