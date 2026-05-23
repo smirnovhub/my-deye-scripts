@@ -19,6 +19,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import date, datetime
+from collections import Counter
 
 from debug_timer import DebugTimerWithLog
 from deye_graph_data import DeyeGraphData
@@ -110,12 +111,15 @@ class DeyeGraphManager:
       # Calculate 'combined' graphs (intersection of ALL physical inverters)
       # This allows side-by-side comparison of shared metrics
       if len(physical_inverters) > 1:
-        # Start with registers of the first physical inverter
-        common_set = physical_params_map[physical_inverters[0]]
+        # Count occurrences of each register across all physical inverters
+        all_registers = []
+        for inv in physical_inverters:
+          all_registers.extend(physical_params_map[inv])
 
-        # Intersect with registers of all other physical units
-        for inv in physical_inverters[1:]:
-          common_set = common_set.intersection(physical_params_map[inv])
+        register_counts = Counter(all_registers)
+
+        # Filter registers that appear in 2 or more inverters
+        common_set = {reg for reg, count in register_counts.items() if count >= 2}
 
         # If common registers exist, add a virtual 'combined' inverter entry
         if common_set:
@@ -153,19 +157,24 @@ class DeyeGraphManager:
 
     return group_results
 
-  def _get_color(self, name: str) -> str:
+  def _get_color(self, name: str, colors: List[str]) -> str:
     # Define fixed colors for specific inverter types
     color_map = {
-      'master': 'steelblue',
-      'all': 'forestgreen',
-      'slave': 'orange',
+      'master': '#4682B4', # Steel Blue
+      'all': '#228B22', # Forest Green
     }
 
     for inverter, color in color_map.items():
-      if name.startswith(inverter):
+      if name == inverter:
+        if color in colors:
+          colors.remove(color)
         return color
 
-    return "steelblue"
+    if colors:
+      return colors.pop()
+
+    # Fallback color if the list runs out of elements
+    return 'gray'
 
   def _prepare_figure_object(
     self,
@@ -186,6 +195,25 @@ class DeyeGraphManager:
           graph_name = target_name_norm,
           threshold = threshold,
         )
+
+    # Palette of 15 highly distinct colors for 15+ inverters (excluding steelblue and forestgreen)
+    inverter_colors = [
+      "#FABED4", # Pink
+      "#DCBEFF", # Lavender
+      "#4363D8", # Royal Blue (Solid alternative to steelblue)
+      "#9A6324", # Brown
+      "#E6194B", # Red (High contrast, perfect for Master)
+      '#228B22', # Forest Green
+      "#911EB4", # Purple
+      "#42D4F4", # Cyan / Light Blue
+      "#BFEF45", # Lime / Bio green
+      "#469990", # Teal
+      "#800000", # Maroon
+      "#FFE119", # Yellow
+      "#F032E6", # Magenta
+      "#F58231", # Orange
+      '#4682B4', # Steel Blue
+    ]
 
     graph_line_width = 1.5
 
@@ -232,7 +260,7 @@ class DeyeGraphManager:
               unit_data['value'],
               label = unit,
               linewidth = graph_line_width,
-              color = self._get_color(unit),
+              color = self._get_color(unit, inverter_colors),
               zorder = 5 if unit == 'master' else 3,
             )
 
@@ -248,7 +276,7 @@ class DeyeGraphManager:
           plot_data['timestamp'],
           plot_data['value'],
           label = inverter,
-          color = self._get_color(inverter),
+          color = self._get_color(inverter, inverter_colors),
           linewidth = graph_line_width,
         )
 
