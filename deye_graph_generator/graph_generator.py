@@ -3,11 +3,11 @@ import asyncio
 import aiofiles
 import logging
 
-from datetime import date
 from pathlib import Path
 from http import HTTPStatus
 from typing import List, Optional
 from urllib.parse import urljoin
+from datetime import datetime, timedelta, date
 
 from deye_graph_inverters import DeyeGraphInverters
 from deye_graph_inverter_data import DeyeGraphInverterData
@@ -21,6 +21,7 @@ class GraphGenerator:
     logger: logging.Logger,
   ):
     self._logger = logger
+    self._period = config.PERIOD
     self._format = config.DEYE_GRAPHS_FORMAT
     self._server_url = config.REMOTE_GRAPH_SERVER_URL
     self._data_dir = f"data/{config.DEYE_GRAPHS_DIR}"
@@ -32,7 +33,15 @@ class GraphGenerator:
     if not await self._is_graph_server_available():
       raise RuntimeError(f"Deye graph server {self._server_url} seems to be down")
 
-    graph_date = date.today()
+    now = datetime.now()
+
+    # Generate graphs for previous day at the start of the day
+    if now.hour == 0 and now.minute < self._period:
+      graph_date = now.date() - timedelta(days = 1)
+      self._logger.warning(f"Generating graphs for previous day {graph_date.isoformat()}...")
+    else:
+      graph_date = now.date()
+
     inverters = await self._load_graph_inverters(graph_date)
 
     combined: Optional[DeyeGraphInverterData] = None
