@@ -9,7 +9,7 @@ from env_vars import EnvVars
 class DataCollectorConfig:
   def __init__(self):
     self.__data_collecting_interval_sec = EnvVar("DATA_COLLECTING_INTERVAL_SEC", "180", "Data collecting interval, sec")
-    self.__data_retention_days = EnvVar("DATA_RETENTION_DAYS", "10", "Data retention time, days")
+    self.__data_retention_days = EnvVar("DATA_RETENTION_DAYS", "30", "Data retention time, days")
     self.__connection_lost_notify_after_minutes = EnvVar("CONN_LOST_NOTIFY_AFTER_MINUTES", "30",
                                                          "Notify about connection lost after, minutes")
     self.__connection_lost_notify_interval_minutes = EnvVar("CONN_LOST_NOTIFY_INTERVAL_MINUTES", "15",
@@ -43,7 +43,7 @@ class DataCollectorConfig:
   def DATA_RETENTION_DAYS(self) -> int:
     value = self.__data_retention_days.as_int()
     if not (1 <= value <= 365):
-      raise ValueError(f"{self.__data_retention_days.name} should be from 1 to 365 days")
+      raise ValueError(f"{self.__data_retention_days.name} should be from 1 to 3650 days")
     return value
 
   @property
