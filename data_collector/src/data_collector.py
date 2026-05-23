@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import asyncio
 import logging
@@ -43,13 +44,11 @@ class DataCollector:
     current_date = datetime.now().strftime("%Y-%m-%d")
     data_file_path = os.path.join(self._data_path, f"{current_date}.csv")
 
-    data_dir = Path(data_file_path)
-
     write_header = not os.path.exists(data_file_path) or os.path.getsize(data_file_path) == 0
 
     if write_header:
       self._remove_old_files(
-        directory = data_dir,
+        directory = Path(self._data_path),
         days_threshold = config.DATA_RETENTION_DAYS,
         logger = logger,
       )
@@ -138,8 +137,13 @@ class DataCollector:
     seconds_threshold = days_threshold * 24 * 60 * 60
     current_time = time.time()
 
+    pattern = re.compile(r"^\d{4}-\d{2}-\d{2}\.csv$")
+
     # Iterate through all .csv files in the directory
     for file_path in directory.glob("*.csv"):
+      if not pattern.match(file_path.name):
+        continue
+
       try:
         # Get the last modification time
         file_mod_time = file_path.stat().st_mtime
