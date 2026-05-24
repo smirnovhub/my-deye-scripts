@@ -1,6 +1,7 @@
 import os
 import io
 import gc
+import glob
 import logging
 import zipfile
 
@@ -47,20 +48,21 @@ class DeyeGraphManager:
     self._thresholds = self._get_thresholds(self._data_path)
 
   def get_available_dates(self) -> List[date]:
-    available_dates = []
     # Use Path for convenient file globbing
     base_dir = Path(self._data_path)
 
     if not base_dir.is_dir():
       raise RuntimeError(f"data dir '{self._data_path}' doesn't exist")
 
+    available_dates = set()
+
     # Iterate over files matching the YYYY-MM-DD.csv pattern
-    for file_path in base_dir.glob("????-??-??.csv"):
+    for file_path in base_dir.glob("????-??-??*.csv"):
       try:
-        # Extract filename without extension and convert to date object
-        date_str = file_path.stem
+        # Extract only the first 10 characters (YYYY-MM-DD) from the filename
+        date_str = file_path.stem[:10]
         current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        available_dates.append(current_date)
+        available_dates.add(current_date)
       except ValueError:
         # Skip files that don't strictly match the date format
         continue
@@ -68,20 +70,41 @@ class DeyeGraphManager:
     # Return sorted list of dates
     return sorted(available_dates)
 
-  def get_inverters_by_date(self, graph_date: date) -> DeyeGraphInverters:
-    # Construct filename from date: YYYY-MM-DD.csv
-    file_name = f"{graph_date.isoformat()}.csv"
-    file_path = os.path.join(self._data_path, file_name)
+  def _read_data_frame(self, graph_date: date) -> pd.core.frame.DataFrame:
+    # Construct a pattern to match all files starting with YYYY-MM-DD and ending with .csv
+    # This will match YYYY-MM-DD.csv, YYYY-MM-DD-test.csv, etc.
+    file_pattern = f"{graph_date.isoformat()}*.csv"
+    search_path = os.path.join(self._data_path, file_pattern)
+
+    # Find all matching file paths
+    file_paths = glob.glob(search_path)
 
     # Check if data file exists for the requested date
-    if not os.path.exists(file_path):
-      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
+    if not file_paths:
+      raise RuntimeError(f"No data files found for date {graph_date.isoformat()}")
 
+    df_list = []
+
+    for path in file_paths:
+      try:
+        # Load each daily data file using your custom lock
+        with DeyeFileWithLock(path, "r") as f:
+          self._logger.info(f"Reading csv data from {path}...")
+          data_file = pd.read_csv(f, parse_dates = ['timestamp'])
+          df_list.append(data_file)
+      except Exception as e:
+        self._logger.error(f"Error processing {path}: {e}")
+        continue
+
+    if not df_list:
+      raise RuntimeError(f"No data files found for date {graph_date.isoformat()}")
+
+    # Concatenate all DataFrames vertically
+    return pd.concat(df_list, ignore_index = True)
+
+  def get_inverters_by_date(self, graph_date: date) -> DeyeGraphInverters:
     try:
-      # Load daily data
-      with DeyeFileWithLock(file_path, "r") as f:
-        df = pd.read_csv(f)
-
+      df = self._read_data_frame(graph_date)
       result: List[DeyeGraphInverterData] = []
 
       # Get list of physical units (master, slave1, slave2, etc.)
@@ -133,7 +156,7 @@ class DeyeGraphManager:
 
     except Exception as e:
       # Log error details if file is corrupted or column names are missing
-      self._logger.error(f"Error processing {file_name}: {e}")
+      self._logger.error(f"Error processing files for date {graph_date.isoformat()}: {e}")
       raise
 
   def _get_graph_data(self, df: pd.DataFrame) -> List[DeyeGraphGroupData]:
@@ -407,17 +430,7 @@ class DeyeGraphManager:
     graph_name: str,
     format: str,
   ) -> bytes:
-    # Construct file path from date
-    file_name = f"{graph_date.isoformat()}.csv"
-    file_path = os.path.join(self._data_path, file_name)
-
-    if not os.path.exists(file_path):
-      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
-
-    # Load data and ensure timestamp is parsed
-    with DebugTimerWithLog("CSV reading"):
-      with DeyeFileWithLock(file_path, "r") as f:
-        df = pd.read_csv(f, parse_dates = ['timestamp'])
+    df = self._read_data_frame(graph_date)
 
     # Set font type to 42 (TrueType) to enable text search and embedding
     matplotlib.rcParams['pdf.fonttype'] = 42
@@ -474,17 +487,7 @@ class DeyeGraphManager:
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['pdf.compression'] = 9
 
-    # Construct file path from date
-    file_name = f"{graph_date.isoformat()}.csv"
-    file_path = os.path.join(self._data_path, file_name)
-
-    if not os.path.exists(file_path):
-      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
-
-    # Load data and ensure timestamp is parsed
-    with DebugTimerWithLog("CSV reading"):
-      with DeyeFileWithLock(file_path, "r") as f:
-        df = pd.read_csv(f, parse_dates = ['timestamp'])
+    df = self._read_data_frame(graph_date)
 
     inverters_data = self.get_inverters_by_date(graph_date)
 
@@ -610,20 +613,31 @@ class DeyeGraphManager:
     return df_working.drop(columns = ['temp_norm'])
 
   def get_zipped_csv(self, graph_date: date) -> bytes:
-    # Construct file path from date
-    file_name = f"{graph_date.isoformat()}.csv"
-    file_path = os.path.join(self._data_path, file_name)
+    # Construct a pattern to match all files starting with YYYY-MM-DD and ending with .csv
+    file_pattern = f"{graph_date.isoformat()}*.csv"
+    search_path = os.path.join(self._data_path, file_pattern)
 
-    if not os.path.exists(file_path):
-      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
+    # Find all matching file paths
+    file_paths = glob.glob(search_path)
+
+    # Check if any data files exist for the requested date
+    if not file_paths:
+      raise RuntimeError(f"No data files found for date {graph_date.isoformat()}")
 
     # Create an in-memory byte stream
     buffer = io.BytesIO()
 
     # Create the ZIP archive within the buffer
     with zipfile.ZipFile(buffer, "w", compression = zipfile.ZIP_DEFLATED) as zf:
-      # arcname prevents including the full directory structure in the zip
-      zf.write(file_path, arcname = file_name)
+      for path in file_paths:
+        try:
+          # Extract just the filename (e.g., '2026-04-14-test.csv') to prevent
+          # including the full directory structure in the zip
+          file_name = os.path.basename(path)
+          zf.write(path, arcname = file_name)
+        except Exception as e:
+          self._logger.error(f"Error adding {path} to zip: {e}")
+          continue
 
     # Grab the bytes from the buffer
     return buffer.getvalue()
