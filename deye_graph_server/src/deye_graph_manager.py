@@ -104,7 +104,9 @@ class DeyeGraphManager:
 
   def get_inverters_by_date(self, graph_date: date) -> DeyeGraphInverters:
     try:
-      df = self._read_data_frame(graph_date)
+      with DebugTimerWithLog("CSV reading"):
+        df = self._read_data_frame(graph_date)
+
       result: List[DeyeGraphInverterData] = []
 
       # Get list of physical units (master, slave1, slave2, etc.)
@@ -430,7 +432,8 @@ class DeyeGraphManager:
     graph_name: str,
     format: str,
   ) -> bytes:
-    df = self._read_data_frame(graph_date)
+    with DebugTimerWithLog("CSV reading"):
+      df = self._read_data_frame(graph_date)
 
     # Set font type to 42 (TrueType) to enable text search and embedding
     matplotlib.rcParams['pdf.fonttype'] = 42
@@ -483,13 +486,14 @@ class DeyeGraphManager:
     """
     Generates a single multipage PDF using the internal plotting logic.
     """
+    with DebugTimerWithLog("CSV reading"):
+      df = self._read_data_frame(graph_date)
+
+    inverters_data = self.get_inverters_by_date(graph_date)
+
     # Set font type to 42 (TrueType) to enable text search and embedding
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['pdf.compression'] = 9
-
-    df = self._read_data_frame(graph_date)
-
-    inverters_data = self.get_inverters_by_date(graph_date)
 
     metadata = {
       "Title": f"Deye Inverter Graphs for {graph_date}",
