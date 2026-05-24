@@ -20,6 +20,7 @@ class DataCollector:
   def __init__(self, config: DataCollectorConfig):
     self._loggers = DeyeLoggers()
     self._data_path = f"data/{config.DEYE_DATA_COLLECTOR_DIR}"
+    self._data_retention_days = config.DATA_RETENTION_DAYS
 
     data_dir = Path(self._data_path)
     data_dir.mkdir(parents = True, exist_ok = True)
@@ -38,7 +39,7 @@ class DataCollector:
       registers.pv_total_power_register.description: 30.0,
     }
 
-  async def main_logic(self, config: DataCollectorConfig, logger: logging.Logger) -> None:
+  async def main_logic(self, logger: logging.Logger) -> None:
     holder = await self._read_registers(self._loggers, logger)
 
     current_date = datetime.now().strftime("%Y-%m-%d")
@@ -49,7 +50,7 @@ class DataCollector:
     if write_header:
       self._remove_old_files(
         directory = Path(self._data_path),
-        days_threshold = config.DATA_RETENTION_DAYS,
+        days_threshold = self._data_retention_days,
         logger = logger,
       )
 
@@ -130,7 +131,7 @@ class DataCollector:
     directory: Path,
     days_threshold: int,
     logger: logging.Logger,
-  ):
+  ) -> None:
     logger.info(f"Deleting old data files with age more than {days_threshold} days...")
 
     # Convert days to seconds for comparison

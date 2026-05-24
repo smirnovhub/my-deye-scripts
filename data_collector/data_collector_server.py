@@ -47,7 +47,7 @@ async def run_ticker(ticker: AsyncTicker):
   try:
     async for _ in ticker:
       try:
-        await collector.main_logic(config = config, logger = logger)
+        await collector.main_logic(logger = logger)
         last_success = datetime.now()
       except Exception:
         callstack = traceback.format_exc()
