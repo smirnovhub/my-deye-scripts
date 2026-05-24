@@ -85,28 +85,28 @@ class DeyeGraphManager:
 
     df_list = []
 
-    for path in file_paths:
-      try:
-        # Load each daily data file using your custom lock
-        with DeyeFileWithLock(path, "r") as f:
-          self._logger.info(f"Reading csv data from {path}")
-          data_file = pd.read_csv(f, parse_dates = ['timestamp'])
-          df_list.append(data_file)
-      except Exception as e:
-        self._logger.error(f"Error processing {path}: {e}")
-        continue
+    with DebugTimerWithLog("CSV reading"):
+      for path in file_paths:
+        try:
+          # Load each daily data file using your custom lock
+          with DeyeFileWithLock(path, "r") as f:
+            self._logger.info(f"Reading csv data from {path}")
+            data_file = pd.read_csv(f, parse_dates = ['timestamp'])
+            df_list.append(data_file)
+        except Exception as e:
+          self._logger.error(f"Error processing {path}: {e}")
+          continue
 
     if not df_list:
       raise RuntimeError(f"No data files found for date {graph_date.isoformat()}")
 
     # Concatenate all DataFrames vertically
-    return pd.concat(df_list, ignore_index = True)
+    with DebugTimerWithLog("CSV concat"):
+      return pd.concat(df_list, ignore_index = True)
 
   def get_inverters_by_date(self, graph_date: date) -> DeyeGraphInverters:
     try:
-      with DebugTimerWithLog("CSV reading"):
-        df = self._read_data_frame(graph_date)
-
+      df = self._read_data_frame(graph_date)
       result: List[DeyeGraphInverterData] = []
 
       # Get list of physical units (master, slave1, slave2, etc.)
@@ -428,8 +428,7 @@ class DeyeGraphManager:
     graph_name: str,
     format: str,
   ) -> bytes:
-    with DebugTimerWithLog("CSV reading"):
-      df = self._read_data_frame(graph_date)
+    df = self._read_data_frame(graph_date)
 
     # Set font type to 42 (TrueType) to enable text search and embedding
     matplotlib.rcParams['pdf.fonttype'] = 42
@@ -482,8 +481,7 @@ class DeyeGraphManager:
     """
     Generates a single multipage PDF using the internal plotting logic.
     """
-    with DebugTimerWithLog("CSV reading"):
-      df = self._read_data_frame(graph_date)
+    df = self._read_data_frame(graph_date)
 
     inverters_data = self.get_inverters_by_date(graph_date)
 
