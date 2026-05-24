@@ -182,21 +182,15 @@ class DeyeGraphManager:
 
     return group_results
 
-  def _get_color(self, name: str, colors: List[str]) -> str:
-    # Define fixed colors for specific inverter types
-    color_map = {
-      'master': '#4682B4', # Steel Blue
-      'all': '#228B22', # Forest Green
-    }
+  def _get_color(self, name: str, colors: Dict[str, str]) -> str:
+    # If the exact inverter name exists in the colors dictionary, extract and remove it
+    if name in colors:
+      return colors.pop(name)
 
-    for inverter, color in color_map.items():
-      if name == inverter:
-        if color in colors:
-          colors.remove(color)
-        return color
-
+    # If not found, get and remove the first item from the dictionary
     if colors:
-      return colors.pop()
+      first_key = next(iter(colors))
+      return colors.pop(first_key)
 
     # Fallback color if the list runs out of elements
     return 'gray'
@@ -222,23 +216,25 @@ class DeyeGraphManager:
         )
 
     # Palette of 15 highly distinct colors for 15+ inverters (excluding steelblue and forestgreen)
-    inverter_colors = [
-      "#FABED4", # Pink
-      "#DCBEFF", # Lavender
-      "#4363D8", # Royal Blue (Solid alternative to steelblue)
-      "#9A6324", # Brown
-      "#E6194B", # Red (High contrast, perfect for Master)
-      '#228B22', # Forest Green
-      "#911EB4", # Purple
-      "#42D4F4", # Cyan / Light Blue
-      "#BFEF45", # Lime / Bio green
-      "#469990", # Teal
-      "#800000", # Maroon
-      "#FFE119", # Yellow
-      "#F032E6", # Magenta
-      "#F58231", # Orange
-      '#4682B4', # Steel Blue
-    ]
+    inverter_colors: Dict[str, str] = {
+      "all": "#228B22", # Forest Green
+      "master": "#4682B4", # Steel Blue
+      "slave1": "#F58231", # Orange
+      "slave2": "#F032E6", # Magenta
+      "slave3": "#FFE119", # Yellow
+      "slave4": "#800000", # Maroon
+      "slave5": "#469990", # Teal
+      "slave6": "#BFEF45", # Lime / Bio green
+      "slave7": "#42D4F4", # Cyan / Light Blue
+      "slave8": "#911EB4", # Purple
+      "slave9": '#228B22', # Forest Green
+      "slave10": "#E6194B", # Red (High contrast, perfect for Master)
+      "slave11": "#9A6324", # Brown
+      "slave12": "#4363D8", # Royal Blue (Solid alternative to steelblue)
+      "slave13": "#2F4F4F", # Dark Slate Gray (Excellent contrast on white background)
+      "slave14": "#DCBEFF", # Lavender
+      "slave15": "#FABED4", # Pink
+    }
 
     graph_line_width = 1.5
 
