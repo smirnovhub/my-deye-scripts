@@ -112,7 +112,7 @@ class DeyeGraphManager:
       # This allows side-by-side comparison of shared metrics
       if len(physical_inverters) > 1:
         # Count occurrences of each register across all physical inverters
-        all_registers = []
+        all_registers: List[str] = []
         for inv in physical_inverters:
           all_registers.extend(physical_params_map[inv])
 
