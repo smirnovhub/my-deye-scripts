@@ -42,7 +42,7 @@ class DataCollectorConfig:
   @property
   def DATA_RETENTION_DAYS(self) -> int:
     value = self.__data_retention_days.as_int()
-    if not (1 <= value <= 365):
+    if not (1 <= value <= 3650):
       raise ValueError(f"{self.__data_retention_days.name} should be from 1 to 3650 days")
     return value
 
