@@ -1,4 +1,5 @@
 import os
+import re
 
 from enum import Enum
 from typing import List, Optional
@@ -26,6 +27,13 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
     self._locker = DeyeFileLocker('graphs', lockfile, verbose = True)
     self._progress: Optional[TelebotProgressMessage] = None
 
+    self._allowed_inverters = [
+      'master',
+      r'slave\d+',
+      'all',
+      'combined',
+    ]
+
   @property
   def page_type(self) -> Enum:
     return DeyeGraphsPage.inverter
@@ -48,11 +56,12 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       if (index % 2) == 0:
         buttons.append(BreakButtonNode())
 
-      buttons.append(
-        self.register_button_handler(
-          ButtonNode(inverter.inverter.title()),
-          self._create_navigation_handler(inverter = inverter.inverter),
-        ))
+      if self._is_inverter_allowed(inverter.inverter):
+        buttons.append(
+          self.register_button_handler(
+            ButtonNode(inverter.inverter.title()),
+            self._create_navigation_handler(inverter = inverter.inverter),
+          ))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Full report"), self._handle_full_report))
@@ -146,3 +155,9 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       self._locker.release()
     except Exception:
       pass
+
+  def _is_inverter_allowed(self, name: str) -> bool:
+    for pattern in self._allowed_inverters:
+      if re.fullmatch(pattern, name):
+        return True
+    return False
