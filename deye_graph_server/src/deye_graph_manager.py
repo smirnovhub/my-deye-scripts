@@ -217,7 +217,6 @@ class DeyeGraphManager:
 
     # Palette of 15 highly distinct colors for 15+ inverters (excluding steelblue and forestgreen)
     inverter_colors: Dict[str, str] = {
-      "all": "#228B22", # Forest Green
       "master": "#4682B4", # Steel Blue
       "slave1": "#F58231", # Orange
       "slave2": "#F032E6", # Magenta
@@ -234,6 +233,7 @@ class DeyeGraphManager:
       "slave13": "#2F4F4F", # Dark Slate Gray (Excellent contrast on white background)
       "slave14": "#DCBEFF", # Lavender
       "slave15": "#FABED4", # Pink
+      "all": "#228B22", # Forest Green
     }
 
     graph_line_width = 1.5
