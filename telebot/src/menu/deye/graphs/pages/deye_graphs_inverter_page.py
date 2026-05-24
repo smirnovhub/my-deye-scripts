@@ -52,16 +52,17 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       BreakButtonNode(),
     ]
 
-    for index, inverter in enumerate(self._provider.inverters):
-      if (index % 2) == 0:
+    allowed_inverters = [inv for inv in self._provider.inverters if self._is_inverter_allowed(inv.inverter)]
+
+    for index, inverter in enumerate(allowed_inverters):
+      if index > 0 and (index % 2) == 0:
         buttons.append(BreakButtonNode())
 
-      if self._is_inverter_allowed(inverter.inverter):
-        buttons.append(
-          self.register_button_handler(
-            ButtonNode(inverter.inverter.title()),
-            self._create_navigation_handler(inverter = inverter.inverter),
-          ))
+      buttons.append(
+        self.register_button_handler(
+          ButtonNode(inverter.inverter.title()),
+          self._create_navigation_handler(inverter = inverter.inverter),
+        ))
 
     buttons.append(BreakButtonNode())
     buttons.append(self.register_button_handler(ButtonNode("Full report"), self._handle_full_report))
