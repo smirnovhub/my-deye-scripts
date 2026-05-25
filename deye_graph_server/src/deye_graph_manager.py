@@ -96,6 +96,14 @@ class DeyeGraphManager:
               parse_dates = ['timestamp'],
               on_bad_lines = 'warn',
             )
+
+            # Dynamically get all column names except 'unit'
+            # Create a list of all columns excluding the optional 'unit' column
+            required_columns = [col for col in data_file.columns if col != "unit"]
+
+            # Drop row if any of these required columns are empty
+            data_file = data_file.dropna(subset = required_columns)
+
             df_list.append(data_file)
         except Exception as e:
           self._logger.error(f"Error processing {path}: {e}")
