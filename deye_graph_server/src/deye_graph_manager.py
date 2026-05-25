@@ -91,7 +91,11 @@ class DeyeGraphManager:
           # Load each daily data file using your custom lock
           with DeyeFileWithLock(path, "r") as f:
             self._logger.info(f"Reading csv data from {path}")
-            data_file = pd.read_csv(f, parse_dates = ['timestamp'])
+            data_file = pd.read_csv(
+              f,
+              parse_dates = ['timestamp'],
+              on_bad_lines = 'warn',
+            )
             df_list.append(data_file)
         except Exception as e:
           self._logger.error(f"Error processing {path}: {e}")
