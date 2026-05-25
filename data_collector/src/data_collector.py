@@ -24,6 +24,7 @@ class DataCollector:
 
     data_dir = Path(self._data_path)
     data_dir.mkdir(parents = True, exist_ok = True)
+    data_dir.chmod(0o1777)
 
   def _get_thresholds(self) -> Dict[str, float]:
     registers = DeyeRegisters()
