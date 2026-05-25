@@ -231,14 +231,14 @@ class DeyeGraphManager:
     inverter_colors: Dict[str, str] = {
       "master": "#4682B4", # Steel Blue
       "slave1": "#F58231", # Orange
-      "slave2": "#F032E6", # Magenta
+      "slave2": '#228B22', # Forest Green
       "slave3": "#FFE119", # Yellow
       "slave4": "#800000", # Maroon
       "slave5": "#469990", # Teal
       "slave6": "#BFEF45", # Lime / Bio green
       "slave7": "#42D4F4", # Cyan / Light Blue
       "slave8": "#911EB4", # Purple
-      "slave9": '#228B22', # Forest Green
+      "slave9": "#F032E6", # Magenta
       "slave10": "#E6194B", # Red (High contrast, perfect for Master)
       "slave11": "#9A6324", # Brown
       "slave12": "#4363D8", # Royal Blue (Solid alternative to steelblue)
