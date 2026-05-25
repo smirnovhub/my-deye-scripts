@@ -269,11 +269,20 @@ class DeyeGraphManager:
       if pd.notna(unit_val):
         unit_label = f", {unit_val.replace('deg', '°C')}"
 
+    # Filter data to get precise time limits for the current plot context
+    if inverter == "combined":
+      plot_df = df[(df['inverter'] != 'all') & (df['register'] == actual_graph_name)]
+    else:
+      plot_df = df[(df['inverter'] == inverter) & (df['register'] == actual_graph_name)]
+
+    if plot_df.empty:
+      raise RuntimeError(f"No plot data found for {inverter} and register {actual_graph_name}")
+
     if inverter == "combined":
       # Logic for comparing multiple physical inverters on one plot
       physical_units = [inv for inv in df['inverter'].unique() if inv != 'all']
       for unit in physical_units:
-        unit_data = df[(df['inverter'] == unit) & (df['register'] == actual_graph_name)]
+        unit_data = plot_df[plot_df['inverter'] == unit]
         if not unit_data.empty:
           with DebugTimerWithLog("Plot combined graph"):
             ax.plot(
@@ -288,14 +297,10 @@ class DeyeGraphManager:
       ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
     else:
       # Logic for a single inverter
-      plot_data = df[(df['inverter'] == inverter) & (df['register'] == actual_graph_name)]
-      if plot_data.empty:
-        raise RuntimeError(f"plot data for {inverter} is empty")
-
       with DebugTimerWithLog("Plot regular graph"):
         ax.plot(
-          plot_data['timestamp'],
-          plot_data['value'],
+          plot_df['timestamp'],
+          plot_df['value'],
           label = inverter,
           color = self._get_color(inverter, inverter_colors),
           linewidth = graph_line_width,
@@ -303,9 +308,9 @@ class DeyeGraphManager:
 
       ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
 
-    # Configure X-axis time format and grid intervals
-    time_min: datetime = df['timestamp'].min()
-    time_max: datetime = df['timestamp'].max()
+    # Configure X-axis time format and grid intervals based on actual plotted data range
+    time_min: datetime = plot_df['timestamp'].min()
+    time_max: datetime = plot_df['timestamp'].max()
     time_delta = (time_max - time_min).total_seconds()
 
     # Raise error if there is not enough data to form an interval
