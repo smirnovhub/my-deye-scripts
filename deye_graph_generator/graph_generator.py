@@ -1,4 +1,5 @@
 import os
+import glob
 import asyncio
 import aiofiles
 import logging
@@ -9,6 +10,7 @@ from typing import List, Optional
 from urllib.parse import urljoin
 from datetime import datetime, timedelta, date
 
+from env_utils import EnvUtils
 from deye_graph_inverters import DeyeGraphInverters
 from deye_graph_inverter_data import DeyeGraphInverterData
 from src.graph_generator_config import GraphGeneratorConfig
@@ -40,7 +42,11 @@ class GraphGenerator:
       graph_date = now.date() - timedelta(days = 1)
       self._logger.warning(f"Generating graphs for previous day {graph_date.isoformat()}...")
     else:
+      if now.hour == 0 and now.minute < self._period * 2:
+        self._remove_old_files()
+
       graph_date = now.date()
+      self._logger.info(f"Generating graphs for today {graph_date.isoformat()}...")
 
     inverters = await self._load_graph_inverters(graph_date)
 
@@ -154,3 +160,35 @@ class GraphGenerator:
         text = await response.text()
         raise RuntimeError(f"Can't get graph {self._format}: response code = {response.status}, text = {text}")
       return await response.read()
+
+  def _remove_old_files(self) -> None:
+    for ext in EnvUtils.DEYE_GRAPHS_FORMATS:
+      self._delete_files_by_extension(self._data_dir, ext)
+
+  def _delete_files_by_extension(self, folder_path: str, extension: str) -> None:
+    # Ensure the extension starts with a dot
+    if not extension.startswith('.'):
+      extension = f'.{extension}'
+
+    # Check if the folder exists before proceeding
+    if not os.path.exists(folder_path):
+      self._logger.error(f"Error: the folder '{folder_path}' does not exist.")
+      return
+
+    # Create a pattern to match all files with the given extension
+    search_pattern = os.path.join(folder_path, f"*{extension}")
+
+    # Find all matching files
+    files_to_delete = glob.glob(search_pattern)
+
+    if not files_to_delete:
+      self._logger.warning(f"No files with extension '{extension}' found in '{folder_path}'.")
+      return
+
+    # Loop through the found files and delete them
+    for file_path in files_to_delete:
+      try:
+        os.remove(file_path)
+        self._logger.info(f"Deleted: {file_path}")
+      except Exception as e:
+        self._logger.error(f"Failed to delete {file_path}. Reason: {e}")
