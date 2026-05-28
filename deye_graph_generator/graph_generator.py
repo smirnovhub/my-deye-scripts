@@ -43,7 +43,7 @@ class GraphGenerator:
       self._logger.warning(f"Generating graphs for previous day {graph_date.isoformat()}...")
     else:
       if now.hour == 0 and now.minute < self._period * 2:
-        self._logger.info("Removing old graphs..")
+        self._logger.info("Removing old graphs...")
         self._remove_old_files()
 
       graph_date = now.date()
