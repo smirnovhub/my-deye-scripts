@@ -43,6 +43,7 @@ class GraphGenerator:
       self._logger.warning(f"Generating graphs for previous day {graph_date.isoformat()}...")
     else:
       if now.hour == 0 and now.minute < self._period * 2:
+        self._logger.info("Removing old graphs..")
         self._remove_old_files()
 
       graph_date = now.date()
@@ -172,7 +173,7 @@ class GraphGenerator:
 
     # Check if the folder exists before proceeding
     if not os.path.exists(folder_path):
-      self._logger.error(f"Error: the folder '{folder_path}' does not exist.")
+      self._logger.error(f"Error: the folder '{folder_path}' does not exist")
       return
 
     # Create a pattern to match all files with the given extension
@@ -182,7 +183,7 @@ class GraphGenerator:
     files_to_delete = glob.glob(search_pattern)
 
     if not files_to_delete:
-      self._logger.warning(f"No files with extension '{extension}' found in '{folder_path}'.")
+      self._logger.warning(f"No files with extension '{extension}' found in '{folder_path}'")
       return
 
     # Loop through the found files and delete them
