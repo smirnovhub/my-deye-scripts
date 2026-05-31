@@ -95,7 +95,6 @@ class DataCollector:
   ) -> DeyeRegistersHolderAsync:
     retry_attempts = 5
     retry_delay_sec = 6
-    last_exception = None
 
     for attempt in range(retry_attempts):
       holder = DeyeRegistersHolderAsync(
@@ -112,20 +111,19 @@ class DataCollector:
         logger.info("Registers read successful.")
         return holder
       except Exception as e:
-        last_exception = e
         logger.error(f"An exception occurred: {e}. Retrying...")
+
+        # Raise exception if all attempts failed
+        if attempt == retry_attempts - 1:
+          logger.error("All retry attempts were unsuccessful.")
+          raise
       finally:
         holder.disconnect()
 
-      if attempt < retry_attempts - 1:
-        await asyncio.sleep(retry_delay_sec)
+      await asyncio.sleep(retry_delay_sec)
 
-    # Raise exception if all attempts failed
-    if last_exception:
-      logger.error("All retry attempts were unsuccessful.")
-      raise last_exception
-    else:
-      raise Exception("Unknown error")
+    # Fallback for the static analyzer to guarantee all code paths return or raise
+    raise RuntimeError("All retry attempts failed to return a value.")
 
   def _remove_old_files(
     self,
