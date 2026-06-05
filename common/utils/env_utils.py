@@ -152,7 +152,7 @@ class EnvUtils:
       val = float(lat)
       # Validate if latitude is within the legal range [-90, 90]
       if not (-90.0 <= val <= 90.0):
-        raise ValueError(f"Latitude {val} is out of range [-90, 90]")
+        raise RuntimeError(f"Latitude {val} is out of range [-90, 90]")
       return val
     except (ValueError, TypeError) as e:
       raise RuntimeError(f'Wrong GPS latitude format or value: {lat}') from e
@@ -167,7 +167,7 @@ class EnvUtils:
       val = float(lon)
       # Validate if longitude is within the legal range [-180, 180]
       if not (-180.0 <= val <= 180.0):
-        raise ValueError(f"Longitude {val} is out of range [-180, 180]")
+        raise RuntimeError(f"Longitude {val} is out of range [-180, 180]")
       return val
     except (ValueError, TypeError) as e:
       # Re-raise as RuntimeError with a descriptive message
@@ -261,7 +261,7 @@ class EnvUtils:
     try:
       val = float(ratio)
       if not (min_ratio <= val <= max_ratio):
-        raise ValueError(f"Load power ratio {val} is out of range [{min_ratio}, {max_ratio}]")
+        raise RuntimeError(f"Load power ratio {val} is out of range [{min_ratio}, {max_ratio}]")
       return val
     except (ValueError, TypeError) as e:
       # Re-raise as RuntimeError with a descriptive message
