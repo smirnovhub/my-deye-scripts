@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional
 from pathlib import Path
 from datetime import datetime
 
-from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
 from deye_csv_utils import DeyeCsvUtils
 from deye_registers import DeyeRegisters
@@ -22,6 +21,7 @@ class DataCollector:
     self._loggers = DeyeLoggers()
     self._data_path = f"data/{config.DEYE_DATA_COLLECTOR_DIR}"
     self._data_retention_days = config.DATA_RETENTION_DAYS
+    self._load_power_ratio_threshold = config.DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO
 
     data_dir = Path(self._data_path)
     data_dir.mkdir(parents = True, exist_ok = True)
@@ -42,7 +42,7 @@ class DataCollector:
     }
 
   async def main_logic(self, logger: logging.Logger) -> None:
-    holder = await self._read_registers(logger)
+    holder = await self._read_registers(self._load_power_ratio_threshold, logger)
 
     current_date = datetime.now().strftime("%Y-%m-%d")
     data_file_path = os.path.join(self._data_path, f"{current_date}.csv")
@@ -91,12 +91,12 @@ class DataCollector:
 
   async def _read_registers(
     self,
+    load_power_ratio_threshold: float,
     logger: logging.Logger,
   ) -> DeyeRegistersHolderAsync:
     best_ratio = -1.0
     retry_attempts = 5
     retry_delay_sec = 7
-    load_power_ratio_threshold = EnvUtils.get_deye_data_collector_load_power_ratio()
     best_holder: Optional[DeyeRegistersHolderAsync] = None
     last_exception: Any = None
 

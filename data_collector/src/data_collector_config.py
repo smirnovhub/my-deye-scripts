@@ -18,6 +18,7 @@ class DataCollectorConfig:
     self.__all_vars: List[EnvVar] = [
       EnvVars.DEYE_LOG_NAME,
       EnvVars.DEYE_DATA_COLLECTOR_DIR,
+      EnvVars.DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO,
       self.__data_collecting_interval_sec,
       self.__data_retention_days,
       self.__connection_lost_notify_after_minutes,
@@ -31,6 +32,10 @@ class DataCollectorConfig:
   @property
   def DEYE_DATA_COLLECTOR_DIR(self) -> str:
     return EnvVars.DEYE_DATA_COLLECTOR_DIR.value
+
+  @property
+  def DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO(self) -> float:
+    return EnvVars.DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO.as_float()
 
   @property
   def DATA_COLLECTING_INTERVAL_SEC(self) -> int:
