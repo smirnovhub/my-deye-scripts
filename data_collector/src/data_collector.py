@@ -93,7 +93,7 @@ class DataCollector:
     self,
     logger: logging.Logger,
   ) -> DeyeRegistersHolderAsync:
-    best_ratio = -1
+    best_ratio = -1.0
     retry_attempts = 5
     retry_delay_sec = 7
     load_power_ratio_threshold = EnvUtils.get_deye_data_collector_load_power_ratio()
