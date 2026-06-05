@@ -23,6 +23,7 @@ class EnvUtils:
   DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON = "DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON"
   DEYE_WEB_GRAPHS_BASE_URL = "DEYE_WEB_GRAPHS_BASE_URL"
   DEYE_DATA_COLLECTOR_DIR = "DEYE_DATA_COLLECTOR_DIR"
+  DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO = "DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO"
   DEYE_GRAPHS_DIR = "DEYE_GRAPHS_DIR"
   DEYE_GRAPHS_FORMAT = "DEYE_GRAPHS_FORMAT"
   DEYE_GRAPHS_FORMATS = ["png", "svg", "pdf"]
@@ -247,6 +248,24 @@ class EnvUtils:
     if not dir_name:
       raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_DATA_COLLECTOR_DIR}' is not set")
     return dir_name
+
+  @staticmethod
+  def get_deye_data_collector_load_power_ratio() -> float:
+    ratio = os.getenv(EnvUtils.DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO, '0.9').strip()
+    if not ratio:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO}' is not set")
+
+    min_ratio = 0.8
+    max_ratio = 0.97
+
+    try:
+      val = float(ratio)
+      if not (min_ratio <= val <= max_ratio):
+        raise ValueError(f"Load power ratio {val} is out of range [{min_ratio}, {max_ratio}]")
+      return val
+    except (ValueError, TypeError) as e:
+      # Re-raise as RuntimeError with a descriptive message
+      raise RuntimeError(f'Wrong load power ratio format or value: {ratio}') from e
 
   @staticmethod
   def get_deye_graphs_dir() -> str:

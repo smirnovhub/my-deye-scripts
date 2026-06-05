@@ -4,10 +4,11 @@ import time
 import asyncio
 import logging
 
-from typing import Dict
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 from datetime import datetime
 
+from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
 from deye_csv_utils import DeyeCsvUtils
 from deye_registers import DeyeRegisters
@@ -41,7 +42,7 @@ class DataCollector:
     }
 
   async def main_logic(self, logger: logging.Logger) -> None:
-    holder = await self._read_registers(self._loggers, logger)
+    holder = await self._read_registers(logger)
 
     current_date = datetime.now().strftime("%Y-%m-%d")
     data_file_path = os.path.join(self._data_path, f"{current_date}.csv")
@@ -90,40 +91,84 @@ class DataCollector:
 
   async def _read_registers(
     self,
-    loggers: DeyeLoggers,
     logger: logging.Logger,
   ) -> DeyeRegistersHolderAsync:
+    best_ratio = -1
     retry_attempts = 5
-    retry_delay_sec = 6
+    retry_delay_sec = 7
+    load_power_ratio_threshold = EnvUtils.get_deye_data_collector_load_power_ratio()
+    best_holder: Optional[DeyeRegistersHolderAsync] = None
+    last_exception: Any = None
 
-    for attempt in range(retry_attempts):
+    for attempt in range(1, retry_attempts + 1):
       holder = DeyeRegistersHolderAsync(
-        loggers = loggers.loggers,
+        loggers = self._loggers.loggers,
         register_creator = lambda prefix: DataCollectorRegisters(prefix),
         name = 'data_collector',
         socket_timeout = 7,
         verbose = False,
       )
 
-      try:
-        logger.info("Reading registers...")
-        await holder.read_registers()
-        logger.info("Registers read successful.")
-        return holder
-      except Exception as e:
-        logger.error(f"An exception occurred: {e}. Retrying...")
+      last_exception = None
 
-        # Raise exception if all attempts failed
-        if attempt == retry_attempts - 1:
-          logger.error("All retry attempts were unsuccessful.")
-          raise
+      if attempt > 1:
+        await asyncio.sleep(retry_delay_sec)
+
+      try:
+        await holder.read_registers()
+      except Exception as e:
+        last_exception = e
+        logger.error(f'An exception occurred: {e}. Retrying...')
+        continue
       finally:
         holder.disconnect()
 
-      await asyncio.sleep(retry_delay_sec)
+      load_powers: List[int] = []
+      for _, registers in holder.all_registers.items():
+        if registers.prefix != self._loggers.accumulated_registers_prefix:
+          load_powers.append(registers.load_power_register.value)
 
-    # Fallback for the static analyzer to guarantee all code paths return or raise
-    raise RuntimeError("All retry attempts failed to return a value.")
+      load_power_ratio = self._get_ratio(load_powers)
+
+      if load_power_ratio > load_power_ratio_threshold:
+        logger.info(f'Load power ratio is ok: {load_power_ratio:.5f}')
+        return holder
+
+      if load_power_ratio > best_ratio:
+        best_ratio = load_power_ratio
+        best_holder = holder
+        logger.info(f'Got holder with ratio: {load_power_ratio:.5f}')
+
+      logger.warning(f'Load power ratio is wrong: {load_power_ratio:.5f}. '
+                     f'Attempt {attempt}/{retry_attempts}. '
+                     f'Retrying in {retry_delay_sec} seconds...')
+    else:
+      # Executed only if all attempts are exhausted
+      logger.warning(f'Load power ratio is still wrong ({best_ratio:.5f}) '
+                     f'after {retry_attempts} attempts.')
+
+      if best_holder:
+        return best_holder
+
+      if last_exception:
+        raise last_exception
+
+      raise RuntimeError("Can't read deye registers.")
+
+  def _get_ratio(self, values: List[int]) -> float:
+    if not values:
+      return 0
+
+    # Find the smallest and largest values in the set
+    min_val = min(values)
+    max_val = max(values)
+
+    # Avoid division by zero if necessary
+    if max_val == 0:
+      return 0
+
+    # Calculate the ratio of the smallest to the largest
+    return min_val / max_val
 
   def _remove_old_files(
     self,
