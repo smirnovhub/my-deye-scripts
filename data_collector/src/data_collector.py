@@ -120,7 +120,7 @@ class DataCollector:
         await holder.read_registers()
       except Exception as e:
         last_exception = e
-        logger.error(f'An exception occurred: {e}. Retrying...')
+        logger.error(f'An exception occurred: {e}. Retrying attempt {attempt}/{retry_attempts}...')
         continue
       finally:
         holder.disconnect()
