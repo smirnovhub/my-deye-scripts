@@ -100,6 +100,8 @@ class DataCollector:
     best_holder: Optional[DeyeRegistersHolderAsync] = None
     last_exception: Any = None
 
+    logger.info(f'Load power ratio threshold: {load_power_ratio_threshold}')
+
     for attempt in range(1, retry_attempts + 1):
       holder = DeyeRegistersHolderAsync(
         loggers = self._loggers.loggers,
