@@ -103,6 +103,9 @@ class DataCollector:
     logger.info(f'Load power ratio threshold: {load_power_ratio_threshold}')
 
     for attempt in range(1, retry_attempts + 1):
+      if attempt > 1:
+        await asyncio.sleep(retry_delay_sec)
+
       holder = DeyeRegistersHolderAsync(
         loggers = self._loggers.loggers,
         register_creator = lambda prefix: DataCollectorRegisters(prefix),
@@ -112,9 +115,6 @@ class DataCollector:
       )
 
       last_exception = None
-
-      if attempt > 1:
-        await asyncio.sleep(retry_delay_sec)
 
       try:
         await holder.read_registers()
