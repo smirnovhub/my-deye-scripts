@@ -31,7 +31,7 @@ jobs:
 
       - name: Run codespell checks
         run: |
-          codespell . --skip="./modules/*,JsHttpRequest.php,JsHttpRequest.js,*.svg,*.log"
+          codespell . --skip="./modules/*,*.svg,*.log,*.txt"
 
       - name: Run mypy for common
         working-directory: common
