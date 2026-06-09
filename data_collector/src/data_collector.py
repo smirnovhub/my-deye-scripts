@@ -44,8 +44,13 @@ class DataCollector:
   async def main_logic(self, logger: logging.Logger) -> None:
     holder = await self._read_registers(self._load_power_ratio_threshold, logger)
 
-    current_date = datetime.now().strftime("%Y-%m-%d")
-    data_file_path = os.path.join(self._data_path, f"{current_date}.csv")
+    now = datetime.now()
+    current_date = now.strftime("%Y-%m-%d")
+
+    data_dir = os.path.join(self._data_path, f"{now.year}/{now.month:02d}")
+    Path(data_dir).mkdir(parents = True, exist_ok = True)
+
+    data_file_path = os.path.join(data_dir, f"{current_date}.csv")
 
     write_header = not os.path.exists(data_file_path) or os.path.getsize(data_file_path) == 0
 
@@ -186,8 +191,8 @@ class DataCollector:
 
     pattern = re.compile(r"^\d{4}-\d{2}-\d{2}\.csv$")
 
-    # Iterate through all .csv files in the directory
-    for file_path in directory.glob("*.csv"):
+    # Use rglob for recursive directory traversal
+    for file_path in directory.rglob("*.csv"):
       if not pattern.match(file_path.name):
         continue
 
@@ -199,7 +204,7 @@ class DataCollector:
         # Check if the file is older than the threshold
         if file_age_seconds > seconds_threshold:
           file_path.unlink()
-          logger.info(f"Deleted: {file_path.name}")
+          logger.info(f"Deleted: {file_path}")
       except Exception as e:
         # Handle potential errors during file access or deletion
-        logger.error(f"Error removing {file_path.name}: {e}")
+        logger.error(f"Error removing {file_path}: {e}")
