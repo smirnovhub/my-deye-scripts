@@ -23,9 +23,7 @@ class DataCollector:
     self._data_retention_days = config.DATA_RETENTION_DAYS
     self._load_power_ratio_threshold = config.DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO
 
-    data_dir = Path(self._data_path)
-    data_dir.mkdir(parents = True, exist_ok = True)
-    data_dir.chmod(0o1777)
+    self._make_dirs(self._data_path)
 
   def _get_thresholds(self) -> Dict[str, float]:
     registers = DeyeRegisters()
@@ -42,13 +40,13 @@ class DataCollector:
     }
 
   async def main_logic(self, logger: logging.Logger) -> None:
-    holder = await self._read_registers(self._load_power_ratio_threshold, logger)
-
     now = datetime.now()
     current_date = now.strftime("%Y-%m-%d")
 
     data_dir = os.path.join(self._data_path, f"{now.year}/{now.month:02d}")
-    Path(data_dir).mkdir(parents = True, exist_ok = True)
+
+    self._make_dirs(data_dir)
+    self._chmod_dir(data_dir, 0o1777)
 
     data_file_path = os.path.join(data_dir, f"{current_date}.csv")
 
@@ -61,7 +59,8 @@ class DataCollector:
         logger = logger,
       )
 
-    header = DeyeCsvUtils.get_csv_header()
+    holder = await self._read_registers(self._load_power_ratio_threshold, logger)
+
     lines = DeyeCsvUtils.get_csv_lines(
       holder = holder,
       loggers = self._loggers,
@@ -71,6 +70,7 @@ class DataCollector:
 
     async with DeyeFileWithLockAsync(path = data_file_path, mode = "a") as f:
       if write_header:
+        header = DeyeCsvUtils.get_csv_header()
         f.write(header)
 
       f.write(f"{lines_to_write}\n")
@@ -208,3 +208,11 @@ class DataCollector:
       except Exception as e:
         # Handle potential errors during file access or deletion
         logger.error(f"Error removing {file_path}: {e}")
+
+  def _make_dirs(self, path: str) -> None:
+    dir = Path(path)
+    dir.mkdir(parents = True, exist_ok = True)
+
+  def _chmod_dir(self, path: str, mode: int) -> None:
+    dir = Path(path)
+    dir.chmod(mode)
