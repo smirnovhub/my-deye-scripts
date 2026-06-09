@@ -57,7 +57,7 @@ class DeyeGraphManager:
     available_dates = set()
 
     # Iterate over files matching the YYYY-MM-DD.csv pattern
-    for file_path in base_dir.glob("????-??-??*.csv"):
+    for file_path in base_dir.rglob("????-??-??*.csv"):
       try:
         # Extract only the first 10 characters (YYYY-MM-DD) from the filename
         date_str = file_path.stem[:10]
@@ -73,7 +73,7 @@ class DeyeGraphManager:
   def _read_data_frame(self, graph_date: date) -> pd.core.frame.DataFrame:
     # Construct a pattern to match all files starting with YYYY-MM-DD and ending with .csv
     # This will match YYYY-MM-DD.csv, YYYY-MM-DD-test.csv, etc.
-    file_pattern = f"{graph_date.isoformat()}*.csv"
+    file_pattern = f"{graph_date.year}/{graph_date.month:02d}/{graph_date.isoformat()}*.csv"
     search_path = os.path.join(self._data_path, file_pattern)
 
     # Find all matching file paths
@@ -629,7 +629,7 @@ class DeyeGraphManager:
 
   def get_zipped_csv(self, graph_date: date) -> bytes:
     # Construct a pattern to match all files starting with YYYY-MM-DD and ending with .csv
-    file_pattern = f"{graph_date.isoformat()}*.csv"
+    file_pattern = f"{graph_date.year}/{graph_date.month:02d}/{graph_date.isoformat()}*.csv"
     search_path = os.path.join(self._data_path, file_pattern)
 
     # Find all matching file paths
