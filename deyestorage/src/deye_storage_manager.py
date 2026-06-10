@@ -29,15 +29,13 @@ class DeyeStorageManager:
     """
     Returns stored data for the specified key
     """
-    data = self._storage.get(key)
-    if data is None:
+    entry = self._storage.get(key)
+    if entry is None:
       # Return 404 if the key was not found in the storage
       raise HTTPException(status_code = 404, detail = f"Key not found")
 
-    # Here better to make deep copy of the object to
-    # prevent unexpected storage change from client side
-    # return copy.deepcopy(data)
-    return data
+    # Return only the inner data payload to the client
+    return entry.get("data", {})
 
   async def clear(self) -> Dict[str, Any]:
     """
@@ -100,19 +98,22 @@ class DeyeStorageManager:
 
     async with lock:
       header = self._get_header(request)
-      current_data = self._storage.get(key)
-      if not current_data:
-        current_data = header.copy()
+      current_entry = self._storage.get(key)
 
-      current_data_json_str = json.dumps(current_data).encode("utf-8")
+      if not current_entry:
+        current_entry = {**header, "data": {}}
+
+      current_data_json_str = json.dumps(current_entry).encode("utf-8")
       if len(current_data_json_str) > self._config.MAX_JSON_STORAGE_SIZE:
         raise HTTPException(status_code = 413, detail = f"JSON storage size exceeded")
 
-      # Perform the recursive merge
-      self._deep_merge(current_data, json_data)
-      current_data.update(header)
+      # Perform the recursive merge inside the 'data' field
+      self._deep_merge(current_entry["data"], json_data)
 
-      self._storage[key] = current_data
+      # Update top-level metadata headers
+      current_entry.update(header)
+
+      self._storage[key] = current_entry
 
     return {"status": "success"}
 
@@ -173,21 +174,18 @@ class DeyeStorageManager:
   def get_average(self, key: str) -> Dict[str, Any]:
     """
     Retrieves the current average and totals for the specified key.
-    Returns the data directly from storage.
+    Returns the data directly from storage payload.
     """
-    # Use existing get method to handle 404 if key is missing
-    data = self.get(key)
-
-    if not data:
-      raise HTTPException(status_code = 404, detail = "Key not found")
+    # Use existing get method to extract inner 'data' payload and handle 404
+    inner_data = self.get(key)
 
     return {
       "status": "success",
       "key": key,
-      "count1": self._clean_num(data.get("count1", 0.0)),
-      "count2": self._clean_num(data.get("count2", 0.0)),
-      "total": self._clean_num(data.get("total", 0.0)),
-      "average": self._clean_num(data.get("average", 0.0)),
+      "count1": self._clean_num(inner_data.get("count1", 0.0)),
+      "count2": self._clean_num(inner_data.get("count2", 0.0)),
+      "total": self._clean_num(inner_data.get("total", 0.0)),
+      "average": self._clean_num(inner_data.get("average", 0.0)),
     }
 
   async def update_average(
@@ -210,11 +208,12 @@ class DeyeStorageManager:
       lock = self._locks[key]
 
     async with lock:
-      # Get current state from storage or set defaults
-      data = self._storage.get(key, {})
+      # Get current entry from storage or set defaults
+      entry = self._storage.get(key, {})
+      inner_data = entry.get("data", {})
 
-      new_count1 = data.get("count1", 0.0) + count1
-      new_count2 = data.get("count2", 0.0) + count2
+      new_count1 = inner_data.get("count1", 0.0) + count1
+      new_count2 = inner_data.get("count2", 0.0) + count2
 
       total = new_count1 + new_count2
       average = new_count1 / total if total != 0 else 0.0
@@ -226,7 +225,8 @@ class DeyeStorageManager:
         "average": average,
       }
 
-      self._storage[key] = {**self._get_header(request), **raw_values}
+      # Restructure to keep headers at root and payload inside 'data'
+      self._storage[key] = {**self._get_header(request), "data": raw_values}
 
       clean_values = {k: self._clean_num(v) for k, v in raw_values.items()}
 
