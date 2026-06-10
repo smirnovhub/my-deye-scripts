@@ -131,8 +131,7 @@ class DataCollector:
       finally:
         holder.disconnect()
 
-      if holder.accumulated_registers.grid_state_register.value == DeyeGridState.off_grid:
-        logger.warning(f'Grid state is off-grid. Skip load power ratio checking')
+      if self._loggers.count == 1:
         return holder
 
       load_powers: List[int] = []
@@ -141,6 +140,11 @@ class DataCollector:
           load_powers.append(registers.load_power_register.value)
 
       load_power_ratio = self._get_ratio(load_powers)
+
+      if holder.accumulated_registers.grid_state_register.value == DeyeGridState.off_grid:
+        logger.warning(f'Grid state is off-grid. Skip load power ratio checking')
+        logger.info(f'Load power ratio: {load_power_ratio:.5f}')
+        return holder
 
       if load_power_ratio > load_power_ratio_threshold:
         logger.info(f'Load power ratio is ok: {load_power_ratio:.5f}')
