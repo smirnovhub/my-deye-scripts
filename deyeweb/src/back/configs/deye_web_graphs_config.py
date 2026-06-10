@@ -1,18 +1,17 @@
-from typing import List
 from urllib.parse import urljoin
 
 from env_utils import EnvUtils
 from simple_singleton import singleton
-from deye_register import DeyeRegister
 from deye_web_constants import DeyeWebConstants
 
 @singleton
 class DeyeWebGraphsConfig:
   def __init__(self):
-    registers = DeyeWebConstants.registers
     self._graphs_base_url = EnvUtils.get_deye_web_graphs_base_url()
     self._graphs_format = EnvUtils.get_deye_graphs_format()
-    regs: List[DeyeRegister] = [
+
+    registers = DeyeWebConstants.registers
+    regs = [
       registers.battery_current_register,
       registers.battery_power_register,
       registers.battery_soc_register,
