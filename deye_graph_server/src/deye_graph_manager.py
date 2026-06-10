@@ -600,7 +600,7 @@ class DeyeGraphManager:
     t_end = df.loc[condition[::-1].idxmax(), 'timestamp']
 
     # Define available rounding intervals in minutes
-    trim_intervals = [60, 30, 15, 5]
+    trim_intervals = [15, 30, 60]
 
     # --- LEFT BOUNDARY (Floor to nearest interval) ---
     for mins in trim_intervals:
