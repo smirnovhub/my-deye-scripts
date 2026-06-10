@@ -11,6 +11,7 @@ from datetime import datetime
 from deye_loggers import DeyeLoggers
 from deye_csv_utils import DeyeCsvUtils
 from deye_registers import DeyeRegisters
+from deye_grid_state import DeyeGridState
 from deye_file_with_lock_async import DeyeFileWithLockAsync
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 from data_collector_registers import DataCollectorRegisters
@@ -129,6 +130,10 @@ class DataCollector:
         continue
       finally:
         holder.disconnect()
+
+      if holder.accumulated_registers.grid_state_register.value == DeyeGridState.off_grid:
+        logger.warning(f'Grid state is off-grid. Skip load power ratio checking')
+        return holder
 
       load_powers: List[int] = []
       for _, registers in holder.all_registers.items():
