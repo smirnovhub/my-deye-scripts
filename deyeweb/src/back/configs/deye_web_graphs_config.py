@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import List
 from urllib.parse import urljoin
 
 from env_utils import EnvUtils
@@ -30,11 +30,7 @@ class DeyeWebGraphsConfig:
       registers.pv_total_power_register,
     ]
 
-    self._urls = self._get_graph_names(regs)
-    self._urls[registers.grid_state_register.name] = f"{registers.grid_state_code_register.name}.{self._graphs_format}"
-
-  def _get_graph_names(self, registers: List[DeyeRegister]) -> Dict[str, str]:
-    return {register.name: f"{register.name}.{self._graphs_format}" for register in registers}
+    self._urls = {register.name: f"{register.name}.{self._graphs_format}" for register in regs}
 
   def get_url_for_register(self, register_name: str) -> str:
     if not self._graphs_base_url:
