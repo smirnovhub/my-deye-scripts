@@ -1,7 +1,7 @@
 import os
 import re
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 class EnvVar:
   def __init__(
@@ -9,7 +9,7 @@ class EnvVar:
     name: str,
     default: str,
     description: str,
-    value_getter: Optional[Callable[[], str]] = None,
+    value_getter: Optional[Callable[[], Union[str, float]]] = None,
   ):
     self._name = name
     self._default = default
@@ -32,7 +32,7 @@ class EnvVar:
 
   @property
   def value(self) -> str:
-    return self._value_getter() if self._value_getter else self._value
+    return str(self._value_getter()) if self._value_getter else self._value
 
   def as_not_empty_value(self) -> str:
     if not self.value:

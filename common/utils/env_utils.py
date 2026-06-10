@@ -23,6 +23,7 @@ class EnvUtils:
   DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON = "DEYE_WEB_REGISTER_DESCRIPTION_REPLACEMENTS_JSON"
   DEYE_WEB_GRAPHS_BASE_URL = "DEYE_WEB_GRAPHS_BASE_URL"
   DEYE_DATA_COLLECTOR_DIR = "DEYE_DATA_COLLECTOR_DIR"
+  DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO = "DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO"
   DEYE_GRAPHS_DIR = "DEYE_GRAPHS_DIR"
   DEYE_GRAPHS_FORMAT = "DEYE_GRAPHS_FORMAT"
   DEYE_GRAPHS_FORMATS = ["png", "svg", "pdf"]
@@ -151,7 +152,7 @@ class EnvUtils:
       val = float(lat)
       # Validate if latitude is within the legal range [-90, 90]
       if not (-90.0 <= val <= 90.0):
-        raise ValueError(f"Latitude {val} is out of range [-90, 90]")
+        raise RuntimeError(f"Latitude {val} is out of range [-90, 90]")
       return val
     except (ValueError, TypeError) as e:
       raise RuntimeError(f'Wrong GPS latitude format or value: {lat}') from e
@@ -166,7 +167,7 @@ class EnvUtils:
       val = float(lon)
       # Validate if longitude is within the legal range [-180, 180]
       if not (-180.0 <= val <= 180.0):
-        raise ValueError(f"Longitude {val} is out of range [-180, 180]")
+        raise RuntimeError(f"Longitude {val} is out of range [-180, 180]")
       return val
     except (ValueError, TypeError) as e:
       # Re-raise as RuntimeError with a descriptive message
@@ -247,6 +248,24 @@ class EnvUtils:
     if not dir_name:
       raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_DATA_COLLECTOR_DIR}' is not set")
     return dir_name
+
+  @staticmethod
+  def get_deye_data_collector_load_power_ratio() -> float:
+    ratio = os.getenv(EnvUtils.DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO, '0.9').strip()
+    if not ratio:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO}' is not set")
+
+    min_ratio = 0.8
+    max_ratio = 0.97
+
+    try:
+      val = float(ratio)
+      if not (min_ratio <= val <= max_ratio):
+        raise RuntimeError(f"Load power ratio {val} is out of range [{min_ratio}, {max_ratio}]")
+      return val
+    except (ValueError, TypeError) as e:
+      # Re-raise as RuntimeError with a descriptive message
+      raise RuntimeError(f'Wrong load power ratio format or value: {ratio}') from e
 
   @staticmethod
   def get_deye_graphs_dir() -> str:

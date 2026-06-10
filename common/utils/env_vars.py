@@ -16,6 +16,13 @@ class EnvVars:
     value_getter = EnvUtils.get_deye_data_collector_dir,
   )
 
+  DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO = EnvVar(
+    name = EnvUtils.DEYE_DATA_COLLECTOR_LOAD_POWER_RATIO,
+    default = '0.9',
+    description = 'Load power ratio threshold',
+    value_getter = EnvUtils.get_deye_data_collector_load_power_ratio,
+  )
+
   DEYE_GRAPHS_DIR = EnvVar(
     name = EnvUtils.DEYE_GRAPHS_DIR,
     default = '',

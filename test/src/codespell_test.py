@@ -36,7 +36,7 @@ def main():
     commands = [
       "codespell",
       os.path.join(base_path, path),
-      '--skip=*.svg,*.pdf,*.log',
+      '--skip=*.svg,*.pdf,*.log,*.txt,*.csv',
     ]
 
     log.info(f'Running codespell for {path}...')

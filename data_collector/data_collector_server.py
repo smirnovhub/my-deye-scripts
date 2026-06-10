@@ -28,7 +28,6 @@ from telegram_send_message_async import TelegramAsync
 from http_session_singleton_async import HttpSessionSingletonAsync
 
 config = DataCollectorConfig()
-collector = DataCollector(config)
 
 LOG_DIR = f"data/{config.LOG_NAME}"
 
@@ -36,6 +35,12 @@ logger = LogUtils.setup_hourly_overwrite_file_logger(
   log_dir = LOG_DIR,
   log_file_template = "data-collector-{0}.log",
 )
+
+try:
+  collector = DataCollector(config)
+except Exception as e:
+  logger.error(f"Failed to initialize DataCollector: {e}", exc_info = True)
+  raise
 
 last_success = datetime.now()
 last_notification = datetime.now()
@@ -47,7 +52,7 @@ async def run_ticker(ticker: AsyncTicker):
   try:
     async for _ in ticker:
       try:
-        await collector.main_logic(config = config, logger = logger)
+        await collector.main_logic(logger = logger)
         last_success = datetime.now()
       except Exception:
         callstack = traceback.format_exc()

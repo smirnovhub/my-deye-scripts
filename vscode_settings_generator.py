@@ -1,4 +1,4 @@
-#!/usr/bin/python3.8
+#!/usr/bin/python3
 
 import os
 import sys
@@ -79,17 +79,21 @@ def process(path: str, base_dirs: List[str]):
   text = text.replace('\\', '/')
 
   try:
-    with open(os.path.join(path, '.vscode/settings.json'), 'w', newline = '') as f:
+    settings_path = os.path.join(path, '.vscode/settings.json')
+    with open(settings_path, 'w', newline = '') as f:
       f.write(text)
       f.flush()
   except Exception as e:
+    print(f"Failed to write settings to: {os.path.abspath(settings_path)}")
     print(str(e))
 
   try:
-    with open(os.path.join(path, '.style.yapf'), 'w', newline = '') as f:
+    style_path = os.path.join(path, '.style.yapf')
+    with open(style_path, 'w', newline = '') as f:
       f.write(style_yapf_text)
       f.flush()
   except Exception as e:
+    print(f"Failed to write settings to: {os.path.abspath(style_path)}")
     print(str(e))
 
 process('.', ['common'])
@@ -98,6 +102,7 @@ process('deye', ['src', '../common'])
 process('data_collector', ['src', '../common', '../deye/src'])
 process('demoserver', ['src', '../common', '../deye/src'])
 process('deyestorage', ['src', '../common'])
+process('deye_graph_generator', ['src', '../common'])
 process('deye_graph_server', ['src', '../common'])
 process('deyeproxy', ['src', '../common'])
 process('deyeweb', ['src', '../common', '../deye/src'])

@@ -29,12 +29,9 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerSync):
       return
 
     try:
-      is_available = self._provider.is_graph_server_available()
-    except Exception:
-      is_available = False
-
-    if not is_available:
-      self.bot.send_message(message.chat.id, f"Graph server {server_url} seems to be down")
+      self._provider.check_graph_server_available()
+    except Exception as e:
+      self.bot.send_message(message.chat.id, f"Graph server {server_url} seems to be down: {e}")
       return
 
     try:

@@ -1,6 +1,7 @@
 import os
 import io
 import gc
+import glob
 import logging
 import zipfile
 
@@ -19,6 +20,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import date, datetime
+from collections import Counter
 
 from debug_timer import DebugTimerWithLog
 from deye_graph_data import DeyeGraphData
@@ -46,20 +48,21 @@ class DeyeGraphManager:
     self._thresholds = self._get_thresholds(self._data_path)
 
   def get_available_dates(self) -> List[date]:
-    available_dates = []
     # Use Path for convenient file globbing
     base_dir = Path(self._data_path)
 
     if not base_dir.is_dir():
       raise RuntimeError(f"data dir '{self._data_path}' doesn't exist")
 
+    available_dates = set()
+
     # Iterate over files matching the YYYY-MM-DD.csv pattern
-    for file_path in base_dir.glob("????-??-??.csv"):
+    for file_path in base_dir.rglob("????-??-??*.csv"):
       try:
-        # Extract filename without extension and convert to date object
-        date_str = file_path.stem
+        # Extract only the first 10 characters (YYYY-MM-DD) from the filename
+        date_str = file_path.stem[:10]
         current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        available_dates.append(current_date)
+        available_dates.add(current_date)
       except ValueError:
         # Skip files that don't strictly match the date format
         continue
@@ -67,20 +70,55 @@ class DeyeGraphManager:
     # Return sorted list of dates
     return sorted(available_dates)
 
-  def get_inverters_by_date(self, graph_date: date) -> DeyeGraphInverters:
-    # Construct filename from date: YYYY-MM-DD.csv
-    file_name = f"{graph_date.isoformat()}.csv"
-    file_path = os.path.join(self._data_path, file_name)
+  def _read_data_frame(self, graph_date: date) -> pd.core.frame.DataFrame:
+    # Construct a pattern to match all files starting with YYYY-MM-DD and ending with .csv
+    # This will match YYYY-MM-DD.csv, YYYY-MM-DD-test.csv, etc.
+    file_pattern = f"{graph_date.year}/{graph_date.month:02d}/{graph_date.isoformat()}*.csv"
+    search_path = os.path.join(self._data_path, file_pattern)
+
+    # Find all matching file paths
+    file_paths = glob.glob(search_path)
 
     # Check if data file exists for the requested date
-    if not os.path.exists(file_path):
-      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
+    if not file_paths:
+      raise RuntimeError(f"No data files found for date {graph_date.isoformat()}")
 
+    df_list = []
+
+    with DebugTimerWithLog("CSV reading"):
+      for path in file_paths:
+        try:
+          # Load each daily data file using your custom lock
+          with DeyeFileWithLock(path, "r") as f:
+            self._logger.info(f"Reading csv data from {path}")
+            data_file = pd.read_csv(
+              f,
+              parse_dates = ['timestamp'],
+              on_bad_lines = 'warn',
+            )
+
+            # Dynamically get all column names except 'unit'
+            # Create a list of all columns excluding the optional 'unit' column
+            required_columns = [col for col in data_file.columns if col != "unit"]
+
+            # Drop row if any of these required columns are empty
+            data_file = data_file.dropna(subset = required_columns)
+
+            df_list.append(data_file)
+        except Exception as e:
+          self._logger.error(f"Error processing {path}: {e}")
+          continue
+
+    if not df_list:
+      raise RuntimeError(f"No data files found for date {graph_date.isoformat()}")
+
+    # Concatenate all DataFrames vertically
+    with DebugTimerWithLog("CSV concat"):
+      return pd.concat(df_list, ignore_index = True)
+
+  def get_inverters_by_date(self, graph_date: date) -> DeyeGraphInverters:
     try:
-      # Load daily data
-      with DeyeFileWithLock(file_path, "r") as f:
-        df = pd.read_csv(f)
-
+      df = self._read_data_frame(graph_date)
       result: List[DeyeGraphInverterData] = []
 
       # Get list of physical units (master, slave1, slave2, etc.)
@@ -110,12 +148,15 @@ class DeyeGraphManager:
       # Calculate 'combined' graphs (intersection of ALL physical inverters)
       # This allows side-by-side comparison of shared metrics
       if len(physical_inverters) > 1:
-        # Start with registers of the first physical inverter
-        common_set = physical_params_map[physical_inverters[0]]
+        # Count occurrences of each register across all physical inverters
+        all_registers: List[str] = []
+        for inv in physical_inverters:
+          all_registers.extend(physical_params_map[inv])
 
-        # Intersect with registers of all other physical units
-        for inv in physical_inverters[1:]:
-          common_set = common_set.intersection(physical_params_map[inv])
+        register_counts = Counter(all_registers)
+
+        # Filter registers that appear in 2 or more inverters
+        common_set = {reg for reg, count in register_counts.items() if count >= 2}
 
         # If common registers exist, add a virtual 'combined' inverter entry
         if common_set:
@@ -129,7 +170,7 @@ class DeyeGraphManager:
 
     except Exception as e:
       # Log error details if file is corrupted or column names are missing
-      self._logger.error(f"Error processing {file_name}: {e}")
+      self._logger.error(f"Error processing files for date {graph_date.isoformat()}: {e}")
       raise
 
   def _get_graph_data(self, df: pd.DataFrame) -> List[DeyeGraphGroupData]:
@@ -153,19 +194,18 @@ class DeyeGraphManager:
 
     return group_results
 
-  def _get_color(self, name: str) -> str:
-    # Define fixed colors for specific inverter types
-    color_map = {
-      'master': 'steelblue',
-      'all': 'forestgreen',
-      'slave': 'orange',
-    }
+  def _get_color(self, name: str, colors: Dict[str, str]) -> str:
+    # If the exact inverter name exists in the colors dictionary, extract and remove it
+    if name in colors:
+      return colors.pop(name)
 
-    for inverter, color in color_map.items():
-      if name.startswith(inverter):
-        return color
+    # If not found, get and remove the first item from the dictionary
+    if colors:
+      first_key = next(iter(colors))
+      return colors.pop(first_key)
 
-    return "steelblue"
+    # Fallback color if the list runs out of elements
+    return 'gray'
 
   def _prepare_figure_object(
     self,
@@ -186,6 +226,27 @@ class DeyeGraphManager:
           graph_name = target_name_norm,
           threshold = threshold,
         )
+
+    # Palette of 15 highly distinct colors for 15+ inverters (excluding steelblue and forestgreen)
+    inverter_colors: Dict[str, str] = {
+      "master": "#4682B4", # Steel Blue
+      "slave1": "#F58231", # Orange
+      "slave2": '#228B22', # Forest Green
+      "slave3": "#FFE119", # Yellow
+      "slave4": "#800000", # Maroon
+      "slave5": "#469990", # Teal
+      "slave6": "#BFEF45", # Lime / Bio green
+      "slave7": "#42D4F4", # Cyan / Light Blue
+      "slave8": "#911EB4", # Purple
+      "slave9": "#F032E6", # Magenta
+      "slave10": "#E6194B", # Red (High contrast, perfect for Master)
+      "slave11": "#9A6324", # Brown
+      "slave12": "#4363D8", # Royal Blue (Solid alternative to steelblue)
+      "slave13": "#2F4F4F", # Dark Slate Gray (Excellent contrast on white background)
+      "slave14": "#DCBEFF", # Lavender
+      "slave15": "#FABED4", # Pink
+      "all": "#228B22", # Forest Green
+    }
 
     graph_line_width = 1.5
 
@@ -220,11 +281,20 @@ class DeyeGraphManager:
       if pd.notna(unit_val):
         unit_label = f", {unit_val.replace('deg', '°C')}"
 
+    # Filter data to get precise time limits for the current plot context
+    if inverter == "combined":
+      plot_df = df[(df['inverter'] != 'all') & (df['register'] == actual_graph_name)]
+    else:
+      plot_df = df[(df['inverter'] == inverter) & (df['register'] == actual_graph_name)]
+
+    if plot_df.empty:
+      raise RuntimeError(f"No plot data found for {inverter} and register {actual_graph_name}")
+
     if inverter == "combined":
       # Logic for comparing multiple physical inverters on one plot
       physical_units = [inv for inv in df['inverter'].unique() if inv != 'all']
       for unit in physical_units:
-        unit_data = df[(df['inverter'] == unit) & (df['register'] == actual_graph_name)]
+        unit_data = plot_df[plot_df['inverter'] == unit]
         if not unit_data.empty:
           with DebugTimerWithLog("Plot combined graph"):
             ax.plot(
@@ -232,31 +302,27 @@ class DeyeGraphManager:
               unit_data['value'],
               label = unit,
               linewidth = graph_line_width,
-              color = self._get_color(unit),
+              color = self._get_color(unit, inverter_colors),
               zorder = 5 if unit == 'master' else 3,
             )
 
       ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
     else:
       # Logic for a single inverter
-      plot_data = df[(df['inverter'] == inverter) & (df['register'] == actual_graph_name)]
-      if plot_data.empty:
-        raise RuntimeError(f"plot data for {inverter} is empty")
-
       with DebugTimerWithLog("Plot regular graph"):
         ax.plot(
-          plot_data['timestamp'],
-          plot_data['value'],
+          plot_df['timestamp'],
+          plot_df['value'],
           label = inverter,
-          color = self._get_color(inverter),
+          color = self._get_color(inverter, inverter_colors),
           linewidth = graph_line_width,
         )
 
       ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
 
-    # Configure X-axis time format and grid intervals
-    time_min: datetime = df['timestamp'].min()
-    time_max: datetime = df['timestamp'].max()
+    # Configure X-axis time format and grid intervals based on actual plotted data range
+    time_min: datetime = plot_df['timestamp'].min()
+    time_max: datetime = plot_df['timestamp'].max()
     time_delta = (time_max - time_min).total_seconds()
 
     # Raise error if there is not enough data to form an interval
@@ -379,17 +445,7 @@ class DeyeGraphManager:
     graph_name: str,
     format: str,
   ) -> bytes:
-    # Construct file path from date
-    file_name = f"{graph_date.isoformat()}.csv"
-    file_path = os.path.join(self._data_path, file_name)
-
-    if not os.path.exists(file_path):
-      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
-
-    # Load data and ensure timestamp is parsed
-    with DebugTimerWithLog("CSV reading"):
-      with DeyeFileWithLock(file_path, "r") as f:
-        df = pd.read_csv(f, parse_dates = ['timestamp'])
+    df = self._read_data_frame(graph_date)
 
     # Set font type to 42 (TrueType) to enable text search and embedding
     matplotlib.rcParams['pdf.fonttype'] = 42
@@ -442,23 +498,13 @@ class DeyeGraphManager:
     """
     Generates a single multipage PDF using the internal plotting logic.
     """
+    df = self._read_data_frame(graph_date)
+
+    inverters_data = self.get_inverters_by_date(graph_date)
+
     # Set font type to 42 (TrueType) to enable text search and embedding
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['pdf.compression'] = 9
-
-    # Construct file path from date
-    file_name = f"{graph_date.isoformat()}.csv"
-    file_path = os.path.join(self._data_path, file_name)
-
-    if not os.path.exists(file_path):
-      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
-
-    # Load data and ensure timestamp is parsed
-    with DebugTimerWithLog("CSV reading"):
-      with DeyeFileWithLock(file_path, "r") as f:
-        df = pd.read_csv(f, parse_dates = ['timestamp'])
-
-    inverters_data = self.get_inverters_by_date(graph_date)
 
     metadata = {
       "Title": f"Deye Inverter Graphs for {graph_date}",
@@ -582,20 +628,31 @@ class DeyeGraphManager:
     return df_working.drop(columns = ['temp_norm'])
 
   def get_zipped_csv(self, graph_date: date) -> bytes:
-    # Construct file path from date
-    file_name = f"{graph_date.isoformat()}.csv"
-    file_path = os.path.join(self._data_path, file_name)
+    # Construct a pattern to match all files starting with YYYY-MM-DD and ending with .csv
+    file_pattern = f"{graph_date.year}/{graph_date.month:02d}/{graph_date.isoformat()}*.csv"
+    search_path = os.path.join(self._data_path, file_pattern)
 
-    if not os.path.exists(file_path):
-      raise RuntimeError(f"data file for date {graph_date.isoformat()} not found")
+    # Find all matching file paths
+    file_paths = glob.glob(search_path)
+
+    # Check if any data files exist for the requested date
+    if not file_paths:
+      raise RuntimeError(f"No data files found for date {graph_date.isoformat()}")
 
     # Create an in-memory byte stream
     buffer = io.BytesIO()
 
     # Create the ZIP archive within the buffer
     with zipfile.ZipFile(buffer, "w", compression = zipfile.ZIP_DEFLATED) as zf:
-      # arcname prevents including the full directory structure in the zip
-      zf.write(file_path, arcname = file_name)
+      for path in file_paths:
+        try:
+          # Extract just the filename (e.g., '2026-04-14-test.csv') to prevent
+          # including the full directory structure in the zip
+          file_name = os.path.basename(path)
+          zf.write(path, arcname = file_name)
+        except Exception as e:
+          self._logger.error(f"Error adding {path} to zip: {e}")
+          continue
 
     # Grab the bytes from the buffer
     return buffer.getvalue()
