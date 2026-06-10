@@ -10,7 +10,7 @@ class DataCollectorConfig:
   def __init__(self):
     self.__data_collecting_interval_sec = EnvVar("DATA_COLLECTING_INTERVAL_SEC", "180", "Data collecting interval, sec")
     self.__data_retention_days = EnvVar("DATA_RETENTION_DAYS", "30", "Data retention time, days")
-    self.__connection_lost_notify_after_minutes = EnvVar("CONN_LOST_NOTIFY_AFTER_MINUTES", "30",
+    self.__connection_lost_notify_after_minutes = EnvVar("CONN_LOST_NOTIFY_AFTER_MINUTES", "15",
                                                          "Notify about connection lost after, minutes")
     self.__connection_lost_notify_interval_minutes = EnvVar("CONN_LOST_NOTIFY_INTERVAL_MINUTES", "30",
                                                             "Notify about connection lost interval, minutes")
