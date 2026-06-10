@@ -76,11 +76,10 @@ class DeyeGraphsDataProvider:
     # Update the selected graph name value
     self._selected_graph_name = value
 
-  def is_graph_server_available(self) -> bool:
+  def check_graph_server_available(self) -> None:
     ping_endpoint = urljoin(self._server_url, "/ping")
     with self._session.get(ping_endpoint, timeout = 3) as response:
       response.raise_for_status()
-      return response.status_code == HTTPStatus.OK
 
   def load_graph_dates(self) -> List[date]:
     url = urljoin(self._server_url, "/graphs")
