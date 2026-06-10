@@ -4,7 +4,7 @@ import logging
 import time
 import asyncio
 
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Union
 from datetime import datetime
 from fastapi import HTTPException, Request
 
@@ -25,9 +25,21 @@ class DeyeStorageManager:
     # Global lock to protect access to the locks dictionary
     self._locks_lock = asyncio.Lock()
 
-  def get(self, key: str) -> Optional[Dict[str, Any]]:
+  def get(self, key: str) -> Dict[str, Any]:
     """
-    Returns stored data for the specified key
+    Retrieves the inner data payload for the specified key.
+
+    Extracts and returns only the 'data' subtree from the storage entry,
+    leaving out the top-level metadata headers.
+
+    Args:
+        key: The unique identifier for the storage entry.
+
+    Returns:
+        Dict[str, Any]: The nested dictionary containing the user data payload.
+
+    Raises:
+        HTTPException: If the specified key is not found in the storage (404).
     """
     entry = self._storage.get(key)
     if entry is None:
