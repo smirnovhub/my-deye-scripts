@@ -9,5 +9,6 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
   """
   Data transfer object representing the static configuration for current limit
   """
-  battery_charge_lost_coef: float = 2.0
+  charge_force_coef: float = 2.0
+  days_between_full_charge: int = 15
   dont_regulate_dates: List[date] = field(default_factory = list)
