@@ -223,7 +223,11 @@ class TelebotPageNavigator:
       parse_mode = "HTML",
     )
 
-  def send_message_with_remove_with_delay(self, text: str) -> None:
+  def send_message_with_remove_with_delay(
+    self,
+    text: str,
+    delay = 5,
+  ) -> None:
     if not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
@@ -233,7 +237,7 @@ class TelebotPageNavigator:
       bot = self._bot,
       chat_id = self._chat_id,
       message_id = sent.id,
-      delay = 5,
+      delay = delay,
     )
 
   def _get_page_text(self, page: "TelebotNavigationPage") -> str:
