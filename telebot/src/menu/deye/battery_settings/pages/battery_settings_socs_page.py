@@ -17,7 +17,6 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     super().__init__()
     self._page_type = page_type
     self._batt_data = batt_data
-    self._title = page_type.title
     self._row_length = 4
     self._min_value = 0
     self._max_value = 0
@@ -27,14 +26,15 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     return self._page_type
 
   @property
+  def text(self) -> str:
+    return f"{self._page_type.title}, %:"
+
+  @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
   def update(self) -> None:
-    buttons: List[ButtonNode] = [
-      ButtonNode(f"{self._title}, %:"),
-      BreakButtonNode(),
-    ]
+    buttons: List[ButtonNode] = []
 
     self._min_value, self._max_value = self._batt_data.get_bounds(self._page_type)
 
@@ -60,10 +60,10 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     try:
       soc = int(text)
     except Exception:
-      raise ValueError(f"{self._title} value should be from {self._min_value} to {self._max_value}")
+      raise ValueError(f"{self._page_type.title} value should be from {self._min_value} to {self._max_value}")
 
     if not (self._min_value <= soc <= self._max_value):
-      raise ValueError(f"{self._title} value should be from {self._min_value} to {self._max_value}")
+      raise ValueError(f"{self._page_type.title} value should be from {self._min_value} to {self._max_value}")
 
     self._set_soc_and_go_back(
       navigator = navigator,
@@ -85,7 +85,7 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     soc: int,
   ) -> None:
     if not (self._min_value <= soc <= self._max_value):
-      raise ValueError(f"{self._title} value should be from {self._min_value} to {self._max_value}")
+      raise ValueError(f"{self._page_type.title} value should be from {self._min_value} to {self._max_value}")
 
     self._batt_data.values[self._page_type] = soc
     navigator.navigate(BatterySettingsPage.main)

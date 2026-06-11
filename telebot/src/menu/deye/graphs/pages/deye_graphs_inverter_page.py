@@ -39,6 +39,10 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
     return DeyeGraphsPage.inverter
 
   @property
+  def text(self) -> str:
+    return self._title
+
+  @property
   def need_user_input(self) -> bool:
     return False
 

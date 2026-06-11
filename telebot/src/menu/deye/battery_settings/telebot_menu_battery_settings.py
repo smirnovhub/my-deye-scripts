@@ -78,6 +78,5 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
 
     navigator.start(
       page = main_page,
-      text = title,
       chat_id = message.chat.id,
     )

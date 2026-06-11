@@ -31,6 +31,10 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
     return TimeOfUsePage.enable
 
   @property
+  def text(self) -> str:
+    return "Time of Use is disabled"
+
+  @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
@@ -62,7 +66,7 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
     except Exception as e:
       navigator.stop(str(e))
     else:
-      navigator.navigate(TimeOfUsePage.main, "Time of Use schedule:")
+      navigator.navigate(TimeOfUsePage.main)
 
   def _handle_no(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop("Time of Use is disabled")

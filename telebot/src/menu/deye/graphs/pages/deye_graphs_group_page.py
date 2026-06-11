@@ -24,6 +24,10 @@ class DeyeGraphsGroupPage(TelebotNavigationPage):
     return DeyeGraphsPage.group
 
   @property
+  def text(self) -> str:
+    return self._title
+
+  @property
   def need_user_input(self) -> bool:
     return False
 

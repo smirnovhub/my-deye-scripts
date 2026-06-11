@@ -35,6 +35,10 @@ class UserChoicePage(TelebotNavigationPage):
     return UserChoicePageType.main
 
   @property
+  def text(self) -> str:
+    return self._text
+
+  @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 

@@ -34,6 +34,10 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     return TimeOfUsePage.socs
 
   @property
+  def text(self) -> str:
+    return "Battery SOC, %:"
+
+  @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
@@ -46,10 +50,7 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     self._time_of_use_line_index = index
 
   def update(self) -> None:
-    buttons: List[ButtonNode] = [
-      ButtonNode("Battery SOC, %:"),
-      BreakButtonNode(),
-    ]
+    buttons: List[ButtonNode] = []
 
     for index, value in enumerate(self._values):
       if index > 0 and (index % self._row_length) == 0:

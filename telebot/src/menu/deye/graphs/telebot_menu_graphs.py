@@ -69,6 +69,5 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerSync):
 
     navigator.start(
       page = main_page,
-      text = title,
       chat_id = message.chat.id,
     )
