@@ -25,7 +25,7 @@ class DeyeGraphsGroupPage(TelebotNavigationPage):
 
   @property
   def text(self) -> str:
-    return self._title
+    return "Select group:"
 
   @property
   def need_user_input(self) -> bool:
@@ -36,11 +36,7 @@ class DeyeGraphsGroupPage(TelebotNavigationPage):
     return self._buttons
 
   def update(self) -> None:
-    buttons: List[ButtonNode] = [
-      ButtonNode("Select group:"),
-      BreakButtonNode(),
-    ]
-
+    buttons: List[ButtonNode] = []
     groups: List[DeyeGraphGroupData] = []
 
     for inverter in self._provider.inverters:

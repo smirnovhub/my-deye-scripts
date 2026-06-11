@@ -40,7 +40,7 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
 
   @property
   def text(self) -> str:
-    return self._title
+    return "Select inverter:"
 
   @property
   def need_user_input(self) -> bool:
@@ -51,10 +51,7 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
     return self._buttons
 
   def update(self) -> None:
-    buttons: List[ButtonNode] = [
-      ButtonNode("Select inverter:"),
-      BreakButtonNode(),
-    ]
+    buttons: List[ButtonNode] = []
 
     allowed_inverters = [inv for inv in self._provider.inverters if self._is_inverter_allowed(inv.inverter)]
 

@@ -25,7 +25,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
 
   @property
   def text(self) -> str:
-    return self._title
+    return "Select graph date:"
 
   @property
   def need_user_input(self) -> bool:
@@ -36,10 +36,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
     return self._buttons
 
   def update(self) -> None:
-    buttons: List[ButtonNode] = [
-      ButtonNode("Select graph date:"),
-      BreakButtonNode(),
-    ]
+    buttons: List[ButtonNode] = []
 
     today_buttons: List[ButtonNode] = []
     today = date.today()
