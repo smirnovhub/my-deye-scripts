@@ -11,4 +11,5 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
   """
   charge_force_coef: float = 2.0
   days_between_full_charge: int = 15
+  stop_charge_current: int = 0
   dont_regulate_dates: List[date] = field(default_factory = list)

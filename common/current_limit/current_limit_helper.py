@@ -6,14 +6,14 @@ from current_limit_config_dto import CurrentLimitConfigDto
 from current_limit_settings_dto import CurrentLimitSettingsDto
 from http_session_singleton_async import HttpSessionSingletonAsync
 
-class TelebotMenuCurrentLimitHelper:
+class CurrentLimitHelper:
   CURRENT_LIMIT_CONFIG_URL = '/storage/current-limit-config'
   CURRENT_LIMIT_SETTINGS_URL = '/storage/current-limit-settings'
 
   @staticmethod
   async def load_config() -> CurrentLimitConfigDto:
     server_url = EnvUtils.get_remote_cache_server_url()
-    url = urljoin(server_url, TelebotMenuCurrentLimitHelper.CURRENT_LIMIT_CONFIG_URL)
+    url = urljoin(server_url, CurrentLimitHelper.CURRENT_LIMIT_CONFIG_URL)
     session = await HttpSessionSingletonAsync.get_session()
 
     async with session.get(url) as response:
@@ -32,7 +32,7 @@ class TelebotMenuCurrentLimitHelper:
     config.dont_regulate_dates = [d for d in config.dont_regulate_dates if d >= today]
 
     server_url = EnvUtils.get_remote_cache_server_url()
-    url = urljoin(server_url, TelebotMenuCurrentLimitHelper.CURRENT_LIMIT_CONFIG_URL)
+    url = urljoin(server_url, CurrentLimitHelper.CURRENT_LIMIT_CONFIG_URL)
     session = await HttpSessionSingletonAsync.get_session()
 
     async with session.post(url, json = config.to_dict()) as response:
@@ -41,7 +41,7 @@ class TelebotMenuCurrentLimitHelper:
   @staticmethod
   async def load_settings() -> CurrentLimitSettingsDto:
     server_url = EnvUtils.get_remote_cache_server_url()
-    url = urljoin(server_url, TelebotMenuCurrentLimitHelper.CURRENT_LIMIT_SETTINGS_URL)
+    url = urljoin(server_url, CurrentLimitHelper.CURRENT_LIMIT_SETTINGS_URL)
     session = await HttpSessionSingletonAsync.get_session()
 
     async with session.get(url) as response:
@@ -52,7 +52,7 @@ class TelebotMenuCurrentLimitHelper:
   @staticmethod
   async def save_settings(settings: CurrentLimitSettingsDto) -> None:
     server_url = EnvUtils.get_remote_cache_server_url()
-    url = urljoin(server_url, TelebotMenuCurrentLimitHelper.CURRENT_LIMIT_SETTINGS_URL)
+    url = urljoin(server_url, CurrentLimitHelper.CURRENT_LIMIT_SETTINGS_URL)
     session = await HttpSessionSingletonAsync.get_session()
 
     async with session.post(url, json = settings.to_dict()) as response:
