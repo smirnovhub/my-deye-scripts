@@ -4,7 +4,7 @@ import telebot
 
 from typing import Any, Callable, List, Optional, Set
 
-from deye_utils import DeyeUtils
+from deye_test_helper import DeyeTestHelper
 from deye_loggers import DeyeLoggers
 from telebot_user import TelebotUser
 from deye_register import DeyeRegister
@@ -19,7 +19,7 @@ class TelebotBaseTestModule:
     self.log = logging.getLogger()
     self.loggers = DeyeLoggers()
     self.retry_delay_sec = 0.01
-    self.retry_timeout = DeyeUtils.get_test_retry_timeout()
+    self.retry_timeout = DeyeTestHelper.get_test_retry_timeout()
 
   @property
   def description(self) -> str:

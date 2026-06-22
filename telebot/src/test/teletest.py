@@ -5,7 +5,6 @@ import logging
 from typing import List
 
 from deye_loggers import DeyeLoggers
-from deye_utils import DeyeUtils
 from debug_timer import DebugTimerWithLog
 from all_settings_registers import AllSettingsRegisters
 from master_settings_registers import MasterSettingsRegisters
@@ -57,7 +56,7 @@ class TeleTest:
           port = logger.port,
         ))
 
-    await DeyeUtils.wait_for_solarman_servers_ready(self.loggers.loggers)
+    await DeyeTestHelper.wait_for_solarman_servers_ready(self.loggers.loggers)
 
     log = logging.getLogger()
     modules = self._get_test_modules(self.bot)
