@@ -51,7 +51,7 @@ class TelegramAsync:
       async with session.post(url, data = payload) as response:
         if response.status != HTTPStatus.OK:
           response_text = await response.text()
-          logger.info(f"Failed to send {message_type} telegram message: {response_text}")
+          logger.error(f"Failed to send {message_type} telegram message: {response_text}")
     except Exception as e:
       # Caught a specific exception or generic error to prevent crash
-      logger.info(f'Failed to send {message_type} telegram message to {chat_id}: {str(e)}')
+      logger.error(f'Failed to send {message_type} telegram message to {chat_id}: {str(e)}')
