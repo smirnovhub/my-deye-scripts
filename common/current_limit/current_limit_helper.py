@@ -63,5 +63,5 @@ class CurrentLimitHelper:
     server_url = EnvUtils.get_remote_cache_server_url()
     url = urljoin(server_url, "/ping")
     session = await HttpSessionSingletonAsync.get_session()
-    async with session.get(url, timeout = 3) as response:
+    async with session.get(url) as response:
       response.raise_for_status()
