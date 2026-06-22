@@ -10,3 +10,4 @@ class CurrentLimitSettingsDto(DataClassJSONMixin):
   """
   last_max_charge_current: int = 0
   last_full_charge_date: date = date.min
+  last_full_charge_notification_date: date = date.min
