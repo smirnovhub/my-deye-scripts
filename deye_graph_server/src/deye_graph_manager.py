@@ -454,7 +454,40 @@ class DeyeGraphManager:
         # Matplotlib usually handles it, but we can pad the Y-axis slightly
         ax.set_ylim(y_min_val - (y_range * 0.02), y_max_val + (y_range * 0.02))
     else:
-      ax.set_ymargin(0.02)
+      # Explicitly force the category order on the Matplotlib axis from bottom to top
+      preferred_order = ["Off-Grid", "On-Grid"]
+
+      # Get all unique string values actually present in the plotted lines
+      actual_values = set()
+      for line in ax.get_lines():
+        actual_values.update(str(val).strip() for val in line.get_ydata()) # type: ignore
+
+      # Filter preferred order to keep only existing data points
+      final_categories = [cat for cat in preferred_order if cat in actual_values]
+
+      # Add any unexpected categories if they appear in the data
+      for val in actual_values:
+        if val not in final_categories:
+          final_categories.append(val)
+
+      if final_categories:
+        # Create a strict mapping based on our sorted final_categories list
+        mapping_dict = {category: idx for idx, category in enumerate(final_categories)}
+
+        # Remap the actual Y-data points within the plotted lines to match new positions
+        for line in ax.get_lines():
+          current_y = line.get_ydata()
+          new_y = [mapping_dict.get(str(val).strip(), 0) for val in current_y] # type: ignore
+          line.set_ydata(new_y)
+
+        # Apply discrete ticks and text labels matching the sorted order
+        ax.set_yticks(range(len(final_categories)))
+        ax.set_yticklabels(final_categories)
+
+        # Safe margins around discrete states so lines don't clip into borders
+        ax.set_ymargin(0.02)
+      else:
+        ax.set_ymargin(0.2)
 
     # Layout adjustment to prevent clipping
     fig.tight_layout(pad = 1.5)
