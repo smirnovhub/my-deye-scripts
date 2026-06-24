@@ -32,6 +32,10 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     return TimeOfUsePage.powers
 
   @property
+  def text(self) -> str:
+    return "Battery power, W:"
+
+  @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
@@ -44,10 +48,7 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     self._time_of_use_line_index = index
 
   def update(self) -> None:
-    buttons: List[ButtonNode] = [
-      ButtonNode("Battery power, W:"),
-      BreakButtonNode(),
-    ]
+    buttons: List[ButtonNode] = []
 
     for row_index, row in enumerate(self._values):
       if row_index > 0:

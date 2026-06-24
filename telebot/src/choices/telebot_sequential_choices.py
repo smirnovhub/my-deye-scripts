@@ -32,4 +32,8 @@ class SequentialChoices:
     )
 
     navigator.register_page(page)
-    return navigator.start(page, text, chat_id)
+
+    return navigator.start(
+      page = page,
+      chat_id = chat_id,
+    )

@@ -95,7 +95,6 @@ class TelebotPageNavigator:
   def start(
     self,
     page: "TelebotNavigationPage",
-    text: str,
     chat_id: int,
   ) -> telebot.types.Message:
     """
@@ -112,7 +111,6 @@ class TelebotPageNavigator:
     self._main_page = page
     self._current_page = page
     self._chat_id = chat_id
-    self._text = text
 
     try:
       page.clear_button_handlers()
@@ -130,7 +128,7 @@ class TelebotPageNavigator:
 
     self._message = self._bot.send_message(
       chat_id = self._chat_id,
-      text = text,
+      text = self._get_page_text(page),
       reply_markup = keyboard,
       parse_mode = "HTML",
     )
@@ -148,7 +146,6 @@ class TelebotPageNavigator:
   def navigate(
     self,
     page_type: Enum,
-    text: str = '',
     **kwargs,
   ) -> None:
     """
@@ -156,7 +153,6 @@ class TelebotPageNavigator:
 
     Args:
         page_type (Enum): The type of the target page.
-        text (str): Optional new text for the message.
         **kwargs: Data to pass to the target page's prepare method.
 
     Raises:
@@ -176,20 +172,14 @@ class TelebotPageNavigator:
       page.update()
 
       self._current_page = page
-      self.update(text)
+      self.update()
     except Exception as e:
       self._logger.error(traceback.format_exc())
       self.send_message_with_remove_with_delay(str(e))
 
-  def update(
-    self,
-    text: str = '',
-  ) -> None:
+  def update(self) -> None:
     """
     Refreshes the current page's content or buttons in the Telegram message.
-
-    Args:
-        text (str): Optional new text to edit the message.
     """
     if not self._message or not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
@@ -212,21 +202,13 @@ class TelebotPageNavigator:
     self._markup = keyboard
 
     try:
-      if text:
-        self._text = text
-        self._bot.edit_message_text(
-          text,
-          chat_id = self._chat_id,
-          message_id = self._message.message_id,
-          reply_markup = keyboard,
-          parse_mode = 'HTML',
-        )
-      else:
-        self._bot.edit_message_reply_markup(
-          chat_id = self._chat_id,
-          message_id = self._message.message_id,
-          reply_markup = keyboard,
-        )
+      self._bot.edit_message_text(
+        text = self._get_page_text(self._current_page),
+        chat_id = self._chat_id,
+        message_id = self._message.message_id,
+        reply_markup = keyboard,
+        parse_mode = 'HTML',
+      )
     except Exception:
       # Ignore "Message is not modified" errors
       pass
@@ -241,7 +223,11 @@ class TelebotPageNavigator:
       parse_mode = "HTML",
     )
 
-  def send_message_with_remove_with_delay(self, text: str) -> None:
+  def send_message_with_remove_with_delay(
+    self,
+    text: str,
+    delay = 5,
+  ) -> None:
     if not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
@@ -251,16 +237,21 @@ class TelebotPageNavigator:
       bot = self._bot,
       chat_id = self._chat_id,
       message_id = sent.id,
-      delay = 5,
+      delay = delay,
     )
 
+  def _get_page_text(self, page: "TelebotNavigationPage") -> str:
+    return page.text if page.text else "Untitled"
+
   def _resend(self, text: str) -> telebot.types.Message:
-    if not self._message or not self._chat_id or not self._text:
+    if not self._message or not self._chat_id or not self._current_page:
       raise RuntimeError("Navigation has not started yet")
+
+    page_text = self._get_page_text(self._current_page)
 
     try:
       self._bot.edit_message_text(
-        f"{self._text} {text}",
+        text = f"{page_text} {text}",
         chat_id = self._chat_id,
         message_id = self._message.message_id,
         parse_mode = 'HTML',
@@ -270,7 +261,7 @@ class TelebotPageNavigator:
 
     self._message = self._bot.send_message(
       chat_id = self._chat_id,
-      text = self._text,
+      text = page_text,
       reply_markup = self._markup,
       parse_mode = "HTML",
     )

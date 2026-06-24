@@ -30,8 +30,14 @@ class TimeOfUseScheduleButtons:
         ButtonNode("Gen"),
         self._toggle_all_gen,
       ),
-      ButtonNode("Start"),
-      ButtonNode("End"),
+      page.register_button_handler(
+        ButtonNode("Start"),
+        self._handle_nothing,
+      ),
+      page.register_button_handler(
+        ButtonNode("End"),
+        self._handle_nothing,
+      ),
       page.register_button_handler(
         ButtonNode("Pwr"),
         self._create_navigation_handler(TimeOfUsePage.powers),
@@ -130,3 +136,9 @@ class TimeOfUseScheduleButtons:
       navigator.navigate(target_page, time_of_use_line_index = line_index)
 
     return handler
+
+  def _handle_nothing(self, navigator: TelebotPageNavigator) -> None:
+    navigator.send_message_with_remove_with_delay(
+      text = "This button does nothing",
+      delay = 1,
+    )

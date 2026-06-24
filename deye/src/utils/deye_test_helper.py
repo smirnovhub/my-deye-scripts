@@ -1,3 +1,4 @@
+import asyncio
 import random
 import logging
 
@@ -5,6 +6,7 @@ from typing import Any, List, Optional
 from datetime import datetime, timedelta
 
 from deye_utils import DeyeUtils
+from deye_logger import DeyeLogger
 from deye_register import DeyeRegister
 from int_deye_register import IntDeyeRegister
 from signed_int_deye_register import SignedIntDeyeRegister
@@ -328,3 +330,56 @@ class DeyeTestHelper:
       if rnd.register.name == register.name:
         return rnd
     return None
+
+  @staticmethod
+  def get_test_retry_timeout() -> int:
+    from deye_loggers import DeyeLoggers
+    loggers = DeyeLoggers()
+    return 5 + loggers.count * 2
+
+  @staticmethod
+  async def wait_for_solarman_servers_ready(
+    loggers: List[DeyeLogger],
+    timeout: float = 5,
+  ) -> bool:
+    """
+    Wait until all solarman server ports for all loggers are open.
+    """
+    logger_tools = logging.getLogger()
+    logger_tools.info(f"Waiting for {len(loggers)} solarman server(s) to be ready...")
+
+    async def check_single_logger(deye_logger: DeyeLogger) -> bool:
+      """
+      Internal helper to check one specific logger with a timeout.
+      """
+      loop = asyncio.get_running_loop()
+      start_time = loop.time()
+      while loop.time() - start_time < timeout:
+        try:
+          # Try to open a connection to the specific logger's address and port
+          reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(
+              deye_logger.address,
+              deye_logger.port,
+            ),
+            timeout = 0.5,
+          )
+          writer.close()
+          await writer.wait_closed()
+          return True
+        except (ConnectionRefusedError, OSError, asyncio.TimeoutError):
+          await asyncio.sleep(0.2)
+
+      logger_tools.error(
+        f"Logger '{deye_logger.name}' ({deye_logger.address}:{deye_logger.port}) did not become ready.")
+      return False
+
+    # Run all checks concurrently
+    results = await asyncio.gather(*(check_single_logger(l) for l in loggers))
+
+    # Return True only if ALL loggers are ready
+    if all(results):
+      logger_tools.info("All solarman servers are ready!")
+      return True
+
+    return False

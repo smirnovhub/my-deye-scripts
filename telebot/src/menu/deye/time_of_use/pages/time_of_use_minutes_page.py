@@ -27,6 +27,10 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     return self._page_type
 
   @property
+  def text(self) -> str:
+    return self._title
+
+  @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
@@ -39,11 +43,7 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     self._time_of_use_line_index = index
 
   def update(self) -> None:
-    buttons: List[ButtonNode] = [
-      ButtonNode(self._title),
-      BreakButtonNode(),
-    ]
-
+    buttons: List[ButtonNode] = []
     minutes = list(range(0, 60, 5))
 
     for i, minute in enumerate(minutes):

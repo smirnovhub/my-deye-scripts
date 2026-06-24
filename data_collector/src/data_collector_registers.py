@@ -22,6 +22,7 @@ class DataCollectorRegisters(DeyeRegisters):
       self.grid_internal_ct_power_register,
       self.grid_power_register,
       self.grid_state_code_register,
+      self.grid_state_register,
       self.grid_voltage_register,
       self.inverter_ac_temperature_register,
       self.inverter_dc_temperature_register,

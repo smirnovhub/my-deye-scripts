@@ -34,6 +34,7 @@ class GridStateDeyeRegister(IntDeyeRegister):
       value = self.read_internal(interactor)
       if value != DeyeGridState.on_grid:
         self._value = DeyeGridState.off_grid
+        break
 
   def read_internal(self, interactor: DeyeModbusInteractor) -> Any:
     value = super().read_internal(interactor)

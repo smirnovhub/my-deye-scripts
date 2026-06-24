@@ -109,12 +109,10 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
     if tou_data.week.enabled:
       navigator.start(
         page = main_page,
-        text = "Time of Use schedule:",
         chat_id = message.chat.id,
       )
     else:
       navigator.start(
         page = enable_page,
-        text = "Time of Use is disabled",
         chat_id = message.chat.id,
       )

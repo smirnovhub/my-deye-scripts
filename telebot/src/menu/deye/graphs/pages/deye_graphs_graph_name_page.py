@@ -26,6 +26,10 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
     return DeyeGraphsPage.graph_name
 
   @property
+  def text(self) -> str:
+    return "Select graph:"
+
+  @property
   def need_user_input(self) -> bool:
     return False
 
@@ -34,11 +38,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
     return self._buttons
 
   def update(self) -> None:
-    buttons: List[ButtonNode] = [
-      ButtonNode("Select graph:"),
-      BreakButtonNode(),
-    ]
-
+    buttons: List[ButtonNode] = []
     graphs: List[DeyeGraphData] = []
     groups: List[DeyeGraphGroupData] = []
 

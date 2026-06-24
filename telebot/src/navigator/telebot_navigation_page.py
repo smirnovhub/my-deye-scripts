@@ -50,6 +50,11 @@ class TelebotNavigationPage(ABC):
     pass
 
   @property
+  @abstractmethod
+  def text(self) -> str:
+    pass
+
+  @property
   def need_user_input(self) -> bool:
     return True
 

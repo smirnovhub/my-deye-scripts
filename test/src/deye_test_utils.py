@@ -14,8 +14,8 @@ from typing import AsyncGenerator, AsyncIterator, List
 
 from pathlib import Path
 from env_utils import EnvUtils
-from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
+from deye_test_helper import DeyeTestHelper
 from solarman_test_server import SolarmanTestServer
 from contextlib import asynccontextmanager, contextmanager, redirect_stdout
 
@@ -191,7 +191,7 @@ class DeyeTestUtils:
       port = logger.port,
     )
 
-    if not await DeyeUtils.wait_for_solarman_servers_ready([logger]):
+    if not await DeyeTestHelper.wait_for_solarman_servers_ready([logger]):
       raise RuntimeError("Can't start solarman test server")
 
     return server
@@ -210,7 +210,7 @@ class DeyeTestUtils:
 
       servers.append(server)
 
-    if not await DeyeUtils.wait_for_solarman_servers_ready(loggers):
+    if not await DeyeTestHelper.wait_for_solarman_servers_ready(loggers):
       raise RuntimeError("Can't start solarman test servers")
 
     return servers

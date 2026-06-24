@@ -34,6 +34,10 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     return TimeOfUsePage.main
 
   @property
+  def text(self) -> str:
+    return "Time of Use schedule:"
+
+  @property
   def need_user_input(self) -> bool:
     return False
 

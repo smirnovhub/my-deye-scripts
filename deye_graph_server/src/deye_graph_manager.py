@@ -18,7 +18,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 from datetime import date, datetime
 from collections import Counter
 
@@ -217,16 +217,6 @@ class DeyeGraphManager:
     # Normalize the input graph_name for comparison (lowercase and no underscores)
     target_name_norm = graph_name.lower().replace("_", " ").strip()
 
-    threshold = self._thresholds.get(target_name_norm)
-
-    if threshold is not None:
-      with DebugTimerWithLog("Trimming data"):
-        df = self._trim_by_register(
-          df = df,
-          graph_name = target_name_norm,
-          threshold = threshold,
-        )
-
     # Palette of 15 highly distinct colors for 15+ inverters (excluding steelblue and forestgreen)
     inverter_colors: Dict[str, str] = {
       "master": "#4682B4", # Steel Blue
@@ -281,6 +271,8 @@ class DeyeGraphManager:
       if pd.notna(unit_val):
         unit_label = f", {unit_val.replace('deg', '°C')}"
 
+    plot_df: pd.DataFrame
+
     # Filter data to get precise time limits for the current plot context
     if inverter == "combined":
       plot_df = df[(df['inverter'] != 'all') & (df['register'] == actual_graph_name)]
@@ -289,6 +281,31 @@ class DeyeGraphManager:
 
     if plot_df.empty:
       raise RuntimeError(f"No plot data found for {inverter} and register {actual_graph_name}")
+
+    # Dynamic type handling depending on whether the register is numeric or textual
+    is_numeric_graph = False
+
+    plot_df = plot_df.copy()
+    # Test if values can be converted to numbers
+    tested_numeric = pd.to_numeric(plot_df['value'], errors = 'coerce')
+
+    # If we successfully parsed numbers, apply numeric conversion to plot_df
+    if not tested_numeric.dropna().empty:
+      plot_df['value'] = tested_numeric
+      plot_df = plot_df.dropna(subset = ['value'])
+      is_numeric_graph = True
+
+    if plot_df.empty:
+      raise RuntimeError(f"No plot data found for {inverter} and register {actual_graph_name}")
+
+    threshold = self._thresholds.get(target_name_norm)
+
+    if threshold is not None and is_numeric_graph:
+      with DebugTimerWithLog("Trimming data"):
+        plot_df = self._trim_by_register(
+          df = plot_df,
+          threshold = threshold,
+        )
 
     if inverter == "combined":
       # Logic for comparing multiple physical inverters on one plot
@@ -407,32 +424,70 @@ class DeyeGraphManager:
       label.set_transform(label.get_transform() + offset)
 
     # --- Y-axis limits logic ---
-    # Get all y-values to find absolute min and max for the current plot
-    all_y_values = [] # type: ignore
-    for line in ax.get_lines():
-      all_y_values.extend(line.get_ydata()) # type: ignore
+    if is_numeric_graph:
+      # Get all y-values to find absolute min and max for the current plot
+      all_y_values = [] # type: ignore
+      for line in ax.get_lines():
+        all_y_values.extend(line.get_ydata()) # type: ignore
 
-    if all_y_values:
-      y_min_val = min(all_y_values)
-      y_max_val = max(all_y_values)
+      if all_y_values:
+        y_min_val = min(all_y_values)
+        y_max_val = max(all_y_values)
 
-      # Get default ticks that Matplotlib calculated
-      std_y_ticks = ax.get_yticks()
+        # Get default ticks that Matplotlib calculated
+        std_y_ticks = ax.get_yticks()
 
-      # Set threshold for Y-axis (e.g., 5% of range) to avoid overlapping
-      y_range = y_max_val - y_min_val if y_max_val != y_min_val else 1
-      y_threshold = y_range * 0.05
+        # Set threshold for Y-axis (e.g., 5% of range) to avoid overlapping
+        y_range = y_max_val - y_min_val if y_max_val != y_min_val else 1
+        y_threshold = y_range * 0.05
 
-      # Filter out standard ticks too close to our boundaries
-      final_y_ticks = [t for t in std_y_ticks if abs(t - y_min_val) > y_threshold and abs(t - y_max_val) > y_threshold]
+        # Filter out standard ticks too close to our boundaries
+        final_y_ticks = [
+          t for t in std_y_ticks if abs(t - y_min_val) > y_threshold and abs(t - y_max_val) > y_threshold
+        ]
 
-      final_y_ticks.extend([y_min_val, y_max_val])
-      ax.set_yticks(sorted(final_y_ticks))
+        final_y_ticks.extend([y_min_val, y_max_val])
+        ax.set_yticks(sorted(final_y_ticks))
 
-      # --- Prevention of Y-min and X-min collision ---
-      # If the lowest Y-label is too close to the X-axis,
-      # Matplotlib usually handles it, but we can pad the Y-axis slightly
-      ax.set_ylim(y_min_val - (y_range * 0.02), y_max_val + (y_range * 0.02))
+        # --- Prevention of Y-min and X-min collision ---
+        # If the lowest Y-label is too close to the X-axis,
+        # Matplotlib usually handles it, but we can pad the Y-axis slightly
+        ax.set_ylim(y_min_val - (y_range * 0.02), y_max_val + (y_range * 0.02))
+    else:
+      # Explicitly force the category order on the Matplotlib axis from bottom to top
+      preferred_order = ["Off-Grid", "On-Grid"]
+
+      # Get all unique string values actually present in the plotted lines
+      actual_values: Set[str] = set()
+      for line in ax.get_lines():
+        actual_values.update(str(val).strip() for val in line.get_ydata()) # type: ignore
+
+      # Filter preferred order to keep only existing data points
+      final_categories = [cat for cat in preferred_order if cat in actual_values]
+
+      # Add any unexpected categories if they appear in the data
+      for val in actual_values:
+        if val not in final_categories:
+          final_categories.append(val)
+
+      if final_categories:
+        # Create a strict mapping based on our sorted final_categories list
+        mapping_dict = {category: idx for idx, category in enumerate(final_categories)}
+
+        # Remap the actual Y-data points within the plotted lines to match new positions
+        for line in ax.get_lines():
+          current_y = line.get_ydata()
+          new_y = [mapping_dict.get(str(val).strip(), 0) for val in current_y] # type: ignore
+          line.set_ydata(new_y)
+
+        # Apply discrete ticks and text labels matching the sorted order
+        ax.set_yticks(range(len(final_categories)))
+        ax.set_yticklabels(final_categories)
+
+        # Safe margins around discrete states so lines don't clip into borders
+        ax.set_ymargin(0.02)
+      else:
+        ax.set_ymargin(0.2)
 
     # Layout adjustment to prevent clipping
     fig.tight_layout(pad = 1.5)
@@ -562,70 +617,65 @@ class DeyeGraphManager:
   def _trim_by_register(
     self,
     df: pd.DataFrame,
-    graph_name: str,
     threshold: float,
   ) -> pd.DataFrame:
-    df_working: pd.DataFrame = df.copy()
-    df_working['temp_norm'] = df_working['register'].str.lower().str.replace("_", " ").str.strip()
+    # Check if any values cross the configured threshold
+    condition = df['value'] >= threshold
+    if not condition.any():
+      return df
 
-    target_rows = df_working[df_working['temp_norm'] == graph_name]
+    # Physical limits of data in the current dataframe slice
+    file_min_t = df['timestamp'].min()
+    file_max_t = df['timestamp'].max()
 
-    if not target_rows.empty:
-      condition = target_rows['value'] >= threshold
-      if condition.any():
-        # Physical limits of data in file
-        file_min_t = df_working['timestamp'].min()
-        file_max_t = df_working['timestamp'].max()
+    # Actual activity bounds
+    t_start = df.loc[condition.idxmax(), 'timestamp']
+    t_end = df.loc[condition[::-1].idxmax(), 'timestamp']
 
-        # Actual activity bounds
-        t_start = target_rows.loc[condition.idxmax(), 'timestamp']
-        t_end = target_rows.loc[condition[::-1].idxmax(), 'timestamp']
+    # Define available rounding intervals in minutes
+    trim_intervals = [15, 30, 60]
 
-        # Define available rounding intervals in minutes
-        trim_intervals = [60, 30, 15, 5]
+    # --- LEFT BOUNDARY (Floor to nearest interval) ---
+    for mins in trim_intervals:
+      # Calculate total minutes from the start of the day
+      total_mins = t_start.hour * 60 + t_start.minute
+      # Find the nearest boundary to the left (multiple of mins)
+      rounded_mins = (total_mins // mins) * mins
+      potential_t = t_start.replace(
+        hour = rounded_mins // 60,
+        minute = rounded_mins % 60,
+        second = 0,
+        microsecond = 0,
+      )
 
-        # --- LEFT BOUNDARY (Floor to nearest interval) ---
-        for mins in trim_intervals:
-          # Calculate total minutes from the start of the day
-          total_mins = t_start.hour * 60 + t_start.minute
-          # Find the nearest boundary to the left (multiple of mins)
-          rounded_mins = (total_mins // mins) * mins
-          potential_t = t_start.replace(
-            hour = rounded_mins // 60,
-            minute = rounded_mins % 60,
-            second = 0,
-            microsecond = 0,
-          )
+      if potential_t >= file_min_t:
+        t_start = potential_t
+        break
 
-          if potential_t >= file_min_t:
-            t_start = potential_t
-            break
+    # --- RIGHT BOUNDARY (Ceil to nearest interval) ---
+    for mins in trim_intervals:
+      total_mins = t_end.hour * 60 + t_end.minute
+      # Find the nearest boundary to the right (multiple of mins)
+      rounded_mins = ((total_mins // mins) + 1) * mins
 
-        # --- RIGHT BOUNDARY (Ceil to nearest interval) ---
-        for mins in trim_intervals:
-          total_mins = t_end.hour * 60 + t_end.minute
-          # Find the nearest boundary to the right (multiple of mins)
-          rounded_mins = ((total_mins // mins) + 1) * mins
+      # Handle midnight transition (if 1440 mins)
+      if rounded_mins >= 1440:
+        potential_t = file_max_t
+      else:
+        potential_t = t_end.replace(
+          hour = rounded_mins // 60,
+          minute = rounded_mins % 60,
+          second = 0,
+          microsecond = 0,
+        )
 
-          # Handle midnight transition (if 1440 mins)
-          if rounded_mins >= 1440:
-            potential_t = file_max_t
-          else:
-            potential_t = t_end.replace(
-              hour = rounded_mins // 60,
-              minute = rounded_mins % 60,
-              second = 0,
-              microsecond = 0,
-            )
+      if potential_t <= file_max_t:
+        t_end = potential_t
+        break
 
-          if potential_t <= file_max_t:
-            t_end = potential_t
-            break
-
-        # Slice the entire dataframe
-        df_working = df_working[(df_working['timestamp'] >= t_start) & (df_working['timestamp'] <= t_end)]
-
-    return df_working.drop(columns = ['temp_norm'])
+    # Slice the cleaned data using clean timestamps
+    result_df = df[(df['timestamp'] >= t_start) & (df['timestamp'] <= t_end)] # type: ignore
+    return pd.DataFrame(result_df)
 
   def get_zipped_csv(self, graph_date: date) -> bytes:
     # Construct a pattern to match all files starting with YYYY-MM-DD and ending with .csv
