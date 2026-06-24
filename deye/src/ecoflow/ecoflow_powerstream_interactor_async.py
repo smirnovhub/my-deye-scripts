@@ -50,7 +50,7 @@ class EcoflowPowerStreamInteractorAsync:
     self._logger = logging.getLogger()
     self._logger.setLevel(logging.INFO)
 
-  def get_device_status(self, device: EcoflowDevice, payload: Dict[str, Any]) -> EcoflowDeviceStatus:
+  def _get_device_status(self, device: EcoflowDevice, payload: Dict[str, Any]) -> EcoflowDeviceStatus:
     """
     Get the online status of a specific device from API payload.
 
@@ -108,7 +108,7 @@ class EcoflowPowerStreamInteractorAsync:
     online_devices = []
 
     for device in devices.devices:
-      device_status = self.get_device_status(device, js)
+      device_status = self._get_device_status(device, js)
       if device_status == EcoflowDeviceStatus.online:
         if self._verbose:
           self._logger.info(f'{self._name}: device {device.name} status is {device_status.name}')
