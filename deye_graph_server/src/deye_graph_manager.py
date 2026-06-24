@@ -18,7 +18,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 from datetime import date, datetime
 from collections import Counter
 
@@ -458,7 +458,7 @@ class DeyeGraphManager:
       preferred_order = ["Off-Grid", "On-Grid"]
 
       # Get all unique string values actually present in the plotted lines
-      actual_values = set()
+      actual_values: Set[str] = set()
       for line in ax.get_lines():
         actual_values.update(str(val).strip() for val in line.get_ydata()) # type: ignore
 
