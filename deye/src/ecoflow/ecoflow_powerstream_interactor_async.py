@@ -249,6 +249,7 @@ class EcoflowPowerStreamInteractorAsync:
     Returns:
         aiohttp.ClientResponse: Response object returned by the requests library.
     """
+    self._logger.info(f'{self._name}: SEND PUT REQUEST')
     session = await HttpSessionSingletonAsync.get_session()
     headers = EcoflowUtils.get_headers(key, secret, params)
     return await session.put(url, json = params, headers = headers)
@@ -272,6 +273,7 @@ class EcoflowPowerStreamInteractorAsync:
     Returns:
         aiohttp.ClientResponse: Response object returned by the requests library.
     """
+    self._logger.info(f'{self._name}: SEND GET REQUEST')
     session = await HttpSessionSingletonAsync.get_session()
     headers = EcoflowUtils.get_headers(key, secret, params)
     return await session.get(url, json = params, headers = headers)
@@ -295,6 +297,7 @@ class EcoflowPowerStreamInteractorAsync:
     Returns:
         aiohttp.ClientResponse: Response object returned by the requests library.
     """
+    self._logger.info(f'{self._name}: SEND POST REQUEST')
     session = await HttpSessionSingletonAsync.get_session()
     headers = EcoflowUtils.get_headers(key, secret, params)
     return await session.post(url, json = params, headers = headers)

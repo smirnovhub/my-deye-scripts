@@ -195,7 +195,7 @@ class EcoflowDeviceAggregatorV2Async:
                  (increase) or negative (decrease).
     """
     if abs(power_delta) < 5:
-      self._logger.warning(f'{self._name}: power_delta is too low in change_power()')
+      self._logger.warning(f'{self._name}: power delta is too low in change_power()')
       return
 
     online_devices = await self._interactor.get_online_devices(self._devices)
