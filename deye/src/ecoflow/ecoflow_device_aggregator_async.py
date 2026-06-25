@@ -26,6 +26,7 @@ class EcoflowDeviceAggregatorAsync:
     self,
     access_key: str,
     secret_key: str,
+    equal_power_threshold_watt: int,
     **kwargs,
   ):
     self._devices = EcoflowDevices()
@@ -40,6 +41,7 @@ class EcoflowDeviceAggregatorAsync:
     self._power_cache: Dict[str, int] = {}
     self._power_cache_last_update: Dict[str, datetime] = {}
     self._power_cache_update_interval = timedelta(minutes = 10)
+    self._equal_power_threshold_watt = equal_power_threshold_watt
     self._logger = logging.getLogger()
 
   @property
@@ -95,7 +97,7 @@ class EcoflowDeviceAggregatorAsync:
     if self._verbose:
       self._logger.info(f'{self._name}: setting power {power} W for {device.name}...')
 
-    old_power = await self._get_cached_power(device)
+    old_power = await self.get_cached_power(device)
 
     if self._verbose:
       self._logger.info(f'{self._name}: got power {old_power} W from cache for {device.name}')
@@ -127,7 +129,7 @@ class EcoflowDeviceAggregatorAsync:
     """
     total_power = 0
     for device in self._devices.devices:
-      power = await self._get_cached_power(device)
+      power = await self.get_cached_power(device)
       if power > 0:
         total_power += power
 
@@ -232,7 +234,7 @@ class EcoflowDeviceAggregatorAsync:
 
     return sum(powers)
 
-  async def _get_cached_power(self, device: EcoflowDevice) -> int:
+  async def get_cached_power(self, device: EcoflowDevice) -> int:
     last_update = self._power_cache_last_update.get(device.serial, datetime.min)
     if datetime.now() - last_update > self._power_cache_update_interval:
       power = await self._interactor.get_power(device)
