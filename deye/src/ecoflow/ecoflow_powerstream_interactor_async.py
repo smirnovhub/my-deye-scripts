@@ -48,7 +48,6 @@ class EcoflowPowerStreamInteractorAsync:
     self._permanent_watts_field = '20_1.permanentWatts'
     self._power_scale = 10
     self._logger = logging.getLogger()
-    self._logger.setLevel(logging.INFO)
 
   def _get_device_status(self, device: EcoflowDevice, payload: Dict[str, Any]) -> EcoflowDeviceStatus:
     """

@@ -63,7 +63,7 @@ class EcoflowDeviceAggregatorV2Async:
     """
     return sum(device.max_real_power for device in self._devices.devices)
 
-  async def reset_power_cache_for_offline_devices(self, online_devices: List[EcoflowDevice]):
+  async def _reset_power_cache_for_offline_devices(self, online_devices: List[EcoflowDevice]) -> None:
     """
     Reset cached power values to -1 for all devices that are currently offline.
 
@@ -78,7 +78,7 @@ class EcoflowDeviceAggregatorV2Async:
       if device.serial not in online_serials:
         self._set_cached_power(device, -1)
 
-  async def _try_set_power(self, device: EcoflowDevice, power: int):
+  async def _try_set_power(self, device: EcoflowDevice, power: int) -> None:
     """
     Attempt to set a new power value for a device, skipping the operation
     if the new value is identical to the cached value.
@@ -180,7 +180,7 @@ class EcoflowDeviceAggregatorV2Async:
     # Select a random device from the candidates
     return random.choice(candidates)
 
-  async def change_power(self, power_delta: int):
+  async def change_power(self, power_delta: int) -> None:
     """
     Adjust the total power of all online devices by a specified delta.
 
@@ -203,10 +203,10 @@ class EcoflowDeviceAggregatorV2Async:
     if not online_devices:
       if self._verbose:
         self._logger.info(f'{self._name}: no online devices for change_power()')
-        await self.reset_power_cache_for_offline_devices(online_devices)
+        await self._reset_power_cache_for_offline_devices(online_devices)
       return
 
-    await self.reset_power_cache_for_offline_devices(online_devices)
+    await self._reset_power_cache_for_offline_devices(online_devices)
 
     if power_delta > 0:
       device = self._get_device_with_min_power(online_devices)
@@ -223,7 +223,7 @@ class EcoflowDeviceAggregatorV2Async:
     power = self._get_cached_power(device)
     await self._try_set_power(device, power + power_delta)
 
-  async def set_max_power(self):
+  async def set_max_power(self) -> None:
     """
     Set each online device to its maximum configurable power.
 
@@ -234,10 +234,10 @@ class EcoflowDeviceAggregatorV2Async:
     if not online_devices:
       if self._verbose:
         self._logger.info(f'{self._name}: no online devices for set_max_power()')
-        await self.reset_power_cache_for_offline_devices(online_devices)
+        await self._reset_power_cache_for_offline_devices(online_devices)
       return
 
-    await self.reset_power_cache_for_offline_devices(online_devices)
+    await self._reset_power_cache_for_offline_devices(online_devices)
 
     device = self._get_device_with_min_power(online_devices)
     if not device:
