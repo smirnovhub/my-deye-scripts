@@ -313,7 +313,10 @@ class EcoflowDeviceAggregatorV2Async:
     Args:
         devices (List[EcoflowDevice]): List of devices to scan for expired cache.
     """
-    for device in devices:
+    shuffled_devices = list(devices)
+    random.shuffle(shuffled_devices)
+
+    for device in shuffled_devices:
       if self._need_update_cached_power(device):
         await self._update_cached_power(device)
         break
