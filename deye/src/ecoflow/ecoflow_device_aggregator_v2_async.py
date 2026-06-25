@@ -41,7 +41,7 @@ class EcoflowDeviceAggregatorV2Async:
     self._power_cache: Dict[str, int] = {}
     self._power_cache_last_update: Dict[str, datetime] = {}
     self._power_cache_update_interval = timedelta(minutes = 10)
-    self._power_cache_update_interval_deviation = timedelta(minutes = 1)
+    self._power_cache_update_interval_deviation = timedelta(minutes = 3)
     self._logger = logging.getLogger()
 
   @property
@@ -285,6 +285,20 @@ class EcoflowDeviceAggregatorV2Async:
     # Calculate total seconds from the deviation interval
     deviation_seconds = int(self._power_cache_update_interval_deviation.total_seconds())
 
+    # Fallback if deviation is configured as 0 seconds
+    if deviation_seconds <= 0:
+      return timedelta()
+
+    # Select a random sign: -1 or 1
+    sign = random.choice([-1, 1])
+
+    # Set a minimum threshold (e.g., at least 20% of maximum deviation)
+    min_deviation_seconds = int(deviation_seconds * 0.2)
+
+    # Ensure min_deviation_seconds is at least 0 and strictly less than or equal to deviation_seconds
+    min_deviation_seconds = max(0, min(min_deviation_seconds, deviation_seconds))
+
     # Generate a random offset within the negative and positive deviation range
-    random_seconds = random.randint(-deviation_seconds, deviation_seconds)
+    random_seconds = sign * random.randint(min_deviation_seconds, deviation_seconds)
+
     return timedelta(seconds = random_seconds)
