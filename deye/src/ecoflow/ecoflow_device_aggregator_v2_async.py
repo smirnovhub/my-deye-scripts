@@ -50,11 +50,14 @@ class EcoflowDeviceAggregatorV2Async:
 
     self._name = kwargs.get('name', 'ecoflow')
     self._verbose = kwargs.get('verbose', False)
-    self._power_cache: Dict[str, int] = {}
-    self._power_cache_last_update: Dict[str, datetime] = {}
+    self._power_cache: Dict[EcoflowDevice, int] = {}
+    self._power_cache_last_update: Dict[EcoflowDevice, datetime] = {}
     self._power_cache_update_interval = timedelta(minutes = 10)
     self._power_cache_update_interval_deviation = timedelta(minutes = 5)
     self._equal_power_threshold_watt = equal_power_threshold_watt
+    self._online_devices: List[EcoflowDevice] = []
+    self._online_devices_last_update: datetime = datetime.min
+    self._online_devices_update_interval = timedelta(minutes = 5)
     self._logger = logging.getLogger()
 
   @property
@@ -65,7 +68,7 @@ class EcoflowDeviceAggregatorV2Async:
     Returns:
       int: Sum of max_power across all devices.
     """
-    return sum(device.max_power for device in self._devices.devices)
+    return sum(device.max_power for device in self._online_devices)
 
   @property
   def max_real_power(self) -> int:
@@ -75,22 +78,7 @@ class EcoflowDeviceAggregatorV2Async:
     Returns:
       int: Sum of max_real_power across all devices.
     """
-    return sum(device.max_real_power for device in self._devices.devices)
-
-  async def _reset_power_cache_for_offline_devices(self, online_devices: List[EcoflowDevice]) -> None:
-    """
-    Reset cached power values to -1 for all devices that are currently offline.
-
-    This ensures that power values from offline devices do not interfere
-    with calculations or attempts to set power.
-
-    Args:
-      online_devices (List[EcoflowDevice]): List of devices currently online.
-    """
-    online_serials = {device.serial for device in online_devices}
-    for device in self._devices.devices:
-      if device.serial not in online_serials:
-        self._set_cached_power(device, -1)
+    return sum(device.max_real_power for device in self._online_devices)
 
   async def _try_set_power(self, device: EcoflowDevice, power: int) -> None:
     """
@@ -105,6 +93,11 @@ class EcoflowDeviceAggregatorV2Async:
       power (int): Desired power in watts. Automatically clamped between
              0 and the device's max_power.
     """
+    if device not in self._online_devices:
+      self._logger.error(f"{self._name}: failed to set power for {device.name} ({device.serial}): "
+                         "device is offline")
+      return
+
     power = int(round(max(0, min(power, device.max_power))))
 
     if self._verbose:
@@ -123,7 +116,20 @@ class EcoflowDeviceAggregatorV2Async:
     if self._verbose:
       self._logger.info(f'{self._name}: changing power for {device.name} to {power} W...')
 
-    await self._interactor.set_power(device, power)
+    try:
+      await self._interactor.set_power(device, power)
+    except Exception as e:
+      self._logger.error(f"{self._name}: failed to set power for {device.name} ({device.serial}): {e}")
+
+      # Remove from online devices list if present
+      if device in self._online_devices:
+        self._online_devices.remove(device)
+
+      # Clear its power cache so it forces a fresh fetch when it comes back online
+      self._power_cache.pop(device, None)
+      self._power_cache_last_update.pop(device, None)
+
+      return
 
     if self._verbose:
       self._logger.info(f'{self._name}: writing power {power} W to cache for {device.name}...')
@@ -140,10 +146,18 @@ class EcoflowDeviceAggregatorV2Async:
       int: Sum of cached power values for all devices that have
          positive cached power.
     """
-    await self._update_cached_power_for_one_device_at_once(self._devices.devices)
+    if self._need_update_online_devices():
+      await self._update_online_devices()
+
+    if not self._online_devices:
+      if self._verbose:
+        self._logger.info(f'{self._name}: no online devices for change_power()')
+      return 0
+
+    await self._update_cached_power_for_one_device_at_once(self._online_devices)
 
     total_power = 0
-    for device in self._devices.devices:
+    for device in self._online_devices:
       power = self.get_cached_power(device)
       if power > 0:
         total_power += power
@@ -165,16 +179,16 @@ class EcoflowDeviceAggregatorV2Async:
     Returns:
         EcoflowDevice: The selected device to increase power on.
     """
-    # Track device serials and their corresponding cached power values
-    device_powers: Dict[str, int] = {}
+    # Track devices and their corresponding cached power values
+    device_powers: Dict[EcoflowDevice, int] = {}
     for dev in devices:
-      device_powers[dev.serial] = self.get_cached_power(dev)
+      device_powers[dev] = self.get_cached_power(dev)
 
     # Find the minimum power value among all devices
     min_power = min(device_powers.values())
 
     # Collect all devices that are close to the minimum within the threshold
-    candidates = [d for d in devices if device_powers[d.serial] - min_power <= self._equal_power_threshold_watt]
+    candidates = [d for d in devices if device_powers[d] - min_power <= self._equal_power_threshold_watt]
 
     # Select a random device from the candidates
     return random.choice(candidates)
@@ -194,16 +208,16 @@ class EcoflowDeviceAggregatorV2Async:
     Returns:
         EcoflowDevice: The selected device to decrease power on.
     """
-    # Track device serials and their corresponding cached power values
-    device_powers: Dict[str, int] = {}
+    # Track devices and their corresponding cached power values
+    device_powers: Dict[EcoflowDevice, int] = {}
     for dev in devices:
-      device_powers[dev.serial] = self.get_cached_power(dev)
+      device_powers[dev] = self.get_cached_power(dev)
 
     # Find the maximum power value among all devices
     max_power = max(device_powers.values())
 
     # Collect all devices that are close to the maximum within the threshold
-    candidates = [d for d in devices if max_power - device_powers[d.serial] <= self._equal_power_threshold_watt]
+    candidates = [d for d in devices if max_power - device_powers[d] <= self._equal_power_threshold_watt]
 
     # Select a random device from the candidates
     return random.choice(candidates)
@@ -226,20 +240,18 @@ class EcoflowDeviceAggregatorV2Async:
       self._logger.warning(f'{self._name}: power delta is too low in change_power()')
       return
 
-    online_devices = await self._interactor.get_online_devices(self._devices)
+    if self._need_update_online_devices():
+      await self._update_online_devices()
 
-    if not online_devices:
+    if not self._online_devices:
       if self._verbose:
         self._logger.info(f'{self._name}: no online devices for change_power()')
-        await self._reset_power_cache_for_offline_devices(online_devices)
       return
 
-    await self._reset_power_cache_for_offline_devices(online_devices)
-
     if power_delta > 0:
-      device = self._get_device_with_min_power(online_devices)
+      device = self._get_device_with_min_power(self._online_devices)
     else:
-      device = self._get_device_with_max_power(online_devices)
+      device = self._get_device_with_max_power(self._online_devices)
 
     if self._need_update_cached_power(device):
       await self._update_cached_power(device)
@@ -253,17 +265,15 @@ class EcoflowDeviceAggregatorV2Async:
 
     Offline devices have their cached power reset to prevent stale values.
     """
-    online_devices = await self._interactor.get_online_devices(self._devices)
+    if self._need_update_online_devices():
+      await self._update_online_devices()
 
-    if not online_devices:
+    if not self._online_devices:
       if self._verbose:
         self._logger.info(f'{self._name}: no online devices for set_max_power()')
-        await self._reset_power_cache_for_offline_devices(online_devices)
       return
 
-    await self._reset_power_cache_for_offline_devices(online_devices)
-
-    device = self._get_device_with_min_power(online_devices)
+    device = self._get_device_with_min_power(self._online_devices)
 
     if self._need_update_cached_power(device):
       await self._update_cached_power(device)
@@ -271,29 +281,29 @@ class EcoflowDeviceAggregatorV2Async:
     await self._try_set_power(device, device.max_power)
 
   def get_cached_power(self, device: EcoflowDevice) -> int:
-    return self._power_cache.get(device.serial, -1)
+    return self._power_cache.get(device, -1)
 
   def _set_cached_power(self, device: EcoflowDevice, power: int) -> None:
-    self._power_cache[device.serial] = power
-    self._power_cache_last_update[device.serial] = datetime.now()
+    self._power_cache[device] = power
+    self._power_cache_last_update[device] = datetime.now()
     self._logger.info(f"Cached power last update time for {device.name} has been updated.")
 
   def _need_update_cached_power(self, device: EcoflowDevice) -> bool:
-    last_update = self._power_cache_last_update.get(device.serial, datetime.min)
+    last_update = self._power_cache_last_update.get(device, datetime.min)
     jitter = self._get_random_jitter(self._power_cache_update_interval_deviation)
     update_interval = self._power_cache_update_interval + jitter
     return datetime.now() - last_update > update_interval
 
   async def _update_cached_power(self, device: EcoflowDevice) -> None:
     power = await self._interactor.get_power(device)
-    self._power_cache[device.serial] = power
+    self._power_cache[device] = power
 
     jitter = timedelta()
-    if device.serial not in self._power_cache_last_update:
+    if device not in self._power_cache_last_update:
       # Use update interval as initial deviation
       jitter = self._get_random_jitter(self._power_cache_update_interval)
 
-    self._power_cache_last_update[device.serial] = datetime.now() + jitter
+    self._power_cache_last_update[device] = datetime.now() + jitter
     self._logger.info(f"Cached power for {device.name} has been updated to {power} W.")
 
   async def _update_cached_power_for_one_device_at_once(self, devices: List[EcoflowDevice]) -> None:
@@ -311,3 +321,19 @@ class EcoflowDeviceAggregatorV2Async:
   def _get_random_jitter(self, deviation: timedelta) -> timedelta:
     deviation_seconds = int(deviation.total_seconds())
     return timedelta(seconds = random.randint(0, deviation_seconds))
+
+  def _need_update_online_devices(self) -> bool:
+    return datetime.now() - self._online_devices_last_update > self._online_devices_update_interval
+
+  async def _update_online_devices(self) -> None:
+    previously_online = {d for d in self._online_devices}
+
+    self._online_devices = await self._interactor.get_online_devices(self._devices)
+    self._online_devices_last_update = datetime.now()
+    self._logger.info(f"Online devices updated: {len(self._online_devices)} devices are online")
+
+    for device in self._online_devices:
+      if device not in previously_online:
+        self._power_cache.pop(device, None)
+        self._power_cache_last_update.pop(device, None)
+        self._logger.info(f"{self._name}: device {device.name} came online, power cache cleared")

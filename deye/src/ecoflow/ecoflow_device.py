@@ -36,3 +36,11 @@ class EcoflowDevice:
   @property
   def max_real_power(self) -> int:
     return self._max_real_power
+
+  def __eq__(self, other: object) -> bool:
+    if not isinstance(other, EcoflowDevice):
+      return NotImplemented
+    return self.serial == other.serial
+
+  def __hash__(self) -> int:
+    return hash(self.serial)
