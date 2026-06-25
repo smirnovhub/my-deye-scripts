@@ -120,15 +120,6 @@ class EcoflowDeviceAggregatorV2Async:
       await self._interactor.set_power(device, power)
     except Exception as e:
       self._logger.error(f"{self._name}: failed to set power for {device.name} ({device.serial}): {e}")
-
-      # Remove from online devices list if present
-      if device in self._online_devices:
-        self._online_devices.remove(device)
-
-      # Clear its power cache so it forces a fresh fetch when it comes back online
-      self._power_cache.pop(device, None)
-      self._power_cache_last_update.pop(device, None)
-
       return
 
     if self._verbose:
