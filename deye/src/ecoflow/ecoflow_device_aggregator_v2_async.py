@@ -260,21 +260,13 @@ class EcoflowDeviceAggregatorV2Async:
 
   def _need_update_cached_power(self, device: EcoflowDevice) -> bool:
     last_update = self._power_cache_last_update.get(device.serial, datetime.min)
-    return datetime.now() - last_update > self._power_cache_update_interval
+    update_interval = self._power_cache_update_interval + self._get_random_jitter()
+    return datetime.now() - last_update > update_interval
 
   async def _update_cached_power(self, device: EcoflowDevice) -> None:
     power = await self._interactor.get_power(device)
     self._power_cache[device.serial] = power
-
-    # Calculate total seconds from the deviation interval
-    max_deviation_seconds = int(self._power_cache_update_interval_deviation.total_seconds())
-
-    # Generate a random offset within the negative and positive deviation range
-    random_seconds = random.randint(-max_deviation_seconds, max_deviation_seconds)
-    jitter = timedelta(seconds = random_seconds)
-
-    # Apply jitter to the current time
-    self._power_cache_last_update[device.serial] = datetime.now() + jitter
+    self._power_cache_last_update[device.serial] = datetime.now()
     self._logger.info(f"Cached power for {device.name} has been updated to {power} W.")
 
   async def _update_cached_power_for_one_device_at_once(self, devices: List[EcoflowDevice]) -> None:
@@ -288,3 +280,11 @@ class EcoflowDeviceAggregatorV2Async:
       if self._need_update_cached_power(device):
         await self._update_cached_power(device)
         break
+
+  def _get_random_jitter(self) -> timedelta:
+    # Calculate total seconds from the deviation interval
+    deviation_seconds = int(self._power_cache_update_interval_deviation.total_seconds())
+
+    # Generate a random offset within the negative and positive deviation range
+    random_seconds = random.randint(-deviation_seconds, deviation_seconds)
+    return timedelta(seconds = random_seconds)
