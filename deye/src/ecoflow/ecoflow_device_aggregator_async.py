@@ -18,6 +18,9 @@ class EcoflowDeviceAggregatorAsync:
   Parameters:
     access_key (str): Ecoflow API access key.
     secret_key (str): Ecoflow API secret key.
+    equal_power_threshold_watt (int): The power deadband threshold in watts. When the power 
+        difference between devices is less than or equal to this value, the aggregator considers 
+        them equal and selects a device at random to balance the load evenly.
     **kwargs: Optional keyword arguments passed to EcoflowPowerStreamInteractor:
       - name (str): Name identifier for logging (default: 'ecoflow').
       - verbose (bool): Enable verbose logging (default: False).

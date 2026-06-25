@@ -10,15 +10,26 @@ from ecoflow_powerstream_interactor_async import EcoflowPowerStreamInteractorAsy
 
 class EcoflowDeviceAggregatorV2Async:
   """
-  Aggregates multiple Ecoflow devices and manages their power settings
-  through the Ecoflow API.
+  An asynchronous aggregator designed to orchestrate and optimize power distribution 
+  across multiple EcoFlow devices simultaneously.
 
-  This class maintains a cache of device power values and provides
-  convenience methods to set, get, and adjust power across multiple devices.
+  Optimization Strategy:
+    1. API Rate-Limit Protection: Minimizes outgoing requests to the EcoFlow API by utilizing 
+       a dynamic, localized power cache with a staggered 10-minute refresh interval.
+    2. Request Anti-Collision (Jitter): Applies a randomized jitter to update intervals, 
+       preventing multiple devices from expiring simultaneously and flooding the network.
+    3. Single-Device Polling: Limits cache synchronization to a maximum of one expired 
+       device per total power computation cycle, flattening API traffic spikes.
+    4. Balanced Power Staircase: Distributes incoming load adjustments incrementally using a 
+       configurable threshold constraint. Devices with close power parameters are toggled 
+       randomly, avoiding localized hardware wear and balancing overall execution.
 
   Parameters:
     access_key (str): Ecoflow API access key.
     secret_key (str): Ecoflow API secret key.
+    equal_power_threshold_watt (int): The power deadband threshold in watts. When the power 
+        difference between devices is less than or equal to this value, the aggregator considers 
+        them equal and selects a device at random to balance the load evenly.
     **kwargs: Optional keyword arguments passed to EcoflowPowerStreamInteractor:
       - name (str): Name identifier for logging (default: 'ecoflow').
       - verbose (bool): Enable verbose logging (default: False).
