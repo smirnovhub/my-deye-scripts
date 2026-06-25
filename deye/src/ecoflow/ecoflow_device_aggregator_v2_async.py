@@ -1,7 +1,7 @@
 import random
 import logging
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime, timedelta
 
 from ecoflow_device import EcoflowDevice
@@ -27,6 +27,7 @@ class EcoflowDeviceAggregatorV2Async:
     self,
     access_key: str,
     secret_key: str,
+    equal_power_threshold_watt: int,
     **kwargs,
   ):
     self._devices = EcoflowDevices()
@@ -42,6 +43,7 @@ class EcoflowDeviceAggregatorV2Async:
     self._power_cache_last_update: Dict[str, datetime] = {}
     self._power_cache_update_interval = timedelta(minutes = 10)
     self._power_cache_update_interval_deviation = timedelta(minutes = 5)
+    self._equal_power_threshold_watt = equal_power_threshold_watt
     self._logger = logging.getLogger()
 
   @property
@@ -137,14 +139,21 @@ class EcoflowDeviceAggregatorV2Async:
 
     return total_power
 
-  def _get_device_with_min_power(self, devices: List[EcoflowDevice]) -> Optional[EcoflowDevice]:
+  def _get_device_with_min_power(self, devices: List[EcoflowDevice]) -> EcoflowDevice:
     """
     Find an online device with the lowest cached power.
-    If multiple devices have the same minimum power, one is chosen at random.
-    """
-    if not devices:
-      return None
+    
+    Groups all devices whose cached power is within the specified threshold 
+    from the absolute minimum power, and selects one from them at random.
+    This prevents the same device from being selected repeatedly when power 
+    values are close.
 
+    Args:
+        devices (List[EcoflowDevice]): A list of currently online EcoFlow devices.
+
+    Returns:
+        EcoflowDevice: The selected device to increase power on.
+    """
     # Track device serials and their corresponding cached power values
     device_powers: Dict[str, int] = {}
     for dev in devices:
@@ -153,20 +162,27 @@ class EcoflowDeviceAggregatorV2Async:
     # Find the minimum power value among all devices
     min_power = min(device_powers.values())
 
-    # Collect all devices that share this minimum power value
-    candidates = [d for d in devices if device_powers[d.serial] == min_power]
+    # Collect all devices that are close to the minimum within the threshold
+    candidates = [d for d in devices if device_powers[d.serial] - min_power <= self._equal_power_threshold_watt]
 
     # Select a random device from the candidates
     return random.choice(candidates)
 
-  def _get_device_with_max_power(self, devices: List[EcoflowDevice]) -> Optional[EcoflowDevice]:
+  def _get_device_with_max_power(self, devices: List[EcoflowDevice]) -> EcoflowDevice:
     """
     Find an online device with the highest cached power.
-    If multiple devices have the same maximum power, one is chosen at random.
-    """
-    if not devices:
-      return None
+    
+    Groups all devices whose cached power is within the specified threshold 
+    from the absolute maximum power, and selects one from them at random.
+    This prevents the same device from being selected repeatedly when power 
+    values are close.
 
+    Args:
+        devices (List[EcoflowDevice]): A list of currently online EcoFlow devices.
+
+    Returns:
+        EcoflowDevice: The selected device to decrease power on.
+    """
     # Track device serials and their corresponding cached power values
     device_powers: Dict[str, int] = {}
     for dev in devices:
@@ -175,8 +191,8 @@ class EcoflowDeviceAggregatorV2Async:
     # Find the maximum power value among all devices
     max_power = max(device_powers.values())
 
-    # Collect all devices that share this maximum power value
-    candidates = [d for d in devices if device_powers[d.serial] == max_power]
+    # Collect all devices that are close to the maximum within the threshold
+    candidates = [d for d in devices if max_power - device_powers[d.serial] <= self._equal_power_threshold_watt]
 
     # Select a random device from the candidates
     return random.choice(candidates)
@@ -214,10 +230,6 @@ class EcoflowDeviceAggregatorV2Async:
     else:
       device = self._get_device_with_max_power(online_devices)
 
-    if not device:
-      self._logger.warning(f"{self._name}: can't get device in change_power()")
-      return
-
     if self._need_update_cached_power(device):
       await self._update_cached_power(device)
 
@@ -241,9 +253,6 @@ class EcoflowDeviceAggregatorV2Async:
     await self._reset_power_cache_for_offline_devices(online_devices)
 
     device = self._get_device_with_min_power(online_devices)
-    if not device:
-      self._logger.warning(f"{self._name}: can't get device in set_max_power()")
-      return
 
     if self._need_update_cached_power(device):
       await self._update_cached_power(device)
