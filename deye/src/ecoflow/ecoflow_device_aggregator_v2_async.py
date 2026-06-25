@@ -97,7 +97,7 @@ class EcoflowDeviceAggregatorV2Async:
     if self._verbose:
       self._logger.info(f'{self._name}: setting power {power} W for {device.name}...')
 
-    old_power = self._get_cached_power(device)
+    old_power = self.get_cached_power(device)
 
     if self._verbose:
       self._logger.info(f'{self._name}: got power {old_power} W from cache for {device.name}')
@@ -131,7 +131,7 @@ class EcoflowDeviceAggregatorV2Async:
 
     total_power = 0
     for device in self._devices.devices:
-      power = self._get_cached_power(device)
+      power = self.get_cached_power(device)
       if power > 0:
         total_power += power
 
@@ -148,7 +148,7 @@ class EcoflowDeviceAggregatorV2Async:
     # Track device serials and their corresponding cached power values
     device_powers: Dict[str, int] = {}
     for dev in devices:
-      device_powers[dev.serial] = self._get_cached_power(dev)
+      device_powers[dev.serial] = self.get_cached_power(dev)
 
     # Find the minimum power value among all devices
     min_power = min(device_powers.values())
@@ -170,7 +170,7 @@ class EcoflowDeviceAggregatorV2Async:
     # Track device serials and their corresponding cached power values
     device_powers: Dict[str, int] = {}
     for dev in devices:
-      device_powers[dev.serial] = self._get_cached_power(dev)
+      device_powers[dev.serial] = self.get_cached_power(dev)
 
     # Find the maximum power value among all devices
     max_power = max(device_powers.values())
@@ -221,7 +221,7 @@ class EcoflowDeviceAggregatorV2Async:
     if self._need_update_cached_power(device):
       await self._update_cached_power(device)
 
-    power = self._get_cached_power(device)
+    power = self.get_cached_power(device)
     await self._try_set_power(device, power + power_delta)
 
   async def set_max_power(self) -> None:
@@ -250,7 +250,7 @@ class EcoflowDeviceAggregatorV2Async:
 
     await self._try_set_power(device, device.max_power)
 
-  def _get_cached_power(self, device: EcoflowDevice) -> int:
+  def get_cached_power(self, device: EcoflowDevice) -> int:
     return self._power_cache.get(device.serial, -1)
 
   def _set_cached_power(self, device: EcoflowDevice, power: int) -> None:
