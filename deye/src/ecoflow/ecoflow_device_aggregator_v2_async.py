@@ -41,7 +41,7 @@ class EcoflowDeviceAggregatorV2Async:
     self._power_cache: Dict[str, int] = {}
     self._power_cache_last_update: Dict[str, datetime] = {}
     self._power_cache_update_interval = timedelta(minutes = 10)
-    self._power_cache_update_interval_deviation = timedelta(minutes = 3)
+    self._power_cache_update_interval_deviation = timedelta(minutes = 5)
     self._logger = logging.getLogger()
 
   @property
