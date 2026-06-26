@@ -739,4 +739,4 @@ class DeyeGraphManager:
     pattern = r'(ffi|ffl|ff|fi|fl|ft)'
 
     # Replace found ligatures with their mathtext equivalent
-    return re.sub(pattern, r'$\mathrm{\1}$', text)
+    return re.sub(pattern, r'$\\mathrm{\1}$', text)
