@@ -2,6 +2,7 @@ import os
 import io
 import gc
 import glob
+import re
 import logging
 import zipfile
 
@@ -256,7 +257,7 @@ class DeyeGraphManager:
     # The optimizer (fontTools) fails to subset fonts when encountering the 'fl' ligature.
     # This results in embedding the full font file and bloating the PDF size from 14KB to 62KB.
     # Wrapping 'fl' in math text isolates the characters and disables auto-ligatures.
-    fixed_actual_graph_name = actual_graph_name.replace('fl', r'$\mathrm{fl}$')
+    fixed_actual_graph_name = self._fix_pdf_ligatures(actual_graph_name)
 
     # Create figure and axis with A4 proportions
     # Use Figure object directly to avoid global state memory leaks
@@ -723,3 +724,19 @@ class DeyeGraphManager:
     except Exception as e:
       self._logger.error(f"Error loading thresholds.csv: {e}")
       raise
+
+  def _fix_pdf_ligatures(self, text: str) -> str:
+    """
+    Workaround for a Matplotlib 3.11.0 PDF backend bug:
+    The optimizer (fontTools) fails to subset fonts when encountering the 'fl' ligature.
+    This results in embedding the full font file and bloating the PDF size from 14KB to 62KB.
+    Wrapping 'fl' in math text isolates the characters and disables auto-ligatures.
+    """
+    if not isinstance(text, str):
+      return text
+
+    # Pattern matches ffi, ffl, ff, fi, fl, ft
+    pattern = r'(ffi|ffl|ff|fi|fl|ft)'
+
+    # Replace found ligatures with their mathtext equivalent
+    return re.sub(pattern, r'$\mathrm{\1}$', text)
