@@ -51,7 +51,7 @@ class EcoflowPowerStreamInteractorAsync:
     self._permanent_watts_field = '20_1.permanentWatts'
     self._power_scale = 10
     delay = delay_between_requests if delay_between_requests else timedelta()
-    self._rate_limiter = AsyncRateLimiter(delay = delay)
+    self._rate_limiter = AsyncRateLimiter(delay = delay, verbose = self._verbose)
     self._logger = logging.getLogger()
 
   def _get_device_status(self, device: EcoflowDevice, payload: Dict[str, Any]) -> EcoflowDeviceStatus:
