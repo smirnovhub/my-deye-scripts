@@ -36,7 +36,7 @@ class AsyncRateLimiter:
       remaining_sleep = self._delay - elapsed
 
       if self._verbose:
-        self._logger.info(f"{self._name}: rate limit protection. Sleeping for {remaining_sleep:.3f}s")
+        self._logger.info(f"{self._name}: sleeping for {remaining_sleep:.3f}s because of rate limit protection")
 
       await asyncio.sleep(remaining_sleep)
 
