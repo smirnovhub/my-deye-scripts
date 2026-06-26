@@ -1,7 +1,7 @@
 import random
 import logging
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 
 from ecoflow_device import EcoflowDevice
@@ -39,12 +39,14 @@ class EcoflowDeviceAggregatorV2Async:
     access_key: str,
     secret_key: str,
     equal_power_threshold_watt: int,
+    delay_between_requests: Optional[timedelta] = None,
     **kwargs,
   ):
     self._devices = EcoflowDevices()
     self._interactor = EcoflowPowerStreamInteractorAsync(
       access_key = access_key,
       secret_key = secret_key,
+      delay_between_requests = delay_between_requests,
       **kwargs,
     )
 

@@ -1,9 +1,11 @@
 import aiohttp
 import logging
 
-from typing import Any, Dict, List, Optional
 from http import HTTPStatus
+from typing import Any, Dict, List, Optional
+from datetime import timedelta
 
+from async_rate_limiter import AsyncRateLimiter
 from ecoflow_utils import EcoflowUtils
 from ecoflow_device import EcoflowDevice
 from ecoflow_devices import EcoflowDevices
@@ -36,6 +38,7 @@ class EcoflowPowerStreamInteractorAsync:
     self,
     access_key: str,
     secret_key: str,
+    delay_between_requests: Optional[timedelta] = None,
     **kwargs,
   ):
     self._access_key = access_key
@@ -47,6 +50,8 @@ class EcoflowPowerStreamInteractorAsync:
     self._set_permanent_watts_cmd = 'WN511_SET_PERMANENT_WATTS_PACK'
     self._permanent_watts_field = '20_1.permanentWatts'
     self._power_scale = 10
+    delay = delay_between_requests if delay_between_requests else timedelta()
+    self._rate_limiter = AsyncRateLimiter(delay = delay)
     self._logger = logging.getLogger()
 
   def _get_device_status(self, device: EcoflowDevice, payload: Dict[str, Any]) -> EcoflowDeviceStatus:
@@ -252,7 +257,9 @@ class EcoflowPowerStreamInteractorAsync:
     self._logger.info(f'{self._name}: SEND PUT REQUEST')
     session = await HttpSessionSingletonAsync.get_session()
     headers = EcoflowUtils.get_headers(key, secret, params)
-    return await session.put(url, json = params, headers = headers)
+
+    async with self._rate_limiter:
+      return await session.put(url, json = params, headers = headers)
 
   async def _get_request(
     self,
@@ -276,7 +283,9 @@ class EcoflowPowerStreamInteractorAsync:
     self._logger.info(f'{self._name}: SEND GET REQUEST')
     session = await HttpSessionSingletonAsync.get_session()
     headers = EcoflowUtils.get_headers(key, secret, params)
-    return await session.get(url, json = params, headers = headers)
+
+    async with self._rate_limiter:
+      return await session.get(url, json = params, headers = headers)
 
   async def _post_request(
     self,
@@ -300,4 +309,6 @@ class EcoflowPowerStreamInteractorAsync:
     self._logger.info(f'{self._name}: SEND POST REQUEST')
     session = await HttpSessionSingletonAsync.get_session()
     headers = EcoflowUtils.get_headers(key, secret, params)
-    return await session.post(url, json = params, headers = headers)
+
+    async with self._rate_limiter:
+      return await session.post(url, json = params, headers = headers)
