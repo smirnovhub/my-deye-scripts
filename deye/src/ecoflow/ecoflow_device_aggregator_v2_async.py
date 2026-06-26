@@ -282,7 +282,7 @@ class EcoflowDeviceAggregatorV2Async:
   def _set_cached_power(self, device: EcoflowDevice, power: int) -> None:
     self._power_cache[device] = power
     self._power_cache_last_update[device] = datetime.now()
-    self._logger.info(f"Cached power last update time for {device.name} has been updated.")
+    self._logger.info(f"{self._name}: cached power last update time for {device.name} has been updated.")
 
   def _need_update_cached_power(self, device: EcoflowDevice) -> bool:
     last_update = self._power_cache_last_update.get(device, datetime.min)
@@ -300,7 +300,7 @@ class EcoflowDeviceAggregatorV2Async:
       jitter = self._get_random_jitter(self._power_cache_update_interval)
 
     self._power_cache_last_update[device] = datetime.now() + jitter
-    self._logger.info(f"Cached power for {device.name} has been updated to {power} W.")
+    self._logger.info(f"{self._name}: cached power for {device.name} has been updated to {power} W.")
 
   async def _update_cached_power_for_one_device_at_once(self, devices: List[EcoflowDevice]) -> None:
     """
@@ -329,7 +329,7 @@ class EcoflowDeviceAggregatorV2Async:
 
     self._online_devices = await self._interactor.get_online_devices(self._devices)
     self._online_devices_last_update = datetime.now()
-    self._logger.info(f"Online devices updated: {len(self._online_devices)} devices are online")
+    self._logger.info(f"{self._name}: online devices updated: {len(self._online_devices)} devices are online")
 
     for device in self._online_devices:
       if device not in previously_online:

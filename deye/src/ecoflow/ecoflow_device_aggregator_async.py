@@ -247,10 +247,10 @@ class EcoflowDeviceAggregatorAsync:
       power = await self._interactor.get_power(device)
       self._power_cache[device.serial] = power
       self._power_cache_last_update[device.serial] = datetime.now()
-      self._logger.info(f"Cached power for {device.name} has been updated to {power} W.")
+      self._logger.info(f"{self._name}: cached power for {device.name} has been updated to {power} W.")
     return self._power_cache.get(device.serial, -1)
 
   def _set_cached_power(self, device: EcoflowDevice, power: int) -> None:
     self._power_cache[device.serial] = power
     self._power_cache_last_update[device.serial] = datetime.now()
-    self._logger.info(f"Cached power last update time for {device.name} has been updated.")
+    self._logger.info(f"{self._name}: cached power last update time for {device.name} has been updated.")
