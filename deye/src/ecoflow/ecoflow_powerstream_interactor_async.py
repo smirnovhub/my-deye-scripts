@@ -109,9 +109,10 @@ class EcoflowPowerStreamInteractorAsync:
     for device in devices.devices:
       device_status = self._get_device_status(device, js)
       if device_status == EcoflowDeviceStatus.online:
-        if self._verbose:
-          self._logger.info(f'{self._name}: device {device.name} status is {device_status.name}')
         online_devices.append(device)
+
+      if self._verbose:
+        self._logger.info(f'{self._name}: device {device.name} status is {device_status.name}')
 
     return online_devices
 

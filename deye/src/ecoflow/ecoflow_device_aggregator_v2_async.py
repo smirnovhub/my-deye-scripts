@@ -60,6 +60,11 @@ class EcoflowDeviceAggregatorV2Async:
     self._online_devices_update_interval = timedelta(minutes = 5)
     self._logger = logging.getLogger()
 
+  async def get_online_devices_count(self) -> int:
+    if self._need_update_online_devices():
+      await self._update_online_devices()
+    return len(self._online_devices)
+
   @property
   def max_power(self) -> int:
     """
@@ -142,7 +147,7 @@ class EcoflowDeviceAggregatorV2Async:
 
     if not self._online_devices:
       if self._verbose:
-        self._logger.info(f'{self._name}: no online devices for change_power()')
+        self._logger.info(f'{self._name}: no online devices for get_cached_total_power()')
       return 0
 
     await self._update_cached_power_for_one_device_at_once(self._online_devices)

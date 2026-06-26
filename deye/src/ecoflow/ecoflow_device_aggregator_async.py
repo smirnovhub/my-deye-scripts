@@ -47,6 +47,10 @@ class EcoflowDeviceAggregatorAsync:
     self._equal_power_threshold_watt = equal_power_threshold_watt
     self._logger = logging.getLogger()
 
+  async def get_online_devices_count(self) -> int:
+    # V1 doesn't support online devices update
+    return len(self._devices.devices)
+
   @property
   def max_power(self) -> int:
     """
