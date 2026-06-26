@@ -252,6 +252,12 @@ class DeyeGraphManager:
     if not actual_graph_name:
       raise RuntimeError(f"register '{graph_name}' not found in data")
 
+    # Workaround for a Matplotlib 3.11.0 PDF backend bug:
+    # The optimizer (fontTools) fails to subset fonts when encountering the 'fl' ligature.
+    # This results in embedding the full font file and bloating the PDF size from 14KB to 62KB.
+    # Wrapping 'fl' in math text isolates the characters and disables auto-ligatures.
+    fixed_actual_graph_name = actual_graph_name.replace('fl', r'$\mathrm{fl}$')
+
     # Create figure and axis with A4 proportions
     # Use Figure object directly to avoid global state memory leaks
     fig = Figure(figsize = (297 / 25.4, 210 / 25.4))
@@ -323,7 +329,7 @@ class DeyeGraphManager:
               zorder = 5 if unit == 'master' else 3,
             )
 
-      ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
+      ax.set_title(f"{graph_date} {fixed_actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
     else:
       # Logic for a single inverter
       with DebugTimerWithLog("Plot regular graph"):
@@ -335,7 +341,7 @@ class DeyeGraphManager:
           linewidth = graph_line_width,
         )
 
-      ax.set_title(f"{graph_date} {actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
+      ax.set_title(f"{graph_date} {fixed_actual_graph_name}{unit_label}", fontsize = 15, pad = 10)
 
     # Configure X-axis time format and grid intervals based on actual plotted data range
     time_min: datetime = plot_df['timestamp'].min()
