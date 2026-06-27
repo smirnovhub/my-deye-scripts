@@ -162,7 +162,11 @@ class EcoflowDeviceAggregatorV2Async:
 
     return total_power
 
-  def _get_device_with_min_power(self, devices: List[EcoflowDevice]) -> EcoflowDevice:
+  def _get_device_with_min_power(
+    self,
+    devices: List[EcoflowDevice],
+    threshold: int = 0,
+  ) -> EcoflowDevice:
     """
     Find an online device with the lowest cached power.
     
@@ -186,12 +190,16 @@ class EcoflowDeviceAggregatorV2Async:
     min_power = min(device_powers.values())
 
     # Collect all devices that are close to the minimum within the threshold
-    candidates = [d for d in devices if device_powers[d] - min_power <= self._equal_power_threshold_watt]
+    candidates = [d for d in devices if device_powers[d] - min_power <= threshold]
 
     # Select a random device from the candidates
     return random.choice(candidates)
 
-  def _get_device_with_max_power(self, devices: List[EcoflowDevice]) -> EcoflowDevice:
+  def _get_device_with_max_power(
+    self,
+    devices: List[EcoflowDevice],
+    threshold: int = 0,
+  ) -> EcoflowDevice:
     """
     Find an online device with the highest cached power.
     
@@ -215,21 +223,33 @@ class EcoflowDeviceAggregatorV2Async:
     max_power = max(device_powers.values())
 
     # Collect all devices that are close to the maximum within the threshold
-    candidates = [d for d in devices if max_power - device_powers[d] <= self._equal_power_threshold_watt]
+    candidates = [d for d in devices if max_power - device_powers[d] <= threshold]
 
     # Select a random device from the candidates
     return random.choice(candidates)
 
+  def _get_power_disbalance(self, devices: List[EcoflowDevice]) -> int:
+    """
+    Calculate the difference between the maximum and minimum cached power 
+    among the provided list of online devices.
+
+    Args:
+        devices (List[EcoflowDevice]): The list of devices to check.
+    Returns:
+        int: The power disbalance in watts. Returns 0 if there are fewer 
+              than two active devices.
+    """
+    # Extract cached power values using the device identification
+    powers = [self.get_cached_power(device) for device in devices]
+
+    # Calculate the absolute difference between the highest and lowest values
+    disbalance = max(powers) - min(powers)
+
+    self._logger.info(f'{self._name}: power disbalance between devices is {disbalance} W')
+    return disbalance
+
   async def change_power(self, power_delta: int) -> None:
     """
-    Adjust the total power of all online devices by a specified delta.
-
-    The new total power is calculated as the sum of cached or retrieved
-    power plus the delta, and then distributed evenly among online devices.
-
-    Offline devices have their cache reset to -1 to prevent using
-    outdated power values.
-
     Args:
       power_delta (int): Total change in power in watts. Can be positive
                  (increase) or negative (decrease).
@@ -247,6 +267,44 @@ class EcoflowDeviceAggregatorV2Async:
       return
 
     if power_delta > 0:
+      device = self._get_device_with_min_power(
+        devices = self._online_devices,
+        threshold = self._equal_power_threshold_watt,
+      )
+    else:
+      device = self._get_device_with_max_power(
+        devices = self._online_devices,
+        threshold = self._equal_power_threshold_watt,
+      )
+
+    if self._need_update_cached_power(device):
+      await self._update_cached_power(device)
+
+    power = self.get_cached_power(device)
+    await self._try_set_power(device, power + power_delta)
+
+  async def equalize_power(self, power_delta: int) -> None:
+    if abs(power_delta) < 5:
+      self._logger.warning(f'{self._name}: power delta is too low in equalize_power()')
+      return
+
+    if self._need_update_online_devices():
+      await self._update_online_devices()
+
+    if not self._online_devices:
+      if self._verbose:
+        self._logger.info(f'{self._name}: no online devices for equalize_power()')
+      return
+
+    disbalance = self._get_power_disbalance(self._online_devices)
+    if disbalance <= 0:
+      self._logger.info(f'{self._name}: power for all devices is equal')
+      return
+
+    delta = min(abs(power_delta), disbalance)
+    sign = random.choice([-1, 1])
+
+    if sign > 0:
       device = self._get_device_with_min_power(self._online_devices)
     else:
       device = self._get_device_with_max_power(self._online_devices)
@@ -255,7 +313,7 @@ class EcoflowDeviceAggregatorV2Async:
       await self._update_cached_power(device)
 
     power = self.get_cached_power(device)
-    await self._try_set_power(device, power + power_delta)
+    await self._try_set_power(device, power + delta * sign)
 
   async def set_max_power(self) -> None:
     """
@@ -271,7 +329,10 @@ class EcoflowDeviceAggregatorV2Async:
         self._logger.info(f'{self._name}: no online devices for set_max_power()')
       return
 
-    device = self._get_device_with_min_power(self._online_devices)
+    device = self._get_device_with_min_power(
+      devices = self._online_devices,
+      threshold = self._equal_power_threshold_watt,
+    )
 
     if self._need_update_cached_power(device):
       await self._update_cached_power(device)
