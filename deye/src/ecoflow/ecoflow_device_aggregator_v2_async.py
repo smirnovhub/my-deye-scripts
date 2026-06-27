@@ -60,6 +60,7 @@ class EcoflowDeviceAggregatorV2Async:
     self._online_devices: List[EcoflowDevice] = []
     self._online_devices_last_update: datetime = datetime.min
     self._online_devices_update_interval = timedelta(minutes = 5)
+    self._equalized_powers: Dict[EcoflowDevice, int] = {}
     self._logger = logging.getLogger()
 
   async def get_online_devices_count(self) -> int:
@@ -228,26 +229,6 @@ class EcoflowDeviceAggregatorV2Async:
     # Select a random device from the candidates
     return random.choice(candidates)
 
-  def _get_power_disbalance(self, devices: List[EcoflowDevice]) -> int:
-    """
-    Calculate the difference between the maximum and minimum cached power 
-    among the provided list of online devices.
-
-    Args:
-        devices (List[EcoflowDevice]): The list of devices to check.
-    Returns:
-        int: The power disbalance in watts. Returns 0 if there are fewer 
-              than two active devices.
-    """
-    # Extract cached power values using the device identification
-    powers = [self.get_cached_power(device) for device in devices]
-
-    # Calculate the absolute difference between the highest and lowest values
-    disbalance = max(powers) - min(powers)
-
-    self._logger.info(f'{self._name}: power disbalance between devices is {disbalance} W')
-    return disbalance
-
   async def change_power(self, power_delta: int) -> None:
     """
     Args:
@@ -282,12 +263,9 @@ class EcoflowDeviceAggregatorV2Async:
 
     power = self.get_cached_power(device)
     await self._try_set_power(device, power + power_delta)
+    self._equalized_powers.clear()
 
-  async def equalize_power(self, power_delta: int) -> None:
-    if abs(power_delta) < 5:
-      self._logger.warning(f'{self._name}: power delta is too low in equalize_power()')
-      return
-
+  async def equalize_power(self) -> None:
     if self._need_update_online_devices():
       await self._update_online_devices()
 
@@ -296,24 +274,50 @@ class EcoflowDeviceAggregatorV2Async:
         self._logger.info(f'{self._name}: no online devices for equalize_power()')
       return
 
-    disbalance = self._get_power_disbalance(self._online_devices)
-    if disbalance <= 0:
-      self._logger.info(f'{self._name}: power for all devices is equal')
+    # Clean up tracking dictionary if any monitored device drops offline
+    if self._equalized_powers:
+      self._equalized_powers = {d: p for d, p in self._equalized_powers.items() if d in self._online_devices}
+
+    # Fetch current state to evaluate active system parameters
+    device_powers = {d: self.get_cached_power(d) for d in self._online_devices}
+    disbalance = max(device_powers.values()) - min(device_powers.values())
+
+    # Verify if the real system is already balanced within the threshold limit
+    if disbalance <= self._equal_power_threshold_watt:
+      self._equalized_powers.clear()
+      self._logger.info(f'{self._name}: power for all devices is equalized')
       return
 
-    delta = min(abs(power_delta), disbalance)
-    sign = random.choice([-1, 1])
+    # Calculate and lock down target values if the tracking dictionary is empty
+    if not self._equalized_powers:
+      total_power = sum(device_powers.values())
+      count = len(self._online_devices)
 
-    if sign > 0:
-      device = self._get_device_with_min_power(self._online_devices)
-    else:
-      device = self._get_device_with_max_power(self._online_devices)
+      base_share = total_power // count
+
+      # Distribute the base share and disperse the remainder to minimize drift
+      self._equalized_powers = {d: base_share for d in self._online_devices}
+
+    # Identify devices that still require adjustment to reach their target state
+    pending_devices = [d for d in self._online_devices if device_powers[d] != self._equalized_powers[d]]
+
+    # If all locked targets are physically met, clear the map and exit
+    if not pending_devices:
+      self._equalized_powers.clear()
+      self._logger.info(f'{self._name}: power for all devices is equalized')
+      return
+
+    # Select one random device out of the pending group to execute adjustment
+    device = random.choice(pending_devices)
 
     if self._need_update_cached_power(device):
       await self._update_cached_power(device)
 
-    power = self.get_cached_power(device)
-    await self._try_set_power(device, power + delta * sign)
+    current_power = self.get_cached_power(device)
+    target_power = self._equalized_powers[device]
+
+    diff = target_power - current_power
+    await self._try_set_power(device, current_power + diff)
 
   async def set_max_power(self) -> None:
     """
@@ -338,6 +342,7 @@ class EcoflowDeviceAggregatorV2Async:
       await self._update_cached_power(device)
 
     await self._try_set_power(device, device.max_power)
+    self._equalized_powers.clear()
 
   def get_cached_power(self, device: EcoflowDevice) -> int:
     return self._power_cache.get(device, -1)
@@ -398,4 +403,5 @@ class EcoflowDeviceAggregatorV2Async:
       if device not in previously_online:
         self._power_cache.pop(device, None)
         self._power_cache_last_update.pop(device, None)
+        self._equalized_powers.clear()
         self._logger.info(f"{self._name}: device {device.name} came online, power cache cleared")
