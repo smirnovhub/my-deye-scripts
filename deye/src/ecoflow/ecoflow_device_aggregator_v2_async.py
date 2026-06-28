@@ -274,8 +274,11 @@ class EcoflowDeviceAggregatorV2Async:
         self._logger.info(f'{self._name}: no online devices for equalize_power()')
       return
 
+    # Find devices that have non-negative cached power values
+    valid_devices = [d for d in self._online_devices if self.get_cached_power(d) >= 0]
+
     # Fetch current state to evaluate active system parameters
-    device_powers = {d: self.get_cached_power(d) for d in self._online_devices}
+    device_powers = {d: self.get_cached_power(d) for d in valid_devices}
     disbalance = max(device_powers.values()) - min(device_powers.values())
 
     # Verify if the real system is already balanced within the threshold limit
@@ -287,10 +290,10 @@ class EcoflowDeviceAggregatorV2Async:
     # Calculate and lock down target power value
     if self._equalized_power is None:
       total_power = sum(device_powers.values())
-      self._equalized_power = total_power // len(self._online_devices)
+      self._equalized_power = total_power // len(valid_devices)
 
     # Identify devices that still require adjustment to reach their target state
-    pending_devices = [d for d in self._online_devices if device_powers[d] != self._equalized_power]
+    pending_devices = [d for d in valid_devices if device_powers[d] != self._equalized_power]
 
     # If all locked targets are physically met, clear the map and exit
     if not pending_devices:
