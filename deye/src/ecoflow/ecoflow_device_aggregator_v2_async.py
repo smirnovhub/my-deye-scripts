@@ -1,3 +1,4 @@
+import math
 import random
 import logging
 
@@ -61,6 +62,7 @@ class EcoflowDeviceAggregatorV2Async:
     self._online_devices_last_update: datetime = datetime.min
     self._online_devices_update_interval = timedelta(minutes = 5)
     self._equalized_power: Optional[int] = None
+    self._equalized_power_rounding_watt = 10
     self._logger = logging.getLogger()
 
   async def get_online_devices_count(self) -> int:
@@ -290,7 +292,9 @@ class EcoflowDeviceAggregatorV2Async:
     # Calculate and lock down target power value
     if self._equalized_power is None:
       total_power = sum(device_powers.values())
-      self._equalized_power = total_power // len(valid_devices)
+      power = total_power // len(valid_devices)
+      self._equalized_power = math.ceil(
+        power / self._equalized_power_rounding_watt) * self._equalized_power_rounding_watt
 
     # Identify devices that still require adjustment to reach their target state
     pending_devices = [d for d in valid_devices if device_powers[d] != self._equalized_power]
