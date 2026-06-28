@@ -284,7 +284,7 @@ class EcoflowDeviceAggregatorV2Async:
     disbalance = max(device_powers.values()) - min(device_powers.values())
 
     # Verify if the real system is already balanced within the threshold limit
-    if disbalance <= self._equal_power_threshold_watt:
+    if disbalance <= 0:
       self._equalized_power = None
       self._logger.info(f'{self._name}: power for all devices is equalized')
       return
