@@ -63,6 +63,7 @@ class EcoflowDeviceAggregatorV2Async:
     self._online_devices_update_interval = timedelta(minutes = 5)
     self._equalized_power: Optional[int] = None
     self._equalized_power_rounding_watt = 10
+    self._last_changed_device: Optional[EcoflowDevice] = None
     self._logger = logging.getLogger()
 
   async def get_online_devices_count(self) -> int:
@@ -135,6 +136,7 @@ class EcoflowDeviceAggregatorV2Async:
     if self._verbose:
       self._logger.info(f'{self._name}: writing power {power} W to cache for {device.name}...')
 
+    self._last_changed_device = device
     self._set_cached_power(device, power)
 
   async def get_cached_total_power(self) -> int:
@@ -195,6 +197,9 @@ class EcoflowDeviceAggregatorV2Async:
     # Collect all devices that are close to the minimum within the threshold
     candidates = [d for d in devices if device_powers[d] - min_power <= threshold]
 
+    # Exclude the last changed device only if it doesn't leave the list empty
+    self._exclude_last_changed_device(candidates)
+
     # Select a random device from the candidates
     return random.choice(candidates)
 
@@ -227,6 +232,9 @@ class EcoflowDeviceAggregatorV2Async:
 
     # Collect all devices that are close to the maximum within the threshold
     candidates = [d for d in devices if max_power - device_powers[d] <= threshold]
+
+    # Exclude the last changed device only if it doesn't leave the list empty
+    self._exclude_last_changed_device(candidates)
 
     # Select a random device from the candidates
     return random.choice(candidates)
@@ -304,6 +312,9 @@ class EcoflowDeviceAggregatorV2Async:
       self._equalized_power = None
       self._logger.info(f'{self._name}: power for all devices is equalized')
       return
+
+    # Exclude the last changed device only if it doesn't leave the list empty
+    self._exclude_last_changed_device(pending_devices)
 
     # Select one random device out of the pending group to execute adjustment
     device = random.choice(pending_devices)
@@ -399,3 +410,11 @@ class EcoflowDeviceAggregatorV2Async:
         self._power_cache_last_update.pop(device, None)
         self._equalized_power = None
         self._logger.info(f"{self._name}: device {device.name} came online, power cache cleared")
+
+  def _exclude_last_changed_device(self, devices: List[EcoflowDevice]) -> None:
+    """
+    Remove the last changed device from the candidates list,
+    but only if it doesn't leave the list empty.
+    """
+    if self._last_changed_device is not None and len(devices) > 1 and self._last_changed_device in devices:
+      devices.remove(self._last_changed_device)
