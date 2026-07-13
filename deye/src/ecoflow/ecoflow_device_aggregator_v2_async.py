@@ -122,6 +122,10 @@ class EcoflowDeviceAggregatorV2Async:
     if old_power == power:
       if self._verbose:
         self._logger.info(f'{self._name}: new power ({power} W) for {device.name} is the same as old power. do nothing')
+
+      if power == 0 or power == device.max_power:
+        self._last_changed_device = device
+
       return
 
     if self._verbose:
