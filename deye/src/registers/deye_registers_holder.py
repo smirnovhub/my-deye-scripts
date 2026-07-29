@@ -21,6 +21,10 @@ class DeyeRegistersHolder(ABC):
     self._socket_timeout = kwargs.get("socket_timeout", 10)
 
   @property
+  def inverters_count(self) -> int:
+    return len(self._loggers)
+
+  @property
   def all_registers(self) -> Dict[str, DeyeRegisters]:
     return self._registers
 
