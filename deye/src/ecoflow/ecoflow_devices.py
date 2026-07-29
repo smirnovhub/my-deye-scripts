@@ -32,3 +32,7 @@ class EcoflowDevices:
   @property
   def devices(self) -> List[EcoflowDevice]:
     return self.__devices.copy()
+
+  @property
+  def devices_count(self) -> int:
+    return len(self.__devices)

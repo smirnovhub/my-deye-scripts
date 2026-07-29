@@ -66,6 +66,10 @@ class EcoflowDeviceAggregatorV2Async:
     self._last_changed_device: Optional[EcoflowDevice] = None
     self._logger = logging.getLogger()
 
+  @property
+  def devices_count(self) -> int:
+    return self._devices.devices_count
+
   async def get_online_devices_count(self) -> int:
     if self._need_update_online_devices():
       await self._update_online_devices()
