@@ -1,10 +1,11 @@
 FROM python:3.14-slim
 
-# Set remote repository name
-ARG REPO_NAME=my-deye-scripts
+ENV DEYE_LOG_NAME=demoserver
 
-# Set remote branch name
-ARG BRANCH=master
+# Repository settings
+ARG DEYE_REPOSITORY_OWNER
+ARG DEYE_REPOSITORY_NAME
+ARG DEYE_BRANCH_NAME
 
 # Set port number to listen on
 ARG PORTS="5000 5001"
@@ -43,12 +44,12 @@ USER $USER_NAME
 WORKDIR $APP_DIR
 
 # Clone the project and initialize submodules
-RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
-  cd $REPO_NAME && \
+RUN git clone -b $DEYE_BRANCH_NAME https://github.com/$DEYE_REPOSITORY_OWNER/$DEYE_REPOSITORY_NAME.git && \
+  cd $DEYE_REPOSITORY_NAME && \
   git submodule update --init --recursive
 
 # Set working directory
-WORKDIR $APP_DIR/$REPO_NAME/demoserver
+WORKDIR $APP_DIR/$DEYE_REPOSITORY_NAME/demoserver
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1

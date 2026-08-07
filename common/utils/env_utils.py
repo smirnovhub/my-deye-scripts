@@ -4,6 +4,9 @@ import re
 class EnvUtils:
   IS_TEST_RUN = "IS_TEST_RUN"
 
+  DEYE_REPOSITORY_OWNER = "DEYE_REPOSITORY_OWNER"
+  DEYE_REPOSITORY_NAME = "DEYE_REPOSITORY_NAME"
+  DEYE_BRANCH_NAME = "DEYE_BRANCH_NAME"
   DEYE_LOG_NAME = "DEYE_LOG_NAME"
   DEYE_MASTER_LOGGER_HOST = "DEYE_MASTER_LOGGER_HOST"
   DEYE_MASTER_LOGGER_SERIAL = "DEYE_MASTER_LOGGER_SERIAL"
@@ -31,7 +34,11 @@ class EnvUtils:
   REMOTE_CACHE_SERVER_URL = "REMOTE_CACHE_SERVER_URL"
   REMOTE_GRAPH_SERVER_URL = "REMOTE_GRAPH_SERVER_URL"
 
+  MIKROTIK_REPOSITORY_OWNER = "MIKROTIK_REPOSITORY_OWNER"
+  MIKROTIK_REPOSITORY_NAME = "MIKROTIK_REPOSITORY_NAME"
+  MIKROTIK_BRANCH_NAME = "MIKROTIK_BRANCH_NAME"
   MIKROTIK_SERVER_URL = "MIKROTIK_SERVER_URL"
+
   SCHEDULER_SERVER_URL = "SCHEDULER_SERVER_URL"
 
   TELEGRAM_BOT_API_TOKEN = "TELEGRAM_BOT_API_TOKEN"
@@ -45,6 +52,27 @@ class EnvUtils:
   ECOFLOW_ACCESS_KEY = "ECOFLOW_ACCESS_KEY"
   ECOFLOW_SECRET_KEY = "ECOFLOW_SECRET_KEY"
   ECOFLOW_DEVICE_JSON = "ECOFLOW_DEVICE{0}_JSON"
+
+  @staticmethod
+  def get_deye_repository_owner() -> str:
+    val = os.getenv(EnvUtils.DEYE_REPOSITORY_OWNER, '').strip()
+    if not val:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_REPOSITORY_OWNER}' is not set")
+    return val
+
+  @staticmethod
+  def get_deye_repository_name() -> str:
+    val = os.getenv(EnvUtils.DEYE_REPOSITORY_NAME, '').strip()
+    if not val:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_REPOSITORY_NAME}' is not set")
+    return val
+
+  @staticmethod
+  def get_deye_branch_name() -> str:
+    val = os.getenv(EnvUtils.DEYE_BRANCH_NAME, '').strip()
+    if not val:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_BRANCH_NAME}' is not set")
+    return val
 
   @staticmethod
   def get_master_logger_host() -> str:
@@ -80,6 +108,27 @@ class EnvUtils:
   @staticmethod
   def get_remote_graph_server_url() -> str:
     return os.getenv(EnvUtils.REMOTE_GRAPH_SERVER_URL, '').strip()
+
+  @staticmethod
+  def get_mikrotik_repository_owner() -> str:
+    val = os.getenv(EnvUtils.MIKROTIK_REPOSITORY_OWNER, '').strip()
+    if not val:
+      raise RuntimeError(f"Environment variable '{EnvUtils.MIKROTIK_REPOSITORY_OWNER}' is not set")
+    return val
+
+  @staticmethod
+  def get_mikrotik_repository_name() -> str:
+    val = os.getenv(EnvUtils.MIKROTIK_REPOSITORY_NAME, '').strip()
+    if not val:
+      raise RuntimeError(f"Environment variable '{EnvUtils.MIKROTIK_REPOSITORY_NAME}' is not set")
+    return val
+
+  @staticmethod
+  def get_mikrotik_branch_name() -> str:
+    val = os.getenv(EnvUtils.MIKROTIK_BRANCH_NAME, '').strip()
+    if not val:
+      raise RuntimeError(f"Environment variable '{EnvUtils.MIKROTIK_BRANCH_NAME}' is not set")
+    return val
 
   @staticmethod
   def get_mikrotik_server_url() -> str:
