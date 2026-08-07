@@ -2,11 +2,10 @@ FROM python:3.14-slim
 
 ENV DEYE_LOG_NAME=telebot
 
-# Set remote repository name
-ARG REPO_NAME=my-deye-scripts
-
-# Set remote branch name
-ARG BRANCH=master
+# Repository settings
+ARG DEYE_REPOSITORY_OWNER
+ARG DEYE_REPOSITORY_NAME
+ARG DEYE_BRANCH_NAME
 
 # Set username variable
 ARG USER_NAME=telebot
@@ -48,15 +47,15 @@ USER $USER_NAME
 WORKDIR $APP_DIR
 
 # Clone the project and initialize submodules
-RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
-  cd $REPO_NAME && \
+RUN git clone -b $DEYE_BRANCH_NAME https://github.com/$DEYE_REPOSITORY_OWNER/$DEYE_REPOSITORY_NAME.git && \
+  cd $DEYE_REPOSITORY_NAME && \
   git submodule update --init --recursive
 
 # Copy pre-configured configs to container
-COPY --chown=$USER_NAME:$USER_NAME common/telebot_users.py $REPO_NAME/common/
+COPY --chown=$USER_NAME:$USER_NAME common/telebot_users.py $DEYE_REPOSITORY_NAME/common/
 
 # Set working directory
-WORKDIR $APP_DIR/$REPO_NAME/telebot
+WORKDIR $APP_DIR/$DEYE_REPOSITORY_NAME/telebot
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1

@@ -135,7 +135,7 @@ services:
       retries: 1
     volumes:
       # Mount shared folder with read-write permissions
-      - deye_shared_volume:/home/backserver/my-deye-scripts/deyeweb/data
+      - deye_shared_volume:/home/backserver/${DEYE_REPOSITORY_NAME}/deyeweb/data
 
   deye-data-collector:
     build:
@@ -184,7 +184,7 @@ services:
           memory: ${GLOBAL_MEMORY_LIMIT}
     volumes:
       # Mount shared folder with read-write permissions
-      - deye_shared_volume:/home/datacollector/my-deye-scripts/data_collector/data
+      - deye_shared_volume:/home/datacollector/${DEYE_REPOSITORY_NAME}/data_collector/data
 
   telebot:
     build:
@@ -245,7 +245,7 @@ services:
       retries: 1
     volumes:
       # Mount shared folder with read-write permissions
-      - deye_shared_volume:/home/telebot/my-deye-scripts/telebot/data
+      - deye_shared_volume:/home/telebot/${DEYE_REPOSITORY_NAME}/telebot/data
 
   deye-graph-server:
     build:

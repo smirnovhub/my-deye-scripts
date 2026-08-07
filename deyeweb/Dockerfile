@@ -1,12 +1,13 @@
 FROM php:8.4-apache AS baseweb
 
-# Set remote repository name
-ARG REPO_NAME=my-deye-scripts
-ARG DEYE_GRAPHS_DIR
-ENV GRAPHS_PATH="/var/www/${REPO_NAME}/deyeweb/data/${DEYE_GRAPHS_DIR}"
+# Repository settings
+ARG DEYE_REPOSITORY_OWNER
+ARG DEYE_REPOSITORY_NAME
+ARG DEYE_BRANCH_NAME
 
-# Set remote branch name
-ARG BRANCH=master
+ARG DEYE_GRAPHS_DIR
+
+ENV GRAPHS_PATH="/var/www/${DEYE_REPOSITORY_NAME}/deyeweb/data/${DEYE_GRAPHS_DIR}"
 
 # Set application directory variable
 ARG APP_DIR=/var/www
@@ -39,19 +40,19 @@ RUN pip install --no-cache-dir --break-system-packages six requests aiohttp
 WORKDIR $APP_DIR
 
 # Clone the project and initialize submodules
-RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
-  cd $REPO_NAME && \
+RUN git clone -b $DEYE_BRANCH_NAME https://github.com/$DEYE_REPOSITORY_OWNER/$DEYE_REPOSITORY_NAME.git && \
+  cd $DEYE_REPOSITORY_NAME && \
   git submodule update --init --recursive
 
 # Copy custom log rotator to container
 COPY --chmod=755 common/utils/hourly_log_rotator.py /usr/local/bin/
 
 # Find and copy only files from the icons directory to the parent directory
-RUN find $REPO_NAME/deyeweb/images/icons/ -maxdepth 1 -type f -exec cp {} $REPO_NAME/deyeweb/ \;
+RUN find $DEYE_REPOSITORY_NAME/deyeweb/images/icons/ -maxdepth 1 -type f -exec cp {} $DEYE_REPOSITORY_NAME/deyeweb/ \;
 
 # Create symlink
 RUN rm -rf /var/www/html && \
-  ln -s $REPO_NAME/deyeweb html
+  ln -s $DEYE_REPOSITORY_NAME/deyeweb html
 
 # Enable Apache rewrite module (common for PHP apps)
 RUN a2enmod rewrite && \
@@ -86,7 +87,7 @@ RUN a2dissite 000-default && \
 COPY --chmod=755 deyeweb/entrypoint.sh /usr/local/bin/
 
 # Set proper permissions for Apache
-RUN chown -R www-data:www-data $REPO_NAME
+RUN chown -R www-data:www-data $DEYE_REPOSITORY_NAME
 
 # Apache runs on ports 80 and 443
 EXPOSE 80 443
@@ -125,13 +126,13 @@ ENV DEYE_LOG_NAME=demoweb
 FROM python:3.14-slim AS deyebackserver
 
 ENV DEYE_LOG_NAME=backserver
+
+# Repository settings
+ARG DEYE_REPOSITORY_OWNER
+ARG DEYE_REPOSITORY_NAME
+ARG DEYE_BRANCH_NAME
+
 ENV SERVER_PORT=80
-
-# Set remote repository name
-ARG REPO_NAME=my-deye-scripts
-
-# Set remote branch name
-ARG BRANCH=master
 
 # Set username variable
 ARG USER_NAME=backserver
@@ -172,8 +173,8 @@ USER $USER_NAME
 WORKDIR $APP_DIR
 
 # Clone the project and initialize submodules
-RUN git clone -b $BRANCH https://github.com/smirnovhub/$REPO_NAME.git && \
-  cd $REPO_NAME && \
+RUN git clone -b $DEYE_BRANCH_NAME https://github.com/$DEYE_REPOSITORY_OWNER/$DEYE_REPOSITORY_NAME.git && \
+  cd $DEYE_REPOSITORY_NAME && \
   git submodule update --init --recursive
 
 # Expose proxy port
@@ -183,7 +184,7 @@ EXPOSE $SERVER_PORT
 ENV PYTHONUNBUFFERED=1
 
 # Set working directory
-WORKDIR $APP_DIR/$REPO_NAME/deyeweb
+WORKDIR $APP_DIR/$DEYE_REPOSITORY_NAME/deyeweb
 
 # Use tini as an init process to properly reap zombie processes (PID 1 problem).
 # This prevents processes from lingering in a <zombie> state when
