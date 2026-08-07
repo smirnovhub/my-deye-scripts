@@ -124,6 +124,12 @@ ENV DEYE_LOG_NAME=demoweb
 FROM python:3.14-slim AS deyebackserver
 
 ENV DEYE_LOG_NAME=backserver
+
+# Repository settings
+ARG DEYE_REPOSITORY_OWNER
+ARG DEYE_REPOSITORY_NAME
+ARG DEYE_BRANCH_NAME
+
 ENV SERVER_PORT=80
 
 # Set username variable
