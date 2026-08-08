@@ -360,7 +360,7 @@ class EnvUtils:
     port = os.getenv(name, '8899').strip()
 
     if not port:
-      raise RuntimeError(f"Environment variable '{name}' is not set")
+      port = '8899'
 
     if not EnvUtils._is_port_correct(port):
       raise RuntimeError(f"Logger port '{name}' is invalid")
