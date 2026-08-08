@@ -4,6 +4,7 @@ import re
 class EnvUtils:
   IS_TEST_RUN = "IS_TEST_RUN"
 
+  DEYE_REPOSITORY_NAME = "DEYE_REPOSITORY_NAME"
   DEYE_REPOSITORY_URL = "DEYE_REPOSITORY_URL"
   DEYE_REPOSITORY_BRANCH = "DEYE_REPOSITORY_BRANCH"
   DEYE_LOG_NAME = "DEYE_LOG_NAME"
@@ -33,6 +34,7 @@ class EnvUtils:
   REMOTE_CACHE_SERVER_URL = "REMOTE_CACHE_SERVER_URL"
   REMOTE_GRAPH_SERVER_URL = "REMOTE_GRAPH_SERVER_URL"
 
+  MIKROTIK_REPOSITORY_NAME = "MIKROTIK_REPOSITORY_NAME"
   MIKROTIK_REPOSITORY_URL = "MIKROTIK_REPOSITORY_URL"
   MIKROTIK_REPOSITORY_BRANCH = "MIKROTIK_REPOSITORY_BRANCH"
   MIKROTIK_SERVER_URL = "MIKROTIK_SERVER_URL"
@@ -50,6 +52,13 @@ class EnvUtils:
   ECOFLOW_ACCESS_KEY = "ECOFLOW_ACCESS_KEY"
   ECOFLOW_SECRET_KEY = "ECOFLOW_SECRET_KEY"
   ECOFLOW_DEVICE_JSON = "ECOFLOW_DEVICE{0}_JSON"
+
+  @staticmethod
+  def get_deye_repository_name() -> str:
+    val = os.getenv(EnvUtils.DEYE_REPOSITORY_NAME, '').strip()
+    if not val:
+      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_REPOSITORY_NAME}' is not set")
+    return val
 
   @staticmethod
   def get_deye_repository_url() -> str:
@@ -99,6 +108,13 @@ class EnvUtils:
   @staticmethod
   def get_remote_graph_server_url() -> str:
     return os.getenv(EnvUtils.REMOTE_GRAPH_SERVER_URL, '').strip()
+
+  @staticmethod
+  def get_mikrotik_repository_name() -> str:
+    val = os.getenv(EnvUtils.MIKROTIK_REPOSITORY_NAME, '').strip()
+    if not val:
+      raise RuntimeError(f"Environment variable '{EnvUtils.MIKROTIK_REPOSITORY_NAME}' is not set")
+    return val
 
   @staticmethod
   def get_mikrotik_repository_url() -> str:
