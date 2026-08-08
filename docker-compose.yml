@@ -15,8 +15,10 @@ services:
       dockerfile: deyeweb/Dockerfile
       target: deyeweb
       args:
-        BRANCH: ${APP_BRANCH}
-        DEYE_GRAPHS_DIR: deye-graphs
+        DEYE_REPOSITORY_NAME: ${DEYE_REPOSITORY_NAME}
+        DEYE_REPOSITORY_URL: ${DEYE_REPOSITORY_URL}
+        DEYE_REPOSITORY_BRANCH: ${DEYE_REPOSITORY_BRANCH}
+        DEYE_GRAPHS_DIR: ${DEYE_GRAPHS_DIR}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -79,7 +81,9 @@ services:
       dockerfile: deyeweb/Dockerfile
       target: deyebackserver
       args:
-        BRANCH: ${APP_BRANCH}
+        DEYE_REPOSITORY_NAME: ${DEYE_REPOSITORY_NAME}
+        DEYE_REPOSITORY_URL: ${DEYE_REPOSITORY_URL}
+        DEYE_REPOSITORY_BRANCH: ${DEYE_REPOSITORY_BRANCH}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -142,7 +146,9 @@ services:
       context: .
       dockerfile: data_collector/Dockerfile
       args:
-        BRANCH: ${APP_BRANCH}
+        DEYE_REPOSITORY_NAME: ${DEYE_REPOSITORY_NAME}
+        DEYE_REPOSITORY_URL: ${DEYE_REPOSITORY_URL}
+        DEYE_REPOSITORY_BRANCH: ${DEYE_REPOSITORY_BRANCH}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -191,7 +197,9 @@ services:
       context: .
       dockerfile: telebot/Dockerfile
       args:
-        BRANCH: ${APP_BRANCH}
+        DEYE_REPOSITORY_NAME: ${DEYE_REPOSITORY_NAME}
+        DEYE_REPOSITORY_URL: ${DEYE_REPOSITORY_URL}
+        DEYE_REPOSITORY_BRANCH: ${DEYE_REPOSITORY_BRANCH}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -286,7 +294,7 @@ services:
       TELEGRAM_PUBLIC_CHAT_ID: ${TELEGRAM_PUBLIC_CHAT_ID}
 
       REMOTE_GRAPH_SERVER_URL: http://deye-graph-server
-      DEYE_GRAPHS_DIR: deye-graphs
+      DEYE_GRAPHS_DIR: ${DEYE_GRAPHS_DIR}
       DEYE_GRAPHS_FORMAT: ${DEYE_GRAPHS_FORMAT}
 
       DEYE_LOG_NAME: deye-graph-generator
