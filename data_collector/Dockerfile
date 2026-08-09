@@ -3,9 +3,9 @@ FROM python:3.14-slim
 ENV DEYE_LOG_NAME=datacollector
 
 # Repository settings
-ARG DEYE_REPOSITORY_OWNER
 ARG DEYE_REPOSITORY_NAME
-ARG DEYE_BRANCH_NAME
+ARG DEYE_REPOSITORY_URL
+ARG DEYE_REPOSITORY_BRANCH
 
 # Set username variable
 ARG USER_NAME=datacollector
@@ -45,7 +45,7 @@ USER $USER_NAME
 WORKDIR $APP_DIR
 
 # Clone the project and initialize submodules
-RUN git clone -b $DEYE_BRANCH_NAME https://github.com/$DEYE_REPOSITORY_OWNER/$DEYE_REPOSITORY_NAME.git && \
+RUN git clone -b $DEYE_REPOSITORY_BRANCH $DEYE_REPOSITORY_URL $DEYE_REPOSITORY_NAME && \
   cd $DEYE_REPOSITORY_NAME && \
   git submodule update --init --recursive
 
