@@ -68,3 +68,4 @@ jobs:
           DEYE_LOG_NAME: deye_other_tests
         run: |
           python -u test/src/suntime_test_1.py
+          python -u test/src/suntime_test_2.py test/src/suntime_test_data.txt
