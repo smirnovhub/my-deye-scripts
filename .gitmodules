@@ -17,4 +17,4 @@
 [submodule "modules/suntime"]
 	path = modules/suntime
 	url = https://github.com/smirnovhub/suntime.git
-	branch = master
+	branch = main
