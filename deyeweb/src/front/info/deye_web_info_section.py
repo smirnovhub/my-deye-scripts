@@ -17,6 +17,7 @@ class DeyeWebInfoSection(DeyeWebBaseInfoSection):
       registers.grid_external_ct_power_register,
       registers.load_power_register,
       registers.pv1_power_register,
+      registers.pv2_power_register,
       registers.gen_power_register,
       registers.inverter_ac_temperature_register,
       registers.inverter_dc_temperature_register,
