@@ -40,6 +40,8 @@ class DeyeProxyConfig:
     # ensure the logger resource is eventually released.
     self.__session_timeout = EnvVar("SESSION_TIMEOUT", "10", "Maximum duration for session")
 
+    self.__read_only = EnvVar("READ_ONLY", "FALSE", "Is proxy in read-only mode (TRUE/FALSE)")
+
     self.__log_level = EnvVar("LOG_LEVEL", "INFO", "Log level for logging")
 
     self.__proxy_host = '0.0.0.0'
@@ -55,6 +57,7 @@ class DeyeProxyConfig:
       self.__client_idle_timeout,
       self.__logger_idle_timeout,
       self.__session_timeout,
+      self.__read_only,
       self.__log_level,
     ]
 
@@ -103,6 +106,10 @@ class DeyeProxyConfig:
   @property
   def SESSION_TIMEOUT(self) -> float:
     return self.__session_timeout.as_float()
+
+  @property
+  def READ_ONLY(self) -> bool:
+    return self.__read_only.value.lower() == "true"
 
   @property
   def LOG_LEVEL(self) -> str:
