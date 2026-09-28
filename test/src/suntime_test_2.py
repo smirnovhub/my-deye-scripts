@@ -88,8 +88,4 @@ def verify_suntime_calculations(file_path):
   print("All suntime calculations match successfully.")
 
 if __name__ == "__main__":
-  if len(sys.argv) < 2:
-    print(f"Usage: python {Path(sys.argv[0]).name} <path_to_text_file>")
-    sys.exit(1)
-
-  verify_suntime_calculations(sys.argv[1])
+  verify_suntime_calculations("suntime_test_data.txt")
