@@ -9,7 +9,7 @@ class CachedDeyeRegister:
   description: str
   caching_time: timedelta
 
-# Define caching time constants in seconds
+# Define caching time constants
 CACHE_STATIC = timedelta(hours = 24)
 CACHE_CONFIG = timedelta(minutes = 30)
 
@@ -51,6 +51,13 @@ deye_registers_caching_time: Dict[int, CachedDeyeRegister] = {
   36: CachedDeyeRegister(address = 36, description = "Import power limiter", caching_time = CACHE_CONFIG),
   37: CachedDeyeRegister(address = 37, description = "Communication address", caching_time = CACHE_STATIC),
   38: CachedDeyeRegister(address = 38, description = "Communication baud rate", caching_time = CACHE_STATIC),
+  39: CachedDeyeRegister(address = 39, description = "Power factor regulation", caching_time = CACHE_CONFIG),
+  40: CachedDeyeRegister(address = 40, description = "Active power regulation", caching_time = CACHE_CONFIG),
+  41: CachedDeyeRegister(address = 41, description = "Reactive power regulation", caching_time = CACHE_CONFIG),
+  42: CachedDeyeRegister(address = 42, description = "Apparent power regulation", caching_time = CACHE_CONFIG),
+  43: CachedDeyeRegister(address = 43, description = "Switch on and off enable", caching_time = CACHE_CONFIG),
+  44: CachedDeyeRegister(address = 44, description = "Factory reset enable", caching_time = CACHE_CONFIG),
+  45: CachedDeyeRegister(address = 45, description = "Self-checking time", caching_time = CACHE_CONFIG),
 
   # Advanced grid and protection settings
   46: CachedDeyeRegister(address = 46, description = "Absorption charge time enable", caching_time = CACHE_CONFIG),
@@ -62,6 +69,7 @@ deye_registers_caching_time: Dict[int, CachedDeyeRegister] = {
   52: CachedDeyeRegister(address = 52, description = "Ext CT ratio and Max PV power", caching_time = CACHE_CONFIG),
   53: CachedDeyeRegister(address = 53, description = "Hardware matching", caching_time = CACHE_CONFIG),
   54: CachedDeyeRegister(address = 54, description = "AC power ratio", caching_time = CACHE_CONFIG),
+  55: CachedDeyeRegister(address = 55, description = "Factory test instruction 1", caching_time = CACHE_CONFIG),
   56: CachedDeyeRegister(address = 56, description = "Limiter function enable", caching_time = CACHE_CONFIG),
   57: CachedDeyeRegister(address = 57, description = "Energy gen factor and RSD enable", caching_time = CACHE_CONFIG),
   58: CachedDeyeRegister(address = 58, description = "General settings bit flags", caching_time = CACHE_CONFIG),
@@ -77,10 +85,11 @@ deye_registers_caching_time: Dict[int, CachedDeyeRegister] = {
   207: CachedDeyeRegister(address = 207, description = "Equalization cycle days", caching_time = CACHE_CONFIG),
   208: CachedDeyeRegister(address = 208, description = "Equalization duration", caching_time = CACHE_CONFIG),
   209: CachedDeyeRegister(address = 209, description = "TEMPCO factor", caching_time = CACHE_CONFIG),
-  # 210: CacheDeyeRegister(address = 210, description = "Max charge current", caching_time = CACHE_CONFIG),
+  # 210: CachedDeyeRegister(address = 210, description = "Max charge current", caching_time = CACHE_CONFIG),
   211: CachedDeyeRegister(address = 211, description = "Max discharge current", caching_time = CACHE_CONFIG),
   212: CachedDeyeRegister(address = 212, description = "Reserved config", caching_time = CACHE_CONFIG),
   213: CachedDeyeRegister(address = 213, description = "Battery work mode", caching_time = CACHE_CONFIG),
+  214: CachedDeyeRegister(address = 214, description = "Lithium battery wake up enable", caching_time = CACHE_CONFIG),
   215: CachedDeyeRegister(address = 215, description = "Battery internal resistance", caching_time = CACHE_CONFIG),
   216: CachedDeyeRegister(address = 216, description = "Battery charge efficiency", caching_time = CACHE_CONFIG),
   217: CachedDeyeRegister(address = 217, description = "ShutDown capacity percent", caching_time = CACHE_CONFIG),
@@ -107,6 +116,7 @@ deye_registers_caching_time: Dict[int, CachedDeyeRegister] = {
   238: CachedDeyeRegister(address = 238, description = "SmartLoad ON voltage", caching_time = CACHE_CONFIG),
   239: CachedDeyeRegister(address = 239, description = "SmartLoad ON capacity", caching_time = CACHE_CONFIG),
   240: CachedDeyeRegister(address = 240, description = "Min Solar for Gen start", caching_time = CACHE_CONFIG),
+  241: CachedDeyeRegister(address = 241, description = "Min solar for generator and PWM test enable", caching_time = CACHE_CONFIG),
   242: CachedDeyeRegister(address = 242, description = "Gen Grid Signal On", caching_time = CACHE_CONFIG),
   243: CachedDeyeRegister(address = 243, description = "Energy management mode", caching_time = CACHE_CONFIG),
   244: CachedDeyeRegister(address = 244, description = "Limiter control enable", caching_time = CACHE_CONFIG),
