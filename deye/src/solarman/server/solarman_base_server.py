@@ -1,4 +1,5 @@
 import socket
+import struct
 import threading
 import socketserver
 import asyncio
@@ -49,13 +50,14 @@ class SolarmanBaseServer():
     address: str,
     serial: int,
     port: int = 8899,
+    logger: Optional[logging.Logger] = None,
   ):
     self._name = name
     self._address = address
     self._serial = serial
     self._port = port
 
-    self._log = logging.getLogger()
+    self._log = logger or logging.getLogger()
     self._log.info(f"{self._name}: starting SolarmanServer at {address}:{port}")
 
     self._server: Optional[asyncio.AbstractServer] = None
@@ -152,7 +154,17 @@ class SolarmanBaseServer():
     writer : asyncio.StreamWriter
         Asynchronous stream writer for sending data to the client.
     """
-    sol = MockDatalogger(self._address, serial = self._serial, auto_reconnect = False)
+    # Extract client IP and port from the stream writer
+    peername = writer.get_extra_info("peername")
+    client_ip = peername[0] if peername else "unknown"
+    client_port = peername[1] if peername else 0
+
+    sol = MockDatalogger(
+      self._address,
+      serial = self._serial,
+      auto_reconnect = False,
+      logger = self._log,
+    )
     while True:
       data = await reader.read(1024)
       if data == b"":
@@ -175,7 +187,7 @@ class SolarmanBaseServer():
 
         try:
           decoded = sol._v5_frame_decoder(data)
-          enc = self.function_response_from_request(decoded)
+          enc = await self.function_response_from_request(bytes(decoded), client_ip, client_port)
           self._log.debug(f'{self._name}: Generated Raw modbus: {enc.hex(" ")}')
           enc = sol.v5_frame_response_encoder(enc)
           self._log.debug(f'{self._name}: Sending frame: {bytes(enc).hex(" ")}')
@@ -196,7 +208,12 @@ class SolarmanBaseServer():
     except:
       pass
 
-  def function_response_from_request(self, req: bytes) -> bytes:
+  async def function_response_from_request(
+    self,
+    req: bytes,
+    client_ip: str,
+    client_port: int,
+  ) -> bytes:
     """
     Generate a Modbus-like response for a given request (for testing purposes).
 
@@ -214,29 +231,36 @@ class SolarmanBaseServer():
     bytes
         The Modbus-like response frame including CRC.
     """
+    if len(req) < 4:
+      return b""
+
     res = b""
     func = create_function_from_request_pdu(req[2:-2])
 
     if isinstance(func, ReadCoils):
-      res = self.on_read_coils(func)
+      res = await self.on_read_coils(func, client_ip, client_port)
     elif isinstance(func, ReadHoldingRegisters):
-      res = self.on_read_holding_registers(func)
+      res = await self.on_read_holding_registers(func, client_ip, client_port)
     elif isinstance(func, ReadInputRegisters):
-      res = self.on_read_input_registers(func)
+      res = await self.on_read_input_registers(func, client_ip, client_port)
     elif isinstance(func, WriteMultipleRegisters):
-      res = self.on_write_multiple_registers(func)
+      res = await self.on_write_multiple_registers(func, client_ip, client_port)
+    else:
+      # Handle standard unsupported functions with Modbus Exception 0x01
+      func_code = req[2]
+      res = struct.pack(">BB", func_code | 0x80, 0x01)
 
     slave_addr = req[1:2]
     return add_crc(slave_addr + res)
 
-  def on_read_coils(self, func: ReadCoils) -> bytes:
+  async def on_read_coils(self, func: ReadCoils, client_ip: str, client_port: int) -> bytes:
     return b""
 
-  def on_read_holding_registers(self, func: ReadHoldingRegisters) -> bytes:
+  async def on_read_holding_registers(self, func: ReadHoldingRegisters, client_ip: str, client_port: int) -> bytes:
     return b""
 
-  def on_read_input_registers(self, func: ReadInputRegisters) -> bytes:
+  async def on_read_input_registers(self, func: ReadInputRegisters, client_ip: str, client_port: int) -> bytes:
     return b""
 
-  def on_write_multiple_registers(self, func: WriteMultipleRegisters) -> bytes:
+  async def on_write_multiple_registers(self, func: WriteMultipleRegisters, client_ip: str, client_port: int) -> bytes:
     return b""
