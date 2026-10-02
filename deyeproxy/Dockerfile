@@ -28,6 +28,9 @@ RUN apt-get update && \
   ln -snf /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
   echo $TIMEZONE > /etc/timezone
 
+# Install required Python packages
+RUN pip install --no-cache-dir --break-system-packages requests
+
 # Create user without password, with home directory
 RUN useradd -m -u 1673 -s /usr/sbin/nologin $USER_NAME
 
@@ -37,7 +40,9 @@ USER $USER_NAME
 # Set working directory
 WORKDIR $APP_DIR
 
-COPY --chown=$USER_NAME:$USER_NAME common/utils/ ./common/utils
+COPY --chown=$USER_NAME:$USER_NAME common/ ./common/
+COPY --chown=$USER_NAME:$USER_NAME deye/ ./deye/
+COPY --chown=$USER_NAME:$USER_NAME modules/ ./modules/
 COPY --chown=$USER_NAME:$USER_NAME deyeproxy/ ./deyeproxy/
 
 # Set working directory
