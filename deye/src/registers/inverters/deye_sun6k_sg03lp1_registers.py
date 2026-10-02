@@ -16,6 +16,7 @@ from int_deye_register import IntDeyeRegister
 from int_writable_deye_register import IntWritableDeyeRegister
 from long_float_deye_register import LongFloatDeyeRegister
 from long_float_splitted_deye_register import LongFloatSplittedDeyeRegister
+from serial_number_deye_register import SerialNumberDeyeRegister
 from signed_float_deye_register import SignedFloatDeyeRegister
 from signed_int_deye_register import SignedIntDeyeRegister
 from sum_deye_register import SumDeyeRegister
@@ -450,6 +451,16 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       suffix = 'deg',
       group = DeyeRegisterGroup.inverter,
       avg = DeyeRegisterAverageType.average,
+    )
+
+  @cached_property
+  def inverter_serial_number_register(self) -> DeyeRegister:
+    return SerialNumberDeyeRegister(
+      address = 3,
+      description = 'Inverter Serial Number',
+      suffix = '',
+      group = DeyeRegisterGroup.inverter,
+      caching_time = timedelta(hours = 24),
     )
 
   @cached_property
