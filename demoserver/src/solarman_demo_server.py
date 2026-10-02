@@ -78,7 +78,12 @@ class SolarmanDemoServer(SolarmanBaseServer):
       starting_address + quantity,
     )]
 
-  def on_read_holding_registers(self, func: ReadHoldingRegisters) -> bytes:
+  async def on_read_holding_registers(
+    self,
+    func: ReadHoldingRegisters,
+    client_ip: str,
+    client_port: int,
+  ) -> bytes:
     if func.quantity is None or func.starting_address is None:
       raise ValueError("ReadHoldingRegisters request missing starting_address or quantity")
 
@@ -92,15 +97,20 @@ class SolarmanDemoServer(SolarmanBaseServer):
     read_values = self.get_existing_registers_values(func.starting_address, func.quantity)
     new_values = self.get_new_registers_values(func.starting_address, read_values)
 
-    self.log.info(f'{self.name}: read registers {new_values}')
+    self._log.info(f'{client_ip}:{client_port} {self.name}: read registers {new_values}')
     return func.create_response_pdu(read_values)
 
-  def on_write_multiple_registers(self, func: WriteMultipleRegisters) -> bytes:
+  async def on_write_multiple_registers(
+    self,
+    func: WriteMultipleRegisters,
+    client_ip: str,
+    client_port: int,
+  ) -> bytes:
     if func.starting_address is None or func.values is None:
       raise ValueError("ReadHoldingRegisters request missing starting_address or values")
 
     write_values = self.get_new_registers_values(func.starting_address, func.values)
     self.registers_data.update(write_values)
 
-    self.log.info(f'{self.name}: write registers {write_values}')
+    self._log.info(f'{client_ip}:{client_port} {self.name}: write registers {write_values}')
     return func.create_response_pdu()

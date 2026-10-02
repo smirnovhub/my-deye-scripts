@@ -217,12 +217,22 @@ class SolarmanTestServer(SolarmanBaseServer):
         starting_address + quantity,
       )]
 
-  def on_read_coils(self, func: ReadCoils) -> bytes:
+  async def on_read_coils(
+    self,
+    func: ReadCoils,
+    client_ip: str,
+    client_port: int,
+  ) -> bytes:
     if func.quantity is None:
       raise ValueError("ReadCoils request missing quantity")
     return func.create_response_pdu([random.randint(0, 255) for x in range(func.quantity)])
 
-  def on_read_holding_registers(self, func: ReadHoldingRegisters) -> bytes:
+  async def on_read_holding_registers(
+    self,
+    func: ReadHoldingRegisters,
+    client_ip: str,
+    client_port: int,
+  ) -> bytes:
     if func.quantity is None or func.starting_address is None:
       raise ValueError("ReadHoldingRegisters request missing starting_address or quantity")
 
@@ -242,12 +252,22 @@ class SolarmanTestServer(SolarmanBaseServer):
     self._log.info(f'{self._name}: read registers {new_values}')
     return func.create_response_pdu(read_values)
 
-  def on_read_input_registers(self, func: ReadInputRegisters) -> bytes:
+  async def on_read_input_registers(
+    self,
+    func: ReadInputRegisters,
+    client_ip: str,
+    client_port: int,
+  ) -> bytes:
     if func.quantity is None:
       raise ValueError("ReadInputRegisters request missing quantity")
     return func.create_response_pdu([random.randint(0, 2**16 - 1) for x in range(func.quantity)])
 
-  def on_write_multiple_registers(self, func: WriteMultipleRegisters) -> bytes:
+  async def on_write_multiple_registers(
+    self,
+    func: WriteMultipleRegisters,
+    client_ip: str,
+    client_port: int,
+  ) -> bytes:
     if func.starting_address is None or func.values is None:
       raise ValueError("ReadHoldingRegisters request missing starting_address or values")
 

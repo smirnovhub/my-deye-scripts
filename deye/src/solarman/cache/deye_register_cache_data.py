@@ -11,12 +11,14 @@ class DeyeRegisterCacheData:
     quantity: int,
     caching_time: int,
     read_ts: float = 0,
+    last_access_ts: float = 0,
     values: Optional[List[int]] = None,
   ):
     self._address = address
     self._quantity = quantity
     self._caching_time = caching_time
     self._read_ts = read_ts
+    self._last_access_ts = last_access_ts
     self._values = values if values is not None else [0] * quantity
 
     if self._quantity != len(self._values):
@@ -38,6 +40,10 @@ class DeyeRegisterCacheData:
   @property
   def read_ts(self) -> float:
     return self._read_ts
+
+  @property
+  def last_access_ts(self) -> float:
+    return self._last_access_ts
 
   @property
   def values(self) -> List[int]:
