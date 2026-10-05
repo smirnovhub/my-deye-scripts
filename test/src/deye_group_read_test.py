@@ -66,7 +66,7 @@ async def main_test_logic(
       log.info(f"Processing register '{register.name}' with type {type(register).__name__}")
 
       random_value = DeyeTestHelper.get_random_by_register_type(register, randoms)
-      if random_value is None:
+      if random_value is None or random_value.register.address <= 0:
         log.info(f"Register '{register.name}' is skipped")
         continue
 
@@ -77,8 +77,7 @@ async def main_test_logic(
 
       log.info(f"Generated random value for register '{register.name}' is {random_value.value}{suffix}...")
 
-      if random_value.register.address > 0:
-        server.set_register_values(random_value.register.addresses, random_value.values)
+      server.set_register_values(random_value.register.addresses, random_value.values)
 
     return random_values
 
@@ -111,6 +110,10 @@ async def main_test_logic(
 
   def check_results(server: SolarmanTestServer, output: str, random_values: Dict[str, Any]):
     for register in registers.all_registers:
+      if register.address <= 0:
+        log.info(f"Skipped register '{register.name}' with address {register.address}")
+        continue
+
       if register.name in registers_to_skip:
         log.info(f"Skipped register '{register.name}' with type {type(register).__name__}")
         continue
