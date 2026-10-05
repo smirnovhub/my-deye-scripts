@@ -414,7 +414,8 @@ class CachingSolarmanProxy(SolarmanBaseServer):
         self._log.error(f"Failed to fetch missing registers starting at {start_addr}: {e}")
 
     # Retrieve values from cache and recreate object with updated last access timestamp
-    values = []
+    values: List[int] = []
+
     async with lock:
       now = time.monotonic()
       for addr in range(start_addr, start_addr + quantity):
@@ -543,7 +544,7 @@ class CachingSolarmanProxy(SolarmanBaseServer):
 
     for sig in (signal.SIGTERM, signal.SIGINT):
       try:
-        loop.add_signal_handler(sig, lambda s = sig: self.handle_exit(s))
+        loop.add_signal_handler(sig, self.handle_exit, sig)
       except NotImplementedError:
         signal.signal(sig, lambda s, f: self.handle_exit(s))
 
