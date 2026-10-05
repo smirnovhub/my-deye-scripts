@@ -275,8 +275,6 @@ class SolarmanTestServer(SolarmanBaseServer):
 
     with self._lock:
       self._registers.update(write_values)
-
-    with self._lock:
       for address in write_values.keys():
         self._written_registers.add(address)
 
