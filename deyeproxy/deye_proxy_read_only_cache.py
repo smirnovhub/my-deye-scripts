@@ -62,10 +62,6 @@ class CachingSolarmanProxy(SolarmanBaseServer):
     self._holding_cache: Dict[int, DeyeRegisterCacheData] = {}
     self._input_cache: Dict[int, DeyeRegisterCacheData] = {}
 
-    # Locks to prevent race conditions when reading/writing cache dicts
-    self._holding_lock = asyncio.Lock()
-    self._input_lock = asyncio.Lock()
-
     # Dedicated lock to serialize all network operations with remote Solarman client
     self._remote_client_lock = asyncio.Lock()
 
@@ -215,34 +211,32 @@ class CachingSolarmanProxy(SolarmanBaseServer):
   async def _update_cache_type(
     self,
     cache: Dict[int, DeyeRegisterCacheData],
-    lock: asyncio.Lock,
     read_func: Callable[[int, int], Awaitable[Any]],
     cache_type_name: str,
   ):
     # Take snapshot of expired cache items under lock
     # We do not hold the lock during network operations
-    async with lock:
-      if not cache:
-        return
+    if not cache:
+      return
 
-      now = time.monotonic()
-      cache_snapshot: Dict[int, DeyeRegisterCacheData] = {}
+    now = time.monotonic()
+    cache_snapshot: Dict[int, DeyeRegisterCacheData] = {}
 
-      time_reg = registers.inverter_system_time_register
-      time_reg_start_addr = time_reg.address
-      time_reg_end_addr = time_reg_start_addr + time_reg.quantity
+    time_reg = registers.inverter_system_time_register
+    time_reg_start_addr = time_reg.address
+    time_reg_end_addr = time_reg_start_addr + time_reg.quantity
 
-      for addr, data in cache.items():
-        # Exclude time registers from remote inverter polling
-        if time_reg_start_addr <= addr < time_reg_end_addr:
-          continue
+    for addr, data in cache.items():
+      # Exclude time registers from remote inverter polling
+      if time_reg_start_addr <= addr < time_reg_end_addr:
+        continue
 
-        # Keep entry only if caching time has expired
-        if (now - data.read_ts) >= data.caching_time:
-          cache_snapshot[addr] = data
+      # Keep entry only if caching time has expired
+      if (now - data.read_ts) >= data.caching_time:
+        cache_snapshot[addr] = data
 
-      if not cache_snapshot:
-        return
+    if not cache_snapshot:
+      return
 
     # Output all expired addresses from cache snapshot at once
     expired_str = ", ".join(str(addr) for addr in sorted(cache_snapshot.keys()))
@@ -266,22 +260,20 @@ class CachingSolarmanProxy(SolarmanBaseServer):
         self._log.error(f"Failed to read {cache_type_name} group starting at {start_addr}: {e}")
         raise
 
-      # Acquire lock only to quickly update the values in memory
-      async with lock:
-        now = time.monotonic()
-        for reg in group:
-          offset = reg.address - start_addr
-          if offset < len(values):
-            existing = cache.get(reg.address)
-            last_access = existing.last_access_ts if existing else 0.0
-            cache[reg.address] = DeyeRegisterCacheData(
-              address = reg.address,
-              quantity = 1,
-              caching_time = self._get_caching_time_by_register_address(reg.address),
-              read_ts = now,
-              last_access_ts = last_access,
-              values = [values[offset]],
-            )
+      now = time.monotonic()
+      for reg in group:
+        offset = reg.address - start_addr
+        if offset < len(values):
+          existing = cache.get(reg.address)
+          last_access = existing.last_access_ts if existing else 0.0
+          cache[reg.address] = DeyeRegisterCacheData(
+            address = reg.address,
+            quantity = 1,
+            caching_time = self._get_caching_time_by_register_address(reg.address),
+            read_ts = now,
+            last_access_ts = last_access,
+            values = [values[offset]],
+          )
 
   async def _background_updater(self):
     while not self.shutdown_event.is_set():
@@ -289,33 +281,30 @@ class CachingSolarmanProxy(SolarmanBaseServer):
         await asyncio.sleep(config.CACHE_UPDATE_INTERVAL)
 
         # Purge cache items that have not been accessed for more than purge timeout
-        async with self._holding_lock:
-          now = time.monotonic()
-          inactive_holding = [
-            addr for addr, item in self._holding_cache.items()
-            if (now - item.last_access_ts) >= config.CACHE_PURGE_TIMEOUT
-          ]
+        now = time.monotonic()
+        inactive_holding = [
+          addr for addr, item in self._holding_cache.items()
+          if (now - item.last_access_ts) >= config.CACHE_PURGE_TIMEOUT
+        ]
 
-          if inactive_holding:
-            addresses_str = ", ".join(str(addr) for addr in sorted(inactive_holding))
-            self._log.info(f"Purge inactive holding registers: {addresses_str}")
+        if inactive_holding:
+          addresses_str = ", ".join(str(addr) for addr in sorted(inactive_holding))
+          self._log.info(f"Purge inactive holding registers: {addresses_str}")
 
-            for addr in inactive_holding:
-              del self._holding_cache[addr]
+          for addr in inactive_holding:
+            del self._holding_cache[addr]
 
-        async with self._input_lock:
-          now = time.monotonic()
-          inactive_input = [
-            addr for addr, item in self._input_cache.items()
-            if (now - item.last_access_ts) >= config.CACHE_PURGE_TIMEOUT
-          ]
+        now = time.monotonic()
+        inactive_input = [
+          addr for addr, item in self._input_cache.items() if (now - item.last_access_ts) >= config.CACHE_PURGE_TIMEOUT
+        ]
 
-          if inactive_input:
-            addresses_str = ", ".join(str(addr) for addr in sorted(inactive_input))
-            self._log.info(f"Purge inactive input registers: {addresses_str}")
+        if inactive_input:
+          addresses_str = ", ".join(str(addr) for addr in sorted(inactive_input))
+          self._log.info(f"Purge inactive input registers: {addresses_str}")
 
-            for addr in inactive_input:
-              del self._input_cache[addr]
+          for addr in inactive_input:
+            del self._input_cache[addr]
 
         # Acquire client lock for the entire polling sequence
         async with self._remote_client_lock:
@@ -323,18 +312,16 @@ class CachingSolarmanProxy(SolarmanBaseServer):
           try:
             # Update Holding Registers
             await self._update_cache_type(
-              self._holding_cache,
-              self._holding_lock,
-              self._remote_client.read_holding_registers,
-              "holding",
+              cache = self._holding_cache,
+              read_func = self._remote_client.read_holding_registers,
+              cache_type_name = "holding",
             )
 
             # Update Input Registers
             await self._update_cache_type(
-              self._input_cache,
-              self._input_lock,
-              self._remote_client.read_input_registers,
-              "input",
+              cache = self._input_cache,
+              read_func = self._remote_client.read_input_registers,
+              cache_type_name = "input",
             )
           finally:
             try:
@@ -350,7 +337,6 @@ class CachingSolarmanProxy(SolarmanBaseServer):
   async def _get_or_fetch_registers(
     self,
     cache: Dict[int, DeyeRegisterCacheData],
-    lock: asyncio.Lock,
     read_func,
     start_addr: int,
     quantity: int,
@@ -360,32 +346,29 @@ class CachingSolarmanProxy(SolarmanBaseServer):
     missing = False
 
     # Check if any requested address is missing in cache
-    async with lock:
-      for addr in range(start_addr, start_addr + quantity):
-        if addr not in cache:
-          missing = True
-          break
+    for addr in range(start_addr, start_addr + quantity):
+      if addr not in cache:
+        missing = True
+        break
 
     # If cache miss occurred, fetch data immediately from inverter
     if missing:
       try:
         # Synchronize access to physical client across concurrent client calls
-        async with self._remote_client_lock:
-          missing = False
+        missing = False
 
-          # Double check if any requested address is missing in cache after acquiring the lock
-          async with lock:
-            for addr in range(start_addr, start_addr + quantity):
-              if addr not in cache:
-                missing = True
-                break
+        # Double check if any requested address is missing in cache after acquiring the lock
+        for addr in range(start_addr, start_addr + quantity):
+          if addr not in cache:
+            missing = True
+            break
 
-          if missing:
-            addresses_str = ", ".join(str(addr) for addr in range(start_addr, start_addr + quantity))
-            self._log.warning(f"{client_ip}:{client_port} Fetching missing registers from inverter: {addresses_str}")
+        if missing:
+          addresses_str = ", ".join(str(addr) for addr in range(start_addr, start_addr + quantity))
+          self._log.warning(f"{client_ip}:{client_port} Fetching missing registers from inverter: {addresses_str}")
 
+          async with self._remote_client_lock:
             await self._remote_client.connect()
-
             try:
               fetched_values = await read_func(start_addr, quantity)
             finally:
@@ -395,20 +378,19 @@ class CachingSolarmanProxy(SolarmanBaseServer):
                 self._log.error(f"Error disconnecting from remote client after fetching "
                                 f"missing registers starting at {start_addr}: {e}")
 
-            async with lock:
-              now = time.monotonic()
-              for i, val in enumerate(fetched_values):
-                reg_addr = start_addr + i
-                existing = cache.get(reg_addr)
-                last_access = existing.last_access_ts if existing else 0.0
-                cache[reg_addr] = DeyeRegisterCacheData(
-                  address = reg_addr,
-                  quantity = 1,
-                  caching_time = self._get_caching_time_by_register_address(reg_addr),
-                  read_ts = now,
-                  last_access_ts = last_access,
-                  values = [val],
-                )
+          now = time.monotonic()
+          for i, val in enumerate(fetched_values):
+            reg_addr = start_addr + i
+            existing = cache.get(reg_addr)
+            last_access = existing.last_access_ts if existing else 0.0
+            cache[reg_addr] = DeyeRegisterCacheData(
+              address = reg_addr,
+              quantity = 1,
+              caching_time = self._get_caching_time_by_register_address(reg_addr),
+              read_ts = now,
+              last_access_ts = last_access,
+              values = [val],
+            )
 
       except Exception as e:
         self._log.error(f"Failed to fetch missing registers starting at {start_addr}: {e}")
@@ -416,21 +398,20 @@ class CachingSolarmanProxy(SolarmanBaseServer):
     # Retrieve values from cache and recreate object with updated last access timestamp
     values: List[int] = []
 
-    async with lock:
-      now = time.monotonic()
-      for addr in range(start_addr, start_addr + quantity):
-        cached_item = cache.get(addr)
-        if cached_item:
-          cache[addr] = DeyeRegisterCacheData(
-            address = cached_item.address,
-            quantity = cached_item.quantity,
-            caching_time = cached_item.caching_time,
-            read_ts = cached_item.read_ts,
-            last_access_ts = now,
-            values = cached_item.values,
-          )
-        # Use 0 as fallback only if inverter connection failed
-        values.extend(cached_item.values if cached_item else [0])
+    now = time.monotonic()
+    for addr in range(start_addr, start_addr + quantity):
+      cached_item = cache.get(addr)
+      if cached_item:
+        cache[addr] = DeyeRegisterCacheData(
+          address = cached_item.address,
+          quantity = cached_item.quantity,
+          caching_time = cached_item.caching_time,
+          read_ts = cached_item.read_ts,
+          last_access_ts = now,
+          values = cached_item.values,
+        )
+      # Use 0 as fallback only if inverter connection failed
+      values.extend(cached_item.values if cached_item else [0])
 
     return values
 
@@ -446,22 +427,21 @@ class CachingSolarmanProxy(SolarmanBaseServer):
     if start_addr is None or quantity is None:
       raise ValueError("ReadHoldingRegisters request missing starting_address or quantity")
 
+    # Update local virtual registers prior to reading cache
+    self._update_time_registers_locally(self._holding_cache)
+    self._update_serial_number_registers_locally(
+      cache = self._holding_cache,
+      serial_number = self.hash_crc32_str(config.LOGGER_FAKE_SERIAL),
+    )
+
     values = await self._get_or_fetch_registers(
       cache = self._holding_cache,
-      lock = self._holding_lock,
       read_func = self._remote_client.read_holding_registers,
       start_addr = start_addr,
       quantity = quantity,
       client_ip = client_ip,
       client_port = client_port,
     )
-
-    async with self._holding_lock:
-      self._update_time_registers_locally(self._holding_cache)
-      self._update_serial_number_registers_locally(
-        cache = self._holding_cache,
-        serial_number = self.hash_crc32_str(config.LOGGER_FAKE_SERIAL),
-      )
 
     addresses_str = ", ".join(str(addr) for addr in range(start_addr, start_addr + quantity))
     self._log.info(f"{client_ip}:{client_port} Read holding registers: {addresses_str}")
@@ -482,7 +462,6 @@ class CachingSolarmanProxy(SolarmanBaseServer):
 
     values = await self._get_or_fetch_registers(
       cache = self._input_cache,
-      lock = self._input_lock,
       read_func = self._remote_client.read_input_registers,
       start_addr = start_addr,
       quantity = quantity,
