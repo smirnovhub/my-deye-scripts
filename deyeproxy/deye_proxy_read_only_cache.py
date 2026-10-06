@@ -87,19 +87,19 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
         except asyncio.CancelledError:
           raise
         except Exception as e:
-          self._log.error(f"Error updating holding registers cache: {e}")
+          self._logger.error(f"Error updating holding registers cache: {e}")
 
         try:
           await self._input_cache.update_cache()
         except asyncio.CancelledError:
           raise
         except Exception as e:
-          self._log.error(f"Error updating input registers cache: {e}")
+          self._logger.error(f"Error updating input registers cache: {e}")
 
       except asyncio.CancelledError:
         break
       except Exception as e:
-        self._log.error(f"Error in background updater loop: {e}")
+        self._logger.error(f"Error in background updater loop: {e}")
 
   async def on_read_holding_registers(
     self,
@@ -146,12 +146,12 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
     if func.starting_address is None or func.values is None:
       raise ValueError("WriteMultipleRegisters request missing starting_address or values")
 
-    self._log.warning(f"{client_ip}:{client_port} Trying to write registers starting at "
-                      f"{func.starting_address} with values {func.values}, but this proxy is read-only")
+    self._logger.warning(f"{client_ip}:{client_port} Trying to write registers starting at "
+                         f"{func.starting_address} with values {func.values}, but this proxy is read-only")
 
     return func.create_response_pdu()
 
-  def handle_exit(self, sig_num: int) -> None:
+  def _handle_exit(self, sig_num: int) -> None:
     self._logger.info(f"Received signal {sig_num}. Shutting down gracefully...")
     self._shutdown_event.set()
 
@@ -160,9 +160,9 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
 
     for sig in (signal.SIGTERM, signal.SIGINT):
       try:
-        loop.add_signal_handler(sig, self.handle_exit, sig)
+        loop.add_signal_handler(sig, self._handle_exit, sig)
       except NotImplementedError:
-        signal.signal(sig, lambda s, f: self.handle_exit(s))
+        signal.signal(sig, lambda s, f: self._handle_exit(s))
 
     external_ip = CommonUtils.get_external_ip(self._config.LOGGER_HOST, self._config.LOGGER_PORT)
     actual_ip = external_ip if external_ip else self._config.PROXY_HOST
