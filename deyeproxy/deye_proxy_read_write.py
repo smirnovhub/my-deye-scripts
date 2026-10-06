@@ -257,7 +257,7 @@ class SolarmanReadWriteProxy:
       finally:
         self._logger_lock.release()
 
-  def _handle_exit(self, sig, frame):
+  def _handle_exit(self, sig, frame) -> None:
     """
     Signal handler function.
     Triggered when Docker sends SIGTERM or when you press Ctrl+C (SIGINT).

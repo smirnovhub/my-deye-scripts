@@ -119,7 +119,7 @@ class SolarmanBaseServer():
       return
 
     # Define the shutdown sequence
-    async def shutdown():
+    async def shutdown() -> None:
       await self.stop_server_async()
       # Stop the loop itself
       self._loop.stop()

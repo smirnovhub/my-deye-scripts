@@ -68,7 +68,7 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
       self._updater_task.cancel()
     await super().stop_server_async()
 
-  async def _background_updater(self):
+  async def _background_updater(self) -> None:
     while not self._shutdown_event.is_set():
       try:
         # Wait for update interval or wake up immediately on shutdown event
