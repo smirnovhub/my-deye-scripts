@@ -254,10 +254,10 @@ class DeyeRegistersCache:
             self._log.warning(f"{client_ip}:{client_port} Fetching missing {self._register_type.name.lower()} "
                               f"registers from inverter: {missing_str}")
 
-            values = await self._fetch_registers_from_inverter(start_address, quantity)
+            fetched_values = await self._fetch_registers_from_inverter(start_address, quantity)
 
             now = time.monotonic()
-            for i, val in enumerate(values):
+            for i, val in enumerate(fetched_values):
               reg_address = start_address + i
 
               # Skip updating virtual registers with data from physical inverter
