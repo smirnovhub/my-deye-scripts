@@ -15,13 +15,22 @@ from common_modules import import_dirs
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
 from src.deye_proxy_config import DeyeProxyConfig
-from deye_proxy_read_only_cache import main_read_only_cache
-from deye_proxy_read_write import main_read_write
+from deye_proxy_read_only_cache import SolarmanReadOnlyProxy
+from deye_proxy_read_write import SolarmanReadWriteProxy
+
+def run_read_write_proxy(config: DeyeProxyConfig) -> None:
+  proxy = SolarmanReadWriteProxy(config)
+  proxy.run()
+
+async def run_read_only_proxy(config: DeyeProxyConfig) -> None:
+  proxy = SolarmanReadOnlyProxy(config)
+  await proxy.run()
 
 if __name__ == "__main__":
   config = DeyeProxyConfig()
+  config.validate_or_exit()
 
   if config.READ_ONLY:
-    asyncio.run(main_read_only_cache())
+    asyncio.run(run_read_only_proxy(config))
   else:
-    main_read_write()
+    run_read_write_proxy(config)
