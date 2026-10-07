@@ -34,7 +34,7 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
     self._logger.setLevel(self._log_level)
 
     super().__init__(
-      name = "CachingProxy",
+      name = self.__class__.__name__,
       address = config.PROXY_HOST,
       port = config.PROXY_PORT,
       serial = config.LOGGER_FAKE_SERIAL,

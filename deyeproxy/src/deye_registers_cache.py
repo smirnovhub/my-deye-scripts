@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 from pysolarmanv5 import PySolarmanV5Async
 from deye_registers import DeyeRegisters
 from deye_register_cache_data import DeyeRegisterCacheData
@@ -300,17 +300,41 @@ class DeyeRegistersCache:
     return values
 
   async def _fetch_registers_from_inverter(self, start_address: int, quantity: int) -> List[int]:
-    await self._logger_client.connect()
-    try:
-      if self._register_type == DeyeRegisterType.Holding:
-        return await self._logger_client.read_holding_registers(start_address, quantity)
-      elif self._register_type == DeyeRegisterType.Input:
-        return await self._logger_client.read_input_registers(start_address, quantity)
-      else:
-        raise ValueError(f"Unsupported register type: {self._register_type}")
-    finally:
+    max_attempts = 3
+    retry_delay_sec = 3
+    last_exception: Optional[Exception] = None
+
+    for attempt in range(max_attempts):
       try:
-        await self._logger_client.disconnect()
+        await self._logger_client.connect()
+        try:
+          if self._register_type == DeyeRegisterType.Holding:
+            return await self._logger_client.read_holding_registers(start_address, quantity)
+          elif self._register_type == DeyeRegisterType.Input:
+            return await self._logger_client.read_input_registers(start_address, quantity)
+          else:
+            raise ValueError(f"Unsupported register type: {self._register_type}")
+        finally:
+          try:
+            await self._logger_client.disconnect()
+          except Exception as e:
+            self._log.error(f"Error disconnecting from logger after fetching {self._register_type.name.lower()} "
+                            f"registers starting at {start_address}: {e}")
       except Exception as e:
-        self._log.error(f"Error disconnecting from logger after fetching {self._register_type.name.lower()} "
-                        f"registers starting at {start_address}: {e}")
+        if isinstance(e, ValueError):
+          raise
+
+        last_exception = e
+
+        if attempt == max_attempts - 1:
+          raise
+
+        self._log.warning(f"Attempt failed fetching {self._register_type.name.lower()} registers "
+                          f"starting at {start_address} ({e}). Retrying...")
+
+        await asyncio.sleep(retry_delay_sec)
+
+    if last_exception is not None:
+      raise last_exception
+
+    raise RuntimeError(f"Failed to fetch {self._register_type.name.lower()} registers after {max_attempts} attempts")
