@@ -89,6 +89,10 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
         except Exception as e:
           self._logger.error(f"Error updating holding registers cache: {e}")
 
+        # Exit loop immediately if shutdown was requested
+        if self._shutdown_event.is_set():
+          break
+
         try:
           await self._input_cache.update_cache()
         except asyncio.CancelledError:
