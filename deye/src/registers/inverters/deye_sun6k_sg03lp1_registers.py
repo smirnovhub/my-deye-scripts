@@ -298,7 +298,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   def grid_connect_voltage_low_register(self) -> DeyeRegister:
     return FloatWritableDeyeRegister(
       address = 288,
-      min_value = 195,
+      min_value = 190,
       max_value = 230,
       description = 'Grid Connect Voltage Low',
       suffix = 'V',
@@ -322,7 +322,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
   def grid_reconnect_voltage_low_register(self) -> DeyeRegister:
     return FloatWritableDeyeRegister(
       address = 434,
-      min_value = 195,
+      min_value = 190,
       max_value = 230,
       description = 'Grid Reconnect Voltage Low',
       suffix = 'V',
