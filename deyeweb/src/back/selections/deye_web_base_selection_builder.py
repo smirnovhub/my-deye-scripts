@@ -91,6 +91,7 @@ class DeyeWebBaseSelectionBuilder:
     cnt = 0
 
     for val in selections:
+      val += correction
       val_color = color if equal(value, val) else DeyeWebColor.gray
       register_field_id = DeyeWebUtils.short(
         DeyeWebConstants.selection_content_field_template.format(registers.prefix, register.name))
