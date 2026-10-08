@@ -40,6 +40,16 @@ class DeyeProxyConfig:
     # ensure the logger resource is eventually released.
     self.__session_timeout = EnvVar("SESSION_TIMEOUT", "10", "Maximum duration for session")
 
+    self.__read_only = EnvVar("READ_ONLY", "FALSE", "Is proxy in read-only mode (TRUE/FALSE)")
+    self.__logger_serial = EnvVar("LOGGER_SERIAL", "0",
+                                  "Real logger serial number to call from real inverter in read-only mode (optional)")
+    self.__logger_fake_serial = EnvVar(
+      "LOGGER_FAKE_SERIAL", "0", "Fake logger serial number to use with untrusted clients in read-only mode (optional)")
+
+    self.__cache_update_interval = EnvVar("CACHE_UPDATE_INTERVAL", "15", "Interval for cache updates, sec")
+
+    self.__cache_purge_timeout = EnvVar("CACHE_PURGE_TIMEOUT", "300", "Timeout for cache purging, sec")
+
     self.__log_level = EnvVar("LOG_LEVEL", "INFO", "Log level for logging")
 
     self.__proxy_host = '0.0.0.0'
@@ -55,6 +65,11 @@ class DeyeProxyConfig:
       self.__client_idle_timeout,
       self.__logger_idle_timeout,
       self.__session_timeout,
+      self.__read_only,
+      self.__logger_serial,
+      self.__logger_fake_serial,
+      self.__cache_update_interval,
+      self.__cache_purge_timeout,
       self.__log_level,
     ]
 
@@ -71,6 +86,14 @@ class DeyeProxyConfig:
   @property
   def LOGGER_PORT(self) -> int:
     return self.__logger_port.as_int()
+
+  @property
+  def LOGGER_SERIAL(self) -> int:
+    return self.__logger_serial.as_int()
+
+  @property
+  def LOGGER_FAKE_SERIAL(self) -> int:
+    return self.__logger_fake_serial.as_int()
 
   @property
   def PROXY_HOST(self) -> str:
@@ -103,6 +126,18 @@ class DeyeProxyConfig:
   @property
   def SESSION_TIMEOUT(self) -> float:
     return self.__session_timeout.as_float()
+
+  @property
+  def READ_ONLY(self) -> bool:
+    return self.__read_only.value.lower() == "true"
+
+  @property
+  def CACHE_UPDATE_INTERVAL(self) -> int:
+    return self.__cache_update_interval.as_int()
+
+  @property
+  def CACHE_PURGE_TIMEOUT(self) -> int:
+    return self.__cache_purge_timeout.as_int()
 
   @property
   def LOG_LEVEL(self) -> str:
