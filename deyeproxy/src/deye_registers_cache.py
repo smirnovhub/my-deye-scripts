@@ -300,11 +300,11 @@ class DeyeRegistersCache:
     return values
 
   async def _fetch_registers_from_inverter(self, start_address: int, quantity: int) -> List[int]:
-    max_attempts = 3
+    max_retries = 3
     retry_delay_sec = 3
     last_exception: Optional[Exception] = None
 
-    for attempt in range(max_attempts):
+    for attempt in range(max_retries + 1):
       try:
         await self._logger_client.connect()
         try:
@@ -326,15 +326,17 @@ class DeyeRegistersCache:
 
         last_exception = e
 
-        if attempt == max_attempts - 1:
+        if attempt == max_retries:
           raise
 
-        self._log.warning(f"Attempt failed fetching {self._register_type.name.lower()} registers "
-                          f"starting at {start_address} ({e}). Retrying...")
+        current_retry = attempt + 1
+
+        self._log.warning(f"Failed to fetch {self._register_type.name.lower()} registers "
+                          f"starting at {start_address} ({e}). Retrying ({current_retry}/{max_retries})...")
 
         await asyncio.sleep(retry_delay_sec)
 
     if last_exception is not None:
       raise last_exception
 
-    raise RuntimeError(f"Failed to fetch {self._register_type.name.lower()} registers after {max_attempts} attempts")
+    raise RuntimeError(f"Failed to fetch {self._register_type.name.lower()} registers after {max_retries + 1} attempts")
