@@ -91,6 +91,7 @@ class DeyeWebBaseSelectionBuilder:
     cnt = 0
 
     for val in selections:
+      val += correction
       val_color = color if equal(value, val) else DeyeWebColor.gray
       register_field_id = DeyeWebUtils.short(
         DeyeWebConstants.selection_content_field_template.format(registers.prefix, register.name))
@@ -114,7 +115,7 @@ class DeyeWebBaseSelectionBuilder:
         result += f"""
           <td {on_click} class="{style_id4} {style_id5} {cursor_style_id}">
             <div id="{field_id}" class="{style_id6} {style_id7}">
-              {val}{suffix}
+              {val:g}{suffix}
               <div class="dark-overlay"></div>
               <img src="images/lock.svg" class="lock-overlay">
             </div>
@@ -124,7 +125,7 @@ class DeyeWebBaseSelectionBuilder:
         result += f"""
           <td {on_click} class="{style_id4} {style_id5} {cursor_style_id}">
             <div id="{field_id}" class="{style_id6}">
-              {val}{suffix}
+              {val:g}{suffix}
             </div>
           </td>
         """
