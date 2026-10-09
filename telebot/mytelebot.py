@@ -110,7 +110,7 @@ class MyTelebot:
     bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeAllGroupChats())
     bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeAllChatAdministrators())
 
-    bot.set_chat_menu_button(menu_button = telebot.types.MenuButtonCommands('commands'))
+    bot.set_chat_menu_button(menu_button = telebot.types.MenuButtonCommands())
 
     # Add all commands for admin user
     admin_commands: List[telebot.types.BotCommand] = []
