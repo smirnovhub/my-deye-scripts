@@ -70,6 +70,8 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
           data = json_string,
           headers = headers,
       ) as response:
+        # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+        await response.read()
         response.raise_for_status()
     except Exception as e:
       raise DeyeUtils.get_reraised_exception(
@@ -81,6 +83,9 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
       # Clear all cached data for all inverters
       session = await HttpSessionSingletonAsync.get_session()
       async with session.delete(self._inverter_cache_endpoint) as response:
+        # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+        await response.read()
+
         # Check if the status code is 2xx
         if response.status != HTTPStatus.NOT_FOUND:
           response.raise_for_status()
@@ -104,6 +109,8 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
 
       session = await HttpSessionSingletonAsync.get_session()
       async with session.get(ping_endpoint) as response:
+        # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+        await response.read()
         response.raise_for_status()
       return True
     except Exception as e:
@@ -178,6 +185,9 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
     try:
       session = await HttpSessionSingletonAsync.get_session()
       async with session.delete(self._average_hit_rate_endpoint) as response:
+        # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+        await response.read()
+
         if response.status == HTTPStatus.NOT_FOUND:
           self._logger.warning(f'{self._name} global cache hit rate not found')
         else:

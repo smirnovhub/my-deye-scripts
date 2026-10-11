@@ -36,6 +36,8 @@ class CurrentLimitHelper:
     session = await HttpSessionSingletonAsync.get_session()
 
     async with session.post(url, json = config.to_dict()) as response:
+      # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+      await response.read()
       response.raise_for_status()
 
   @staticmethod
@@ -56,6 +58,8 @@ class CurrentLimitHelper:
     session = await HttpSessionSingletonAsync.get_session()
 
     async with session.post(url, json = settings.to_dict()) as response:
+      # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+      await response.read()
       response.raise_for_status()
 
   @staticmethod
@@ -64,4 +68,6 @@ class CurrentLimitHelper:
     url = urljoin(server_url, "/ping")
     session = await HttpSessionSingletonAsync.get_session()
     async with session.get(url) as response:
+      # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+      await response.read()
       response.raise_for_status()
