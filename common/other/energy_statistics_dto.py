@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from mashumaro.mixins.json import DataClassJSONMixin
 
 @dataclass
-class PvProductionDto(DataClassJSONMixin):
+class EnergyStatisticsDto(DataClassJSONMixin):
   """
   Data transfer object representing the configuration for PV production
   """
