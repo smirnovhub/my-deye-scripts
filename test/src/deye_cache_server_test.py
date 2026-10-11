@@ -1,8 +1,10 @@
 import os
 import sys
 import logging
+import time
 import requests
 import unittest
+import threading
 
 import concurrent.futures
 
@@ -38,6 +40,18 @@ CACHE_URL = f"{BASE_URL}/cache"
 PING_URL = f"{BASE_URL}/ping"
 
 log = logging.getLogger()
+
+STRESS_REQUESTS = 1000
+STRESS_WORKERS = 64
+
+_thread_local = threading.local()
+
+def get_thread_session() -> requests.Session:
+  """Reuse one HTTP session per worker thread."""
+  if not hasattr(_thread_local, "session"):
+    _thread_local.session = requests.Session()
+
+  return _thread_local.session
 
 class TestDeyeCacheExtended(unittest.TestCase):
   session: requests.Session
@@ -864,6 +878,292 @@ class TestDeyeCacheExtended(unittest.TestCase):
     res = self.session.post(f"{BASE_URL}/average/{key}/0/0")
     self.assertEqual(res.status_code, 200)
     self.assertEqual(res.json()["average"], 0.0)
+
+  def test_massive_concurrent_stress_and_integrity(self):
+    """
+    STRESS/INTEGRITY TEST:
+    Simulate a massive number of concurrent requests (300 requests across 
+    multiple worker threads) updating a single key with unique nested subfields.
+    Verifies that the server handles high concurrency without errors, drops, or corruption,
+    and that deep merge preserves every single nested update.
+    """
+    key = "massive_stress_key"
+    self.session.delete(f"{CACHE_URL}/{key}")
+
+    # Create distinct payloads for each request to ensure no overwrites
+    # and verify data integrity of all combined entries.
+    updates = [{f"field_{i}": i} for i in range(STRESS_REQUESTS)]
+
+    def send_post(data):
+      with requests.Session() as s:
+        return s.post(f"{CACHE_URL}/{key}", json = data)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers = STRESS_WORKERS) as executor:
+      responses = list(executor.map(send_post, updates))
+
+    # Verify that every single request was processed successfully
+    for resp in responses:
+      self.assertEqual(resp.status_code, 200)
+
+    # Verify data integrity: fetch the final merged document and check all fields
+    res = self.session.get(f"{CACHE_URL}/{key}")
+    self.assertEqual(res.status_code, 200)
+
+    res_json = res.json()
+
+    # Ensure all fields from all concurrent requests are present and accurate
+    for i in range(STRESS_REQUESTS):
+      field_name = f"field_{i}"
+      self.assertIn(field_name, res_json)
+      self.assertEqual(res_json[field_name], i)
+
+    # Verify server storage stats match the expected state
+    stats_res = self.session.options(CACHE_URL)
+    self.assertEqual(stats_res.status_code, 200)
+    stats_json = stats_res.json()
+    self.assertGreaterEqual(stats_json["keys_used"], 1)
+
+  def test_stress_concurrent_deep_merge_integrity(self):
+    """
+      STRESS / DATA INTEGRITY:
+
+      Send thousands of concurrent updates to the same key.
+      Each request adds a unique nested field.
+
+      Verify that:
+      1. Every request succeeds.
+      2. No update is lost.
+      3. Every field contains the expected value.
+      4. The final number of fields matches the number of requests.
+      """
+    key = "stress_concurrent_merge"
+
+    # Ensure a clean initial state.
+    self.assertEqual(
+      self.session.delete(CACHE_URL).status_code,
+      200,
+    )
+
+    num_requests = STRESS_REQUESTS
+    num_workers = STRESS_WORKERS
+
+    log.info(
+      "Starting concurrent deep merge stress test: "
+      "%s requests, %s workers",
+      num_requests,
+      num_workers,
+    )
+
+    def send_update(i: int):
+      payload = {
+        "updates": {
+          f"update_{i}": {
+            "id": i,
+            "value": f"value_{i}",
+          }
+        }
+      }
+
+      try:
+        response = get_thread_session().post(
+          f"{CACHE_URL}/{key}",
+          json = payload,
+          timeout = 60,
+        )
+
+        return i, response.status_code, response.text
+
+      except requests.RequestException as exc:
+        return i, None, str(exc)
+
+    started_at = time.monotonic()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers = num_workers, ) as executor:
+      results = list(executor.map(send_update, range(num_requests)))
+
+    elapsed = time.monotonic() - started_at
+
+    # Check that every request succeeded.
+    errors = [(i, status_code, detail) for i, status_code, detail in results if status_code != 200]
+
+    self.assertEqual(
+      len(errors),
+      0,
+      f"Failed requests: {errors[:20]}",
+    )
+
+    log.info(
+      "Completed %s POST requests in %.2f seconds "
+      "(%.1f requests/sec)",
+      num_requests,
+      elapsed,
+      num_requests / elapsed if elapsed else 0,
+    )
+
+    # Verify the final stored state.
+    response = self.session.get(
+      f"{CACHE_URL}/{key}",
+      timeout = 30,
+    )
+
+    self.assertEqual(response.status_code, 200)
+
+    result = response.json()
+    updates = result.get("updates")
+
+    self.assertIsInstance(updates, dict)
+
+    # No updates may be lost.
+    self.assertEqual(
+      len(updates),
+      num_requests,
+      "Some updates were lost or duplicated",
+    )
+
+    # Verify every individual value.
+    for i in range(num_requests):
+      field = f"update_{i}"
+
+      self.assertIn(
+        field,
+        updates,
+        f"Missing field: {field}",
+      )
+
+      self.assertEqual(
+        updates[field],
+        {
+          "id": i,
+          "value": f"value_{i}",
+        },
+        f"Data corruption in field: {field}",
+      )
+
+    log.info(
+      "PASS: all %s concurrent updates preserved",
+      num_requests,
+    )
+
+  def test_stress_concurrent_average_integrity(self):
+    """
+      STRESS / LOST UPDATE DETECTION:
+
+      Concurrently increment count1 and count2 through the average API.
+
+      Every request adds exactly 1 to count1 and 2 to count2.
+      The final totals must account for every successful request.
+      """
+    key = "stress_concurrent_average"
+
+    # Remove data left by a previous run.
+    delete_response = self.session.delete(
+      f"{BASE_URL}/average/{key}",
+      timeout = 30,
+    )
+
+    self.assertIn(
+      delete_response.status_code,
+      (200, 404),
+    )
+
+    num_requests = STRESS_REQUESTS
+    num_workers = STRESS_WORKERS
+
+    log.info(
+      "Starting concurrent average stress test: "
+      "%s requests, %s workers",
+      num_requests,
+      num_workers,
+    )
+
+    def send_increment(i: int):
+      try:
+        response = get_thread_session().post(
+          f"{BASE_URL}/average/{key}/1/2",
+          timeout = 60,
+        )
+
+        return i, response.status_code, response.text
+
+      except requests.RequestException as exc:
+        return i, None, str(exc)
+
+    started_at = time.monotonic()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers = num_workers, ) as executor:
+      results = list(executor.map(send_increment, range(num_requests)))
+
+    elapsed = time.monotonic() - started_at
+
+    errors = [(i, status_code, detail) for i, status_code, detail in results if status_code != 200]
+
+    self.assertEqual(
+      len(errors),
+      0,
+      f"Failed requests: {errors[:20]}",
+    )
+
+    log.info(
+      "Completed %s average updates in %.2f seconds "
+      "(%.1f requests/sec)",
+      num_requests,
+      elapsed,
+      num_requests / elapsed if elapsed else 0,
+    )
+
+    # Verify the final state through the GET endpoint.
+    response = self.session.get(
+      f"{BASE_URL}/average/{key}",
+      timeout = 30,
+    )
+
+    self.assertEqual(response.status_code, 200)
+
+    result = response.json()
+
+    expected_count1 = num_requests
+    expected_count2 = num_requests * 2
+    expected_total = num_requests * 3
+    expected_average = 1 / 3
+
+    self.assertEqual(
+      result["count1"],
+      expected_count1,
+      "Lost updates detected in count1",
+    )
+
+    self.assertEqual(
+      result["count2"],
+      expected_count2,
+      "Lost updates detected in count2",
+    )
+
+    self.assertEqual(
+      result["total"],
+      expected_total,
+      "Incorrect total after concurrent updates",
+    )
+
+    self.assertAlmostEqual(
+      result["average"],
+      expected_average,
+      places = 10,
+      msg = "Incorrect average after concurrent updates",
+    )
+
+    log.info(
+      "PASS: count1=%s, count2=%s, total=%s, average=%s",
+      result["count1"],
+      result["count2"],
+      result["total"],
+      result["average"],
+    )
+
+    # Clean up.
+    self.session.delete(
+      f"{BASE_URL}/average/{key}",
+      timeout = 30,
+    )
 
 if __name__ == "__main__":
   logging.basicConfig(
