@@ -4,11 +4,10 @@ from mashumaro.mixins.json import DataClassJSONMixin
 @dataclass
 class EnergyStatisticsDto(DataClassJSONMixin):
   """
-  Data transfer object representing the configuration for PV production
+  Data transfer object representing the configuration for energy statistics.
   """
-  master_pv1: float
-  master_pv2: float
-  master_gen: float
-  slave1_pv1: float
-  slave1_pv2: float
-  slave1_gen: float
+  inverter: str
+  consumption: float
+  production_pv1: float
+  production_pv2: float
+  gen_energy: float
