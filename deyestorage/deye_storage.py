@@ -142,10 +142,13 @@ async def update_cache_by_key(key: str, json_data: Dict[str, Any], request: Requ
   Updates the storage data for the specified key using a recursive deep merge.
   Works with any nested JSON structure
   """
-  return await cache_manager.update(
+  request_body = await request.body()
+  return cache_manager.update(
     key = key,
     json_data = json_data,
-    request = request,
+    request_headers = request.headers,
+    request_body = request_body,
+    request_client = request.client,
   )
 
 @app.delete("/cache/{key}", tags = ["Cache Remove Operations"])
@@ -153,14 +156,14 @@ async def remove_cache_by_key(key: str):
   """
   Remove the cache data for the specific key
   """
-  return await cache_manager.remove(key = key)
+  return cache_manager.remove(key = key)
 
 @app.delete("/cache", tags = ["Cache Remove Operations"])
 async def remove_all_cache():
   """
   Remove all cached data for all keys
   """
-  return await cache_manager.clear()
+  return cache_manager.clear()
 
 @app.options("/cache", tags = ["Cache Statistics Operations"])
 async def get_cache_stat():
@@ -183,10 +186,13 @@ async def update_storage_by_key(key: str, json_data: Dict[str, Any], request: Re
   Updates the storage data for the specified key using a recursive deep merge.
   Works with any nested JSON structure
   """
-  return await storage_manager.update(
+  request_body = await request.body()
+  return storage_manager.update(
     key = key,
     json_data = json_data,
-    request = request,
+    request_headers = request.headers,
+    request_body = request_body,
+    request_client = request.client,
   )
 
 @app.delete("/storage/{key}", tags = ["Storage Remove Operations"])
@@ -194,7 +200,7 @@ async def remove_storage_by_key(key: str):
   """
   Remove the storage data for the specific key
   """
-  return await storage_manager.remove(key = key)
+  return storage_manager.remove(key = key)
 
 @app.options("/storage", tags = ["Storage Statistics Operations"])
 async def get_storage_stat():
@@ -216,7 +222,7 @@ async def remove_average(key: str):
   """
   Remove the calculated average for the specified key.
   """
-  return await average_manager.remove(key = key)
+  return average_manager.remove(key = key)
 
 @app.post("/average/{key}/{count1}/{count2}", tags = ["Average Operations"])
 async def update_average(key: str, count1: float, count2: float, request: Request):
@@ -224,11 +230,11 @@ async def update_average(key: str, count1: float, count2: float, request: Reques
   Update totals using path parameters: /average/my_key/10.5/20
   Returns the calculated weighted average: count1 / (count1 + count2)
   """
-  return await average_manager.update_average(
+  return average_manager.update_average(
     key = key,
     count1 = count1,
     count2 = count2,
-    request = request,
+    request_client = request.client,
   )
 
 if __name__ == "__main__":

@@ -2,12 +2,11 @@ import os
 import json
 import logging
 import time
-import asyncio
 
-from typing import Dict, Any, Union
+from typing import Dict, Any, Optional, Union
 from datetime import datetime
-from fastapi import HTTPException, Request
-
+from fastapi import HTTPException
+from starlette.datastructures import Address, Headers
 from src.deye_storage_config import DeyeStorageConfig
 
 class DeyeStorageManager:
@@ -20,10 +19,6 @@ class DeyeStorageManager:
     self._logger = logger
     # In-memory storage for any JSON data
     self._storage: Dict[str, Any] = {}
-    # Lock per inverter
-    self._locks: Dict[str, asyncio.Lock] = {}
-    # Global lock to protect access to the locks dictionary
-    self._locks_lock = asyncio.Lock()
 
   def get(self, key: str) -> Dict[str, Any]:
     """
@@ -44,46 +39,41 @@ class DeyeStorageManager:
     entry = self._storage.get(key)
     if entry is None:
       # Return 404 if the key was not found in the storage
-      raise HTTPException(status_code = 404, detail = f"Key not found")
+      raise HTTPException(status_code = 404, detail = "Key not found")
 
-    # Return only the inner data payload to the client
     return entry.get("data", {})
 
-  async def clear(self) -> Dict[str, Any]:
+  def clear(self) -> Dict[str, Any]:
     """
     Remove all stored data for all keys
     """
-    async with self._locks_lock:
-      self._storage.clear()
+    self._storage.clear()
     return {"status": "success"}
 
-  async def remove(self, key: str) -> Dict[str, Any]:
+  def remove(self, key: str) -> Dict[str, Any]:
     """
     Remove the store data for the specific key
     """
-    async with self._locks_lock:
-      if key not in self._storage:
-        raise HTTPException(status_code = 404, detail = "Key not found")
+    if key not in self._storage:
+      raise HTTPException(status_code = 404, detail = "Key not found")
 
-      # Getting key lock inside locks_lock
-      lock = self._locks[key]
+    self._storage.pop(key, None)
+    return {"status": "success"}
 
-    async with lock:
-      del self._storage[key]
-      return {"status": "success"}
-
-  async def update(
+  def update(
     self,
     key: str,
     json_data: Dict[str, Any],
-    request: Request,
+    request_headers: Headers,
+    request_body: bytes,
+    request_client: Optional[Address],
   ) -> Dict[str, Any]:
     """
     Updates the storage data for the specified key using a recursive deep merge.
     Works with any nested JSON structure
     """
     # Check for maximum JSON size limit by checking Content-Length header
-    content_length = request.headers.get("Content-Length")
+    content_length = request_headers.get("Content-Length")
     if content_length:
       if not content_length.isdigit():
         raise HTTPException(status_code = 400, detail = "Invalid Content-Length header")
@@ -92,40 +82,30 @@ class DeyeStorageManager:
 
     # Check for maximum JSON size limit
     # Get raw body to calculate actual byte size accurately
-    body = await request.body()
-    if len(body) > self._config.MAX_JSON_SIZE:
+    if len(request_body) > self._config.MAX_JSON_SIZE:
       raise HTTPException(status_code = 413, detail = "JSON body size exceeded")
 
-    async with self._locks_lock:
-      is_new_key = key not in self._storage
-      if is_new_key and len(self._storage) >= self._config.MAX_KEYS_COUNT:
-        raise HTTPException(status_code = 403, detail = "Maximum number of keys exceeded")
+    is_new_key = key not in self._storage
+    if is_new_key and len(self._storage) >= self._config.MAX_KEYS_COUNT:
+      raise HTTPException(status_code = 403, detail = "Maximum number of keys exceeded")
 
-      # Can't use get_lock() here, because we need to
-      # check keys and get new lock inssde locks_lock
-      if key not in self._locks:
-        self._locks[key] = asyncio.Lock()
+    header = self._get_header(request_client)
+    current_entry = self._storage.get(key)
 
-      lock = self._locks[key]
+    if current_entry is None:
+      current_entry = {**header, "data": {}}
 
-    async with lock:
-      header = self._get_header(request)
-      current_entry = self._storage.get(key)
+    current_data_json_str = json.dumps(current_entry).encode("utf-8")
+    if len(current_data_json_str) > self._config.MAX_JSON_STORAGE_SIZE:
+      raise HTTPException(status_code = 413, detail = f"JSON storage size exceeded")
 
-      if not current_entry:
-        current_entry = {**header, "data": {}}
+    # Perform the recursive merge inside the 'data' field
+    self._deep_merge(current_entry["data"], json_data)
 
-      current_data_json_str = json.dumps(current_entry).encode("utf-8")
-      if len(current_data_json_str) > self._config.MAX_JSON_STORAGE_SIZE:
-        raise HTTPException(status_code = 413, detail = f"JSON storage size exceeded")
+    # Update top-level metadata headers
+    current_entry.update(header)
 
-      # Perform the recursive merge inside the 'data' field
-      self._deep_merge(current_entry["data"], json_data)
-
-      # Update top-level metadata headers
-      current_entry.update(header)
-
-      self._storage[key] = current_entry
+    self._storage[key] = current_entry
 
     return {"status": "success"}
 
@@ -133,9 +113,12 @@ class DeyeStorageManager:
     """
     Get storage statistics
     """
+    items = list(self._storage.values())
+    keys_used = len(self._storage)
+
     total_bytes = 0
 
-    for data in self._storage.values():
+    for data in items:
       # Calculate raw JSON size in bytes
       entry_json = json.dumps(data).encode("utf-8")
       total_bytes += len(entry_json)
@@ -144,12 +127,12 @@ class DeyeStorageManager:
     max_possible_bytes = self._config.MAX_KEYS_COUNT * self._config.MAX_JSON_STORAGE_SIZE
 
     return {
-      "keys_used": len(self._storage),
+      "keys_used": keys_used,
       "keys_limit": self._config.MAX_KEYS_COUNT,
       "bytes_used": total_bytes,
       "bytes_limit": max_possible_bytes,
       "usage_percent": {
-        "keys": round((len(self._storage) / self._config.MAX_KEYS_COUNT) * 100),
+        "keys": round((keys_used / self._config.MAX_KEYS_COUNT) * 100),
         "memory": round((total_bytes / max_possible_bytes) * 100),
       },
     }
@@ -157,6 +140,7 @@ class DeyeStorageManager:
   def save_to_file(self, filename: str) -> None:
     # Storage save logic
     self._logger.info(f"Saving storage to {filename}...")
+
     try:
       with open(filename, "w", encoding = "utf-8") as f:
         json.dump(self._storage, f, ensure_ascii = False, indent = 2)
@@ -176,7 +160,6 @@ class DeyeStorageManager:
             raise ValueError("Invalid storage format")
 
           self._storage.update(loaded_data)
-          self._locks = {key: asyncio.Lock() for key in self._storage}
           self._logger.info(f"Restored {len(loaded_data)} keys from {filename}")
       except Exception as e:
         self._logger.error(f"Failed to load storage from {filename}: {e}")
@@ -200,54 +183,49 @@ class DeyeStorageManager:
       "average": self._clean_num(inner_data.get("average", 0.0)),
     }
 
-  async def update_average(
+  def update_average(
     self,
     key: str,
     count1: float,
     count2: float,
-    request: Request,
+    request_client: Optional[Address],
   ) -> Dict[str, Any]:
     """
     Updates two totals and returns the calculated average in the response.
     Formula: average = count1 / (count1 + count2)
     """
-    async with self._locks_lock:
-      # Key initialization and storage limit check
-      if key not in self._locks:
-        if len(self._storage) >= self._config.MAX_KEYS_COUNT:
-          raise HTTPException(status_code = 403, detail = "Maximum number of keys exceeded")
-        self._locks[key] = asyncio.Lock()
-      lock = self._locks[key]
+    # Key initialization and storage limit check
+    if key not in self._storage and len(self._storage) >= self._config.MAX_KEYS_COUNT:
+      raise HTTPException(status_code = 403, detail = "Maximum number of keys exceeded")
 
-    async with lock:
-      # Get current entry from storage or set defaults
-      entry = self._storage.get(key, {})
-      inner_data = entry.get("data", {})
+    # Get current entry from storage or set defaults
+    entry = self._storage.get(key, {})
+    inner_data = entry.get("data", {})
 
-      new_count1 = inner_data.get("count1", 0.0) + count1
-      new_count2 = inner_data.get("count2", 0.0) + count2
+    new_count1 = inner_data.get("count1", 0.0) + count1
+    new_count2 = inner_data.get("count2", 0.0) + count2
 
-      total = new_count1 + new_count2
-      average = new_count1 / total if total != 0 else 0.0
+    total = new_count1 + new_count2
+    average = new_count1 / total if total != 0 else 0.0
 
-      raw_values = {
-        "count1": new_count1,
-        "count2": new_count2,
-        "total": total,
-        "average": average,
-      }
+    raw_values = {
+      "count1": new_count1,
+      "count2": new_count2,
+      "total": total,
+      "average": average,
+    }
 
-      # Restructure to keep headers at root and payload inside 'data'
-      self._storage[key] = {**self._get_header(request), "data": raw_values}
+    # Restructure to keep headers at root and payload inside 'data'
+    self._storage[key] = {**self._get_header(request_client), "data": raw_values}
 
-      clean_values = {k: self._clean_num(v) for k, v in raw_values.items()}
+    clean_values = {k: self._clean_num(v) for k, v in raw_values.items()}
 
-      # The response body will contain the new average immediately
-      return {
-        "status": "success",
-        "key": key,
-        **clean_values,
-      }
+    # The response body will contain the new average immediately
+    return {
+      "status": "success",
+      "key": key,
+      **clean_values,
+    }
 
   def _deep_merge(
     self,
@@ -255,11 +233,11 @@ class DeyeStorageManager:
     update: Dict[str, Any],
   ) -> None:
     """
-      Recursively merge dictionary 'update' into 'source' with race condition protection.
+    Recursively merge dictionary 'update' into 'source' with race condition protection.
 
-      The merge is performed in-place. If a dictionary contains a 'time' key, 
-      the update is only applied if the incoming timestamp is strictly newer.
-      """
+    The merge is performed in-place. If a dictionary contains a 'time' key, 
+    the update is only applied if the incoming timestamp is strictly newer.
+    """
     for key, value in update.items():
       src_value = source.get(key)
 
@@ -288,11 +266,11 @@ class DeyeStorageManager:
         # Otherwise, just overwrite or add the value
         source[key] = value
 
-  def _get_header(self, request: Request) -> Dict[str, Any]:
+  def _get_header(self, request_client: Optional[Address]) -> Dict[str, Any]:
     return {
       "last_update_ts": int(time.time()),
       "last_update_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-      "last_update_by": request.client.host if request.client else "unknown",
+      "last_update_by": request_client.host if request_client else "unknown",
     }
 
   def _clean_num(self, v: Union[float, int]) -> Union[float, int]:
