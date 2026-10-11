@@ -2,11 +2,6 @@ FROM python:3.14-slim
 
 ENV DEYE_LOG_NAME=datacollector
 
-# Repository settings
-ARG DEYE_REPOSITORY_NAME
-ARG DEYE_REPOSITORY_URL
-ARG DEYE_REPOSITORY_BRANCH
-
 # Set username variable
 ARG USER_NAME=datacollector
 
@@ -21,8 +16,7 @@ ENV TIMEZONE=Europe/Kyiv
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
-  tini \
-  git && \
+  tini && \
   apt-get autoremove -y && \
   apt-get clean -y && \
   rm -rf /var/lib/apt/lists/* && \
@@ -44,13 +38,14 @@ USER $USER_NAME
 # Set working directory
 WORKDIR $APP_DIR
 
-# Clone the project and initialize submodules
-RUN git clone -b $DEYE_REPOSITORY_BRANCH $DEYE_REPOSITORY_URL $DEYE_REPOSITORY_NAME && \
-  cd $DEYE_REPOSITORY_NAME && \
-  git submodule update --init --recursive
+# Copy pre-configured configs to container
+COPY --chown=$USER_NAME:$USER_NAME common/ ./common/
+COPY --chown=$USER_NAME:$USER_NAME deye/ ./deye/
+COPY --chown=$USER_NAME:$USER_NAME modules/ ./modules/
+COPY --chown=$USER_NAME:$USER_NAME data_collector/ ./data_collector/
 
 # Set working directory
-WORKDIR $APP_DIR/$DEYE_REPOSITORY_NAME/data_collector
+WORKDIR $APP_DIR/data_collector
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1
