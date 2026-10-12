@@ -92,6 +92,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     master_pv2_percent = 0
     slave1_pv1_percent = 0
     master_gen_percent = 0
+    master_pv2_and_master_gen_percent = 0
 
     slave_name = self.loggers.slaves[0].name if len(self.loggers.slaves) > 0 else ""
 
@@ -111,7 +112,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       master_pv2_percent = (master_pv2 / total_production) * 100
       slave1_pv1_percent = (slave1_pv1 / total_production) * 100
       master_gen_percent = (master_gen / total_production) * 100
-      pv2_gen_percent = ((master_pv2 + master_gen) / total_production) * 100
+      master_pv2_and_master_gen_percent = ((master_pv2 + master_gen) / total_production) * 100
 
     total_percent = "100%" if total_production >= 0.005 else "0%"
 
@@ -125,7 +126,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       (
         "Master PV2 + Master Gen",
         f"{master_pv2 + master_gen:.2f}",
-        f"{pv2_gen_percent:.0f}%",
+        f"{master_pv2_and_master_gen_percent:.0f}%",
       ),
     ]
 
