@@ -1,3 +1,5 @@
+import asyncio
+from typing import List
 import telebot
 
 from datetime import date
@@ -24,16 +26,30 @@ class TelebotMenuPvStat(TelebotMenuItemHandlerAsync):
   async def process_message(self, message: telebot.types.Message) -> None:
     today = date.today()
 
-    try:
-      day_stat = await self._statistics_helper.get_statistics_for_telegram(today, StatisticsPeriod.Day)
-      month_stat = await self._statistics_helper.get_statistics_for_telegram(today, StatisticsPeriod.Month)
-      year_stat = await self._statistics_helper.get_statistics_for_telegram(today, StatisticsPeriod.Year)
-    except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
-      return
-
-    self.bot.send_message(
-      message.chat.id,
-      f"{day_stat}{month_stat}{year_stat}",
-      parse_mode = 'HTML',
+    # Fetch all statistics concurrently, safely capturing exceptions
+    results = await asyncio.gather(
+      *(self._statistics_helper.get_statistics_for_telegram(today, period) for period in StatisticsPeriod),
+      return_exceptions = True,
     )
+
+    stats: List[str] = []
+    exceptions: List[str] = []
+
+    for res in results:
+      if isinstance(res, Exception):
+        exceptions.append(str(res))
+      else:
+        stats.append(str(res))
+
+    # Combine stats and exceptions into a single message text
+    all_stat = "".join(stats)
+    if exceptions:
+      all_stat += "\n" + "\n".join(exceptions)
+
+    cleaned_stat = all_stat.strip()
+    if cleaned_stat:
+      self.bot.send_message(
+        message.chat.id,
+        cleaned_stat,
+        parse_mode = 'HTML',
+      )
