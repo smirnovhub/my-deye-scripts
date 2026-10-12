@@ -1,7 +1,7 @@
 import asyncio
-from typing import List
 import telebot
 
+from typing import List, Set
 from datetime import date
 
 from telebot_async_runner import TelebotAsyncRunner
@@ -33,16 +33,17 @@ class TelebotMenuPvStat(TelebotMenuItemHandlerAsync):
     )
 
     stats: List[str] = []
-    exceptions: List[str] = []
+    exceptions: Set[str] = set()
 
     for res in results:
       if isinstance(res, Exception):
-        exceptions.append(str(res))
+        exceptions.add(str(res))
       else:
         stats.append(str(res))
 
     # Combine stats and exceptions into a single message text
-    all_stat = "".join(stats)
+    all_stat = "\n".join(stats)
+
     if exceptions:
       all_stat += "\n" + "\n".join(exceptions)
 
