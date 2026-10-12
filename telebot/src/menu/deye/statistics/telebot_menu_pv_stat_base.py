@@ -97,9 +97,11 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     else:
       pv2_pct = gen_pct = pv2_gen_pct = 0.0
 
+    total_percent = "100%" if total_production >= 0.005 else "0%"
+
     rows = [
       ("Value", "kWh", "%"),
-      ("Total PV production", f"{total_production:.2f}", "100%"),
+      ("Total PV production", f"{total_production:.2f}", total_percent),
       ("Master PV2 (South Wall)", f"{master_pv2:.2f}", f"{pv2_pct:.0f}%"),
       ("Master Gen (West Wall)", f"{master_gen:.2f}", f"{gen_pct:.0f}%"),
       (
