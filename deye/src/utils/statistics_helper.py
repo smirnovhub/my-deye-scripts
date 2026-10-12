@@ -16,29 +16,19 @@ class StatisticsHelper:
     self._logger = logger
     self._loggers = DeyeLoggers()
 
-  @staticmethod
-  def get_date_suffix(today: date, period: StatisticsPeriod) -> str:
-    if period == StatisticsPeriod.DAY:
-      return today.isoformat()
-    if period == StatisticsPeriod.MONTH:
-      return today.strftime("%Y-%m")
-    if period == StatisticsPeriod.YEAR:
-      return today.strftime("%Y")
-    return today.isoformat()
-
   def get_clean_statistics(self, stat: str) -> str:
     # Removes <b>, </b>, <pre>, </pre> case-insensitively
     return re.sub(r"</?(b|pre)>", "", stat, flags = re.IGNORECASE)
 
   async def get_statistics_for_telegram(self, today: date, period: StatisticsPeriod) -> str:
-    period_date = StatisticsHelper.get_date_suffix(today, period)
+    period_date = period.get_date_suffix(today)
     server_url = EnvUtils.get_remote_cache_server_url()
     session = await HttpSessionSingletonAsync.get_session()
     url = urljoin(server_url, f"/storage/pv-production-{period_date}")
 
     async with session.get(url) as response:
       if response.status != HTTPStatus.OK:
-        err_str = f"Failed to fetch production data for statistics from {url}, status code: {response.status}"
+        err_str = f"Failed to fetch production data for {period_date} from {url}, status code: {response.status}"
         self._logger.error(err_str)
         raise ValueError(err_str)
 
@@ -64,7 +54,7 @@ class StatisticsHelper:
     else:
       pv2_pct = gen_pct = pv2_gen_pct = 0.0
 
-    return (f"<b>Statistics across all inverters for {period.name.lower()} {period_date}:</b>\n<pre>"
+    return (f"<b>Statistics across all inverters for {period.description.lower()} {period_date}:</b>\n<pre>"
             f"• Total PV production     : {total_production:.2f} kWh (100%)\n"
             f"• Master PV2 (South Wall) : {master_pv2:.2f} kWh ({pv2_pct:.0f}%)\n"
             f"• Master Gen (West Wall)  : {master_gen:.2f} kWh ({gen_pct:.0f}%)\n"
