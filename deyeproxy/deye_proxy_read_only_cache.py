@@ -3,6 +3,8 @@ import asyncio
 import logging
 import signal
 
+from datetime import timedelta
+
 from umodbus.functions import (
   ReadHoldingRegisters,
   ReadInputRegisters,
@@ -11,6 +13,7 @@ from umodbus.functions import (
 
 from log_utils import LogUtils
 from common_utils import CommonUtils
+from async_ticker import AsyncTicker
 from solarman_base_server import SolarmanBaseServer
 from src.deye_proxy_config import DeyeProxyConfig
 from src.deye_registers_cache import DeyeRegistersCache
@@ -42,8 +45,6 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
     )
 
     self._config = config
-    self._shutdown_event = asyncio.Event()
-    self._updater_task = None
 
     # Dedicated lock to serialize all network operations with remote Solarman client
     logger_client_lock = asyncio.Lock()
@@ -63,23 +64,11 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
       logger = self._logger,
     )
 
-  async def stop_server_async(self) -> None:
-    if self._updater_task:
-      self._updater_task.cancel()
-    await super().stop_server_async()
-
-  async def _background_updater(self) -> None:
-    while not self._shutdown_event.is_set():
-      try:
-        # Wait for update interval or wake up immediately on shutdown event
-        try:
-          await asyncio.wait_for(self._shutdown_event.wait(), timeout = self._config.CACHE_UPDATE_INTERVAL)
-        except asyncio.TimeoutError:
-          pass
-
-        # Exit loop immediately if shutdown was requested
-        if self._shutdown_event.is_set():
-          break
+  async def _run_ticker(self, ticker: AsyncTicker, stop_event: asyncio.Event) -> None:
+    """Wrapper to run the AsyncTicker and handle CancelledError"""
+    try:
+      async for _ in ticker:
+        self._logger.info("Running cache update tasks...")
 
         # Handle exceptions independently to prevent skipping updates
         try:
@@ -90,7 +79,7 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
           self._logger.error(f"Error updating holding registers cache: {e}")
 
         # Exit loop immediately if shutdown was requested
-        if self._shutdown_event.is_set():
+        if stop_event.is_set():
           break
 
         try:
@@ -99,11 +88,11 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
           raise
         except Exception as e:
           self._logger.error(f"Error updating input registers cache: {e}")
-
-      except asyncio.CancelledError:
-        break
-      except Exception as e:
-        self._logger.error(f"Error in background updater loop: {e}")
+    except asyncio.CancelledError:
+      self._logger.info("Ticker task received CancelledError")
+      raise
+    finally:
+      self._logger.info("Ticker task finished")
 
   async def on_read_holding_registers(
     self,
@@ -155,18 +144,25 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
 
     return func.create_response_pdu()
 
-  def _handle_exit(self, sig_num: int) -> None:
-    self._logger.info(f"Received signal {sig_num}. Shutting down gracefully...")
-    self._shutdown_event.set()
-
   async def run(self) -> None:
-    loop = asyncio.get_running_loop()
+    ticker = AsyncTicker(
+      period = timedelta(seconds = self._config.CACHE_UPDATE_INTERVAL),
+      align_with_period = True,
+    )
 
-    for sig in (signal.SIGTERM, signal.SIGINT):
-      try:
-        loop.add_signal_handler(sig, self._handle_exit, sig)
-      except NotImplementedError:
-        signal.signal(sig, lambda s, f: self._handle_exit(s))
+    # Stop event flag
+    stop_event = asyncio.Event()
+
+    ticker_task = asyncio.create_task(self._run_ticker(ticker, stop_event))
+
+    def signal_handler(sig_num, frame):
+      self._logger.info(f"Signal {sig_num} received, shutting down...")
+      stop_event.set()
+      ticker.stop()
+
+    # Register signals for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
     external_ip = CommonUtils.get_external_ip(self._config.LOGGER_HOST, self._config.LOGGER_PORT)
     actual_ip = external_ip if external_ip else self._config.PROXY_HOST
@@ -184,20 +180,15 @@ class SolarmanReadOnlyProxy(SolarmanBaseServer):
     self._logger.info(f"Log level             : {log_level_name}")
     self._logger.info("-----------------------------------------------------------")
 
-    self._updater_task = asyncio.create_task(self._background_updater())
+    try:
+      # Main loop is waiting for stop event
+      await stop_event.wait()
+    finally:
+      self._logger.info("Shutting down caching proxy server...")
+      ticker_task.cancel()
+      await asyncio.gather(ticker_task, return_exceptions = True)
 
-    await self._shutdown_event.wait()
-
-    self._logger.info("Shutting down caching proxy server...")
-
-    if self._updater_task:
-      self._updater_task.cancel()
-      try:
-        await self._updater_task
-      except asyncio.CancelledError:
-        pass
-
-    await super().stop_server_async()
+    await self.stop_server_async()
 
     self._logger.info("Server stopped.")
 
