@@ -88,6 +88,11 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     slave1_pv1 = 0.0
     master_gen = 0.0
 
+    master_pv1_percent = 0
+    master_pv2_percent = 0
+    slave1_pv1_percent = 0
+    master_gen_percent = 0
+
     slave_name = self.loggers.slaves[0].name if len(self.loggers.slaves) > 0 else ""
 
     for name, stats in dto.energy_statistics.items():
@@ -105,10 +110,8 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       master_pv1_percent = (master_pv1 / total_production) * 100
       master_pv2_percent = (master_pv2 / total_production) * 100
       slave1_pv1_percent = (slave1_pv1 / total_production) * 100
-      gen_percent = (master_gen / total_production) * 100
+      master_gen_percent = (master_gen / total_production) * 100
       pv2_gen_percent = ((master_pv2 + master_gen) / total_production) * 100
-    else:
-      master_pv2_percent = gen_percent = pv2_gen_percent = 0.0
 
     total_percent = "100%" if total_production >= 0.005 else "0%"
 
@@ -118,7 +121,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       ("Master PV1", f"{master_pv1:.2f}", f"{master_pv1_percent:.0f}%"),
       ("Slave PV1", f"{slave1_pv1:.2f}", f"{slave1_pv1_percent:.0f}%"),
       ("Master PV2 (South Wall)", f"{master_pv2:.2f}", f"{master_pv2_percent:.0f}%"),
-      ("Master Gen (West Wall)", f"{master_gen:.2f}", f"{gen_percent:.0f}%"),
+      ("Master Gen (West Wall)", f"{master_gen:.2f}", f"{master_gen_percent:.0f}%"),
       (
         "Master PV2 + Master Gen",
         f"{master_pv2 + master_gen:.2f}",
