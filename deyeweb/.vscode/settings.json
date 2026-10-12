@@ -14,7 +14,7 @@
     "../common/exceptions",
     "../common/graphs",
     "../common/locker",
-    "../common/other",
+    "../common/statistics",
     "../common/utils",
     "../deye/src",
     "../deye/src/commandline",
