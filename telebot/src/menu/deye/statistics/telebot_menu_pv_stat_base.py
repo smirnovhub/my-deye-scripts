@@ -32,10 +32,15 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     return self._stat_command
 
   async def process_message(self, message: telebot.types.Message) -> None:
+    menu_items = (
+      TelebotMenuItem.deye_pv_stat_day,
+      TelebotMenuItem.deye_pv_stat_month,
+      TelebotMenuItem.deye_pv_stat_year,
+    )
+
     choices = {
-      TelebotMenuItem.deye_pv_stat_day.description: f"/{TelebotMenuItem.deye_pv_stat_day.command}",
-      TelebotMenuItem.deye_pv_stat_month.description: f"/{TelebotMenuItem.deye_pv_stat_month.command}",
-      TelebotMenuItem.deye_pv_stat_year.description: f"/{TelebotMenuItem.deye_pv_stat_year.command}",
+      item.description: f"/{item.command}"
+      for item in menu_items if self.auth_helper.is_menu_item_allowed(message.from_user.id, item)
     }
 
     try:
