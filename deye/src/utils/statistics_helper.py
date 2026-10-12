@@ -54,7 +54,7 @@ class StatisticsHelper:
     else:
       pv2_pct = gen_pct = pv2_gen_pct = 0.0
 
-    return (f"<b>Statistics across all inverters for {period.description.lower()} {period_date}:</b>\n<pre>"
+    return (f"<b>Statistics for {period.description.lower()} {period_date}:</b>\n<pre>"
             f"• Total PV production     : {total_production:.2f} kWh (100%)\n"
             f"• Master PV2 (South Wall) : {master_pv2:.2f} kWh ({pv2_pct:.0f}%)\n"
             f"• Master Gen (West Wall)  : {master_gen:.2f} kWh ({gen_pct:.0f}%)\n"
