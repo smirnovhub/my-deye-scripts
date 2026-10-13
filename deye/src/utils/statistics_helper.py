@@ -27,16 +27,14 @@ class StatisticsHelper:
     url = urljoin(server_url, f"/storage/pv-production-{period_date}")
 
     async with session.get(url) as response:
+      # Read response body first to ensure it is always consumed
+      payload = await response.text()
+
       if response.status != HTTPStatus.OK:
         err_str = f"Failed to fetch production data for {period_date} from {url}, status code: {response.status}"
         self._logger.error(err_str)
-
-        # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
-        await response.read()
-
         raise ValueError(err_str)
 
-      payload = await response.text()
       dto = InverterEnergyStatisticsDto.from_json(payload)
 
     master_pv2 = 0.0
