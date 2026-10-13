@@ -123,6 +123,8 @@ class DeyeRegistersRemoteCacheManagerAsync(DeyeRegistersBaseCacheManagerAsync):
       async with session.get(self._average_hit_rate_endpoint) as response:
         if response.status == HTTPStatus.NOT_FOUND:
           self._logger.warning(f'{self._name} global cache hit rate not found')
+          # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+          await response.read()
           return DeyeRegisterCacheHitRate.zero()
         response.raise_for_status()
         js = await response.json()

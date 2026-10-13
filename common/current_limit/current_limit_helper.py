@@ -17,8 +17,9 @@ class CurrentLimitHelper:
     session = await HttpSessionSingletonAsync.get_session()
 
     async with session.get(url) as response:
-      response.raise_for_status()
+      # Read response body first to ensure it is always consumed
       payload = await response.text()
+      response.raise_for_status()
       config = CurrentLimitConfigDto.from_json(payload)
 
       today = date.today()
@@ -47,8 +48,9 @@ class CurrentLimitHelper:
     session = await HttpSessionSingletonAsync.get_session()
 
     async with session.get(url) as response:
-      response.raise_for_status()
+      # Read response body first to ensure it is always consumed
       payload = await response.text()
+      response.raise_for_status()
       return CurrentLimitSettingsDto.from_json(payload)
 
   @staticmethod

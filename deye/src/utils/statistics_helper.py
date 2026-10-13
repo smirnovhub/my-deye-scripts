@@ -30,6 +30,10 @@ class StatisticsHelper:
       if response.status != HTTPStatus.OK:
         err_str = f"Failed to fetch production data for {period_date} from {url}, status code: {response.status}"
         self._logger.error(err_str)
+
+        # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+        await response.read()
+
         raise ValueError(err_str)
 
       payload = await response.text()
