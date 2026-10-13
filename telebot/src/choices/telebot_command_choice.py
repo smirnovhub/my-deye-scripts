@@ -118,13 +118,13 @@ class CommandChoice:
       reply_markup = keyboard,
     )
 
-    # bot.clear_step_handler_by_chat_id(message.chat.id)
-    # bot.register_next_step_handler(
-    #   message,
-    #   CommandChoice._user_command_choice_next_step_handler,
-    #   bot,
-    #   message.message_id,
-    # )
+    bot.clear_step_handler_by_chat_id(message.chat.id)
+    bot.register_next_step_handler(
+      message,
+      CommandChoice._user_command_choice_next_step_handler,
+      bot,
+      message.message_id,
+    )
 
     return message
 
