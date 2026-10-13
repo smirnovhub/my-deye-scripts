@@ -2,6 +2,7 @@ import inspect
 import logging
 
 from enum import Enum
+from telebot import types
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
 from abc import ABC, abstractmethod
@@ -160,7 +161,7 @@ class TelebotNavigationPage(ABC):
     """
     self._button_handlers.clear()
 
-  def get_goodbye_message(self) -> str:
+  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
     """
     Returns a message to be shown when the navigation session is closed.
 

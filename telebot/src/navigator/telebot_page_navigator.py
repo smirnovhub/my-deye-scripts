@@ -6,7 +6,8 @@ import telebot
 import threading
 
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from telebot import types
+from typing import TYPE_CHECKING, Dict, List, Optional, Union, cast
 
 from telebot_utils import TelebotUtils
 
@@ -276,7 +277,7 @@ class TelebotPageNavigator:
 
     return self._message
 
-  def stop(self, text: str = '') -> None:
+  def stop(self, text: Optional[Union[str, types.InputRichMessage]] = None) -> None:
     """
     Ends the navigation session, removes the keyboard and cleans up instance memory.
 
@@ -287,13 +288,20 @@ class TelebotPageNavigator:
       raise RuntimeError("Navigation has not started yet")
 
     try:
-      if text:
+      if isinstance(text, str):
         self._bot.edit_message_text(
           text,
           chat_id = self._chat_id,
           message_id = self._message.message_id,
           reply_markup = None,
           parse_mode = 'HTML',
+        )
+      elif isinstance(text, types.InputRichMessage):
+        self._bot.edit_message_text(
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          rich_message = text,
+          reply_markup = None,
         )
       else:
         self._bot.edit_message_reply_markup(

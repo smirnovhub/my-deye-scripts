@@ -1,7 +1,8 @@
 import copy
 
 from enum import Enum
-from typing import List, Dict
+from telebot import types
+from typing import List, Dict, Union, cast
 
 from button_node import ButtonNode
 from button_style import ButtonStyle
@@ -65,8 +66,8 @@ class BatterySettingsMainPage(TelebotNavigationPage):
 
     self._buttons = buttons
 
-  def get_goodbye_message(self) -> str:
-    return f"{self._title}\n{self._get_data_as_text(self._batt_data_original_values)}"
+  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
+    return self._get_data_as_rich_message(title = self._title, values = self._batt_data_original_values)
 
   def _get_buttons(
     self,
@@ -82,10 +83,10 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     ]
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(f"{self._title}\n{self._get_data_as_text(self._batt_data_original_values)}")
+    navigator.stop(self._get_data_as_rich_message(title = self._title, values = self._batt_data_original_values))
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
-    navigator.stop(f"{self._title}\n{self._get_data_as_text(self._batt_data_original_values)}")
+    navigator.stop(self._get_data_as_rich_message(title = self._title, values = self._batt_data_original_values))
 
   def _create_navigation_handler(self, target_page: Enum):
     def handler(navigator: TelebotPageNavigator) -> None:
@@ -119,18 +120,52 @@ class BatterySettingsMainPage(TelebotNavigationPage):
         if reg.value != value:
           await holder.write_register(register, value)
 
-      navigator.stop(f"{self._title} saved\n{self._get_data_as_text(self._batt_data.values)}")
+      message = self._get_data_as_rich_message(title = f"{self._title} saved", values = self._batt_data.values)
+      navigator.stop(message)
 
     except Exception as ee:
       navigator.stop(f"{self._title} {str(ee)}")
     finally:
       holder.disconnect()
 
-  def _get_data_as_text(self, values: Dict[BatterySettingsPage, int]) -> str:
-    # Calculate the maximum length of page.title
-    max_len = max(len(page.title) for page in values.keys()) if values else 0
-
-    result = ""
+  def _get_data_as_rich_message(
+    self,
+    title: str,
+    values: Dict[BatterySettingsPage, int],
+  ) -> types.InputRichMessage:
+    rows = []
     for page, value in values.items():
-      result += f"{page.title:<{max_len}} : {value}%\n"
-    return f"<pre>{result}</pre>"
+      rows.append((page.title, f"{value}%"))
+
+    cells = [[
+      self._create_cell(
+        value = value,
+        row = row_idx,
+        column = col_idx,
+      ) for col_idx, value in enumerate(row_data)
+    ] for row_idx, row_data in enumerate(rows)]
+
+    return types.InputRichMessage(blocks = [
+      types.InputRichBlockParagraph(types.RichTextBold(cast(
+        types.RichText,
+        title,
+      ))),
+      types.InputRichBlockTable(
+        cells = cells,
+        is_bordered = True,
+        is_striped = False,
+        is_compact = True,
+      ),
+    ])
+
+  def _create_cell(
+    self,
+    value: str,
+    row: int,
+    column: int,
+  ) -> types.RichBlockTableCell:
+    return types.RichBlockTableCell(
+      text = cast(types.RichText, value),
+      align = "left" if column == 0 else "center",
+      valign = "middle",
+    )

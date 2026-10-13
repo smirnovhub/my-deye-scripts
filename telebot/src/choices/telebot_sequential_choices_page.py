@@ -1,5 +1,6 @@
+from telebot import types
 from enum import Enum, auto
-from typing import Callable, List
+from typing import Callable, List, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -85,5 +86,5 @@ class SequentialChoicePage(TelebotNavigationPage):
 
     raise RuntimeError("No such option")
 
-  def get_goodbye_message(self) -> str:
+  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
     return f"{self._text} cancel"

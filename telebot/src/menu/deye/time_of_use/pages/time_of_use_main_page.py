@@ -1,7 +1,8 @@
 import copy
 
 from enum import Enum
-from typing import List
+from telebot import types
+from typing import List, Union
 
 from button_node import ButtonNode
 from deye_register import DeyeRegister
@@ -71,5 +72,5 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     text = TimeOfUseHelper.get_time_of_use_as_text(self._tou_original_data)
     navigator.stop(text)
 
-  def get_goodbye_message(self) -> str:
+  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
     return TimeOfUseHelper.get_time_of_use_as_text(self._tou_original_data)

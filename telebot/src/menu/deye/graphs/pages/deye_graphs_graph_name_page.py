@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import List
+from telebot import types
+from typing import List, Union
 
 from button_node import ButtonNode
 from deye_graph_data import DeyeGraphData
@@ -69,7 +70,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
 
     self._buttons = buttons
 
-  def get_goodbye_message(self) -> str:
+  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
     return f"{self._title} cancel"
 
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:

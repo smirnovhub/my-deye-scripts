@@ -1,5 +1,6 @@
+from telebot import types
 from enum import Enum, auto
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -108,7 +109,7 @@ class AdvancedChoicePage(TelebotNavigationPage):
     if self._callback:
       self._callback(self._chat_id, button)
 
-  def get_goodbye_message(self) -> str:
+  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
     return f"{self._text} cancel"
 
   def get_stop_by_command_message(self, command: str) -> str:
