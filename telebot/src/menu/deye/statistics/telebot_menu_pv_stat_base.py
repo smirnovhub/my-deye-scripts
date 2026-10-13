@@ -87,15 +87,16 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
 
     master_pv1 = 0.0
     master_pv2 = 0.0
-    slave_pv1 = 0.0
     master_gen = 0.0
+    slave_pv1 = 0.0
+    master_pv2_and_master_gen = 0.0
 
+    total_percent = 0
     master_pv1_percent = 0
     master_pv2_percent = 0
     slave_pv1_percent = 0
     master_gen_percent = 0
     master_pv2_and_master_gen_percent = 0
-    total_percent = 0
 
     if len(self.loggers.slaves) < 1:
       raise ValueError("Slave inverters are empty")
@@ -113,6 +114,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     master_pv2 = round(master_stats.production_pv2, 2)
     master_gen = round(master_stats.gen_energy, 2)
     slave_pv1 = round(slave_stats.production_pv1, 2)
+    master_pv2_and_master_gen = round(master_stats.production_pv2 + master_stats.gen_energy, 2)
 
     total_production = round(
         master_stats.production_pv1 + \
@@ -137,7 +139,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       ("Master Gen (West Wall)", f"{master_gen:.2f}", f"{master_gen_percent:.0f}%"),
       (
         "Master PV2 + Master Gen",
-        f"{master_pv2 + master_gen:.2f}",
+        f"{master_pv2_and_master_gen:.2f}",
         f"{master_pv2_and_master_gen_percent:.0f}%",
       ),
     ]

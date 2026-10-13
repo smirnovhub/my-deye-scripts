@@ -31,33 +31,64 @@ class StatisticsHelper:
       payload = await response.text()
 
       if response.status != HTTPStatus.OK:
-        err_str = f"Failed to fetch production data for {period_date} from {url}, status code: {response.status}"
+        err_str = (f"Failed to fetch production data for {period_date} "
+                   f"from {url}, status code: {response.status}")
         self._logger.error(err_str)
         raise ValueError(err_str)
 
       dto = InverterEnergyStatisticsDto.from_json(payload)
 
+    master_pv1 = 0.0
     master_pv2 = 0.0
     master_gen = 0.0
+    slave_pv1 = 0.0
+    master_pv2_and_master_gen = 0.0
 
-    for name, stats in dto.energy_statistics.items():
-      if name == self._loggers.master.name:
-        master_pv2 = stats.production_pv2
-        master_gen = stats.gen_energy
-        break
+    total_percent = 0
+    master_pv1_percent = 0
+    master_pv2_percent = 0
+    slave_pv1_percent = 0
+    master_gen_percent = 0
+    master_pv2_and_master_gen_percent = 0
 
-    total_production = sum(stats.production_pv1 + stats.production_pv2 + stats.gen_energy
-                           for stats in dto.energy_statistics.values())
+    if len(self._loggers.slaves) < 1:
+      raise ValueError("Slave inverters are empty")
+
+    master_stats = dto.energy_statistics.get(self._loggers.master.name)
+    slave_stats = dto.energy_statistics.get(self._loggers.slaves[0].name)
+
+    if master_stats is None:
+      raise ValueError("Master statistics not found")
+
+    if slave_stats is None:
+      raise ValueError("Slave statistics not found")
+
+    master_pv1 = round(master_stats.production_pv1, 2)
+    master_pv2 = round(master_stats.production_pv2, 2)
+    master_gen = round(master_stats.gen_energy, 2)
+    slave_pv1 = round(slave_stats.production_pv1, 2)
+    master_pv2_and_master_gen = round(master_stats.production_pv2 + master_stats.gen_energy, 2)
+
+    total_production = round(
+        master_stats.production_pv1 + \
+        master_stats.production_pv2 + \
+        master_stats.gen_energy + \
+        slave_stats.production_pv1, 2)
 
     if total_production > 0:
-      pv2_pct = (master_pv2 / total_production) * 100
-      gen_pct = (master_gen / total_production) * 100
-      pv2_gen_pct = ((master_pv2 + master_gen) / total_production) * 100
-    else:
-      pv2_pct = gen_pct = pv2_gen_pct = 0.0
+      total_percent = 100
+      master_pv1_percent = (master_pv1 / total_production) * 100
+      master_pv2_percent = (master_pv2 / total_production) * 100
+      slave_pv1_percent = (slave_pv1 / total_production) * 100
+      master_gen_percent = (master_gen / total_production) * 100
+      master_pv2_and_master_gen_percent = ((master_pv2 + master_gen) / total_production) * 100
 
-    return (f"<b>Statistics for {period.description.lower()} {period_date}:</b>\n<pre>"
-            f"• Total PV production     : {total_production:.2f} kWh (100%)\n"
-            f"• Master PV2 (South Wall) : {master_pv2:.2f} kWh ({pv2_pct:.0f}%)\n"
-            f"• Master Gen (West Wall)  : {master_gen:.2f} kWh ({gen_pct:.0f}%)\n"
-            f"• Master PV2 + Master Gen : {master_pv2 + master_gen:.2f} kWh ({pv2_gen_pct:.0f}%)</pre>")
+    return (
+      f"<b>Statistics for {period.description.lower()} {period_date}:</b>\n<pre>"
+      f"• Total PV production     : {total_production:.2f} kWh ({total_percent:.0f}%)\n"
+      f"• Master PV1              : {master_pv1:.2f} kWh ({master_pv1_percent:.0f}%)\n"
+      f"• Slave PV1               : {slave_pv1:.2f} kWh ({slave_pv1_percent:.0f}%)\n"
+      f"• Master PV2 (South Wall) : {master_pv2:.2f} kWh ({master_pv2_percent:.0f}%)\n"
+      f"• Master Gen (West Wall)  : {master_gen:.2f} kWh ({master_gen_percent:.0f}%)\n"
+      f"• Master PV2 + Master Gen : {master_pv2_and_master_gen:.2f} kWh ({master_pv2_and_master_gen_percent:.0f}%)</pre>"
+    )
