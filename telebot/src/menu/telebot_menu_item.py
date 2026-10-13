@@ -35,6 +35,10 @@ class TelebotMenuItem(Enum):
   deye_time_of_use = ('time_of_use', 'Time of Use')
   deye_battery_settings = ('battery_settings', 'Battery settings')
   deye_graphs = ('graphs', 'Graphs')
+  deye_pv_stat_day = ('pv_stat_day', 'Daily PV Stat')
+  deye_pv_stat_month = ('pv_stat_month', 'Monthly PV Stat', DeyeSystemType.none)
+  deye_pv_stat_year = ('pv_stat_year', 'Annual PV Stat', DeyeSystemType.none)
+
   deye_writable_registers = ('{0}', '{0}')
 
   unknown_command_echo = ('', '')

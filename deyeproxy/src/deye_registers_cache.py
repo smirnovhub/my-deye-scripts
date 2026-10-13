@@ -168,15 +168,12 @@ class DeyeRegistersCache:
         addresses_str = ", ".join(str(addr) for addr in range(start_address, start_address + quantity_to_read))
         self._log.info(f"Update {self._register_type.name.lower()} registers from inverter: {addresses_str}")
 
-        await asyncio.sleep(1)
-
         try:
           values = await self._fetch_registers_from_inverter(start_address, quantity_to_read)
         except Exception as e:
           self._log.error(f"Failed to read {self._register_type.name.lower()} group starting at {start_address}: {e}")
           continue
 
-        now = time.monotonic()
         for i, value in enumerate(values):
           reg_address = start_address + i
 
@@ -331,12 +328,13 @@ class DeyeRegistersCache:
 
         current_retry = attempt + 1
 
-        self._log.warning(f"Failed to fetch {self._register_type.name.lower()} registers "
-                          f"starting at {start_address} ({e}). Retrying ({current_retry}/{max_retries})...")
+        self._log.warning(f"Failed to fetch {quantity} {self._register_type.name.lower()} registers "
+                          f"starting at {start_address} ({e}). Retrying attempt {current_retry}/{max_retries}...")
 
         await asyncio.sleep(retry_delay_sec)
 
     if last_exception is not None:
       raise last_exception
 
-    raise RuntimeError(f"Failed to fetch {self._register_type.name.lower()} registers after {max_retries + 1} attempts")
+    raise RuntimeError(f"Failed to fetch {quantity} {self._register_type.name.lower()} registers "
+                       f"starting at {start_address} after {max_retries + 1} attempts")

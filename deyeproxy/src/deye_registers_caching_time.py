@@ -167,4 +167,4 @@ class DeyeRegistersCachingTimeHolder:
     """
     Retrieve caching time in seconds for a specific register address using O(1) dictionary lookup.
     """
-    return self._caching_times_by_address.get(address, self._config.CACHE_UPDATE_INTERVAL)
+    return self._caching_times_by_address.get(address, self._config.CACHE_UPDATE_INTERVAL - 1)

@@ -160,7 +160,7 @@ if __name__ == "__main__":
     app,
     host = config.SERVER_HOST,
     port = config.SERVER_PORT,
-    timeout_keep_alive = 15,
+    timeout_keep_alive = 30,
     proxy_headers = False,
     forwarded_allow_ips = None,
     log_config = None,

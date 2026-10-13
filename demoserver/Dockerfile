@@ -2,11 +2,6 @@ FROM python:3.14-slim
 
 ENV DEYE_LOG_NAME=demoserver
 
-# Repository settings
-ARG DEYE_REPOSITORY_NAME
-ARG DEYE_REPOSITORY_URL
-ARG DEYE_REPOSITORY_BRANCH
-
 # Set port number to listen on
 ARG PORTS="5000 5001"
 
@@ -23,8 +18,6 @@ ENV TIMEZONE=Europe/Kyiv
 # Install system dependencies: Python, pip, and other tools
 RUN apt-get update && \
   apt-get upgrade -y && \
-  apt-get install -y --no-install-recommends \
-  git && \
   apt-get autoremove -y && \
   apt-get clean -y && \
   rm -rf /var/lib/apt/lists/* && \
@@ -43,13 +36,14 @@ USER $USER_NAME
 # Set working directory
 WORKDIR $APP_DIR
 
-# Clone the project and initialize submodules
-RUN git clone -b $DEYE_REPOSITORY_BRANCH $DEYE_REPOSITORY_URL $DEYE_REPOSITORY_NAME && \
-  cd $DEYE_REPOSITORY_NAME && \
-  git submodule update --init --recursive
+# Copy pre-configured configs to container
+COPY --chown=$USER_NAME:$USER_NAME common/ ./common/
+COPY --chown=$USER_NAME:$USER_NAME deye/ ./deye/
+COPY --chown=$USER_NAME:$USER_NAME modules/ ./modules/
+COPY --chown=$USER_NAME:$USER_NAME demoserver/ ./demoserver/
 
 # Set working directory
-WORKDIR $APP_DIR/$DEYE_REPOSITORY_NAME/demoserver
+WORKDIR $APP_DIR/demoserver
 
 # Use unbuffered output to see logs in docker logs
 ENV PYTHONUNBUFFERED=1

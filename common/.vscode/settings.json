@@ -14,6 +14,7 @@
     "exceptions",
     "graphs",
     "locker",
+    "statistics",
     "utils"
   ],
   "python.analysis.useImportHeuristic": true,

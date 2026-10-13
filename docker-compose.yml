@@ -153,10 +153,6 @@ services:
     build:
       context: .
       dockerfile: data_collector/Dockerfile
-      args:
-        DEYE_REPOSITORY_NAME: ${DEYE_REPOSITORY_NAME}
-        DEYE_REPOSITORY_URL: ${DEYE_REPOSITORY_URL}
-        DEYE_REPOSITORY_BRANCH: ${DEYE_REPOSITORY_BRANCH}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -205,7 +201,7 @@ services:
           memory: ${GLOBAL_MEMORY_LIMIT}
     volumes:
       # Mount shared folder with read-write permissions
-      - deye_shared_volume:/home/datacollector/${DEYE_REPOSITORY_NAME}/data_collector/data
+      - deye_shared_volume:/home/datacollector/data_collector/data
 
   telebot:
     build:

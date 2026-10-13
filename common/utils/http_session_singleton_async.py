@@ -22,7 +22,13 @@ class HttpSessionSingletonAsync:
     async with cls._lock:
       if cls._session is None or cls._session.closed:
         timeout = aiohttp.ClientTimeout(total = 10)
-        cls._session = aiohttp.ClientSession(timeout = timeout)
+        connector = aiohttp.TCPConnector(keepalive_timeout = 25)
+
+        cls._session = aiohttp.ClientSession(
+          timeout = timeout,
+          connector = connector,
+        )
+
         logging.getLogger().info("Created shared aiohttp session.")
     return cls._session
 

@@ -130,6 +130,8 @@ class GraphGenerator:
     session = await HttpSessionSingletonAsync.get_session()
     try:
       async with session.get(url) as response:
+        # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+        await response.read()
         response.raise_for_status()
         return response.status == HTTPStatus.OK
     except Exception:

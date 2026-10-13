@@ -23,4 +23,5 @@ class TelebotFakeMessage(Message):
     """
     self.__dict__ = copy.deepcopy(message.__dict__)
     self.text = text
+    self.content_type = "text"
     self.from_user = from_user
