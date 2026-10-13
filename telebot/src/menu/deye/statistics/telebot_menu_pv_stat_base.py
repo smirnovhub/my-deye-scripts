@@ -114,7 +114,11 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     master_gen = round(master_stats.gen_energy, 2)
     slave_pv1 = round(slave_stats.production_pv1, 2)
 
-    total_production = round(master_pv1 + master_pv2 + master_gen + slave_pv1, 2)
+    total_production = round(
+        master_stats.production_pv1 + \
+        master_stats.production_pv2 + \
+        master_stats.gen_energy + \
+        slave_stats.production_pv1, 2)
 
     if total_production > 0:
       total_percent = 100
