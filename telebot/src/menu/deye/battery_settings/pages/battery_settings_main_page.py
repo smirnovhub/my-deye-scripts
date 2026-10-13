@@ -83,7 +83,11 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     ]
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(self._get_data_as_rich_message(title = self._title, values = self._batt_data_original_values))
+    navigator.stop(
+      self._get_data_as_rich_message(
+        title = f"{self._title} cancel",
+        values = self._batt_data_original_values,
+      ))
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     navigator.stop(self._get_data_as_rich_message(title = self._title, values = self._batt_data_original_values))
