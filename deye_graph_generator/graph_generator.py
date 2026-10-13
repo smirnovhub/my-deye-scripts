@@ -159,11 +159,9 @@ class GraphGenerator:
     url = urljoin(self._server_url, f"/graphs/{self._format}/{graph_date.isoformat()}/{inverter}/{graph_name}")
     session = await HttpSessionSingletonAsync.get_session()
     async with session.get(url) as response:
-      # Read response body first to ensure it is always consumed
-      payload = await response.text()
-
       if response.status != HTTPStatus.OK:
-        raise RuntimeError(f"Can't get graph {self._format}: response code = {response.status}, text = {payload}")
+        text = await response.text()
+        raise RuntimeError(f"Can't get graph {self._format}: response code = {response.status}, text = {text}")
       return await response.read()
 
   def _remove_old_files(self) -> None:
