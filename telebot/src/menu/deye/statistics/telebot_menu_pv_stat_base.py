@@ -74,53 +74,61 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     url = urljoin(server_url, f"/storage/pv-production-{period_date}")
 
     async with session.get(url) as response:
+      # Read response body first to ensure it is always consumed
+      payload = await response.text()
+
       if response.status != HTTPStatus.OK:
         err_str = (f"Failed to fetch production data for {period_date} "
                    f"from {url}, status code: {response.status}")
         self.logger.error(err_str)
         raise ValueError(err_str)
 
-      payload = await response.text()
       dto = InverterEnergyStatisticsDto.from_json(payload)
 
     master_pv1 = 0.0
     master_pv2 = 0.0
-    slave1_pv1 = 0.0
+    slave_pv1 = 0.0
     master_gen = 0.0
 
     master_pv1_percent = 0
     master_pv2_percent = 0
-    slave1_pv1_percent = 0
+    slave_pv1_percent = 0
     master_gen_percent = 0
     master_pv2_and_master_gen_percent = 0
+    total_percent = 0
 
-    slave_name = self.loggers.slaves[0].name if len(self.loggers.slaves) > 0 else ""
+    if len(self.loggers.slaves) < 1:
+      raise ValueError("Slave inverters are empty")
 
-    for name, stats in dto.energy_statistics.items():
-      if name == self.loggers.master.name:
-        master_pv1 = stats.production_pv1
-        master_pv2 = stats.production_pv2
-        master_gen = stats.gen_energy
-      elif name == slave_name:
-        slave1_pv1 = stats.production_pv1
+    master_stats = dto.energy_statistics.get(self.loggers.master.name)
+    slave_stats = dto.energy_statistics.get(self.loggers.slaves[0].name)
 
-    total_production = sum(stats.production_pv1 + stats.production_pv2 + stats.gen_energy
-                           for stats in dto.energy_statistics.values())
+    if master_stats is None:
+      raise ValueError("Master statistics not found")
+
+    if slave_stats is None:
+      raise ValueError("Slave statistics not found")
+
+    master_pv1 = round(master_stats.production_pv1, 2)
+    master_pv2 = round(master_stats.production_pv2, 2)
+    master_gen = round(master_stats.gen_energy, 2)
+    slave_pv1 = round(slave_stats.production_pv1, 2)
+
+    total_production = round(master_pv1 + master_pv2 + master_gen + slave_pv1, 2)
 
     if total_production > 0:
+      total_percent = 100
       master_pv1_percent = (master_pv1 / total_production) * 100
       master_pv2_percent = (master_pv2 / total_production) * 100
-      slave1_pv1_percent = (slave1_pv1 / total_production) * 100
+      slave_pv1_percent = (slave_pv1 / total_production) * 100
       master_gen_percent = (master_gen / total_production) * 100
       master_pv2_and_master_gen_percent = ((master_pv2 + master_gen) / total_production) * 100
 
-    total_percent = "100%" if total_production >= 0.005 else "0%"
-
     rows = [
       ("Value", "kWh", "Percent"),
-      ("Total PV production", f"{total_production:.2f}", total_percent),
+      ("Total PV production", f"{total_production:.2f}", f"{total_percent:.0f}%"),
       ("Master PV1", f"{master_pv1:.2f}", f"{master_pv1_percent:.0f}%"),
-      ("Slave PV1", f"{slave1_pv1:.2f}", f"{slave1_pv1_percent:.0f}%"),
+      ("Slave PV1", f"{slave_pv1:.2f}", f"{slave_pv1_percent:.0f}%"),
       ("Master PV2 (South Wall)", f"{master_pv2:.2f}", f"{master_pv2_percent:.0f}%"),
       ("Master Gen (West Wall)", f"{master_gen:.2f}", f"{master_gen_percent:.0f}%"),
       (
@@ -130,14 +138,11 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       ),
     ]
 
-    cells = [[
-      types.RichBlockTableCell(
-        text = cast(types.RichText, value),
-        align = "center" if row_index == 0 else ("left" if column == 0 else "right"),
-        valign = "middle",
-        is_header = (row_index == 0),
-      ) for column, value in enumerate(row)
-    ] for row_index, row in enumerate(rows)]
+    cells = [[self._create_cell(
+      value = value,
+      row = row,
+      column = column,
+    ) for column, value in enumerate(row_data)] for row, row_data in enumerate(rows)]
 
     return [
       types.InputRichBlockParagraph(
@@ -152,3 +157,16 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
         is_compact = True,
       )
     ]
+
+  def _create_cell(
+    self,
+    value: str,
+    row: int,
+    column: int,
+  ) -> types.RichBlockTableCell:
+    return types.RichBlockTableCell(
+      text = cast(types.RichText, value),
+      align = ("center" if row == 0 else "left" if column == 0 else "right"),
+      valign = "middle",
+      is_header = row == 0,
+    )
