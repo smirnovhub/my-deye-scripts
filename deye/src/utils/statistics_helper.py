@@ -71,11 +71,22 @@ class StatisticsHelper:
 
     if total_production > 0:
       total_percent = 100
-      master_pv1_percent = (master_pv1 / total_production) * 100
-      master_pv2_percent = (master_pv2 / total_production) * 100
-      slave_pv1_percent = (slave_pv1 / total_production) * 100
-      master_gen_percent = (master_gen / total_production) * 100
-      master_pv2_and_master_gen_percent = ((master_pv2 + master_gen) / total_production) * 100
+
+      if master_pv1 > 0:
+        master_pv1_percent = (master_stats.production_pv1 / total_production) * 100
+
+      if master_pv2 > 0:
+        master_pv2_percent = (master_stats.production_pv2 / total_production) * 100
+
+      if slave_pv1 > 0:
+        slave_pv1_percent = (slave_stats.production_pv1 / total_production) * 100
+
+      if master_gen > 0:
+        master_gen_percent = (master_stats.gen_energy / total_production) * 100
+
+      if master_pv2_and_master_gen > 0:
+        master_pv2_and_master_gen_percent = (
+          (master_stats.production_pv2 + master_stats.gen_energy) / total_production) * 100
 
     return (
       f"Statistics for {period.description.lower()} {period_date}:\n"
