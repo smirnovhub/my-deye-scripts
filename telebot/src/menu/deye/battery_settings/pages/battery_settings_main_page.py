@@ -141,13 +141,22 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     for page, value in values.items():
       rows.append((page.title, f"{value}%"))
 
-    cells = [[
-      self._create_cell(
-        value = value,
-        row = row_idx,
-        column = col_idx,
-      ) for col_idx, value in enumerate(row_data)
-    ] for row_idx, row_data in enumerate(rows)]
+    def create_cell(
+      value: str,
+      row: int,
+      column: int,
+    ) -> types.RichBlockTableCell:
+      return types.RichBlockTableCell(
+        text = cast(types.RichText, value),
+        align = "left" if column == 0 else "center",
+        valign = "middle",
+      )
+
+    cells = [[create_cell(
+      value = value,
+      row = row_idx,
+      column = col_idx,
+    ) for col_idx, value in enumerate(row_data)] for row_idx, row_data in enumerate(rows)]
 
     return types.InputRichMessage(blocks = [
       types.InputRichBlockParagraph(types.RichTextBold(cast(
@@ -161,15 +170,3 @@ class BatterySettingsMainPage(TelebotNavigationPage):
         is_compact = True,
       ),
     ])
-
-  def _create_cell(
-    self,
-    value: str,
-    row: int,
-    column: int,
-  ) -> types.RichBlockTableCell:
-    return types.RichBlockTableCell(
-      text = cast(types.RichText, value),
-      align = "left" if column == 0 else "center",
-      valign = "middle",
-    )
