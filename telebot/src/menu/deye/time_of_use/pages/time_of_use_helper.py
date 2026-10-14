@@ -1,5 +1,6 @@
+from telebot import types
 from dataclasses import asdict
-from typing import Any, Sequence
+from typing import Any, Sequence, cast
 
 from deye_logger import DeyeLogger
 from common_utils import CommonUtils
@@ -67,17 +68,57 @@ class TimeOfUseHelper:
       data_to_clear.weeks.values = []
 
   @staticmethod
-  def get_time_of_use_as_text(
+  def get_time_of_use_as_rich_message(
     tou_data: TimeOfUseData,
     suffx: str = "",
-  ) -> str:
+  ) -> types.InputRichMessage:
     def sign(value: bool):
       on = CommonUtils.large_green_circle_emoji
       off = CommonUtils.large_red_circle_emoji
       return on if value else off
 
-    header = f'{sign(tou_data.week.enabled)} Time of Use schedule: {suffx}'
-    schedule = 'Gr Gen    Time     Pwr Batt\n'
+    def create_cell(
+      value: str,
+      row: int,
+      column: int,
+    ) -> types.RichBlockTableCell:
+      return types.RichBlockTableCell(
+        text = cast(types.RichText, value),
+        is_header = row == 0,
+        align = "center",
+        valign = "middle",
+      )
+
+    # Header title with enabled status sign
+    header_text = f"{sign(tou_data.week.enabled)} Time of Use schedule:"
+    if suffx:
+      header_text += f" {suffx}"
+
+    # 1. Days of the week table data
+    days_headers = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    days_values = [
+      sign(tou_data.week.monday),
+      sign(tou_data.week.tuesday),
+      sign(tou_data.week.wednesday),
+      sign(tou_data.week.thursday),
+      sign(tou_data.week.friday),
+      sign(tou_data.week.saturday),
+      sign(tou_data.week.sunday),
+    ]
+
+    days_rows = [days_headers, days_values]
+
+    days_cells = [[
+      create_cell(
+        value = value,
+        row = row_idx,
+        column = col_idx,
+      ) for col_idx, value in enumerate(row_data)
+    ] for row_idx, row_data in enumerate(days_rows)]
+
+    # 2. Schedule table data
+    schedule_headers = ["Grid", "Gen", "Start", "End", "Power", "Batt"]
+    schedule_rows = [schedule_headers]
 
     charges = tou_data.charges.values
     times = tou_data.times.values
@@ -93,18 +134,38 @@ class TimeOfUseHelper:
       curr_power = powers[i]
       curr_soc = socs[i]
 
-      schedule += (f'{sign(curr_charge.grid_charge)} {sign(curr_charge.gen_charge)} '
-                   f'{curr_time.hour:02d}:{curr_time.minute:02d} '
-                   f'{next_time.hour:02d}:{next_time.minute:02d} '
-                   f'{curr_power:>4} {curr_soc:>3}%\n')
+      schedule_rows.append([
+        sign(curr_charge.grid_charge),
+        sign(curr_charge.gen_charge),
+        f"{curr_time.hour:02d}:{curr_time.minute:02d}",
+        f"{next_time.hour:02d}:{next_time.minute:02d}",
+        str(curr_power),
+        f"{curr_soc}%",
+      ])
 
-    days_of_week = 'Mon Tue Wed Thu Fri Sat Sun\n'
-    days_of_week += (f'{sign(tou_data.week.monday)}  '
-                     f'{sign(tou_data.week.tuesday)}  '
-                     f'{sign(tou_data.week.wednesday)}  '
-                     f'{sign(tou_data.week.thursday)}  '
-                     f'{sign(tou_data.week.friday)}  '
-                     f'{sign(tou_data.week.saturday)}  '
-                     f'{sign(tou_data.week.sunday)}')
+    schedule_cells = [[
+      create_cell(
+        value = value,
+        row = row_idx,
+        column = col_idx,
+      ) for col_idx, value in enumerate(row_data)
+    ] for row_idx, row_data in enumerate(schedule_rows)]
 
-    return f'{header}\n<pre>{days_of_week}</pre>\n<pre>{schedule}</pre>'
+    return types.InputRichMessage(blocks = [
+      types.InputRichBlockParagraph(types.RichTextBold(cast(
+        types.RichText,
+        header_text,
+      ))),
+      types.InputRichBlockTable(
+        cells = days_cells,
+        is_bordered = True,
+        is_striped = False,
+        is_compact = True,
+      ),
+      types.InputRichBlockTable(
+        cells = schedule_cells,
+        is_bordered = True,
+        is_striped = False,
+        is_compact = True,
+      ),
+    ])

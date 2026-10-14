@@ -69,8 +69,11 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     self._buttons = week_buttons.buttons + schedule_buttons.buttons + bottom_buttons.buttons
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
-    text = TimeOfUseHelper.get_time_of_use_as_text(self._tou_original_data)
+    text = TimeOfUseHelper.get_time_of_use_as_rich_message(self._tou_original_data)
     navigator.stop(text)
 
   def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
-    return TimeOfUseHelper.get_time_of_use_as_text(self._tou_original_data)
+    return TimeOfUseHelper.get_time_of_use_as_rich_message(
+      self._tou_original_data,
+      suffx = "cancel",
+    )
