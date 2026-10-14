@@ -1,4 +1,5 @@
 from datetime import date
+from http import HTTPStatus
 from urllib.parse import urljoin
 
 from env_utils import EnvUtils
@@ -19,6 +20,10 @@ class CurrentLimitHelper:
     async with session.get(url) as response:
       # Read response body first to ensure it is always consumed
       payload = await response.text()
+
+      if response.status == HTTPStatus.NOT_FOUND:
+        return CurrentLimitConfigDto()
+
       response.raise_for_status()
       config = CurrentLimitConfigDto.from_json(payload)
 
@@ -50,6 +55,10 @@ class CurrentLimitHelper:
     async with session.get(url) as response:
       # Read response body first to ensure it is always consumed
       payload = await response.text()
+
+      if response.status == HTTPStatus.NOT_FOUND:
+        return CurrentLimitSettingsDto()
+
       response.raise_for_status()
       return CurrentLimitSettingsDto.from_json(payload)
 
