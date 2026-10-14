@@ -1,5 +1,6 @@
+from telebot import types
 from enum import Enum
-from typing import List
+from typing import List, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -24,7 +25,7 @@ class DeyeGraphsGroupPage(TelebotNavigationPage):
     return DeyeGraphsPage.group
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, types.InputRichMessage]:
     return "Select group:"
 
   @property

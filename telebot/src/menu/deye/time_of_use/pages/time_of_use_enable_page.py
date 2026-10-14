@@ -1,7 +1,8 @@
 import copy
 
 from enum import Enum
-from typing import List
+from telebot import types
+from typing import List, Union
 
 from button_node import ButtonNode
 from deye_loggers import DeyeLoggers
@@ -31,7 +32,7 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
     return TimeOfUsePage.enable
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, types.InputRichMessage]:
     return "Time of Use is disabled"
 
   @property

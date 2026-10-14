@@ -25,7 +25,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
     return DeyeGraphsPage.main
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, types.InputRichMessage]:
     return "Select graph date:"
 
   @property

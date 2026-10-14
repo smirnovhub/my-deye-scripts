@@ -1,5 +1,6 @@
+from telebot import types
 from enum import Enum, auto
-from typing import Callable, List
+from typing import Callable, List, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -35,7 +36,7 @@ class UserChoicePage(TelebotNavigationPage):
     return UserChoicePageType.main
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, types.InputRichMessage]:
     return self._text
 
   @property

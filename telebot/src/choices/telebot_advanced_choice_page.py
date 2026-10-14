@@ -39,7 +39,7 @@ class AdvancedChoicePage(TelebotNavigationPage):
     return AdvancedChoicePageType.main
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, types.InputRichMessage]:
     return self._text
 
   @property

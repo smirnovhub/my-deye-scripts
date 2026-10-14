@@ -2,20 +2,16 @@ import copy
 
 from enum import Enum
 from telebot import types
-from typing import List, Dict, Union, cast
+from typing import List, Union
 
 from button_node import ButtonNode
-from button_style import ButtonStyle
 from deye_loggers import DeyeLoggers
-from break_button_node import BreakButtonNode
+from battery_settings_helper import BatterySettingsHelper
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
 from telebot_async_runner import TelebotAsyncRunner
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
-from telebot_deye_helper import TelebotDeyeHelper
-from deye_registers_holder_async import DeyeRegistersHolderAsync
-from battery_settings_registers import BatterySettingsRegisters
 
 class BatterySettingsMainPage(TelebotNavigationPage):
   def __init__(
@@ -35,8 +31,11 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     return BatterySettingsPage.main
 
   @property
-  def text(self) -> str:
-    return self._title
+  def text(self) -> Union[str, types.InputRichMessage]:
+    return BatterySettingsHelper.get_data_as_rich_message(
+      title = self._title,
+      values = self._batt_data_original_values,
+    )
 
   @property
   def need_user_input(self) -> bool:
@@ -49,124 +48,30 @@ class BatterySettingsMainPage(TelebotNavigationPage):
   def update(self) -> None:
     buttons: List[ButtonNode] = []
 
-    value = 0
-    style = ButtonStyle.default
-
-    for page, val in self._batt_data.values.items():
-      if val < value:
-        style = ButtonStyle.danger
-
-      buttons.extend(self._get_buttons(page_type = page, title = page.name, style = style))
-      value = val
-
-    if self._need_save():
-      buttons.append(self.register_button_handler(ButtonNode("Save"), self._handle_save))
-
+    buttons.append(self.register_button_handler(ButtonNode("Edit"), self._handle_edit))
     buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
 
     self._buttons = buttons
 
   def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
-    return self._get_data_as_rich_message(title = f"{self._title} cancel", values = self._batt_data_original_values)
+    return BatterySettingsHelper.get_data_as_rich_message(
+      title = f"{self._title} cancel",
+      values = self._batt_data_original_values,
+    )
 
-  def _get_buttons(
-    self,
-    page_type: BatterySettingsPage,
-    title: str,
-    style: ButtonStyle,
-  ) -> List[ButtonNode]:
-    button = ButtonNode(text = f"{self._batt_data.values[page_type]}%", style = style)
-    return [
-      self.register_button_handler(ButtonNode(text = title, style = style), self._create_navigation_handler(page_type)),
-      self.register_button_handler(button, self._create_navigation_handler(page_type)),
-      BreakButtonNode(),
-    ]
+  def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
+    navigator.navigate(BatterySettingsPage.edit)
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(
-      self._get_data_as_rich_message(
+      BatterySettingsHelper.get_data_as_rich_message(
         title = f"{self._title} cancel",
         values = self._batt_data_original_values,
       ))
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
-    navigator.stop(self._get_data_as_rich_message(title = self._title, values = self._batt_data_original_values))
-
-  def _create_navigation_handler(self, target_page: Enum):
-    def handler(navigator: TelebotPageNavigator) -> None:
-      navigator.navigate(target_page)
-
-    return handler
-
-  def _need_save(self) -> bool:
-    return self._batt_data.values != self._batt_data_original_values
-
-  async def _handle_save(self, navigator: TelebotPageNavigator) -> None:
-    try:
-      holder = DeyeRegistersHolderAsync(
-        loggers = [self._loggers.master],
-        register_creator = lambda prefix: BatterySettingsRegisters(prefix),
-        **TelebotDeyeHelper.holder_kwargs,
-      )
-
-      await holder.read_registers()
-
-      registers = holder.master_registers
-
-      for register in self._batt_data.registers.values():
-        reg = registers.get_register_by_name(register.name)
-        if reg.value != register.value:
-          raise ValueError(f"{reg.description} was changed unexpectedly since last read")
-
-      for page, value in self._batt_data.values.items():
-        register = self._batt_data.registers[page]
-        reg = registers.get_register_by_name(register.name)
-        if reg.value != value:
-          await holder.write_register(register, value)
-
-      message = self._get_data_as_rich_message(title = f"{self._title} saved", values = self._batt_data.values)
-      navigator.stop(message)
-
-    except Exception as ee:
-      navigator.stop(f"{self._title} {str(ee)}")
-    finally:
-      holder.disconnect()
-
-  def _get_data_as_rich_message(
-    self,
-    title: str,
-    values: Dict[BatterySettingsPage, int],
-  ) -> types.InputRichMessage:
-    rows = []
-    for page, value in values.items():
-      rows.append((page.title, f"{value}%"))
-
-    def create_cell(
-      value: str,
-      row: int,
-      column: int,
-    ) -> types.RichBlockTableCell:
-      return types.RichBlockTableCell(
-        text = cast(types.RichText, value),
-        align = "left" if column == 0 else "center",
-        valign = "middle",
-      )
-
-    cells = [[create_cell(
-      value = value,
-      row = row_idx,
-      column = col_idx,
-    ) for col_idx, value in enumerate(row_data)] for row_idx, row_data in enumerate(rows)]
-
-    return types.InputRichMessage(blocks = [
-      types.InputRichBlockParagraph(types.RichTextBold(cast(
-        types.RichText,
-        title,
-      ))),
-      types.InputRichBlockTable(
-        cells = cells,
-        is_bordered = True,
-        is_striped = False,
-        is_compact = True,
-      ),
-    ])
+    navigator.stop(
+      BatterySettingsHelper.get_data_as_rich_message(
+        title = self._title,
+        values = self._batt_data_original_values,
+      ))

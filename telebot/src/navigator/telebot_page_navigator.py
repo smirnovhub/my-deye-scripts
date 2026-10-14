@@ -127,12 +127,21 @@ class TelebotPageNavigator:
 
     self._markup = keyboard
 
-    self._message = self._bot.send_message(
-      chat_id = self._chat_id,
-      text = self._get_page_text(page),
-      reply_markup = keyboard,
-      parse_mode = "HTML",
-    )
+    page_text = self._get_page_text(page)
+
+    if isinstance(page_text, types.InputRichMessage):
+      self._message = self._bot.send_rich_message(
+        chat_id = self._chat_id,
+        rich_message = page_text,
+        reply_markup = keyboard,
+      )
+    else:
+      self._message = self._bot.send_message(
+        chat_id = self._chat_id,
+        text = page_text,
+        reply_markup = keyboard,
+        parse_mode = "HTML",
+      )
 
     # Setup cleanup on any user text input
     self._bot.clear_step_handler_by_chat_id(self._chat_id)
@@ -203,13 +212,24 @@ class TelebotPageNavigator:
     self._markup = keyboard
 
     try:
-      self._bot.edit_message_text(
-        text = self._get_page_text(self._current_page),
-        chat_id = self._chat_id,
-        message_id = self._message.message_id,
-        reply_markup = keyboard,
-        parse_mode = 'HTML',
-      )
+      page_text = self._get_page_text(self._current_page)
+
+      if isinstance(page_text, types.InputRichMessage):
+        self._bot.edit_message_text(
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          rich_message = page_text,
+          reply_markup = keyboard,
+        )
+      else:
+        self._bot.edit_message_text(
+          text = page_text,
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          reply_markup = keyboard,
+          parse_mode = 'HTML',
+        )
+
     except Exception:
       # Ignore "Message is not modified" errors
       pass
@@ -241,7 +261,7 @@ class TelebotPageNavigator:
       delay = delay,
     )
 
-  def _get_page_text(self, page: "TelebotNavigationPage") -> str:
+  def _get_page_text(self, page: "TelebotNavigationPage") -> Union[str, types.InputRichMessage]:
     return page.text if page.text else "Untitled"
 
   def _resend(self, text: str) -> telebot.types.Message:
@@ -250,22 +270,38 @@ class TelebotPageNavigator:
 
     page_text = self._get_page_text(self._current_page)
 
-    try:
-      self._bot.edit_message_text(
-        text = f"{page_text} {text}",
-        chat_id = self._chat_id,
-        message_id = self._message.message_id,
-        parse_mode = 'HTML',
-      )
-    except Exception:
-      pass
+    if isinstance(page_text, types.InputRichMessage):
+      try:
+        self._bot.edit_message_text(
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          rich_message = page_text,
+        )
+      except Exception:
+        pass
 
-    self._message = self._bot.send_message(
-      chat_id = self._chat_id,
-      text = page_text,
-      reply_markup = self._markup,
-      parse_mode = "HTML",
-    )
+      self._message = self._bot.send_rich_message(
+        chat_id = self._chat_id,
+        rich_message = page_text,
+        reply_markup = self._markup,
+      )
+    else:
+      try:
+        self._bot.edit_message_text(
+          text = f"{page_text} {text}",
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          parse_mode = 'HTML',
+        )
+      except Exception:
+        pass
+
+      self._message = self._bot.send_message(
+        chat_id = self._chat_id,
+        text = page_text,
+        reply_markup = self._markup,
+        parse_mode = "HTML",
+      )
 
     # Setup cleanup on any user text input
     self._bot.clear_step_handler_by_chat_id(self._chat_id)
@@ -288,15 +324,7 @@ class TelebotPageNavigator:
       raise RuntimeError("Navigation has not started yet")
 
     try:
-      if isinstance(text, str):
-        self._bot.edit_message_text(
-          text,
-          chat_id = self._chat_id,
-          message_id = self._message.message_id,
-          reply_markup = None,
-          parse_mode = 'HTML',
-        )
-      elif isinstance(text, types.InputRichMessage):
+      if isinstance(text, types.InputRichMessage):
         self._bot.edit_message_text(
           chat_id = self._chat_id,
           message_id = self._message.message_id,
@@ -304,10 +332,12 @@ class TelebotPageNavigator:
           reply_markup = None,
         )
       else:
-        self._bot.edit_message_reply_markup(
+        self._bot.edit_message_text(
+          text,
           chat_id = self._chat_id,
           message_id = self._message.message_id,
           reply_markup = None,
+          parse_mode = 'HTML',
         )
     except Exception:
       pass

@@ -35,7 +35,7 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     return TimeOfUsePage.main
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, types.InputRichMessage]:
     return "Time of Use schedule:"
 
   @property

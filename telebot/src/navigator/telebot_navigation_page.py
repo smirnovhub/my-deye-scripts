@@ -52,7 +52,7 @@ class TelebotNavigationPage(ABC):
 
   @property
   @abstractmethod
-  def text(self) -> str:
+  def text(self) -> Union[str, types.InputRichMessage]:
     pass
 
   @property

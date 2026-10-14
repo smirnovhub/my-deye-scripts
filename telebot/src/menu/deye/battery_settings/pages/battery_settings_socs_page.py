@@ -1,5 +1,6 @@
+from telebot import types
 from enum import Enum
-from typing import List
+from typing import List, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -26,7 +27,7 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     return self._page_type
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, types.InputRichMessage]:
     return f"{self._page_type.title}, %:"
 
   @property
@@ -71,7 +72,7 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     )
 
   def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    navigator.navigate(BatterySettingsPage.main)
+    navigator.navigate(BatterySettingsPage.edit)
 
   def _create_soc_handler(self, soc: int):
     def handler(navigator: TelebotPageNavigator) -> None:
@@ -88,7 +89,7 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
       raise ValueError(f"{self._page_type.title} value should be from {self._min_value} to {self._max_value}")
 
     self._batt_data.values[self._page_type] = soc
-    navigator.navigate(BatterySettingsPage.main)
+    navigator.navigate(BatterySettingsPage.edit)
 
   def _generate_values(
     self,

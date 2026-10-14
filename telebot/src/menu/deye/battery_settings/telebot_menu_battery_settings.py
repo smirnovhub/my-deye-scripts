@@ -7,6 +7,7 @@ from telebot_deye_helper import TelebotDeyeHelper
 from battery_settings_registers import BatterySettingsRegisters
 from battery_settings_socs_page import BatterySettingsSocsPage
 from battery_settings_main_page import BatterySettingsMainPage
+from battery_settings_edit_page import BatterySettingsEditPage
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
 from deye_registers_holder_async import DeyeRegistersHolderAsync
@@ -68,7 +69,14 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
       title = title,
     )
 
+    edit_page = BatterySettingsEditPage(
+      runner = self.runner,
+      batt_data = batt_data,
+      title = title,
+    )
+
     navigator.register_page(main_page)
+    navigator.register_page(edit_page)
 
     for page_type in batt_data.values.keys():
       navigator.register_page(BatterySettingsSocsPage(

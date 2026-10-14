@@ -1,7 +1,8 @@
 import re
 
 from enum import Enum
-from typing import Any, List
+from telebot import types
+from typing import Any, List, Union
 
 from button_node import ButtonNode
 from time_of_use_helper import TimeOfUseHelper
@@ -32,7 +33,7 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     return self._page_type
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, types.InputRichMessage]:
     return self._title
 
   @property
