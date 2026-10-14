@@ -67,7 +67,7 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     self._buttons = buttons
 
   def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
-    return self._get_data_as_rich_message(title = self._title, values = self._batt_data_original_values)
+    return self._get_data_as_rich_message(title = f"{self._title} cancel", values = self._batt_data_original_values)
 
   def _get_buttons(
     self,
