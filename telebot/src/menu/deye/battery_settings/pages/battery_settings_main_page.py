@@ -5,7 +5,6 @@ from telebot import types
 from typing import List, Union
 
 from button_node import ButtonNode
-from deye_loggers import DeyeLoggers
 from battery_settings_helper import BatterySettingsHelper
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
@@ -21,8 +20,6 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     title: str,
   ):
     super().__init__(runner)
-    self._loggers = DeyeLoggers()
-    self._batt_data = batt_data
     self._batt_data_original_values = copy.deepcopy(batt_data.values)
     self._title = title
 
@@ -66,12 +63,5 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     navigator.stop(
       BatterySettingsHelper.get_data_as_rich_message(
         title = f"{self._title} cancel",
-        values = self._batt_data_original_values,
-      ))
-
-  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
-    navigator.stop(
-      BatterySettingsHelper.get_data_as_rich_message(
-        title = self._title,
         values = self._batt_data_original_values,
       ))
