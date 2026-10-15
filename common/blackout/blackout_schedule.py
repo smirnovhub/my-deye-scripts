@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from copy import deepcopy
 from datetime import datetime
@@ -18,6 +18,14 @@ class BlackoutSchedule(DataClassJSONMixin):
 
     # Sort events by date after object creation
     self.events.sort(key = lambda x: x.date)
+
+  def get_event(self, dt: datetime) -> Optional[BlackoutScheduledEvent]:
+    # Normalize target datetime to match event date format (zeroing seconds and microseconds)
+    normalized_dt = dt.replace(second = 0, microsecond = 0)
+    return next((event for event in self.events if event.date == normalized_dt), None)
+
+  def is_event_exist(self, dt: datetime) -> bool:
+    return self.get_event(dt) is not None
 
   def get_upcoming_events(self, max_expired_events: int = 0) -> 'BlackoutSchedule':
     """
