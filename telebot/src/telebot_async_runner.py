@@ -21,13 +21,13 @@ class TelebotAsyncRunner:
     """
     future = asyncio.run_coroutine_threadsafe(coro, self._loop)
 
-    def _callback(f: Future) -> None:
+    def on_done(f: Future) -> None:
       try:
         f.result()
       except Exception:
         self._logger.error("Async task failed", exc_info = True)
 
-    future.add_done_callback(_callback)
+    future.add_done_callback(on_done)
     return future
 
   def stop(self) -> None:
