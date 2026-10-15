@@ -3,6 +3,7 @@ import logging
 
 from enum import Enum
 from telebot import types
+from concurrent.futures import Future
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
 from abc import ABC, abstractmethod
@@ -136,7 +137,16 @@ class TelebotNavigationPage(ABC):
     if inspect.iscoroutine(result):
       self._logger.info(f"{self.__class__.__name__}: running async handler for button "
                         f"text={button.text}, data={button.data}")
-      self.runner.run(result)
+
+      future = self.runner.run(result)
+
+      def on_done(future: Future) -> None:
+        try:
+          future.result()
+        except Exception as e:
+          navigator.send_message_with_remove_with_delay(str(e))
+
+      future.add_done_callback(on_done)
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     pass
