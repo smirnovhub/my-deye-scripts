@@ -324,7 +324,15 @@ class TelebotPageNavigator:
       raise RuntimeError("Navigation has not started yet")
 
     try:
-      if isinstance(text, types.InputRichMessage):
+      if isinstance(text, str) and text:
+        self._bot.edit_message_text(
+          text,
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          reply_markup = None,
+          parse_mode = 'HTML',
+        )
+      elif isinstance(text, types.InputRichMessage):
         self._bot.edit_message_text(
           chat_id = self._chat_id,
           message_id = self._message.message_id,
@@ -332,12 +340,10 @@ class TelebotPageNavigator:
           reply_markup = None,
         )
       else:
-        self._bot.edit_message_text(
-          text,
+        self._bot.edit_message_reply_markup(
           chat_id = self._chat_id,
           message_id = self._message.message_id,
           reply_markup = None,
-          parse_mode = 'HTML',
         )
     except Exception:
       pass

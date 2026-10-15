@@ -170,5 +170,5 @@ class TelebotNavigationPage(ABC):
     """
     return ""
 
-  def get_stop_by_command_message(self, command: str) -> str:
+  def get_stop_by_command_message(self, command: str) -> Union[str, types.InputRichMessage]:
     return ""

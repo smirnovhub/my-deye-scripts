@@ -13,7 +13,7 @@ class UserChoicePageType(Enum):
 class UserChoicePage(TelebotNavigationPage):
   def __init__(
     self,
-    text: str,
+    text: Union[str, types.InputRichMessage],
     options: List[ButtonNode],
     chat_id: int,
     callback: Callable[[int, ButtonNode], None],

@@ -112,6 +112,6 @@ class AdvancedChoicePage(TelebotNavigationPage):
   def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
     return f"{self._text} cancel"
 
-  def get_stop_by_command_message(self, command: str) -> str:
+  def get_stop_by_command_message(self, command: str) -> Union[str, types.InputRichMessage]:
     _, _, param = command.partition(' ')
     return f"{self._text} {param.replace('_', ' ')}"
