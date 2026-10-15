@@ -1,7 +1,7 @@
 import copy
+import telebot
 
 from enum import Enum
-from telebot import types
 from typing import List, Union
 
 from button_node import ButtonNode
@@ -35,7 +35,7 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     return TimeOfUsePage.main
 
   @property
-  def text(self) -> Union[str, types.InputRichMessage]:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Time of Use schedule:"
 
   @property
@@ -72,7 +72,7 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     text = TimeOfUseHelper.get_time_of_use_as_rich_message(self._tou_original_data)
     navigator.stop(text)
 
-  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return TimeOfUseHelper.get_time_of_use_as_rich_message(
       self._tou_original_data,
       suffx = "cancel",

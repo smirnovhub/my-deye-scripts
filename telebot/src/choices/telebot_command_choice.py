@@ -1,7 +1,6 @@
 import telebot
 
-from typing import Dict
-from telebot import types
+from typing import Dict, Union
 
 from button_node import ButtonNode
 from telebot_utils import TelebotUtils
@@ -12,7 +11,7 @@ class CommandChoice:
   def ask_command_choice(
     bot: telebot.TeleBot,
     chat_id: int,
-    text: str,
+    text: Union[str, telebot.types.InputRichMessage],
     options: Dict[str, str],
     max_per_row: int = 5,
   ) -> telebot.types.Message:
@@ -38,7 +37,17 @@ class CommandChoice:
       telebot.types.Message: The message object that was sent to the chat.
     """
     if not options:
-      return bot.send_message(chat_id, text, parse_mode = "HTML")
+      if isinstance(text, telebot.types.InputRichMessage):
+        return bot.send_rich_message(
+          chat_id,
+          text,
+        )
+      else:
+        return bot.send_message(
+          chat_id,
+          text,
+          parse_mode = "HTML",
+        )
 
     buttons = [ButtonNode(
       text = key,
@@ -50,73 +59,19 @@ class CommandChoice:
       max_per_row = max_per_row,
     )
 
-    message = bot.send_message(
-      chat_id,
-      text,
-      reply_markup = keyboard,
-      parse_mode = "HTML",
-    )
-
-    bot.clear_step_handler_by_chat_id(message.chat.id)
-    bot.register_next_step_handler(
-      message,
-      CommandChoice._user_command_choice_next_step_handler,
-      bot,
-      message.message_id,
-    )
-
-    return message
-
-  @staticmethod
-  def ask_rich_command_choice(
-    bot: telebot.TeleBot,
-    chat_id: int,
-    rich_message: types.InputRichMessage,
-    options: Dict[str, str],
-    max_per_row: int = 5,
-  ) -> telebot.types.Message:
-    """
-    Sends a message with an inline keyboard for the user to select from
-    multiple options, where keys are internal identifiers and values are labels.
-
-    If the options dictionary is empty, sends the message without a keyboard.
-
-    Stores the callback function in a dictionary keyed by the message ID
-    and clears any previous step handlers for the chat.
-
-    Parameters:
-      bot: TeleBot instance to send messages and handle input.
-      chat_id: Target chat ID.
-      text: Message displayed above the buttons.
-      options: Dictionary mapping option keys to display labels.
-      callback: Function to be called later with the chat ID and chosen key.
-      max_per_row: Maximum buttons per row (default 5).
-      wrong_choice_text: Message sent for invalid input (default "No such option").
-
-    Returns:
-      telebot.types.Message: The message object that was sent to the chat.
-    """
-    if not options:
-      return bot.send_rich_message(
+    if isinstance(text, telebot.types.InputRichMessage):
+      message = bot.send_rich_message(
         chat_id,
-        rich_message,
+        text,
+        reply_markup = keyboard,
       )
-
-    buttons = [ButtonNode(
-      text = key,
-      data = val,
-    ) for key, val in options.items()]
-
-    keyboard = TelebotUtils.get_keyboard_for_buttons(
-      buttons = buttons,
-      max_per_row = max_per_row,
-    )
-
-    message = bot.send_rich_message(
-      chat_id,
-      rich_message,
-      reply_markup = keyboard,
-    )
+    else:
+      message = bot.send_message(
+        chat_id,
+        text,
+        reply_markup = keyboard,
+        parse_mode = "HTML",
+      )
 
     bot.clear_step_handler_by_chat_id(message.chat.id)
     bot.register_next_step_handler(

@@ -1,5 +1,6 @@
+import telebot
+
 from enum import Enum
-from telebot import types
 from typing import List, Union
 from datetime import date, timedelta
 
@@ -25,7 +26,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
     return DeyeGraphsPage.main
 
   @property
-  def text(self) -> Union[str, types.InputRichMessage]:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Select graph date:"
 
   @property
@@ -81,7 +82,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
 
     self._buttons = buttons
 
-  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._title} cancel"
 
   def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:

@@ -1,4 +1,5 @@
-from telebot import types
+import telebot
+
 from dataclasses import asdict
 from typing import Any, Sequence, cast
 
@@ -71,7 +72,7 @@ class TimeOfUseHelper:
   def get_time_of_use_as_rich_message(
     tou_data: TimeOfUseData,
     suffx: str = "",
-  ) -> types.InputRichMessage:
+  ) -> telebot.types.InputRichMessage:
     def sign(value: bool):
       on = CommonUtils.large_green_circle_emoji
       off = CommonUtils.large_red_circle_emoji
@@ -81,9 +82,9 @@ class TimeOfUseHelper:
       value: str,
       row: int,
       column: int,
-    ) -> types.RichBlockTableCell:
-      return types.RichBlockTableCell(
-        text = cast(types.RichText, value),
+    ) -> telebot.types.RichBlockTableCell:
+      return telebot.types.RichBlockTableCell(
+        text = cast(telebot.types.RichText, value),
         is_header = row == 0,
         align = "center",
         valign = "middle",
@@ -151,18 +152,18 @@ class TimeOfUseHelper:
       ) for col_idx, value in enumerate(row_data)
     ] for row_idx, row_data in enumerate(schedule_rows)]
 
-    return types.InputRichMessage(blocks = [
-      types.InputRichBlockParagraph(types.RichTextBold(cast(
-        types.RichText,
+    return telebot.types.InputRichMessage(blocks = [
+      telebot.types.InputRichBlockParagraph(telebot.types.RichTextBold(cast(
+        telebot.types.RichText,
         header_text,
       ))),
-      types.InputRichBlockTable(
+      telebot.types.InputRichBlockTable(
         cells = days_cells,
         is_bordered = True,
         is_striped = False,
         is_compact = True,
       ),
-      types.InputRichBlockTable(
+      telebot.types.InputRichBlockTable(
         cells = schedule_cells,
         is_bordered = True,
         is_striped = False,

@@ -1,4 +1,5 @@
-from telebot import types
+import telebot
+
 from enum import Enum
 from typing import List, Union
 
@@ -27,7 +28,7 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     return self._page_type
 
   @property
-  def text(self) -> Union[str, types.InputRichMessage]:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._page_type.title}, %:"
 
   @property

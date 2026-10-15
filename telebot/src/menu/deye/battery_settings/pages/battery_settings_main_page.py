@@ -1,7 +1,7 @@
 import copy
+import telebot
 
 from enum import Enum
-from telebot import types
 from typing import List, Union
 
 from button_node import ButtonNode
@@ -28,7 +28,7 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     return BatterySettingsPage.main
 
   @property
-  def text(self) -> Union[str, types.InputRichMessage]:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return BatterySettingsHelper.get_data_as_rich_message(
       title = self._title,
       values = self._batt_data_original_values,
@@ -46,7 +46,7 @@ class BatterySettingsMainPage(TelebotNavigationPage):
 
     self._buttons = buttons
 
-  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return BatterySettingsHelper.get_data_as_rich_message(
       title = f"{self._title} cancel",
       values = self._batt_data_original_values,

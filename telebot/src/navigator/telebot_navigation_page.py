@@ -1,8 +1,8 @@
 import inspect
 import logging
+import telebot
 
 from enum import Enum
-from telebot import types
 from concurrent.futures import Future
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
@@ -53,7 +53,7 @@ class TelebotNavigationPage(ABC):
 
   @property
   @abstractmethod
-  def text(self) -> Union[str, types.InputRichMessage]:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     pass
 
   @property
@@ -171,7 +171,7 @@ class TelebotNavigationPage(ABC):
     """
     self._button_handlers.clear()
 
-  def get_goodbye_message(self) -> Union[str, types.InputRichMessage]:
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     """
     Returns a message to be shown when the navigation session is closed.
 
@@ -180,5 +180,5 @@ class TelebotNavigationPage(ABC):
     """
     return ""
 
-  def get_stop_by_command_message(self, command: str) -> Union[str, types.InputRichMessage]:
+  def get_stop_by_command_message(self, command: str) -> Union[str, telebot.types.InputRichMessage]:
     return ""

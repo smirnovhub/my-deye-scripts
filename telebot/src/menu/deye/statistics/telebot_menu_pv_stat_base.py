@@ -2,7 +2,6 @@ import telebot
 
 from http import HTTPStatus
 from urllib.parse import urljoin
-from telebot import types
 from typing import List, cast
 from datetime import date
 
@@ -55,10 +54,10 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       )
       return
 
-    CommandChoice.ask_rich_command_choice(
+    CommandChoice.ask_command_choice(
       bot = self.bot,
       chat_id = message.chat.id,
-      rich_message = types.InputRichMessage(blocks = table),
+      text = telebot.types.InputRichMessage(blocks = table),
       options = choices,
       max_per_row = 2,
     )
@@ -67,7 +66,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     self,
     today: date,
     period: StatisticsPeriod,
-  ) -> List[types.InputRichBlock]:
+  ) -> List[telebot.types.InputRichBlock]:
     period_date = period.get_date_suffix(today)
     server_url = EnvUtils.get_remote_cache_server_url()
     session = await HttpSessionSingletonAsync.get_session()
@@ -162,12 +161,12 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     ) for column, value in enumerate(row_data)] for row, row_data in enumerate(rows)]
 
     return [
-      types.InputRichBlockParagraph(
-        types.RichTextBold(cast(
-          types.RichText,
+      telebot.types.InputRichBlockParagraph(
+        telebot.types.RichTextBold(cast(
+          telebot.types.RichText,
           f"Statistics for {period.description.lower()} {period_date}:",
         ))),
-      types.InputRichBlockTable(
+      telebot.types.InputRichBlockTable(
         cells = cells,
         is_bordered = True,
         is_striped = False,
@@ -180,9 +179,9 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     value: str,
     row: int,
     column: int,
-  ) -> types.RichBlockTableCell:
-    return types.RichBlockTableCell(
-      text = cast(types.RichText, value),
+  ) -> telebot.types.RichBlockTableCell:
+    return telebot.types.RichBlockTableCell(
+      text = cast(telebot.types.RichText, value),
       align = ("center" if row == 0 else "left" if column == 0 else "right"),
       valign = "middle",
       is_header = row == 0,

@@ -1,4 +1,5 @@
-from telebot import types
+import telebot
+
 from enum import Enum
 from typing import List, Union
 
@@ -25,7 +26,7 @@ class DeyeGraphsGroupPage(TelebotNavigationPage):
     return DeyeGraphsPage.group
 
   @property
-  def text(self) -> Union[str, types.InputRichMessage]:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Select group:"
 
   @property

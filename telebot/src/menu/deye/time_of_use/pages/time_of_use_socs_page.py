@@ -1,5 +1,6 @@
+import telebot
+
 from enum import Enum
-from telebot import types
 from typing import Any, List, Union
 
 from button_node import ButtonNode
@@ -35,7 +36,7 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     return TimeOfUsePage.socs
 
   @property
-  def text(self) -> Union[str, types.InputRichMessage]:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Battery SOC, %:"
 
   @property

@@ -1,6 +1,5 @@
 import telebot
 
-from telebot import types
 from typing import Callable, List, Union
 
 from button_node import ButtonNode
@@ -12,7 +11,7 @@ class UserChoices:
   def ask_confirmation(
     bot: telebot.TeleBot,
     chat_id: int,
-    text: Union[str, types.InputRichMessage],
+    text: Union[str, telebot.types.InputRichMessage],
     callback: Callable[[int, bool], None],
   ) -> telebot.types.Message:
     def choice_callback(chat_id_inner: int, button: ButtonNode):
@@ -36,7 +35,7 @@ class UserChoices:
   def ask_choice(
     bot: telebot.TeleBot,
     chat_id: int,
-    text: Union[str, types.InputRichMessage],
+    text: Union[str, telebot.types.InputRichMessage],
     options: List[ButtonNode],
     callback: Callable[[int, ButtonNode], None],
     max_per_row: int = 5,

@@ -1,4 +1,5 @@
-from telebot import types
+import telebot
+
 from enum import Enum, auto
 from typing import Callable, List, Union
 
@@ -13,7 +14,7 @@ class UserChoicePageType(Enum):
 class UserChoicePage(TelebotNavigationPage):
   def __init__(
     self,
-    text: Union[str, types.InputRichMessage],
+    text: Union[str, telebot.types.InputRichMessage],
     options: List[ButtonNode],
     chat_id: int,
     callback: Callable[[int, ButtonNode], None],
@@ -36,7 +37,7 @@ class UserChoicePage(TelebotNavigationPage):
     return UserChoicePageType.main
 
   @property
-  def text(self) -> Union[str, types.InputRichMessage]:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return self._text
 
   @property

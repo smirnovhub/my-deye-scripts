@@ -1,6 +1,6 @@
-from telebot import types
-from typing import Dict, cast
+import telebot
 
+from typing import Dict, cast
 from battery_settings_page import BatterySettingsPage
 
 class BatterySettingsHelper:
@@ -8,7 +8,7 @@ class BatterySettingsHelper:
   def get_data_as_rich_message(
     title: str,
     values: Dict[BatterySettingsPage, int],
-  ) -> types.InputRichMessage:
+  ) -> telebot.types.InputRichMessage:
     rows = []
     for page, value in values.items():
       rows.append((page.title, f"{value}%"))
@@ -17,9 +17,9 @@ class BatterySettingsHelper:
       value: str,
       row: int,
       column: int,
-    ) -> types.RichBlockTableCell:
-      return types.RichBlockTableCell(
-        text = cast(types.RichText, value),
+    ) -> telebot.types.RichBlockTableCell:
+      return telebot.types.RichBlockTableCell(
+        text = cast(telebot.types.RichText, value),
         align = "left" if column == 0 else "center",
         valign = "middle",
       )
@@ -30,12 +30,12 @@ class BatterySettingsHelper:
       column = col_idx,
     ) for col_idx, value in enumerate(row_data)] for row_idx, row_data in enumerate(rows)]
 
-    return types.InputRichMessage(blocks = [
-      types.InputRichBlockParagraph(types.RichTextBold(cast(
-        types.RichText,
+    return telebot.types.InputRichMessage(blocks = [
+      telebot.types.InputRichBlockParagraph(telebot.types.RichTextBold(cast(
+        telebot.types.RichText,
         title,
       ))),
-      types.InputRichBlockTable(
+      telebot.types.InputRichBlockTable(
         cells = cells,
         is_bordered = True,
         is_striped = False,

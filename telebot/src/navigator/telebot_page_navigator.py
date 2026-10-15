@@ -7,7 +7,6 @@ import telebot
 import threading
 
 from enum import Enum
-from telebot import types
 from concurrent.futures import Future
 from typing import TYPE_CHECKING, Dict, List, Optional, Union, cast
 
@@ -143,7 +142,7 @@ class TelebotPageNavigator:
 
     page_text = self._get_page_text(page)
 
-    if isinstance(page_text, types.InputRichMessage):
+    if isinstance(page_text, telebot.types.InputRichMessage):
       self._message = self._bot.send_rich_message(
         chat_id = self._chat_id,
         rich_message = page_text,
@@ -228,7 +227,7 @@ class TelebotPageNavigator:
     try:
       page_text = self._get_page_text(self._current_page)
 
-      if isinstance(page_text, types.InputRichMessage):
+      if isinstance(page_text, telebot.types.InputRichMessage):
         self._bot.edit_message_text(
           chat_id = self._chat_id,
           message_id = self._message.message_id,
@@ -275,7 +274,7 @@ class TelebotPageNavigator:
       delay = delay,
     )
 
-  def _get_page_text(self, page: "TelebotNavigationPage") -> Union[str, types.InputRichMessage]:
+  def _get_page_text(self, page: "TelebotNavigationPage") -> Union[str, telebot.types.InputRichMessage]:
     return page.text if page.text else "Untitled"
 
   def _resend(self, text: str) -> telebot.types.Message:
@@ -284,7 +283,7 @@ class TelebotPageNavigator:
 
     page_text = self._get_page_text(self._current_page)
 
-    if isinstance(page_text, types.InputRichMessage):
+    if isinstance(page_text, telebot.types.InputRichMessage):
       try:
         self._bot.edit_message_text(
           chat_id = self._chat_id,
@@ -327,7 +326,7 @@ class TelebotPageNavigator:
 
     return self._message
 
-  def stop(self, text: Optional[Union[str, types.InputRichMessage]] = None) -> None:
+  def stop(self, text: Optional[Union[str, telebot.types.InputRichMessage]] = None) -> None:
     """
     Ends the navigation session, removes the keyboard and cleans up instance memory.
 
@@ -346,7 +345,7 @@ class TelebotPageNavigator:
           reply_markup = None,
           parse_mode = 'HTML',
         )
-      elif isinstance(text, types.InputRichMessage):
+      elif isinstance(text, telebot.types.InputRichMessage):
         self._bot.edit_message_text(
           chat_id = self._chat_id,
           message_id = self._message.message_id,
