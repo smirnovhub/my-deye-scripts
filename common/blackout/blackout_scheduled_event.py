@@ -37,6 +37,11 @@ class BlackoutScheduledEvent(DataClassJSONMixin):
   # Action name of event (turn off grid, stop charging, move to battery, etc.)
   action: BlackoutAction
 
+  @property
+  def date_str(self) -> str:
+    # Format datetime to string without seconds
+    return self.date.strftime('%Y-%m-%d %H:%M')
+
   class Config(BaseConfig):
     # Apply strategies to specific types in this class
     serialization_strategy = {
