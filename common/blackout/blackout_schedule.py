@@ -12,6 +12,10 @@ class BlackoutSchedule(DataClassJSONMixin):
   events: List[BlackoutScheduledEvent]
 
   def __post_init__(self):
+    # Iterate through events and reset seconds and microseconds to zero
+    for event in self.events:
+      event.date = event.date.replace(second = 0, microsecond = 0)
+
     # Sort events by date after object creation
     self.events.sort(key = lambda x: x.date)
 
