@@ -39,12 +39,12 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     return "Time of Use schedule:"
 
   @property
-  def need_user_input(self) -> bool:
-    return False
-
-  @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
+
+  @property
+  def need_user_input(self) -> bool:
+    return True
 
   def update(self) -> None:
     week_buttons = TimeOfUseWeekButtons(

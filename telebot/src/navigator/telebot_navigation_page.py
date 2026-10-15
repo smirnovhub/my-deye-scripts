@@ -58,7 +58,7 @@ class TelebotNavigationPage(ABC):
 
   @property
   def need_user_input(self) -> bool:
-    return True
+    return False
 
   @property
   def resend_message_on_user_input(self) -> bool:

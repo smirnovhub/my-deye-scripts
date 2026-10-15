@@ -31,10 +31,6 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
     return "Select graph:"
 
   @property
-  def need_user_input(self) -> bool:
-    return False
-
-  @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 

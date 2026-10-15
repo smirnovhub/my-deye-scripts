@@ -39,6 +39,10 @@ class SequentialChoicePage(TelebotNavigationPage):
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
+  @property
+  def need_user_input(self) -> bool:
+    return True
+
   def update(self) -> None:
     self._buttons = []
 

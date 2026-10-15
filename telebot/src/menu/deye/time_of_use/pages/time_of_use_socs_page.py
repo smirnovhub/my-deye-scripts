@@ -42,6 +42,10 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
+  @property
+  def need_user_input(self) -> bool:
+    return True
+
   def prepare(self, **kwargs: Any):
     index = kwargs.get("time_of_use_line_index")
     if index is None:

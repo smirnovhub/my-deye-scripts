@@ -47,6 +47,10 @@ class AdvancedChoicePage(TelebotNavigationPage):
     return self._buttons
 
   @property
+  def need_user_input(self) -> bool:
+    return True
+
+  @property
   def resend_message_on_user_input(self) -> bool:
     return False
 

@@ -1,3 +1,4 @@
+import inspect
 import logging
 import re
 import time
@@ -7,9 +8,11 @@ import threading
 
 from enum import Enum
 from telebot import types
+from concurrent.futures import Future
 from typing import TYPE_CHECKING, Dict, List, Optional, Union, cast
 
 from telebot_utils import TelebotUtils
+from telebot_async_runner import TelebotAsyncRunner
 
 if TYPE_CHECKING:
   from telebot_navigation_page import TelebotNavigationPage
@@ -33,7 +36,11 @@ class TelebotPageNavigator:
   _prefix_pattern = re.compile(rf"^{_navigator_data_prefix}(\d+)_(\d+)")
   _prefix_template = f"{_navigator_data_prefix}{{0}}_"
 
-  def __init__(self, bot: telebot.TeleBot):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: Optional[TelebotAsyncRunner] = None,
+  ):
     """
     Initializes the navigator and registers global handlers if not already done.
 
@@ -41,6 +48,7 @@ class TelebotPageNavigator:
         bot (telebot.TeleBot): The pyTelegramBotAPI instance.
     """
     self._bot = bot
+    self._runner = runner
     self._chat_id: Optional[int] = None
     self._message: Optional[telebot.types.Message] = None
     self._pages: Dict[Enum, "TelebotNavigationPage"] = {}
@@ -60,6 +68,12 @@ class TelebotPageNavigator:
       if not TelebotPageNavigator._handlers_registered:
         TelebotPageNavigator._register_handlers(self._bot)
         TelebotPageNavigator._handlers_registered = True
+
+  @property
+  def runner(self) -> TelebotAsyncRunner:
+    if not self._runner:
+      raise RuntimeError("Async runner is not set")
+    return self._runner
 
   def register_page(self, page: "TelebotNavigationPage") -> None:
     """
@@ -470,7 +484,22 @@ class TelebotPageNavigator:
           if self._current_page.resend_message_on_user_input:
             self._resend(message.text)
             time.sleep(0.5)
-          self._current_page.on_user_input(self, message.text)
+
+          result = self._current_page.on_user_input(self, message.text)
+
+          # Check if the handler returned a coroutine and run it asynchronously
+          if inspect.iscoroutine(result):
+            self._logger.info(f"{self.__class__.__name__}: running async handler for user input")
+            future = self.runner.run(result)
+
+            def on_done(future: Future) -> None:
+              try:
+                future.result()
+              except Exception as e:
+                self.send_message_with_remove_with_delay(str(e))
+
+            future.add_done_callback(on_done)
+
         except Exception as e:
           self._logger.error(traceback.format_exc())
           self.send_message_with_remove_with_delay(str(e))
