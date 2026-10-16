@@ -190,12 +190,27 @@ class TelebotPageNavigator:
     page = self._pages[page_type]
 
     try:
-      page.clear_button_handlers()
-      page.prepare(**kwargs)
-      page.update()
+      result = page.prepare(**kwargs)
 
-      self._current_page = page
-      self.update()
+      # Handle async prepare method if it returns a coroutine
+      if inspect.iscoroutine(result):
+        self._logger.info(f"{self.__class__.__name__}: running async prepare for page {page_type.name}")
+        future = self.runner.run(result)
+
+        def on_done(future: Future) -> None:
+          try:
+            future.result()
+            self._current_page = page
+            self.update()
+          except Exception as e:
+            self._logger.error(traceback.format_exc())
+            self.send_message_with_remove_with_delay(str(e))
+
+        future.add_done_callback(on_done)
+      else:
+        self._current_page = page
+        self.update()
+
     except Exception as e:
       self._logger.error(traceback.format_exc())
       self.send_message_with_remove_with_delay(str(e))
@@ -223,10 +238,9 @@ class TelebotPageNavigator:
     )
 
     self._markup = keyboard
+    page_text = self._get_page_text(self._current_page)
 
     try:
-      page_text = self._get_page_text(self._current_page)
-
       if isinstance(page_text, telebot.types.InputRichMessage):
         self._bot.edit_message_text(
           chat_id = self._chat_id,
@@ -275,7 +289,11 @@ class TelebotPageNavigator:
     )
 
   def _get_page_text(self, page: "TelebotNavigationPage") -> Union[str, telebot.types.InputRichMessage]:
-    return page.text if page.text else "Untitled"
+    try:
+      return page.text if page.text else "Untitled"
+    except Exception as e:
+      self._logger.error(traceback.format_exc())
+      return str(e)
 
   def _resend(self, text: str) -> telebot.types.Message:
     if not self._message or not self._chat_id or not self._current_page:
