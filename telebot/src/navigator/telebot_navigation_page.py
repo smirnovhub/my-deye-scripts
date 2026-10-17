@@ -1,7 +1,9 @@
 import inspect
 import logging
+import telebot
 
 from enum import Enum
+from concurrent.futures import Future
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
 from abc import ABC, abstractmethod
@@ -51,12 +53,12 @@ class TelebotNavigationPage(ABC):
 
   @property
   @abstractmethod
-  def text(self) -> str:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     pass
 
   @property
   def need_user_input(self) -> bool:
-    return True
+    return False
 
   @property
   def resend_message_on_user_input(self) -> bool:
@@ -73,7 +75,11 @@ class TelebotNavigationPage(ABC):
     """
     pass
 
-  def prepare(self, **kwargs: Any) -> None:
+  def on_navigate(
+    self,
+    navigator: TelebotPageNavigator,
+    **kwargs: Any,
+  ) -> None:
     """
     Optional hook to pass data into the page before rendering.
     Can be overridden in subclasses to initialize state.
@@ -135,9 +141,25 @@ class TelebotNavigationPage(ABC):
     if inspect.iscoroutine(result):
       self._logger.info(f"{self.__class__.__name__}: running async handler for button "
                         f"text={button.text}, data={button.data}")
-      self.runner.run(result)
+
+      future = self.runner.run(result)
+
+      def on_done(future: Future) -> None:
+        try:
+          future.result()
+        except Exception as e:
+          navigator.send_message_with_remove_with_delay(str(e))
+
+      future.add_done_callback(on_done)
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+    pass
+
+  def on_server_update(
+    self,
+    navigator: TelebotPageNavigator,
+    data: Dict[str, Any],
+  ) -> None:
     pass
 
   def register_button_handler(self, button: ButtonNode, handler: ButtonHandler) -> ButtonNode:
@@ -160,7 +182,7 @@ class TelebotNavigationPage(ABC):
     """
     self._button_handlers.clear()
 
-  def get_goodbye_message(self) -> str:
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     """
     Returns a message to be shown when the navigation session is closed.
 
@@ -169,5 +191,5 @@ class TelebotNavigationPage(ABC):
     """
     return ""
 
-  def get_stop_by_command_message(self, command: str) -> str:
+  def get_stop_by_command_message(self, command: str) -> Union[str, telebot.types.InputRichMessage]:
     return ""

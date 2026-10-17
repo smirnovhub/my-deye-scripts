@@ -6,6 +6,7 @@ class BatterySettingsPage(Enum):
   _title: str
 
   main = ("Main", "Main")
+  edit = ("Edit", "Edit")
 
   # Order matters here!
   shutdown_soc = ("Shutdown", "Battery shutdown SOC")

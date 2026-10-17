@@ -43,3 +43,10 @@ class EnvVars:
     description = 'Format for graph files',
     value_getter = EnvUtils.get_deye_graphs_format,
   )
+
+  REMOTE_CACHE_SERVER_URL = EnvVar(
+    name = EnvUtils.REMOTE_CACHE_SERVER_URL,
+    default = '',
+    description = 'Remote cache server URL',
+    value_getter = EnvUtils.get_remote_cache_server_url,
+  )

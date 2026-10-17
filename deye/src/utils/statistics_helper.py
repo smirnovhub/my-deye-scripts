@@ -1,5 +1,3 @@
-import re
-
 from datetime import date
 from http import HTTPStatus
 from logging import Logger
@@ -16,11 +14,7 @@ class StatisticsHelper:
     self._logger = logger
     self._loggers = DeyeLoggers()
 
-  def get_clean_statistics(self, stat: str) -> str:
-    # Removes <b>, </b>, <pre>, </pre> case-insensitively
-    return re.sub(r"</?(b|pre)>", "", stat, flags = re.IGNORECASE)
-
-  async def get_statistics_for_telegram(self, today: date, period: StatisticsPeriod) -> str:
+  async def get_statistics(self, today: date, period: StatisticsPeriod) -> str:
     period_date = period.get_date_suffix(today)
     server_url = EnvUtils.get_remote_cache_server_url()
     session = await HttpSessionSingletonAsync.get_session()
@@ -77,18 +71,28 @@ class StatisticsHelper:
 
     if total_production > 0:
       total_percent = 100
-      master_pv1_percent = (master_pv1 / total_production) * 100
-      master_pv2_percent = (master_pv2 / total_production) * 100
-      slave_pv1_percent = (slave_pv1 / total_production) * 100
-      master_gen_percent = (master_gen / total_production) * 100
-      master_pv2_and_master_gen_percent = ((master_pv2 + master_gen) / total_production) * 100
+
+      if master_pv1 > 0:
+        master_pv1_percent = (master_stats.production_pv1 / total_production) * 100
+
+      if master_pv2 > 0:
+        master_pv2_percent = (master_stats.production_pv2 / total_production) * 100
+
+      if slave_pv1 > 0:
+        slave_pv1_percent = (slave_stats.production_pv1 / total_production) * 100
+
+      if master_gen > 0:
+        master_gen_percent = (master_stats.gen_energy / total_production) * 100
+
+      if master_pv2_and_master_gen > 0:
+        master_pv2_and_master_gen_percent = (
+          (master_stats.production_pv2 + master_stats.gen_energy) / total_production) * 100
 
     return (
-      f"<b>Statistics for {period.description.lower()} {period_date}:</b>\n<pre>"
+      f"Statistics for {period.description.lower()} {period_date}:\n"
       f"• Total PV production     : {total_production:.2f} kWh ({total_percent:.0f}%)\n"
       f"• Master PV1              : {master_pv1:.2f} kWh ({master_pv1_percent:.0f}%)\n"
       f"• Slave PV1               : {slave_pv1:.2f} kWh ({slave_pv1_percent:.0f}%)\n"
       f"• Master PV2 (South Wall) : {master_pv2:.2f} kWh ({master_pv2_percent:.0f}%)\n"
       f"• Master Gen (West Wall)  : {master_gen:.2f} kWh ({master_gen_percent:.0f}%)\n"
-      f"• Master PV2 + Master Gen : {master_pv2_and_master_gen:.2f} kWh ({master_pv2_and_master_gen_percent:.0f}%)</pre>"
-    )
+      f"• Master PV2 + Master Gen : {master_pv2_and_master_gen:.2f} kWh ({master_pv2_and_master_gen_percent:.0f}%)")

@@ -1,5 +1,7 @@
+import telebot
+
 from enum import Enum, auto
-from typing import Callable, List
+from typing import Callable, List, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -12,7 +14,7 @@ class UserChoicePageType(Enum):
 class UserChoicePage(TelebotNavigationPage):
   def __init__(
     self,
-    text: str,
+    text: Union[str, telebot.types.InputRichMessage],
     options: List[ButtonNode],
     chat_id: int,
     callback: Callable[[int, ButtonNode], None],
@@ -35,12 +37,16 @@ class UserChoicePage(TelebotNavigationPage):
     return UserChoicePageType.main
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return self._text
 
   @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
+
+  @property
+  def need_user_input(self) -> bool:
+    return True
 
   @property
   def resend_message_on_user_input(self) -> bool:

@@ -1,7 +1,8 @@
 import copy
+import telebot
 
 from enum import Enum
-from typing import List
+from typing import List, Union
 
 from button_node import ButtonNode
 from deye_register import DeyeRegister
@@ -34,16 +35,16 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     return TimeOfUsePage.main
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Time of Use schedule:"
-
-  @property
-  def need_user_input(self) -> bool:
-    return False
 
   @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
+
+  @property
+  def need_user_input(self) -> bool:
+    return True
 
   def update(self) -> None:
     week_buttons = TimeOfUseWeekButtons(
@@ -68,8 +69,11 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     self._buttons = week_buttons.buttons + schedule_buttons.buttons + bottom_buttons.buttons
 
   def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
-    text = TimeOfUseHelper.get_time_of_use_as_text(self._tou_original_data)
+    text = TimeOfUseHelper.get_time_of_use_as_rich_message(self._tou_original_data)
     navigator.stop(text)
 
-  def get_goodbye_message(self) -> str:
-    return TimeOfUseHelper.get_time_of_use_as_text(self._tou_original_data)
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
+    return TimeOfUseHelper.get_time_of_use_as_rich_message(
+      self._tou_original_data,
+      suffx = "cancel",
+    )

@@ -12,6 +12,8 @@ class HttpSessionSingletonAsync:
   _instance: Optional["HttpSessionSingletonAsync"] = None
   _session: Optional[aiohttp.ClientSession] = None
 
+  KEEPALIVE_TIMEOUT = 180
+
   def __new__(cls):
     if cls._instance is None:
       cls._instance = super().__new__(cls)
@@ -22,7 +24,8 @@ class HttpSessionSingletonAsync:
     async with cls._lock:
       if cls._session is None or cls._session.closed:
         timeout = aiohttp.ClientTimeout(total = 10)
-        connector = aiohttp.TCPConnector(keepalive_timeout = 25)
+        keepalive_timeout = max(15, HttpSessionSingletonAsync.KEEPALIVE_TIMEOUT - 5)
+        connector = aiohttp.TCPConnector(keepalive_timeout = keepalive_timeout)
 
         cls._session = aiohttp.ClientSession(
           timeout = timeout,

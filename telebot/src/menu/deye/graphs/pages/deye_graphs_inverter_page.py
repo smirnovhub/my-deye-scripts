@@ -1,8 +1,9 @@
 import os
 import re
+import telebot
 
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -39,12 +40,8 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
     return DeyeGraphsPage.inverter
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Select inverter:"
-
-  @property
-  def need_user_input(self) -> bool:
-    return False
 
   @property
   def buttons(self) -> List[ButtonNode]:
@@ -75,7 +72,7 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
 
     self._buttons = buttons
 
-  def get_goodbye_message(self) -> str:
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._title} cancel"
 
   def _handle_full_report(self, navigator: TelebotPageNavigator) -> None:

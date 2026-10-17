@@ -1,5 +1,7 @@
+import telebot
+
 from enum import Enum, auto
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -38,12 +40,16 @@ class AdvancedChoicePage(TelebotNavigationPage):
     return AdvancedChoicePageType.main
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return self._text
 
   @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
+
+  @property
+  def need_user_input(self) -> bool:
+    return True
 
   @property
   def resend_message_on_user_input(self) -> bool:
@@ -108,9 +114,9 @@ class AdvancedChoicePage(TelebotNavigationPage):
     if self._callback:
       self._callback(self._chat_id, button)
 
-  def get_goodbye_message(self) -> str:
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._text} cancel"
 
-  def get_stop_by_command_message(self, command: str) -> str:
+  def get_stop_by_command_message(self, command: str) -> Union[str, telebot.types.InputRichMessage]:
     _, _, param = command.partition(' ')
     return f"{self._text} {param.replace('_', ' ')}"

@@ -17,6 +17,7 @@ from log_utils import LogUtils
 from common_utils import CommonUtils
 from src.deye_storage_config import DeyeStorageConfig
 from src.deye_storage_manager import DeyeStorageManager
+from http_session_singleton_async import HttpSessionSingletonAsync
 
 config = DeyeStorageConfig()
 
@@ -244,7 +245,7 @@ if __name__ == "__main__":
     app,
     host = config.SERVER_HOST,
     port = config.SERVER_PORT,
-    timeout_keep_alive = 30,
+    timeout_keep_alive = HttpSessionSingletonAsync.KEEPALIVE_TIMEOUT,
     proxy_headers = False,
     forwarded_allow_ips = None,
     log_config = None,

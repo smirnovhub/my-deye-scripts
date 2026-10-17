@@ -1,14 +1,20 @@
+import inspect
 import logging
 import re
 import time
 import traceback
 import telebot
 import threading
+import asyncio
+import websockets
+import json
 
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from concurrent.futures import Future
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast, Callable, Awaitable
 
 from telebot_utils import TelebotUtils
+from telebot_async_runner import TelebotAsyncRunner
 
 if TYPE_CHECKING:
   from telebot_navigation_page import TelebotNavigationPage
@@ -32,7 +38,11 @@ class TelebotPageNavigator:
   _prefix_pattern = re.compile(rf"^{_navigator_data_prefix}(\d+)_(\d+)")
   _prefix_template = f"{_navigator_data_prefix}{{0}}_"
 
-  def __init__(self, bot: telebot.TeleBot):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: Optional[TelebotAsyncRunner] = None,
+  ):
     """
     Initializes the navigator and registers global handlers if not already done.
 
@@ -40,12 +50,16 @@ class TelebotPageNavigator:
         bot (telebot.TeleBot): The pyTelegramBotAPI instance.
     """
     self._bot = bot
+    self._runner = runner
     self._chat_id: Optional[int] = None
     self._message: Optional[telebot.types.Message] = None
     self._pages: Dict[Enum, "TelebotNavigationPage"] = {}
     self._current_page: Optional["TelebotNavigationPage"] = None
     self._main_page: Optional["TelebotNavigationPage"] = None
     self._logger = logging.getLogger()
+    self._delayed_tasks: List[Future] = []
+    # Track dedicated websocket listener task for this specific navigator instance
+    self._ws_task_future: Optional[Future] = None
 
     with TelebotPageNavigator._lock:
       if TelebotPageNavigator._free_ids:
@@ -59,6 +73,12 @@ class TelebotPageNavigator:
       if not TelebotPageNavigator._handlers_registered:
         TelebotPageNavigator._register_handlers(self._bot)
         TelebotPageNavigator._handlers_registered = True
+
+  @property
+  def runner(self) -> TelebotAsyncRunner:
+    if not self._runner:
+      raise RuntimeError("Async runner is not set")
+    return self._runner
 
   def register_page(self, page: "TelebotNavigationPage") -> None:
     """
@@ -102,7 +122,6 @@ class TelebotPageNavigator:
 
     Args:
         page (TelebotNavigationPage): The entry point page.
-        text (str): Message text to display.
         chat_id (int): Telegram chat ID.
 
     Returns:
@@ -126,12 +145,21 @@ class TelebotPageNavigator:
 
     self._markup = keyboard
 
-    self._message = self._bot.send_message(
-      chat_id = self._chat_id,
-      text = self._get_page_text(page),
-      reply_markup = keyboard,
-      parse_mode = "HTML",
-    )
+    page_text = self._get_page_text(page)
+
+    if isinstance(page_text, telebot.types.InputRichMessage):
+      self._message = self._bot.send_rich_message(
+        chat_id = self._chat_id,
+        rich_message = page_text,
+        reply_markup = keyboard,
+      )
+    else:
+      self._message = self._bot.send_message(
+        chat_id = self._chat_id,
+        text = page_text,
+        reply_markup = keyboard,
+        parse_mode = "HTML",
+      )
 
     # Setup cleanup on any user text input
     self._bot.clear_step_handler_by_chat_id(self._chat_id)
@@ -167,12 +195,27 @@ class TelebotPageNavigator:
     page = self._pages[page_type]
 
     try:
-      page.clear_button_handlers()
-      page.prepare(**kwargs)
-      page.update()
+      result = page.on_navigate(navigator = self, **kwargs)
 
-      self._current_page = page
-      self.update()
+      # Handle async prepare method if it returns a coroutine
+      if inspect.iscoroutine(result):
+        self._logger.info(f"{self.__class__.__name__}: running async prepare for page {page_type.name}")
+        future = self.runner.run(result)
+
+        def on_done(future: Future) -> None:
+          try:
+            future.result()
+            self._current_page = page
+            self.update()
+          except Exception as e:
+            self._logger.error(traceback.format_exc())
+            self.send_message_with_remove_with_delay(str(e))
+
+        future.add_done_callback(on_done)
+      else:
+        self._current_page = page
+        self.update()
+
     except Exception as e:
       self._logger.error(traceback.format_exc())
       self.send_message_with_remove_with_delay(str(e))
@@ -200,18 +243,73 @@ class TelebotPageNavigator:
     )
 
     self._markup = keyboard
+    page_text = self._get_page_text(self._current_page)
 
     try:
-      self._bot.edit_message_text(
-        text = self._get_page_text(self._current_page),
-        chat_id = self._chat_id,
-        message_id = self._message.message_id,
-        reply_markup = keyboard,
-        parse_mode = 'HTML',
-      )
+      if isinstance(page_text, telebot.types.InputRichMessage):
+        self._bot.edit_message_text(
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          rich_message = page_text,
+          reply_markup = keyboard,
+        )
+      else:
+        self._bot.edit_message_text(
+          text = page_text,
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          reply_markup = keyboard,
+          parse_mode = 'HTML',
+        )
+
     except Exception:
       # Ignore "Message is not modified" errors
       pass
+
+  def add_delayed_update(
+    self,
+    delay: float,
+    action: Optional[Union[Callable[[], Any], Awaitable[Any]]] = None,
+  ) -> None:
+    """
+      Schedules a delayed update or custom async/sync action using the async runner.
+      If cancelled or stopped, the task won't execute.
+
+      Args:
+          delay (float): Delay in seconds before execution.
+          action (Callable or Awaitable): Optional custom action to run. If omitted, calls self.update().
+      """
+    async def delayed_task_wrapper() -> None:
+      try:
+        await asyncio.sleep(delay)
+
+        if action is None:
+          self.update()
+        elif callable(action):
+          res = action()
+          if inspect.iscoroutine(res):
+            await res
+        elif inspect.isawaitable(action):
+          await action
+        else:
+          raise TypeError("delayed update action must be callable or awaitable")
+      except asyncio.CancelledError:
+        raise
+      except Exception as e:
+        self._logger.error(traceback.format_exc())
+        self.send_message_with_remove_with_delay(str(e))
+
+    future = self.runner.run(delayed_task_wrapper())
+
+    with self._lock:
+      self._delayed_tasks.append(future)
+
+    def on_done(f: Future) -> None:
+      with self._lock:
+        if f in self._delayed_tasks:
+          self._delayed_tasks.remove(f)
+
+    future.add_done_callback(on_done)
 
   def send_message(self, text: str) -> telebot.types.Message:
     if not self._chat_id:
@@ -240,8 +338,46 @@ class TelebotPageNavigator:
       delay = delay,
     )
 
-  def _get_page_text(self, page: "TelebotNavigationPage") -> str:
-    return page.text if page.text else "Untitled"
+  def start_websocket_listener(self, uri: str) -> None:
+    """
+    Starts a dedicated background WebSocket listener task tied to this specific navigator instance.
+    """
+    async def instance_listener_worker():
+      while True:
+        try:
+          async with websockets.connect(uri) as websocket:
+            async for raw_message in websocket:
+              try:
+                data = json.loads(raw_message)
+                self._handle_server_update(data)
+              except json.JSONDecodeError as e:
+                self._logger.error(f"Error parsing websocket update json: {e}")
+                pass
+              except Exception as ee:
+                self._logger.error(f"Error handling websocket update: {ee}")
+        except (websockets.ConnectionClosed, asyncio.CancelledError):
+          raise
+        except Exception as e:
+          self._logger.error(f"WebSocket client error: {e}")
+          await asyncio.sleep(5)
+
+    future = self.runner.run(instance_listener_worker())
+    with self._lock:
+      self._ws_task_future = future
+
+    def on_done(f: Future) -> None:
+      with self._lock:
+        if self._ws_task_future == f:
+          self._ws_task_future = None
+
+    future.add_done_callback(on_done)
+
+  def _get_page_text(self, page: "TelebotNavigationPage") -> Union[str, telebot.types.InputRichMessage]:
+    try:
+      return page.text if page.text else "Untitled"
+    except Exception as e:
+      self._logger.error(traceback.format_exc())
+      return str(e)
 
   def _resend(self, text: str) -> telebot.types.Message:
     if not self._message or not self._chat_id or not self._current_page:
@@ -249,22 +385,38 @@ class TelebotPageNavigator:
 
     page_text = self._get_page_text(self._current_page)
 
-    try:
-      self._bot.edit_message_text(
-        text = f"{page_text} {text}",
-        chat_id = self._chat_id,
-        message_id = self._message.message_id,
-        parse_mode = 'HTML',
-      )
-    except Exception:
-      pass
+    if isinstance(page_text, telebot.types.InputRichMessage):
+      try:
+        self._bot.edit_message_text(
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          rich_message = page_text,
+        )
+      except Exception:
+        pass
 
-    self._message = self._bot.send_message(
-      chat_id = self._chat_id,
-      text = page_text,
-      reply_markup = self._markup,
-      parse_mode = "HTML",
-    )
+      self._message = self._bot.send_rich_message(
+        chat_id = self._chat_id,
+        rich_message = page_text,
+        reply_markup = self._markup,
+      )
+    else:
+      try:
+        self._bot.edit_message_text(
+          text = f"{page_text} {text}",
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          parse_mode = 'HTML',
+        )
+      except Exception:
+        pass
+
+      self._message = self._bot.send_message(
+        chat_id = self._chat_id,
+        text = page_text,
+        reply_markup = self._markup,
+        parse_mode = "HTML",
+      )
 
     # Setup cleanup on any user text input
     self._bot.clear_step_handler_by_chat_id(self._chat_id)
@@ -276,24 +428,46 @@ class TelebotPageNavigator:
 
     return self._message
 
-  def stop(self, text: str = '') -> None:
+  def stop(self, text: Optional[Union[str, telebot.types.InputRichMessage]] = None) -> None:
     """
-    Ends the navigation session, removes the keyboard and cleans up instance memory.
+    Ends the navigation session, cancels pending delayed tasks, removes the keyboard and cleans up instance memory.
 
     Args:
         text (str): Optional final text for the message.
     """
+    # Safely extract and clear pending delayed tasks under lock
+    with self._lock:
+      tasks_to_cancel = list(self._delayed_tasks)
+      self._delayed_tasks.clear()
+      ws_future = self._ws_task_future
+      self._ws_task_future = None
+
+    # Cancel tasks outside the lock to prevent potential deadlocks
+    for future in tasks_to_cancel:
+      if not future.done():
+        future.cancel()
+
+    if ws_future and not ws_future.done():
+      ws_future.cancel()
+
     if not self._message or not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
     try:
-      if text:
+      if isinstance(text, str) and text:
         self._bot.edit_message_text(
           text,
           chat_id = self._chat_id,
           message_id = self._message.message_id,
           reply_markup = None,
           parse_mode = 'HTML',
+        )
+      elif isinstance(text, telebot.types.InputRichMessage):
+        self._bot.edit_message_text(
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          rich_message = text,
+          reply_markup = None,
         )
       else:
         self._bot.edit_message_reply_markup(
@@ -351,6 +525,36 @@ class TelebotPageNavigator:
 
     text = self._current_page.get_stop_by_command_message(command)
     self.stop(text)
+
+  def _handle_server_update(self, data: Dict[str, Any]) -> None:
+    """
+    Dispatches incoming server update to the currently active page.
+    """
+    if not self._current_page:
+      return
+
+    # Check if the current page implements a server update handler
+    try:
+      self._logger.info(f"Websocket update received: {data}")
+      result = self._current_page.on_server_update(navigator = self, data = data)
+
+      # Support both synchronous and asynchronous page handlers
+      if inspect.iscoroutine(result):
+        self._logger.info(
+          f"{self.__class__.__name__}: running async on_server_update for page {self._current_page.page_type.name}")
+        future = self.runner.run(result)
+
+        def on_done(f: Future) -> None:
+          try:
+            f.result()
+          except Exception as e:
+            self.send_message_with_remove_with_delay(str(e))
+            self._logger.error(traceback.format_exc())
+
+        future.add_done_callback(on_done)
+    except Exception as e:
+      self.send_message_with_remove_with_delay(str(e))
+      self._logger.error(traceback.format_exc())
 
   @staticmethod
   def _register_handlers(bot: telebot.TeleBot):
@@ -426,7 +630,23 @@ class TelebotPageNavigator:
           if self._current_page.resend_message_on_user_input:
             self._resend(message.text)
             time.sleep(0.5)
-          self._current_page.on_user_input(self, message.text)
+
+          result = self._current_page.on_user_input(self, message.text)
+
+          # Check if the handler returned a coroutine and run it asynchronously
+          if inspect.iscoroutine(result):
+            self._logger.info(f"{self.__class__.__name__}: running async handler for user input")
+            future = self.runner.run(result)
+
+            def on_done(future: Future) -> None:
+              try:
+                future.result()
+              except Exception as e:
+                self.send_message_with_remove_with_delay(str(e))
+                self._logger.error(traceback.format_exc())
+
+            future.add_done_callback(on_done)
+
         except Exception as e:
           self._logger.error(traceback.format_exc())
           self.send_message_with_remove_with_delay(str(e))
