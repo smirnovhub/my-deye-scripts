@@ -75,7 +75,11 @@ class TelebotNavigationPage(ABC):
     """
     pass
 
-  def prepare(self, **kwargs: Any) -> None:
+  def on_navigate(
+    self,
+    navigator: TelebotPageNavigator,
+    **kwargs: Any,
+  ) -> None:
     """
     Optional hook to pass data into the page before rendering.
     Can be overridden in subclasses to initialize state.

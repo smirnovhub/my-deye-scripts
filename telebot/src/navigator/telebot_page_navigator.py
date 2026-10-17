@@ -5,10 +5,11 @@ import time
 import traceback
 import telebot
 import threading
+import asyncio
 
 from enum import Enum
 from concurrent.futures import Future
-from typing import TYPE_CHECKING, Dict, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast, Callable, Awaitable
 
 from telebot_utils import TelebotUtils
 from telebot_async_runner import TelebotAsyncRunner
@@ -54,6 +55,7 @@ class TelebotPageNavigator:
     self._current_page: Optional["TelebotNavigationPage"] = None
     self._main_page: Optional["TelebotNavigationPage"] = None
     self._logger = logging.getLogger()
+    self._delayed_tasks: List[Future] = []
 
     with TelebotPageNavigator._lock:
       if TelebotPageNavigator._free_ids:
@@ -116,7 +118,6 @@ class TelebotPageNavigator:
 
     Args:
         page (TelebotNavigationPage): The entry point page.
-        text (str): Message text to display.
         chat_id (int): Telegram chat ID.
 
     Returns:
@@ -190,7 +191,7 @@ class TelebotPageNavigator:
     page = self._pages[page_type]
 
     try:
-      result = page.prepare(**kwargs)
+      result = page.on_navigate(navigator = self, **kwargs)
 
       # Handle async prepare method if it returns a coroutine
       if inspect.iscoroutine(result):
@@ -260,6 +261,51 @@ class TelebotPageNavigator:
     except Exception:
       # Ignore "Message is not modified" errors
       pass
+
+  def add_delayed_update(
+    self,
+    delay: float,
+    action: Optional[Union[Callable[[], Any], Awaitable[Any]]] = None,
+  ) -> None:
+    """
+      Schedules a delayed update or custom async/sync action using the async runner.
+      If cancelled or stopped, the task won't execute.
+
+      Args:
+          delay (float): Delay in seconds before execution.
+          action (Callable or Awaitable): Optional custom action to run. If omitted, calls self.update().
+      """
+    async def delayed_task_wrapper() -> None:
+      try:
+        await asyncio.sleep(delay)
+
+        if action is None:
+          self.update()
+        elif callable(action):
+          res = action()
+          if inspect.iscoroutine(res):
+            await res
+        elif inspect.isawaitable(action):
+          await action
+        else:
+          raise TypeError("delayed update action must be callable or awaitable")
+      except asyncio.CancelledError:
+        raise
+      except Exception as e:
+        self._logger.error(traceback.format_exc())
+        self.send_message_with_remove_with_delay(str(e))
+
+    future = self.runner.run(delayed_task_wrapper())
+
+    with self._lock:
+      self._delayed_tasks.append(future)
+
+    def on_done(f: Future) -> None:
+      with self._lock:
+        if f in self._delayed_tasks:
+          self._delayed_tasks.remove(f)
+
+    future.add_done_callback(on_done)
 
   def send_message(self, text: str) -> telebot.types.Message:
     if not self._chat_id:
@@ -346,11 +392,21 @@ class TelebotPageNavigator:
 
   def stop(self, text: Optional[Union[str, telebot.types.InputRichMessage]] = None) -> None:
     """
-    Ends the navigation session, removes the keyboard and cleans up instance memory.
+    Ends the navigation session, cancels pending delayed tasks, removes the keyboard and cleans up instance memory.
 
     Args:
         text (str): Optional final text for the message.
     """
+    # Safely extract and clear pending delayed tasks under lock
+    with self._lock:
+      tasks_to_cancel = list(self._delayed_tasks)
+      self._delayed_tasks.clear()
+
+    # Cancel tasks outside the lock to prevent potential deadlocks
+    for future in tasks_to_cancel:
+      if not future.done():
+        future.cancel()
+
     if not self._message or not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 

@@ -40,7 +40,11 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
   def need_user_input(self) -> bool:
     return True
 
-  def prepare(self, **kwargs: Any):
+  def on_navigate(
+    self,
+    navigator: TelebotPageNavigator,
+    **kwargs: Any,
+  ) -> None:
     index = kwargs.get("time_of_use_line_index")
     if index is None:
       raise RuntimeError("time_of_use_line_index not found")
