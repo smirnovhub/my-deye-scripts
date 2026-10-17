@@ -6,6 +6,8 @@ import traceback
 import telebot
 import threading
 import asyncio
+import websockets
+import json
 
 from enum import Enum
 from concurrent.futures import Future
@@ -56,6 +58,8 @@ class TelebotPageNavigator:
     self._main_page: Optional["TelebotNavigationPage"] = None
     self._logger = logging.getLogger()
     self._delayed_tasks: List[Future] = []
+    # Track dedicated websocket listener task for this specific navigator instance
+    self._ws_task_future: Optional[Future] = None
 
     with TelebotPageNavigator._lock:
       if TelebotPageNavigator._free_ids:
@@ -334,6 +338,40 @@ class TelebotPageNavigator:
       delay = delay,
     )
 
+  def start_websocket_listener(self, uri: str) -> None:
+    """
+    Starts a dedicated background WebSocket listener task tied to this specific navigator instance.
+    """
+    async def instance_listener_worker():
+      while True:
+        try:
+          async with websockets.connect(uri) as websocket:
+            async for raw_message in websocket:
+              try:
+                data = json.loads(raw_message)
+                self._handle_server_update(data)
+              except json.JSONDecodeError as e:
+                self._logger.error(f"Error parsing websocket update json: {e}")
+                pass
+              except Exception as ee:
+                self._logger.error(f"Error handling websocket update: {ee}")
+        except (websockets.ConnectionClosed, asyncio.CancelledError):
+          raise
+        except Exception as e:
+          self._logger.error(f"WebSocket client error: {e}")
+          await asyncio.sleep(5)
+
+    future = self.runner.run(instance_listener_worker())
+    with self._lock:
+      self._ws_task_future = future
+
+    def on_done(f: Future) -> None:
+      with self._lock:
+        if self._ws_task_future == f:
+          self._ws_task_future = None
+
+    future.add_done_callback(on_done)
+
   def _get_page_text(self, page: "TelebotNavigationPage") -> Union[str, telebot.types.InputRichMessage]:
     try:
       return page.text if page.text else "Untitled"
@@ -401,11 +439,16 @@ class TelebotPageNavigator:
     with self._lock:
       tasks_to_cancel = list(self._delayed_tasks)
       self._delayed_tasks.clear()
+      ws_future = self._ws_task_future
+      self._ws_task_future = None
 
     # Cancel tasks outside the lock to prevent potential deadlocks
     for future in tasks_to_cancel:
       if not future.done():
         future.cancel()
+
+    if ws_future and not ws_future.done():
+      ws_future.cancel()
 
     if not self._message or not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
@@ -482,6 +525,36 @@ class TelebotPageNavigator:
 
     text = self._current_page.get_stop_by_command_message(command)
     self.stop(text)
+
+  def _handle_server_update(self, data: Dict[str, Any]) -> None:
+    """
+    Dispatches incoming server update to the currently active page.
+    """
+    if not self._current_page:
+      return
+
+    # Check if the current page implements a server update handler
+    try:
+      self._logger.info(f"Websocket update received: {data}")
+      result = self._current_page.on_server_update(navigator = self, data = data)
+
+      # Support both synchronous and asynchronous page handlers
+      if inspect.iscoroutine(result):
+        self._logger.info(
+          f"{self.__class__.__name__}: running async on_server_update for page {self._current_page.page_type.name}")
+        future = self.runner.run(result)
+
+        def on_done(f: Future) -> None:
+          try:
+            f.result()
+          except Exception as e:
+            self.send_message_with_remove_with_delay(str(e))
+            self._logger.error(traceback.format_exc())
+
+        future.add_done_callback(on_done)
+    except Exception as e:
+      self.send_message_with_remove_with_delay(str(e))
+      self._logger.error(traceback.format_exc())
 
   @staticmethod
   def _register_handlers(bot: telebot.TeleBot):
@@ -570,6 +643,7 @@ class TelebotPageNavigator:
                 future.result()
               except Exception as e:
                 self.send_message_with_remove_with_delay(str(e))
+                self._logger.error(traceback.format_exc())
 
             future.add_done_callback(on_done)
 

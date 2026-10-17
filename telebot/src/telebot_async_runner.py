@@ -3,7 +3,7 @@ import logging
 import threading
 
 from typing import Coroutine, Any
-from concurrent.futures import Future
+from concurrent.futures import Future, CancelledError
 
 class TelebotAsyncRunner:
   def __init__(self, logger: logging.Logger) -> None:
@@ -24,6 +24,8 @@ class TelebotAsyncRunner:
     def on_done(f: Future) -> None:
       try:
         f.result()
+      except (asyncio.CancelledError, CancelledError):
+        pass
       except Exception:
         self._logger.error("Async task failed", exc_info = True)
 
