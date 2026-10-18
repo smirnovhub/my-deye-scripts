@@ -3,19 +3,15 @@ import logging
 import telebot
 
 from enum import Enum
-from concurrent.futures import Future
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 
 from abc import ABC, abstractmethod
 from button_node import ButtonNode
-from telebot_async_runner import TelebotAsyncRunner
 from telebot_page_navigator import TelebotPageNavigator
 
 ButtonHandler = Union[
-  Callable[[TelebotPageNavigator], None],
-  Callable[[TelebotPageNavigator, ButtonNode], None],
-  Callable[[TelebotPageNavigator], Coroutine[Any, Any, None]],
-  Callable[[TelebotPageNavigator, ButtonNode], Coroutine[Any, Any, None]],
+  Callable[[TelebotPageNavigator], Awaitable[Any]],
+  Callable[[TelebotPageNavigator, ButtonNode], Awaitable[Any]],
 ]
 
 class TelebotNavigationPage(ABC):
@@ -23,22 +19,13 @@ class TelebotNavigationPage(ABC):
   Abstract base class representing a single UI page in the telegram bot navigation system.
   Each page manages its own buttons and click handlers.
   """
-  def __init__(
-    self,
-    runner: Optional[TelebotAsyncRunner] = None,
-  ):
+  def __init__(self):
     """
     Initializes the page and its internal button handler storage.
     """
-    self._runner = runner
-    self._button_handlers: Dict[int, ButtonHandler] = {}
+    self._buttons: List[ButtonNode] = []
+    self._button_handlers: Dict[str, ButtonHandler] = {}
     self._logger = logging.getLogger()
-
-  @property
-  def runner(self) -> TelebotAsyncRunner:
-    if not self._runner:
-      raise RuntimeError("Async runner is not set")
-    return self._runner
 
   @property
   @abstractmethod
@@ -65,7 +52,6 @@ class TelebotNavigationPage(ABC):
     return True
 
   @property
-  @abstractmethod
   def buttons(self) -> List[ButtonNode]:
     """
     Returns the list of buttons to be displayed on this page.
@@ -73,9 +59,9 @@ class TelebotNavigationPage(ABC):
     Returns:
         List[ButtonNode]: A list of button configurations.
     """
-    pass
+    return self._buttons
 
-  def on_navigate(
+  async def on_navigate(
     self,
     navigator: TelebotPageNavigator,
     **kwargs: Any,
@@ -90,17 +76,22 @@ class TelebotNavigationPage(ABC):
     pass
 
   @abstractmethod
-  def update(self) -> None:
+  def create_buttons(self) -> None:
     """
-    Updates the internal state of the page. 
-    Typically used to refresh button labels or register new handlers.
+    Creates buttons for the page. 
     """
     pass
 
-  def handle_click(
+  async def update(self) -> None:
+    """
+    Updates state of the page. 
+    """
+    pass
+
+  async def handle_click(
     self,
     navigator: TelebotPageNavigator,
-    button_id: int,
+    button_id: str,
   ):
     """
     Finds the button by ID and triggers the click event.
@@ -111,9 +102,14 @@ class TelebotNavigationPage(ABC):
     """
     for button in self.buttons:
       if button.id == button_id:
-        self.on_button_clicked(navigator, button)
+        await self.on_button_clicked(navigator, button)
+        break
 
-  def on_button_clicked(self, navigator: TelebotPageNavigator, button: ButtonNode) -> None:
+  async def on_button_clicked(
+    self,
+    navigator: TelebotPageNavigator,
+    button: ButtonNode,
+  ) -> None:
     """
     Executes the registered handler for the specific button.
     Supports handlers with (navigator) or (navigator, button) signatures.
@@ -131,38 +127,46 @@ class TelebotNavigationPage(ABC):
     params = list(signature.parameters.values())
 
     # Logic to decide how many arguments to pass
-    if len(params) >= 2:
-      # Handler expects at least two arguments (navigator and button)
-      result = handler(navigator, button) # type: ignore
-    else:
+    if len(params) == 1:
       # Handler expects only one argument (navigator)
-      result = handler(navigator) # type: ignore
+      await handler(navigator) # type: ignore
+    elif len(params) == 2:
+      # Handler expects two arguments (navigator and button)
+      await handler(navigator, button) # type: ignore
+    else:
+      raise ValueError(f"Unsupported argument count for button {button.text}")
 
-    if inspect.iscoroutine(result):
-      self._logger.info(f"{self.__class__.__name__}: running async handler for button "
-                        f"text={button.text}, data={button.data}")
-
-      future = self.runner.run(result)
-
-      def on_done(future: Future) -> None:
-        try:
-          future.result()
-        except Exception as e:
-          navigator.send_message_with_remove_with_delay(str(e))
-
-      future.add_done_callback(on_done)
-
-  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+  async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     pass
 
-  def on_server_update(
+  async def on_websocket_update(
     self,
     navigator: TelebotPageNavigator,
     data: Dict[str, Any],
   ) -> None:
     pass
 
-  def register_button_handler(self, button: ButtonNode, handler: ButtonHandler) -> ButtonNode:
+  async def on_auto_update(self, navigator: TelebotPageNavigator) -> None:
+    pass
+
+  def register_button(
+    self,
+    button: ButtonNode,
+    handler: Optional[ButtonHandler] = None,
+  ) -> None:
+    btn = ButtonNode(
+      text = button.text,
+      data = button.data,
+      style = button.style,
+      key = str(self.page_type),
+    )
+
+    if handler is not None:
+      self.register_button_handler(btn, handler)
+
+    self._buttons.append(btn)
+
+  def register_button_handler(self, button: ButtonNode, handler: ButtonHandler) -> None:
     """
     Maps a button to a specific function to be called when clicked.
 
@@ -173,13 +177,17 @@ class TelebotNavigationPage(ABC):
     Returns:
         ButtonNode: The same button instance for chaining.
     """
-    self._button_handlers[button.id] = handler
-    return button
+    if button.id in self._button_handlers:
+      raise RuntimeError(f"Duplicated button handler detected on page {self.page_type} "
+                         f"(id: '{button.id}', text: '{button.text}', data: '{button.data}')")
 
-  def clear_button_handlers(self) -> None:
+    self._button_handlers[button.id] = handler
+
+  def clear_buttons(self) -> None:
     """
-    Removes all registered button handlers from the page.
+    Removes all registered buttons and handlers from the page.
     """
+    self._buttons.clear()
     self._button_handlers.clear()
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:

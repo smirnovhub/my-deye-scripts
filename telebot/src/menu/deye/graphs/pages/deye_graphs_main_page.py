@@ -33,7 +33,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
-  def update(self) -> None:
+  def create_buttons(self) -> None:
     buttons: List[ButtonNode] = []
 
     today_buttons: List[ButtonNode] = []

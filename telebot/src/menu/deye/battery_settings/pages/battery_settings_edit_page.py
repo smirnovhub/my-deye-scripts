@@ -47,7 +47,7 @@ class BatterySettingsEditPage(TelebotNavigationPage):
   def need_user_input(self) -> bool:
     return True
 
-  def update(self) -> None:
+  def create_buttons(self) -> None:
     buttons: List[ButtonNode] = []
 
     value = 0

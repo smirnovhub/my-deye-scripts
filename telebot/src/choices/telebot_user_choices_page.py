@@ -52,7 +52,7 @@ class UserChoicePage(TelebotNavigationPage):
   def resend_message_on_user_input(self) -> bool:
     return False
 
-  def update(self) -> None:
+  def create_buttons(self) -> None:
     self._buttons = []
 
     # Iterate with index to manage rows

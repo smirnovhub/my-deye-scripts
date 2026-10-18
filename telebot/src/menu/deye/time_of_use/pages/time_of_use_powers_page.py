@@ -57,7 +57,7 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     TimeOfUseHelper.check_upper_bounds(self._tou_powers.values, index)
     self._time_of_use_line_index = index
 
-  def update(self) -> None:
+  def create_buttons(self) -> None:
     buttons: List[ButtonNode] = []
 
     for row_index, row in enumerate(self._values):

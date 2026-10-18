@@ -56,7 +56,7 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     TimeOfUseHelper.check_bounds(self._tou_times.values, index)
     self._time_of_use_line_index = index
 
-  def update(self) -> None:
+  def create_buttons(self) -> None:
     buttons: List[ButtonNode] = []
 
     for i in range(24):

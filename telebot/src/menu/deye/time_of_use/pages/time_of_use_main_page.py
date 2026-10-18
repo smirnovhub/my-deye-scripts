@@ -46,7 +46,7 @@ class TimeOfUseMainPage(TelebotNavigationPage):
   def need_user_input(self) -> bool:
     return True
 
-  def update(self) -> None:
+  def create_buttons(self) -> None:
     week_buttons = TimeOfUseWeekButtons(
       page = self,
       tou_week = self._tou_data.week,

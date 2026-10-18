@@ -55,7 +55,7 @@ class AdvancedChoicePage(TelebotNavigationPage):
   def resend_message_on_user_input(self) -> bool:
     return False
 
-  def update(self) -> None:
+  def create_buttons(self) -> None:
     """
     Logic for building the current page of options.
     """

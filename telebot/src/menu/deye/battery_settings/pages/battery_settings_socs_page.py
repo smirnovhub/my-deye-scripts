@@ -39,7 +39,7 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
   def need_user_input(self) -> bool:
     return True
 
-  def update(self) -> None:
+  def create_buttons(self) -> None:
     buttons: List[ButtonNode] = []
 
     self._min_value, self._max_value = self._batt_data.get_bounds(self._page_type)
