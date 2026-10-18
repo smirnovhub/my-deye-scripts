@@ -195,7 +195,7 @@ class TelebotPageNavigator:
     page = self._pages[page_type]
 
     try:
-      result = page.on_navigate(navigator = self, **kwargs)
+      result = page.on_navigate(navigator = self, **kwargs) # type: ignore
 
       # Handle async prepare method if it returns a coroutine
       if inspect.iscoroutine(result):
@@ -536,7 +536,7 @@ class TelebotPageNavigator:
     # Check if the current page implements a server update handler
     try:
       self._logger.info(f"Websocket update received: {data}")
-      result = self._current_page.on_server_update(navigator = self, data = data)
+      result = self._current_page.on_server_update(navigator = self, data = data) # type: ignore
 
       # Support both synchronous and asynchronous page handlers
       if inspect.iscoroutine(result):
@@ -631,7 +631,7 @@ class TelebotPageNavigator:
             self._resend(message.text)
             time.sleep(0.5)
 
-          result = self._current_page.on_user_input(self, message.text)
+          result = self._current_page.on_user_input(self, message.text) # type: ignore
 
           # Check if the handler returned a coroutine and run it asynchronously
           if inspect.iscoroutine(result):
