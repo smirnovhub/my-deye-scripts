@@ -71,14 +71,11 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
       )
       return
 
-    def on_user_confirmation(chat_id: int, result: bool) -> None:
-      self.run_async(self._on_confirmation(register, chat_id, result))
-
     now = DeyeUtils.get_current_time().strftime(DeyeUtils.time_format_str)
     time_diff = register.value - DeyeUtils.get_current_time()
     diff_seconds = int(abs(time_diff.total_seconds()))
     if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
-      UserChoices.ask_confirmation(
+      result = await UserChoices.ask_confirmation(
         self.bot,
         message.chat.id,
         f'<b>Warning!</b> '
@@ -87,10 +84,10 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
         f'Inverter time: <b>{register.value.strftime(DeyeUtils.time_format_str)}</b>\n'
         f'The difference is about {diff_seconds} seconds.\n'
         f'<b>Are you sure to sync inverter time?</b>',
-        on_user_confirmation,
       )
+      await self._on_confirmation(register, message.chat.id, result)
     elif diff_seconds > TelebotConstants.inverter_system_time_need_sync_difference_sec:
-      on_user_confirmation(message.chat.id, True)
+      await self._on_confirmation(register, message.chat.id, True)
     else:
       self.bot.send_message(
         message.chat.id,

@@ -414,8 +414,10 @@ class TelebotPageNavigator:
     if auto_update_task and not auto_update_task.done():
       auto_update_task.cancel()
 
-    if not self._message or not self._chat_id:
+    if not self._current_page or not self._message or not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
+
+    self._current_page.on_stop()
 
     try:
       if isinstance(text, str) and text:
@@ -556,8 +558,8 @@ class TelebotPageNavigator:
                 self._resend(message.text)
                 await asyncio.sleep(0.5)
 
-                self._logger.info(f"{self.__class__.__name__}: running async handler for user input")
-                await self._current_page.on_user_input(self, message.text)
+              self._logger.info(f"{self.__class__.__name__}: running async handler for user input")
+              await self._current_page.on_user_input(self, message.text)
 
           except Exception as e:
             self._logger.error(traceback.format_exc())

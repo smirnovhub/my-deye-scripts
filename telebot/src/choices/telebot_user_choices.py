@@ -1,6 +1,7 @@
+import asyncio
 import telebot
 
-from typing import Callable, List, Union
+from typing import List, Union
 
 from button_node import ButtonNode
 from telebot_page_navigator import TelebotPageNavigator
@@ -8,47 +9,44 @@ from telebot_user_choices_page import UserChoicePage
 
 class UserChoices:
   @staticmethod
-  def ask_confirmation(
+  async def ask_confirmation(
     bot: telebot.TeleBot,
     chat_id: int,
     text: Union[str, telebot.types.InputRichMessage],
-    callback: Callable[[int, bool], None],
-  ) -> telebot.types.Message:
-    def choice_callback(chat_id_inner: int, button: ButtonNode):
-      callback(chat_id_inner, button.text.lower() == 'yes')
+  ) -> bool:
+    yes_button = ButtonNode(text = 'Yes')
+    no_button = ButtonNode(text = 'No')
 
-    options = [
-      ButtonNode(text = 'Yes'),
-      ButtonNode(text = 'No'),
-    ]
-
-    return UserChoices.ask_choice(
+    button = await UserChoices.ask_choice(
       bot = bot,
       chat_id = chat_id,
       text = text,
-      options = options,
-      callback = choice_callback,
+      options = [yes_button, no_button],
       accept_wrong_choice_from_user_input = True,
     )
 
+    return button.text == yes_button.text
+
   @staticmethod
-  def ask_choice(
+  async def ask_choice(
     bot: telebot.TeleBot,
     chat_id: int,
     text: Union[str, telebot.types.InputRichMessage],
     options: List[ButtonNode],
-    callback: Callable[[int, ButtonNode], None],
     max_per_row: int = 5,
     accept_wrong_choice_from_user_input: bool = False,
     wrong_choice_text: str = 'No such option',
-  ) -> telebot.types.Message:
+  ) -> ButtonNode:
+    loop = asyncio.get_running_loop()
+    future = loop.create_future()
+
     navigator = TelebotPageNavigator(bot)
 
     page = UserChoicePage(
       text = text,
       options = options,
       chat_id = chat_id,
-      callback = callback,
+      result_future = future,
       max_per_row = max_per_row,
       accept_wrong_choice_from_user_input = accept_wrong_choice_from_user_input,
       wrong_choice_text = wrong_choice_text,
@@ -56,7 +54,10 @@ class UserChoices:
 
     navigator.register_page(page)
 
-    return navigator.start(
+    await navigator.start(
       page = page,
       chat_id = chat_id,
     )
+
+    # Wait until the user completes the selection and the callback is triggered
+    return await future

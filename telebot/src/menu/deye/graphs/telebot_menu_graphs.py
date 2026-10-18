@@ -2,24 +2,32 @@ import telebot
 
 from env_utils import EnvUtils
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
+from telebot_async_runner import TelebotAsyncRunner
 from telebot_page_navigator import TelebotPageNavigator
 from deye_graphs_data_provider import DeyeGraphsDataProvider
 from deye_graphs_main_page import DeyeGraphsMainPage
 from deye_graphs_graph_name_page import DeyeGraphsGraphNamePage
 from deye_graphs_inverter_page import DeyeGraphsInverterPage
 from deye_graphs_group_page import DeyeGraphsGroupPage
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
-class TelebotMenuGraphs(TelebotMenuItemHandlerSync):
-  def __init__(self, bot: telebot.TeleBot):
-    super().__init__(bot)
+class TelebotMenuGraphs(TelebotMenuItemHandlerAsync):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ):
+    super().__init__(
+      bot = bot,
+      runner = runner,
+    )
     self._provider = DeyeGraphsDataProvider()
 
   @property
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.deye_graphs
 
-  def process_message(self, message: telebot.types.Message) -> None:
+  async def process_message(self, message: telebot.types.Message) -> None:
     server_url = EnvUtils.get_remote_graph_server_url()
     if not server_url:
       self.bot.send_message(
@@ -29,19 +37,25 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerSync):
       return
 
     try:
-      self._provider.check_graph_server_available()
+      await self._provider.check_graph_server_available()
     except Exception as e:
-      self.bot.send_message(message.chat.id, f"Graph server {server_url} seems to be down: {e}")
+      self.bot.send_message(
+        message.chat.id,
+        f"Graph server {server_url} seems to be down: {e}",
+      )
       return
 
     try:
-      graph_dates = self._provider.load_graph_dates()
+      graph_dates = await self._provider.load_graph_dates()
     except Exception as e:
       self.bot.send_message(message.chat.id, str(e))
       return
 
     if not graph_dates:
-      self.bot.send_message(message.chat.id, "Graph list is empty")
+      self.bot.send_message(
+        message.chat.id,
+        "Graph list is empty",
+      )
       return
 
     navigator = TelebotPageNavigator(self.bot)
@@ -67,7 +81,7 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerSync):
       ),
     ])
 
-    navigator.start(
+    await navigator.start(
       page = main_page,
       chat_id = message.chat.id,
     )

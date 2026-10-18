@@ -66,22 +66,20 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
     for match in matches:
       self.bot.send_message(message.chat.id, match)
 
-    UserChoices.ask_confirmation(
+    res = UserChoices.ask_confirmation(
       self.bot,
       message.chat.id,
       'Update completed. For the changes to take effect, need to restart the bot. '
       '<b>Do you want to restart it now?</b>',
-      self._on_user_confirmation,
     )
 
-  def _on_user_confirmation(self, chat_id: int, result: bool):
-    if not result:
-      self.bot.send_message(chat_id, 'Restart cancelled')
+    if not res:
+      self.bot.send_message(message.chat.id, 'Restart cancelled')
       return
 
     CountdownWithCancel.show_countdown(
       bot = self.bot,
-      chat_id = chat_id,
+      chat_id = message.chat.id,
       text = 'Will restart in: ',
       seconds = 5,
       on_finish = self._on_finish,

@@ -31,12 +31,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Select graph:"
 
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
-
   def create_buttons(self) -> None:
-    buttons: List[ButtonNode] = []
     graphs: List[DeyeGraphData] = []
     groups: List[DeyeGraphGroupData] = []
 
@@ -52,32 +47,30 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
 
     for index, graph in enumerate(graphs):
       if (index % 2) == 0:
-        buttons.append(BreakButtonNode())
+        self.register_button(BreakButtonNode())
 
       title = graph.description.replace("Inverter ", "")
 
-      buttons.append(self.register_button_handler(
+      self.register_button(
         ButtonNode(title),
         self._create_graph_handler(graph = graph),
-      ))
+      )
 
-    buttons.append(BreakButtonNode())
-    buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
-    buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
-
-    self._buttons = buttons
+    self.register_button(BreakButtonNode())
+    self.register_button(ButtonNode("Back"), self._handle_back)
+    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._title} cancel"
 
-  def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    navigator.navigate(DeyeGraphsPage.group)
+  async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
+    await navigator.navigate(DeyeGraphsPage.group)
 
-  def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(f"{self._title} cancel")
 
   def _create_graph_handler(self, graph: DeyeGraphData):
-    def handler(navigator: TelebotPageNavigator) -> None:
+    async def handler(navigator: TelebotPageNavigator) -> None:
       chat_id = navigator.chat_id
       bot = navigator.bot
       progress = TelebotProgressMessage(bot)
@@ -97,7 +90,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         selected_date = self._provider.selected_date
         selected_inverter = self._provider.selected_inverter
 
-        image_file = self._provider.get_graph_image(
+        image_file = await self._provider.get_graph_image(
           graph_date = selected_date,
           inverter = selected_inverter,
           graph_name = graph.name,
@@ -106,9 +99,15 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         progress.hide()
 
         # Send the file as a document
-        bot.send_document(chat_id = chat_id, document = image_file)
+        bot.send_document(
+          chat_id = chat_id,
+          document = image_file,
+        )
       except Exception as e:
-        bot.send_message(chat_id = chat_id, text = str(e))
+        bot.send_message(
+          chat_id = chat_id,
+          text = str(e),
+        )
       finally:
         progress.hide()
 

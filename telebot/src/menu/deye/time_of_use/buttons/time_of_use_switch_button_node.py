@@ -6,9 +6,11 @@ class TimeOfUseSwitchButtonNode(SwitchButtonNode):
     self,
     enabled: bool,
     text = "",
+    key: str = "",
   ):
     super().__init__(
       text = text,
+      key = key,
       enabled = enabled,
     )
 

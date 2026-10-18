@@ -146,6 +146,9 @@ class TelebotNavigationPage(ABC):
   ) -> None:
     pass
 
+  def on_stop(self):
+    pass
+
   async def on_auto_update(self, navigator: TelebotPageNavigator) -> None:
     pass
 
@@ -154,19 +157,20 @@ class TelebotNavigationPage(ABC):
     button: ButtonNode,
     handler: Optional[ButtonHandler] = None,
   ) -> None:
-    btn = ButtonNode(
-      text = button.text,
-      data = button.data,
-      style = button.style,
-      key = str(self.page_type),
-    )
+    page_key = f":{self.page_type}"
+
+    if page_key in button.key:
+      raise RuntimeError(f"Button was already used on page {self.page_type} {button.__class__.__name__} "
+                         f"(id: '{button.id}', text: '{button.text}', data: '{button.data}', key: '{button.key}')")
+
+    button.set_key(f"{button.key}{page_key}")
 
     if handler is not None:
-      self.register_button_handler(btn, handler)
+      self._register_button_handler(button, handler)
 
-    self._buttons.append(btn)
+    self._buttons.append(button)
 
-  def register_button_handler(self, button: ButtonNode, handler: ButtonHandler) -> None:
+  def _register_button_handler(self, button: ButtonNode, handler: ButtonHandler) -> None:
     """
     Maps a button to a specific function to be called when clicked.
 
@@ -178,8 +182,8 @@ class TelebotNavigationPage(ABC):
         ButtonNode: The same button instance for chaining.
     """
     if button.id in self._button_handlers:
-      raise RuntimeError(f"Duplicated button handler detected on page {self.page_type} "
-                         f"(id: '{button.id}', text: '{button.text}', data: '{button.data}')")
+      raise RuntimeError(f"Duplicated button handler detected on page {self.page_type} {button.__class__.__name__} "
+                         f"(id: '{button.id}', text: '{button.text}', data: '{button.data}', key: '{button.key}')")
 
     self._button_handlers[button.id] = handler
 

@@ -2,24 +2,22 @@ import copy
 import telebot
 
 from enum import Enum
-from typing import List, Union
+from typing import Union
 
 from button_node import ButtonNode
 from battery_settings_helper import BatterySettingsHelper
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
-from telebot_async_runner import TelebotAsyncRunner
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
 class BatterySettingsMainPage(TelebotNavigationPage):
   def __init__(
     self,
-    runner: TelebotAsyncRunner,
     batt_data: BatterySettingsData,
     title: str,
   ):
-    super().__init__(runner)
+    super().__init__()
     self._batt_data_original_values = copy.deepcopy(batt_data.values)
     self._title = title
 
@@ -34,17 +32,9 @@ class BatterySettingsMainPage(TelebotNavigationPage):
       values = self._batt_data_original_values,
     )
 
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
-
   def create_buttons(self) -> None:
-    buttons: List[ButtonNode] = []
-
-    buttons.append(self.register_button_handler(ButtonNode("Edit"), self._handle_edit))
-    buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
-
-    self._buttons = buttons
+    self.register_button(ButtonNode("Edit"), self._handle_edit)
+    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return BatterySettingsHelper.get_data_as_rich_message(
@@ -52,10 +42,10 @@ class BatterySettingsMainPage(TelebotNavigationPage):
       values = self._batt_data_original_values,
     )
 
-  def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
-    navigator.navigate(BatterySettingsPage.edit)
+  async def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
+    await navigator.navigate(BatterySettingsPage.edit)
 
-  def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(
       BatterySettingsHelper.get_data_as_rich_message(
         title = f"{self._title} cancel",

@@ -78,8 +78,11 @@ class TelebotBaseTestModule:
       first_name = user.name,
     )
 
+    if not message.from_user:
+      return
+
     query = telebot.types.CallbackQuery(
-      id = 321,
+      id = "321",
       chat_instance = 'fake',
       json_string = '',
       from_user = message.from_user,

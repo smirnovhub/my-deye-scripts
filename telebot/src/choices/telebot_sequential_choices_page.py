@@ -1,7 +1,8 @@
+import asyncio
 import telebot
 
 from enum import Enum, auto
-from typing import Callable, List, Union
+from typing import List, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -18,15 +19,14 @@ class SequentialChoicePage(TelebotNavigationPage):
     text: str,
     root: SequentialChoiceButton,
     chat_id: int,
-    final_callback: Callable[[int, List[SequentialChoiceButton]], None],
+    result_future: asyncio.Future[List[SequentialChoiceButton]],
   ):
     super().__init__()
     self._text = text
     self._current_node = root
     self._chat_id = chat_id
-    self._final_callback = final_callback
+    self._result_future = result_future
     self._results: List[SequentialChoiceButton] = []
-    self._buttons: List[ButtonNode] = []
 
   @property
   def page_type(self) -> Enum:
@@ -37,59 +37,57 @@ class SequentialChoicePage(TelebotNavigationPage):
     return self._text
 
   @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
-
-  @property
   def need_user_input(self) -> bool:
     return True
 
   def create_buttons(self) -> None:
-    self._buttons = []
-
+    print(self._current_node)
     children = self._current_node.children
 
     for i, child in enumerate(children):
-      self.register_button_handler(child, self._handle_step)
-      self._buttons.append(child)
+      self.register_button(child, self._handle_step)
 
       if (i + 1) % self._current_node.max_children_per_row == 0 or (i + 1) == len(children):
-        self._buttons.append(BreakButtonNode())
+        self.register_button(BreakButtonNode())
 
     if self._current_node.add_cancel_button:
-      self._buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
+      self.register_button(ButtonNode("Cancel"), self._handle_cancel)
 
-  def _handle_step(self, navigator: TelebotPageNavigator, node: ButtonNode):
+  async def _handle_step(self, navigator: TelebotPageNavigator, node: ButtonNode):
     if not isinstance(node, SequentialChoiceButton):
-      return
+      raise ValueError("Button type should be SequentialChoiceButton")
 
     self._results.append(node)
 
-    if not node.children:
+    if not node.children and not self._result_future.done():
       # End of the tree reached
+      self._result_future.set_result(self._results)
       navigator.stop(self._text)
-      self._final_callback(self._chat_id, self._results)
     else:
       # Move deeper and refresh the current message
       self._current_node = node
-      navigator.update()
+      await navigator.update()
 
-  def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(f"{self._text} cancel")
 
-  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+  async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     text_lower = text.lower()
     for child in self._current_node.children:
       try:
         if int(child.text) == int(text):
-          self._handle_step(navigator, child)
+          await self._handle_step(navigator, child)
           return
       except Exception:
         if child.text.lower() == text_lower:
-          self._handle_step(navigator, child)
+          await self._handle_step(navigator, child)
           return
 
     raise RuntimeError("No such option")
+
+  def on_stop(self):
+    if not self._result_future.done():
+      self._result_future.cancel()
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._text} cancel"

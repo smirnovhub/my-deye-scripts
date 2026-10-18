@@ -75,24 +75,22 @@ class TelebotLocalUpdateCheckerAsync:
         ButtonNode(text = 'No, restart later'),
       ]
 
-      def on_choice(chat_id: int, button: ButtonNode):
-        if "yes" in button.text.lower():
-          self._ask_for_restart(bot, chat_id)
-        else:
-          bot.send_message(chat_id, 'Restart cancelled')
-          if message is not None:
-            bot.process_new_messages([message])
-
-      UserChoices.ask_choice(
+      button = await UserChoices.ask_choice(
         bot = bot,
         chat_id = chat_id,
         text = 'The local repository has changed. '
         'For the changes to take effect, need to restart the bot. '
         '<b>Do you want to restart it now?</b>',
         options = options,
-        callback = on_choice,
         accept_wrong_choice_from_user_input = True,
       )
+
+      if "yes" in button.text.lower():
+        self._ask_for_restart(bot, chat_id)
+      else:
+        bot.send_message(chat_id, 'Restart cancelled')
+        if message is not None:
+          bot.process_new_messages([message])
 
       return True
 

@@ -14,10 +14,7 @@ class ButtonNode:
     self._data = data
     self._style = style
     self._key = key
-
-    # Generate a stable ID based on text, data, style and key to persist across page updates
-    raw_id = f"{text}:{data}:{style}:{key}".encode("utf-8")
-    self._id = hashlib.md5(raw_id).hexdigest()[:10]
+    self._id = self._get_id()
 
   @property
   def text(self) -> str:
@@ -38,3 +35,12 @@ class ButtonNode:
   @property
   def id(self) -> str:
     return self._id
+
+  def set_key(self, key: str) -> None:
+    self._key = key
+    self._id = self._get_id()
+
+  def _get_id(self) -> str:
+    # Generate a stable ID based on text, data, style and key to persist across page updates
+    raw_id = f"{self._text}:{self._data}:{self._style}:{self._key}".encode("utf-8")
+    return hashlib.md5(raw_id).hexdigest()[:10]

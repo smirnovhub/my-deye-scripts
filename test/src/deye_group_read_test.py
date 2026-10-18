@@ -100,7 +100,10 @@ async def main_test_logic(
         pass
       output = buffer.getvalue().strip()
 
-    log.info(f'Command output: {output}')
+    log.info(f'Command output:')
+
+    for line in output.splitlines():
+      log.info(line)
 
     if 'exception' in output or 'error' in output:
       log.error('An exception occurred.')
