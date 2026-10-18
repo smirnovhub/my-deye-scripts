@@ -121,7 +121,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
 
     self.bot.send_message(chat_id, result)
 
-    res = UserChoices.ask_confirmation(
+    res = await UserChoices.ask_confirmation(
       self.bot,
       chat_id,
       'Revert completed. For the changes to take effect, need to restart the bot. '
@@ -132,18 +132,21 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
       self.bot.send_message(chat_id, 'Restart cancelled')
       return
 
-    CountdownWithCancel.show_countdown(
+    res = await CountdownWithCancel.show_countdown(
       bot = self.bot,
       chat_id = chat_id,
       text = 'Will restart in: ',
       seconds = 5,
-      on_finish = self.on_finish,
-      on_cancel = self.on_cancel,
     )
 
-  def on_finish(self, chat_id: int):
-    self.bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
-    TelebotUtils.stop_bot()
-
-  def on_cancel(self, chat_id: int):
-    self.bot.send_message(chat_id, 'Restart cancelled')
+    if res:
+      self.bot.send_message(
+        chat_id,
+        f'{CommonUtils.clock_face_one_oclock} Restarting telebot...',
+      )
+      TelebotUtils.stop_bot()
+    else:
+      self.bot.send_message(
+        chat_id,
+        'Restart cancelled',
+      )

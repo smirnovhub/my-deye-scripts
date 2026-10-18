@@ -32,21 +32,25 @@ class TelebotMenuRestart(TelebotMenuItemHandlerAsync):
       'for automatic restart. <b>Do you really want to kill bot process?</b>',
     )
 
-    if result:
-      CountdownWithCancel.show_countdown(
-        bot = self.bot,
-        chat_id = message.chat.id,
-        text = 'Will restart in: ',
-        seconds = 5,
-        on_finish = self._on_finish,
-        on_cancel = self._on_cancel,
-      )
-    else:
+    if not result:
       self.bot.send_message(message.chat.id, 'Restart cancelled')
+      return
 
-  def _on_finish(self, chat_id: int):
-    self.bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
-    TelebotUtils.stop_bot()
+    result = await CountdownWithCancel.show_countdown(
+      bot = self.bot,
+      chat_id = message.chat.id,
+      text = 'Will restart in: ',
+      seconds = 5,
+    )
 
-  def _on_cancel(self, chat_id: int):
-    self.bot.send_message(chat_id, 'Restart cancelled')
+    if result:
+      self.bot.send_message(
+        message.chat.id,
+        f'{CommonUtils.clock_face_one_oclock} Restarting telebot...',
+      )
+      TelebotUtils.stop_bot()
+    else:
+      self.bot.send_message(
+        message.chat.id,
+        'Restart cancelled',
+      )
