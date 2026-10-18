@@ -118,6 +118,9 @@ def main():
       logger = logger,
     )
 
+    future = runner.run(mybot.update_last_commit_hash())
+    future.result()
+
     bot.infinity_polling()
   except Exception as e:
     if not EnvUtils.is_tests_on():
