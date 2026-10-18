@@ -41,12 +41,23 @@ class TelebotProgressMessage:
     self._text = text
 
     self._running = True
+
     # Send initial message
-    self._message = self._bot.send_message(self._chat_id, self._text, parse_mode = 'HTML')
+    self._message = self._bot.send_message(
+      chat_id = self._chat_id,
+      text = self._text,
+      parse_mode = 'HTML',
+    )
+
     # Start animation thread
-    thread = threading.Thread(target = self._animate, daemon = True)
+    thread = threading.Thread(
+      target = self._animate,
+      daemon = True,
+    )
+
     self._threads.append(thread)
     thread.start()
+
     # Register next step handler
     self._bot.clear_step_handler_by_chat_id(self._message.chat.id)
     self._bot.register_next_step_handler(self._message, self._on_user_response)
@@ -65,14 +76,24 @@ class TelebotProgressMessage:
       try:
         time.sleep(0.5)
         text: str = self._text + ("." * dots)
-        self._bot.edit_message_text(text, self._chat_id, self._message.message_id, parse_mode = 'HTML')
+        self._bot.edit_message_text(
+          text = text,
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          parse_mode = 'HTML',
+        )
         dots = (dots + 1) % 4
         count += 1
       except Exception:
         pass
 
     try:
-      self._bot.edit_message_text(f'{self._text}...', self._chat_id, self._message.message_id, parse_mode = 'HTML')
+      self._bot.edit_message_text(
+        text = f'{self._text}...',
+        chat_id = self._chat_id,
+        message_id = self._message.message_id,
+        parse_mode = 'HTML',
+      )
     except Exception:
       pass
 
@@ -100,7 +121,10 @@ class TelebotProgressMessage:
 
     try:
       if self._chat_id is not None and self._message is not None:
-        self._bot.delete_message(self._chat_id, self._message.message_id)
+        self._bot.delete_message(
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+        )
     except Exception:
       pass
 

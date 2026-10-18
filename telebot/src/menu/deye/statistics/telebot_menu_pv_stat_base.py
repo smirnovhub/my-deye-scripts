@@ -2,7 +2,6 @@ import telebot
 
 from http import HTTPStatus
 from urllib.parse import urljoin
-from telebot import types
 from typing import List, cast
 from datetime import date
 
@@ -55,10 +54,10 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       )
       return
 
-    CommandChoice.ask_rich_command_choice(
+    CommandChoice.ask_command_choice(
       bot = self.bot,
       chat_id = message.chat.id,
-      rich_message = types.InputRichMessage(blocks = table),
+      text = telebot.types.InputRichMessage(blocks = table),
       options = choices,
       max_per_row = 2,
     )
@@ -67,7 +66,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     self,
     today: date,
     period: StatisticsPeriod,
-  ) -> List[types.InputRichBlock]:
+  ) -> List[telebot.types.InputRichBlock]:
     period_date = period.get_date_suffix(today)
     server_url = EnvUtils.get_remote_cache_server_url()
     session = await HttpSessionSingletonAsync.get_session()
@@ -124,11 +123,22 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
 
     if total_production > 0:
       total_percent = 100
-      master_pv1_percent = (master_pv1 / total_production) * 100
-      master_pv2_percent = (master_pv2 / total_production) * 100
-      slave_pv1_percent = (slave_pv1 / total_production) * 100
-      master_gen_percent = (master_gen / total_production) * 100
-      master_pv2_and_master_gen_percent = ((master_pv2 + master_gen) / total_production) * 100
+
+      if master_pv1 > 0:
+        master_pv1_percent = (master_stats.production_pv1 / total_production) * 100
+
+      if master_pv2 > 0:
+        master_pv2_percent = (master_stats.production_pv2 / total_production) * 100
+
+      if slave_pv1 > 0:
+        slave_pv1_percent = (slave_stats.production_pv1 / total_production) * 100
+
+      if master_gen > 0:
+        master_gen_percent = (master_stats.gen_energy / total_production) * 100
+
+      if master_pv2_and_master_gen > 0:
+        master_pv2_and_master_gen_percent = (
+          (master_stats.production_pv2 + master_stats.gen_energy) / total_production) * 100
 
     rows = [
       ("Value", "kWh", "Percent"),
@@ -151,12 +161,12 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     ) for column, value in enumerate(row_data)] for row, row_data in enumerate(rows)]
 
     return [
-      types.InputRichBlockParagraph(
-        types.RichTextBold(cast(
-          types.RichText,
+      telebot.types.InputRichBlockParagraph(
+        telebot.types.RichTextBold(cast(
+          telebot.types.RichText,
           f"Statistics for {period.description.lower()} {period_date}:",
         ))),
-      types.InputRichBlockTable(
+      telebot.types.InputRichBlockTable(
         cells = cells,
         is_bordered = True,
         is_striped = False,
@@ -169,9 +179,9 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     value: str,
     row: int,
     column: int,
-  ) -> types.RichBlockTableCell:
-    return types.RichBlockTableCell(
-      text = cast(types.RichText, value),
+  ) -> telebot.types.RichBlockTableCell:
+    return telebot.types.RichBlockTableCell(
+      text = cast(telebot.types.RichText, value),
       align = ("center" if row == 0 else "left" if column == 0 else "right"),
       valign = "middle",
       is_header = row == 0,

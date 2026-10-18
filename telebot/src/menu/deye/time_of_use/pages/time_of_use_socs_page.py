@@ -1,5 +1,7 @@
+import telebot
+
 from enum import Enum
-from typing import Any, List
+from typing import Any, List, Union
 
 from button_node import ButtonNode
 from time_of_use_data import TimeOfUseSocs
@@ -34,14 +36,22 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     return TimeOfUsePage.socs
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Battery SOC, %:"
 
   @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
 
-  def prepare(self, **kwargs: Any):
+  @property
+  def need_user_input(self) -> bool:
+    return True
+
+  def on_navigate(
+    self,
+    navigator: TelebotPageNavigator,
+    **kwargs: Any,
+  ) -> None:
     index = kwargs.get("time_of_use_line_index")
     if index is None:
       raise RuntimeError("time_of_use_line_index not found")

@@ -1,5 +1,7 @@
+import telebot
+
 from enum import Enum, auto
-from typing import Callable, List
+from typing import Callable, List, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -31,12 +33,16 @@ class SequentialChoicePage(TelebotNavigationPage):
     return SequentialChoicePageType.main
 
   @property
-  def text(self) -> str:
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return self._text
 
   @property
   def buttons(self) -> List[ButtonNode]:
     return self._buttons
+
+  @property
+  def need_user_input(self) -> bool:
+    return True
 
   def update(self) -> None:
     self._buttons = []
@@ -85,5 +91,5 @@ class SequentialChoicePage(TelebotNavigationPage):
 
     raise RuntimeError("No such option")
 
-  def get_goodbye_message(self) -> str:
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._text} cancel"

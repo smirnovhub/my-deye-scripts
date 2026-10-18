@@ -40,6 +40,7 @@ class EnvUtils:
   MIKROTIK_SERVER_URL = "MIKROTIK_SERVER_URL"
 
   SCHEDULER_SERVER_URL = "SCHEDULER_SERVER_URL"
+  SCHEDULER_SERVER_WEBSOCKET_URL = "SCHEDULER_SERVER_WEBSOCKET_URL"
 
   TELEGRAM_BOT_API_TOKEN = "TELEGRAM_BOT_API_TOKEN"
   TELEGRAM_BOT_API_TEST_TOKEN = "TELEGRAM_BOT_API_TEST_TOKEN"
@@ -137,6 +138,10 @@ class EnvUtils:
   @staticmethod
   def get_scheduler_server_url() -> str:
     return os.getenv(EnvUtils.SCHEDULER_SERVER_URL, '').strip()
+
+  @staticmethod
+  def get_scheduler_server_websocket_url() -> str:
+    return os.getenv(EnvUtils.SCHEDULER_SERVER_WEBSOCKET_URL, '').strip()
 
   @staticmethod
   def get_telegram_bot_api_token() -> str:

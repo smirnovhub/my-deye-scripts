@@ -33,9 +33,14 @@ class BlackoutScheduledEvent(DataClassJSONMixin):
   # Event data/time in format 2026-03-16 23:15:47
   date: datetime
   # Any arbitrary event name for visual representation
-  name: str = ""
+  name: str
   # Action name of event (turn off grid, stop charging, move to battery, etc.)
-  action: BlackoutAction = BlackoutAction.empty
+  action: BlackoutAction
+
+  @property
+  def date_str(self) -> str:
+    # Format datetime to string without seconds
+    return self.date.strftime('%Y-%m-%d %H:%M')
 
   class Config(BaseConfig):
     # Apply strategies to specific types in this class

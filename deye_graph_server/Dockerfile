@@ -25,7 +25,7 @@ RUN apt-get update && \
   echo $TIMEZONE > /etc/timezone
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages fastapi uvicorn \
+RUN pip install --no-cache-dir --break-system-packages aiohttp fastapi uvicorn \
   uvloop pandas matplotlib mashumaro
 
 # Create user without password, with home directory
