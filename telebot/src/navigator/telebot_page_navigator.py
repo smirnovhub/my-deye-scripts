@@ -217,10 +217,10 @@ class TelebotPageNavigator:
       except Exception:
         pass
 
-  async def add_delayed_update(
+  async def add_delayed_action(
     self,
     delay: float,
-    action: Optional[Callable[[], Awaitable[Any]]],
+    action: Callable[[], Awaitable[Any]],
   ) -> None:
     """
     Schedules a delayed update or custom async action using the event loop.
@@ -541,6 +541,9 @@ class TelebotPageNavigator:
       raise RuntimeError("Navigation has not started yet")
 
     async def step_worker():
+      if not self._main_page or not self._current_page:
+        raise RuntimeError("Navigation has not started yet")
+
       if TelebotUtils.forward_next(self._bot, message):
         text = self._main_page.get_goodbye_message()
         self.stop(text)
