@@ -1,4 +1,3 @@
-import re
 import logging
 import traceback
 import telebot
@@ -20,17 +19,12 @@ if TYPE_CHECKING:
 class TelebotPageNavigator:
   """
   Manager class that handles navigation between different pages in a Telegram bot.
-  Maintains session state, instances, and global callback routing with native async support.
+  Maintains session state, instances mapped by chat_id, and global callback routing with native async support.
   """
-  _counter: int = 0
   _lock_threading = threading.Lock()
   _navigator_data_prefix = "_nav_"
-  _free_ids: List[int] = []
   _instances: Dict[int, "TelebotPageNavigator"] = {}
   _handlers_registered: bool = False
-
-  _prefix_pattern = re.compile(rf"^{_navigator_data_prefix}(\d+)_(.+)")
-  _prefix_template = f"{_navigator_data_prefix}{{0}}_"
 
   def __init__(
     self,
@@ -60,14 +54,6 @@ class TelebotPageNavigator:
     self._lock = AsyncRLock()
 
     with TelebotPageNavigator._lock_threading:
-      if TelebotPageNavigator._free_ids:
-        self._id = TelebotPageNavigator._free_ids.pop()
-      else:
-        TelebotPageNavigator._counter += 1
-        self._id = TelebotPageNavigator._counter
-
-      TelebotPageNavigator._instances[self._id] = self
-
       if not TelebotPageNavigator._handlers_registered:
         TelebotPageNavigator._register_handlers(self._bot)
         TelebotPageNavigator._handlers_registered = True
@@ -94,6 +80,19 @@ class TelebotPageNavigator:
     page: "TelebotNavigationPage",
     chat_id: int,
   ) -> telebot.types.Message:
+    # Retrieve and stop the previous navigator for this chat before registering the new one
+    with TelebotPageNavigator._lock_threading:
+      old_nav = TelebotPageNavigator._instances.get(chat_id)
+
+    if old_nav and old_nav != self:
+      try:
+        old_nav.stop()
+      except Exception as e:
+        self._logger.error(f"Error stopping previous navigator for chat {chat_id}: {e}")
+
+    with TelebotPageNavigator._lock_threading:
+      TelebotPageNavigator._instances[chat_id] = self
+
     self._main_page = page
     self._current_page = page
     self._chat_id = chat_id
@@ -109,7 +108,7 @@ class TelebotPageNavigator:
 
       keyboard = TelebotUtils.get_keyboard_for_buttons(
         buttons = page.buttons,
-        data_prefix = TelebotPageNavigator._prefix_template.format(self._id),
+        data_prefix = TelebotPageNavigator._navigator_data_prefix,
       )
 
       self._markup = keyboard
@@ -192,7 +191,7 @@ class TelebotPageNavigator:
 
       keyboard = TelebotUtils.get_keyboard_for_buttons(
         buttons = self._current_page.buttons,
-        data_prefix = TelebotPageNavigator._prefix_template.format(self._id),
+        data_prefix = TelebotPageNavigator._navigator_data_prefix,
       )
 
       self._markup = keyboard
@@ -395,7 +394,11 @@ class TelebotPageNavigator:
 
     return self._message
 
-  def stop(self, text: Optional[Union[str, telebot.types.InputRichMessage]] = None) -> None:
+  def stop(
+    self,
+    text: Optional[Union[str, telebot.types.InputRichMessage]] = None,
+    delete_message: bool = False,
+  ) -> None:
     with self._lock_threading:
       tasks_to_cancel = list(self._delayed_tasks)
       self._delayed_tasks.clear()
@@ -415,12 +418,20 @@ class TelebotPageNavigator:
       auto_update_task.cancel()
 
     if not self._current_page or not self._message or not self._chat_id:
+      with TelebotPageNavigator._lock_threading:
+        if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
+          del TelebotPageNavigator._instances[self._chat_id]
       raise RuntimeError("Navigation has not started yet")
 
     self._current_page.on_stop()
 
     try:
-      if isinstance(text, str) and text:
+      if delete_message:
+        self._bot.delete_message(
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+        )
+      elif isinstance(text, str) and text:
         self._bot.edit_message_text(
           text,
           chat_id = self._chat_id,
@@ -445,15 +456,12 @@ class TelebotPageNavigator:
       pass
 
     with TelebotPageNavigator._lock_threading:
-      if self._id in TelebotPageNavigator._instances:
-        del TelebotPageNavigator._instances[self._id]
-        TelebotPageNavigator._free_ids.append(self._id)
-
-      exists = any(nav.chat_id == self._chat_id for nav in self._instances.values())
-      if not exists:
+      if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
+        del TelebotPageNavigator._instances[self._chat_id]
+      if self._chat_id:
         self._bot.clear_step_handler_by_chat_id(self._chat_id)
 
-    self._id = -1
+    self._chat_id = None
     self._message = None
     self._current_page = None
     self._main_page = None
@@ -496,37 +504,35 @@ class TelebotPageNavigator:
   def _register_handlers(bot: telebot.TeleBot):
     @bot.middleware_handler(update_types = ['callback_query'])
     def handle_callback(bot: telebot.TeleBot, call: telebot.types.CallbackQuery):
-      if not call.data:
+      if not call.data or not call.message:
         return
 
       button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data)
       if not button or not button.callback_data or not button.callback_data.startswith("/"):
         return
 
+      chat_id = call.message.chat.id
       with TelebotPageNavigator._lock_threading:
-        navigators = [inst for inst in TelebotPageNavigator._instances.values() if inst.chat_id == call.message.chat.id]
+        instance = TelebotPageNavigator._instances.get(chat_id)
 
-      for nav in navigators:
-        nav._on_command_button_clicked(button.callback_data)
+      if instance:
+        instance._on_command_button_clicked(button.callback_data)
 
-    @bot.callback_query_handler(func = lambda call: call.data.startswith(TelebotPageNavigator._navigator_data_prefix))
+    @bot.callback_query_handler(
+      func = lambda call: call.data and call.data.startswith(TelebotPageNavigator._navigator_data_prefix))
     def _global_nav_handler(call: telebot.types.CallbackQuery):
-      if not call.data:
+      if not call.data or not call.message:
         return
 
       bot.answer_callback_query(call.id)
 
-      match = TelebotPageNavigator._prefix_pattern.match(call.data)
-      if not match:
-        return
-
-      navigator_id = int(match.group(1))
+      button_id = call.data[len(TelebotPageNavigator._navigator_data_prefix):]
+      chat_id = call.message.chat.id
 
       with TelebotPageNavigator._lock_threading:
-        instance = TelebotPageNavigator._instances.get(navigator_id)
+        instance = TelebotPageNavigator._instances.get(chat_id)
 
       if instance:
-        button_id = match.group(2)
         asyncio.run_coroutine_threadsafe(
           instance._handle_callback(button_id = button_id),
           instance._loop,
