@@ -107,6 +107,17 @@ async def main():
       await mybot.initialize()
       await mybot.run_tests()
 
+      try:
+        await HttpSessionSingletonAsync.close_session()
+      except Exception:
+        logger.error("Failed to close async session", exc_info = True)
+
+      for handler in logging.getLogger().handlers:
+        handler.flush()
+
+      sys.stdout.flush()
+      sys.stderr.flush()
+
       sys.exit(0)
 
     await TelegramAsync.send_private_telegram_message(
