@@ -3,7 +3,7 @@ import re
 import telebot
 
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
@@ -43,39 +43,30 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Select inverter:"
 
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
-
-  def update(self) -> None:
-    buttons: List[ButtonNode] = []
-
+  def create_buttons(self) -> None:
     allowed_inverters = [inv for inv in self._provider.inverters if self._is_inverter_allowed(inv.inverter)]
 
     for index, inverter in enumerate(allowed_inverters):
       if index > 0 and (index % 2) == 0:
-        buttons.append(BreakButtonNode())
+        self.register_button(BreakButtonNode())
 
-      buttons.append(
-        self.register_button_handler(
-          ButtonNode(inverter.inverter.title()),
-          self._create_navigation_handler(inverter = inverter.inverter),
-        ))
+      self.register_button(
+        ButtonNode(inverter.inverter.title()),
+        self._create_navigation_handler(inverter = inverter.inverter),
+      )
 
-    buttons.append(BreakButtonNode())
-    buttons.append(self.register_button_handler(ButtonNode("Full report"), self._handle_full_report))
-    buttons.append(BreakButtonNode())
-    buttons.append(self.register_button_handler(ButtonNode("Raw data"), self._handle_raw_data))
-    buttons.append(BreakButtonNode())
-    buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
-    buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
-
-    self._buttons = buttons
+    self.register_button(BreakButtonNode())
+    self.register_button(ButtonNode("Full report"), self._handle_full_report)
+    self.register_button(BreakButtonNode())
+    self.register_button(ButtonNode("Raw data"), self._handle_raw_data)
+    self.register_button(BreakButtonNode())
+    self.register_button(ButtonNode("Back"), self._handle_back)
+    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._title} cancel"
 
-  def _handle_full_report(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_full_report(self, navigator: TelebotPageNavigator) -> None:
     bot = navigator.bot
     chat_id = navigator.chat_id
 
@@ -94,20 +85,27 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       navigator.stop(f"{self._title} full report")
 
       selected_date = self._provider.selected_date
-      data_file = self._provider.get_graph_data(
+      data_file = await self._provider.get_graph_data(
         graph_date = selected_date,
         format = "pdf",
       )
 
       # Send the file as a document
-      bot.send_document(chat_id = chat_id, document = data_file)
+      bot.send_document(
+        chat_id = chat_id,
+        document = data_file,
+      )
     except Exception as e:
-      bot.send_message(chat_id = chat_id, text = str(e))
+      self._logger.error(f"Error: {e}", exc_info = e)
+      bot.send_message(
+        chat_id = chat_id,
+        text = f"Error: {e}",
+      )
     finally:
       self._release_lock()
       progress.hide()
 
-  def _handle_raw_data(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_raw_data(self, navigator: TelebotPageNavigator) -> None:
     chat_id = navigator.chat_id
     bot = navigator.bot
 
@@ -119,26 +117,32 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
 
     try:
       selected_date = self._provider.selected_date
-      data_file = self._provider.get_graph_data(
+      data_file = await self._provider.get_graph_data(
         graph_date = selected_date,
         format = "csv",
       )
 
       # Send the file as a document
-      bot.send_document(chat_id = chat_id, document = data_file)
+      bot.send_document(
+        chat_id = chat_id,
+        document = data_file,
+      )
     except Exception as e:
-      bot.send_message(chat_id = chat_id, text = str(e))
+      bot.send_message(
+        chat_id = chat_id,
+        text = str(e),
+      )
 
-  def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    navigator.navigate(DeyeGraphsPage.main)
+  async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
+    await navigator.navigate(DeyeGraphsPage.main)
 
-  def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(f"{self._title} cancel")
 
   def _create_navigation_handler(self, inverter: str):
-    def handler(navigator: TelebotPageNavigator) -> None:
+    async def handler(navigator: TelebotPageNavigator) -> None:
       self._provider.set_selected_inverter(inverter)
-      navigator.navigate(DeyeGraphsPage.group)
+      await navigator.navigate(DeyeGraphsPage.group)
 
     return handler
 

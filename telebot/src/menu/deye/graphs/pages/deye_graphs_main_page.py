@@ -1,7 +1,7 @@
 import telebot
 
 from enum import Enum
-from typing import List, Union
+from typing import Union
 from datetime import date, timedelta
 
 from button_node import ButtonNode
@@ -29,46 +29,36 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Select graph date:"
 
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
-
-  def update(self) -> None:
-    buttons: List[ButtonNode] = []
-
-    today_buttons: List[ButtonNode] = []
+  def create_buttons(self) -> None:
     today = date.today()
     yesterday = today - timedelta(days = 1)
 
     if today in self._provider.dates:
-      today_buttons.append(
-        self.register_button_handler(
-          ButtonNode("Today"),
-          self._create_navigation_handler(
-            target_page = DeyeGraphsPage.inverter,
-            graph_date = today,
-          ),
-        ))
+      self.register_button(
+        ButtonNode("Today"),
+        self._create_navigation_handler(
+          target_page = DeyeGraphsPage.inverter,
+          graph_date = today,
+        ),
+      )
 
     if yesterday in self._provider.dates:
-      today_buttons.append(
-        self.register_button_handler(
-          ButtonNode("Yesterday"),
-          self._create_navigation_handler(
-            target_page = DeyeGraphsPage.inverter,
-            graph_date = yesterday,
-          ),
-        ))
+      self.register_button(
+        ButtonNode("Yesterday"),
+        self._create_navigation_handler(
+          target_page = DeyeGraphsPage.inverter,
+          graph_date = yesterday,
+        ),
+      )
 
-    if today_buttons:
-      buttons.extend(today_buttons)
-      buttons.append(BreakButtonNode())
+    if today in self._provider.dates or yesterday in self._provider.dates:
+      self.register_button(BreakButtonNode())
 
     # for index, graph_date in enumerate(self._provider.dates):
     #   if (index % 2) == 0:
-    #     buttons.append(BreakButtonNode())
+    #     self.register_button(BreakButtonNode())
 
-    #   buttons.append(
+    #   self.register_button(
     #     self.register_button_handler(
     #       ButtonNode(graph_date.isoformat()),
     #       self._create_navigation_handler(
@@ -77,21 +67,19 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
     #       ),
     #     ))
 
-    # buttons.append(BreakButtonNode())
-    buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
-
-    self._buttons = buttons
+    # self.register_button(BreakButtonNode())
+    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._title} cancel"
 
-  def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(f"{self._title} cancel")
 
   def _create_navigation_handler(self, target_page: Enum, graph_date: date):
-    def handler(navigator: TelebotPageNavigator) -> None:
+    async def handler(navigator: TelebotPageNavigator) -> None:
       self._provider.set_selected_date(graph_date)
-      self._provider.load_graph_inverters(graph_date)
-      navigator.navigate(target_page)
+      await self._provider.load_graph_inverters(graph_date)
+      await navigator.navigate(target_page)
 
     return handler

@@ -62,7 +62,10 @@ def main():
       )
 
       output = result.stdout.strip() + '\n' + result.stderr.strip()
-      log.info(f'Command output: {output}')
+      log.info(f'Command output:')
+
+      for line in output.splitlines():
+        log.info(line)
 
       if result.returncode != 0:
         log.error(f'Command returned non-zero exit code: {result.returncode}. Test failed.')

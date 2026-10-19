@@ -15,13 +15,11 @@ from telebot_base_handler import TelebotBaseHandler
 from telebot_auth_helper import TelebotAuthHelper
 from telebot_menu_item import TelebotMenuItem
 from telebot_logging_handler import TelebotLoggingHandler
-from telebot_menu_start import TelebotMenuStart
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_menu_all_info import TelebotMenuAllInfo
 from telebot_menu_graphs import TelebotMenuGraphs
 from telebot_menu_sync_time import TelebotMenuSyncTime
 from telebot_menu_restart import TelebotMenuRestart
-from telebot_local_update_checker import TelebotLocalUpdateChecker
 from telebot_menu_master_info import TelebotMenuMasterInfo
 from telebot_menu_slave_info import TelebotMenuSlaveInfo
 from telebot_menu_all_today_stat import TelebotMenuAllTodayStat
@@ -39,6 +37,7 @@ from telebot_menu_cache import TelebotMenuCache
 from telebot_menu_revert import TelebotMenuRevert
 from telebot_menu_update import TelebotMenuUpdate
 from telebot_menu_test import TelebotMenuTest
+from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
 from telebot_menu_battery_settings import TelebotMenuBatterySettings
 from telebot_menu_battery_forecast_by_percent import TelebotMenuBatteryForecastByPercent
 from telebot_menu_battery_forecast_by_time import TelebotMenuBatteryForecastByTime
@@ -57,7 +56,7 @@ class MyTelebot:
     self.users = TelebotUsers()
     self.loggers = DeyeLoggers()
     self.auth_helper = TelebotAuthHelper()
-    self.update_checker = TelebotLocalUpdateChecker()
+    self.update_checker = TelebotLocalUpdateCheckerAsync()
     self.logger = logger
     self.admin_user_id = EnvUtils.get_telegram_admin_user_id()
 
@@ -75,15 +74,6 @@ class MyTelebot:
     print_commands(bot, telebot.types.BotCommandScopeAllGroupChats(), "AllGroupChats")
     print_commands(bot, telebot.types.BotCommandScopeAllChatAdministrators(), "AllChatAdministrators")
 
-    try:
-      # Save the current commit hash when the bot starts
-      # This ensures that future checks can detect local repository changes
-      self.update_checker.update_last_commit_hash()
-    except Exception as e:
-      message = f'Error while updating last commit hash: {str(e)}'
-      self.logger.info(message)
-      Telegram.send_private_telegram_message(message)
-
     # Register common handlers
     for handler in self.get_common_handlers(bot):
       handler.register_handlers()
@@ -93,7 +83,7 @@ class MyTelebot:
     authorized_menu_items.extend(self.get_writable_registers_menu_items(bot = bot, runner = runner))
 
     # unknown command handler should be always last
-    authorized_menu_items.append(TelebotMenuUnknownCommandHandler(bot))
+    authorized_menu_items.append(TelebotMenuUnknownCommandHandler(bot, runner = runner))
 
     default_commands: List[telebot.types.BotCommand] = []
 
@@ -169,9 +159,7 @@ class MyTelebot:
     ]
 
   def get_default_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
-    return [
-      TelebotMenuStart(bot),
-    ]
+    return []
 
   def get_authorized_menu_items(
     self,
@@ -190,18 +178,18 @@ class MyTelebot:
       TelebotMenuSlaveTotalStat(bot, runner),
       TelebotMenuAllSettings(bot, runner),
       TelebotMenuMasterSettings(bot, runner),
-      TelebotMenuGraphs(bot),
+      TelebotMenuGraphs(bot, runner),
       TelebotMenuTimeOfUse(bot, runner),
       TelebotMenuBatterySettings(bot, runner),
       TelebotMenuBatteryForecast(bot, runner),
       TelebotMenuBatteryForecastByPercent(bot, runner),
       TelebotMenuBatteryForecastByTime(bot, runner),
       TelebotMenuSyncTime(bot, runner),
-      TelebotMenuRestart(bot),
+      TelebotMenuRestart(bot, runner),
       TelebotMenuRevert(bot, runner),
       TelebotMenuCache(bot, runner),
       TelebotMenuUpdate(bot, runner),
-      TelebotMenuTest(bot),
+      TelebotMenuTest(bot, runner),
     ]
 
   def get_writable_registers_menu_items(
@@ -212,6 +200,16 @@ class MyTelebot:
     return [
       TelebotMenuWritableRegisters(bot, runner),
     ]
+
+  async def update_last_commit_hash(self):
+    try:
+      # Save the current commit hash when the bot starts
+      # This ensures that future checks can detect local repository changes
+      await self.update_checker.update_last_commit_hash()
+    except Exception as e:
+      message = f'Error while updating last commit hash: {str(e)}'
+      self.logger.info(message)
+      Telegram.send_private_telegram_message(message)
 
   async def run_tests(self):
     if not isinstance(self.bot, TestableTelebot):

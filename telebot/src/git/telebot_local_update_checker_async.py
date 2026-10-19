@@ -75,24 +75,22 @@ class TelebotLocalUpdateCheckerAsync:
         ButtonNode(text = 'No, restart later'),
       ]
 
-      def on_choice(chat_id: int, button: ButtonNode):
-        if "yes" in button.text.lower():
-          self._ask_for_restart(bot, chat_id)
-        else:
-          bot.send_message(chat_id, 'Restart cancelled')
-          if message is not None:
-            bot.process_new_messages([message])
-
-      UserChoices.ask_choice(
+      button = await UserChoices.ask_choice(
         bot = bot,
         chat_id = chat_id,
         text = 'The local repository has changed. '
         'For the changes to take effect, need to restart the bot. '
         '<b>Do you want to restart it now?</b>',
         options = options,
-        callback = on_choice,
         accept_wrong_choice_from_user_input = True,
       )
+
+      if "yes" in button.text.lower():
+        await self._ask_for_restart(bot, chat_id)
+      else:
+        bot.send_message(chat_id, 'Restart cancelled')
+        if message is not None:
+          bot.process_new_messages([message])
 
       return True
 
@@ -105,7 +103,7 @@ class TelebotLocalUpdateCheckerAsync:
     hash = await self._git_helper.get_last_commit_hash()
     await self._save_last_commit_hash(hash)
 
-  def _ask_for_restart(self, bot: telebot.TeleBot, chat_id: int):
+  async def _ask_for_restart(self, bot: telebot.TeleBot, chat_id: int):
     """
     Prompt the user with a countdown and restart the bot automatically.
 
@@ -113,21 +111,24 @@ class TelebotLocalUpdateCheckerAsync:
         bot (telebot.TeleBot): The Telebot instance for sending messages.
         chat_id (int): The Telegram chat ID to send messages to.
     """
-    def on_finish(chat_id: int):
-      bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
-      TelebotUtils.stop_bot()
-
-    def on_cancel(chat_id: int):
-      bot.send_message(chat_id, 'Restart cancelled')
-
-    CountdownWithCancel.show_countdown(
+    result = await CountdownWithCancel.show_countdown(
       bot = bot,
       chat_id = chat_id,
       text = 'Will restart in: ',
       seconds = 5,
-      on_finish = on_finish,
-      on_cancel = on_cancel,
     )
+
+    if result:
+      bot.send_message(
+        chat_id,
+        f'{CommonUtils.clock_face_one_oclock} Restarting telebot...',
+      )
+      TelebotUtils.stop_bot()
+    else:
+      bot.send_message(
+        chat_id,
+        'Restart cancelled',
+      )
 
   async def _is_local_repository_changed(self) -> bool:
     """

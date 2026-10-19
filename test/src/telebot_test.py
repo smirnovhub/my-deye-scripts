@@ -66,7 +66,10 @@ result = subprocess.run(
 )
 
 output = result.stdout.strip() + '\n' + result.stderr.strip()
-log.info(f'Command output: {output}')
+log.info(f'Command output:')
+
+for line in output.splitlines():
+  log.info(line)
 
 str_to_find = DeyeTestHelper.test_success_str.lower()
 

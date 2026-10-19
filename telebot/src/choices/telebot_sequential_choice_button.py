@@ -7,6 +7,7 @@ class SequentialChoiceButton(ButtonNode):
     self,
     text: str,
     data: str = "",
+    key: str = "",
     add_cancel_button = False,
     max_children_per_row: int = 3,
     children: Optional[List["SequentialChoiceButton"]] = None,
@@ -14,6 +15,7 @@ class SequentialChoiceButton(ButtonNode):
     super().__init__(
       text = text,
       data = data,
+      key = key,
     )
 
     self._add_cancel_button = add_cancel_button

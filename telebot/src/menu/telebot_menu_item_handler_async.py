@@ -1,9 +1,6 @@
 import telebot
 import traceback
 
-from typing import Any, Coroutine
-from concurrent.futures import Future
-
 from deye_exceptions import DeyeKnownException
 from telebot_async_runner import TelebotAsyncRunner
 from telebot_menu_item_handler import TelebotMenuItemHandler
@@ -103,6 +100,3 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
       self.logger.info(f'Error while checking for updates: {str(e)}')
 
     return False
-
-  def run_async(self, coro: Coroutine[Any, Any, Any]) -> Future:
-    return self._runner.run(coro)

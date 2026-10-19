@@ -1,6 +1,5 @@
 import copy
 
-from typing import List
 from dataclasses import asdict
 
 from button_node import ButtonNode
@@ -18,12 +17,10 @@ from time_of_use_times import TimeOfUseTimes
 class TimeOfUseBottomButtons:
   def __init__(
     self,
-    page: TelebotNavigationPage,
     tou_register: DeyeRegister,
     tou_data: TimeOfUseData,
     tou_original_data: TimeOfUseData,
     ask_data: TimeOfUseAskData,
-    can_save: bool,
   ):
     super().__init__()
     self._tou_register = tou_register
@@ -32,46 +29,38 @@ class TimeOfUseBottomButtons:
     self._ask_data = ask_data
     self._loggers = DeyeLoggers()
 
-    bottom_buttons: List[ButtonNode] = []
-
+  def create_buttons(
+    self,
+    page: TelebotNavigationPage,
+    can_save: bool,
+  ) -> None:
     if self._ask_data.ask_for_fix_times:
-      bottom_buttons.extend([
-        ButtonNode("Fix time intervals?"),
-        BreakButtonNode(),
-        page.register_button_handler(ButtonNode("Yes"), self._handle_fix_yes),
-        page.register_button_handler(ButtonNode("No"), self._handle_fix_no),
-      ])
+      page.register_button(ButtonNode("Fix time intervals?"))
+      page.register_button(BreakButtonNode())
+      page.register_button(ButtonNode("Yes"), self._handle_fix_yes)
+      page.register_button(ButtonNode("No"), self._handle_fix_no)
     elif self._ask_data.ask_for_reset_times:
-      bottom_buttons.extend([
-        ButtonNode("Reset time intervals?"),
-        BreakButtonNode(),
-        page.register_button_handler(ButtonNode("Yes"), self._handle_reset_yes),
-        page.register_button_handler(ButtonNode("No"), self._handle_reset_no),
-      ])
+      page.register_button(ButtonNode("Reset time intervals?"))
+      page.register_button(BreakButtonNode())
+      page.register_button(ButtonNode("Yes"), self._handle_reset_yes)
+      page.register_button(ButtonNode("No"), self._handle_reset_no)
     else:
       if self._need_save():
         callback = self._handle_save if can_save else self._handle_fix_ask
-        bottom_buttons.append(page.register_button_handler(ButtonNode("Save"), callback))
+        page.register_button(ButtonNode("Save"), callback)
 
       if self._need_fix_intervals():
-        bottom_buttons.append(
-          page.register_button_handler(ButtonNode(
-            "Fix times",
-            style = ButtonStyle.danger,
-          ), self._handle_fix_ask))
+        page.register_button(ButtonNode(
+          "Fix times",
+          style = ButtonStyle.danger,
+        ), self._handle_fix_ask)
       elif self._need_reset_intervals():
-        bottom_buttons.append(page.register_button_handler(ButtonNode("Reset times"), self._handle_reset_ask))
+        page.register_button(ButtonNode("Reset times"), self._handle_reset_ask)
 
-      bottom_buttons.append(page.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
+      page.register_button(ButtonNode("Cancel"), self._handle_cancel)
 
     self._ask_data.ask_for_fix_times = False
     self._ask_data.ask_for_reset_times = False
-
-    self._buttons = bottom_buttons
-
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
 
   async def _handle_save(self, navigator: TelebotPageNavigator) -> None:
     if not self._need_save():
@@ -98,33 +87,33 @@ class TimeOfUseBottomButtons:
       text = TimeOfUseHelper.get_time_of_use_as_rich_message(tou_data = self._tou_data, suffx = "saved")
       navigator.stop(text)
 
-  def _handle_fix_yes(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_fix_yes(self, navigator: TelebotPageNavigator) -> None:
     self._ask_data.ask_for_fix_times = False
     self._fix_time_intervals()
-    navigator.update()
+    await navigator.update()
 
-  def _handle_fix_no(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_fix_no(self, navigator: TelebotPageNavigator) -> None:
     self._ask_data.ask_for_fix_times = False
-    navigator.update()
+    await navigator.update()
 
-  def _handle_reset_yes(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_reset_yes(self, navigator: TelebotPageNavigator) -> None:
     self._ask_data.ask_for_reset_times = False
     self._reset_time_intervals()
-    navigator.update()
+    await navigator.update()
 
-  def _handle_reset_no(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_reset_no(self, navigator: TelebotPageNavigator) -> None:
     self._ask_data.ask_for_reset_times = False
-    navigator.update()
+    await navigator.update()
 
-  def _handle_fix_ask(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_fix_ask(self, navigator: TelebotPageNavigator) -> None:
     self._ask_data.ask_for_fix_times = True
-    navigator.update()
+    await navigator.update()
 
-  def _handle_reset_ask(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_reset_ask(self, navigator: TelebotPageNavigator) -> None:
     self._ask_data.ask_for_reset_times = True
-    navigator.update()
+    await navigator.update()
 
-  def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(
       TimeOfUseHelper.get_time_of_use_as_rich_message(
         tou_data = self._tou_original_data,

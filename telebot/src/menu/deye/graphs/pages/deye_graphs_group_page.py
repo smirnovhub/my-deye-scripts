@@ -29,12 +29,7 @@ class DeyeGraphsGroupPage(TelebotNavigationPage):
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Select group:"
 
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
-
-  def update(self) -> None:
-    buttons: List[ButtonNode] = []
+  def create_buttons(self) -> None:
     groups: List[DeyeGraphGroupData] = []
 
     for inverter in self._provider.inverters:
@@ -44,29 +39,26 @@ class DeyeGraphsGroupPage(TelebotNavigationPage):
 
     for index, group in enumerate(groups):
       if (index % 2) == 0:
-        buttons.append(BreakButtonNode())
+        self.register_button(BreakButtonNode())
 
-      buttons.append(
-        self.register_button_handler(
-          ButtonNode(group.group),
-          self._create_navigation_handler(group = group.group),
-        ))
+      self.register_button(
+        ButtonNode(group.group),
+        self._create_navigation_handler(group = group.group),
+      )
 
-    buttons.append(BreakButtonNode())
-    buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
-    buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
+    self.register_button(BreakButtonNode())
+    self.register_button(ButtonNode("Back"), self._handle_back)
+    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
 
-    self._buttons = buttons
+  async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
+    await navigator.navigate(DeyeGraphsPage.inverter)
 
-  def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    navigator.navigate(DeyeGraphsPage.inverter)
-
-  def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(f"{self._title} cancel")
 
   def _create_navigation_handler(self, group: str):
-    def handler(navigator: TelebotPageNavigator) -> None:
+    async def handler(navigator: TelebotPageNavigator) -> None:
       self._provider.set_selected_group(group)
-      navigator.navigate(DeyeGraphsPage.graph_name)
+      await navigator.navigate(DeyeGraphsPage.graph_name)
 
     return handler

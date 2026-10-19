@@ -71,7 +71,10 @@ async def main_test_logic(
         pass
       write_output = buffer.getvalue().strip()
 
-    log.info(f'Write command output: {write_output}')
+    log.info(f'Write command output:')
+
+    for line in write_output.splitlines():
+      log.info(line)
 
     if not server.is_registers_written(register.address, register.quantity):
       log.error(f"No changes on the server side after writing '{register.name}'")
@@ -93,7 +96,10 @@ async def main_test_logic(
         pass
       read_output = buffer.getvalue().strip()
 
-    log.info(f'Read command output: {read_output}')
+    log.info(f'Read command output:')
+
+    for line in read_output.splitlines():
+      log.info(line)
 
     if not server.is_registers_readed(register.address, register.quantity):
       log.error(f"No request for read on the server side after reading '{register.name}'")

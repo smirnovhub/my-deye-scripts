@@ -1,6 +1,7 @@
+import asyncio
 import telebot
 
-from typing import Callable, List, Optional
+from typing import List
 
 from button_node import ButtonNode
 from telebot_advanced_choice_page import AdvancedChoicePage
@@ -8,23 +9,25 @@ from telebot_page_navigator import TelebotPageNavigator
 
 class AdvancedChoice:
   @staticmethod
-  def ask_advanced_choice(
+  async def ask_advanced_choice(
     bot: telebot.TeleBot,
     chat_id: int,
     text: str,
     options: List[ButtonNode],
-    callback: Optional[Callable[[int, ButtonNode], None]] = None,
     max_per_row: int = 5,
     max_lines_per_page: int = 5,
     edit_message_with_user_selection: bool = False,
-  ) -> telebot.types.Message:
+  ) -> ButtonNode:
     navigator = TelebotPageNavigator(bot)
+
+    loop = asyncio.get_running_loop()
+    future = loop.create_future()
 
     page = AdvancedChoicePage(
       text = text,
       options = options,
       chat_id = chat_id,
-      callback = callback,
+      result_future = future,
       max_per_row = max_per_row,
       max_lines_per_page = max_lines_per_page,
       edit_message_with_user_selection = edit_message_with_user_selection,
@@ -32,7 +35,10 @@ class AdvancedChoice:
 
     navigator.register_page(page)
 
-    return navigator.start(
+    await navigator.start(
       page = page,
       chat_id = chat_id,
     )
+
+    # Wait until the user completes the selection and the callback is triggered
+    return await future

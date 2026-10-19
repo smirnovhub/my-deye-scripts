@@ -7,11 +7,13 @@ class SwitchButtonNode(ButtonNode):
     text: str,
     enabled: bool = True,
     data: str = "",
+    key: str = "",
     style = ButtonStyle.default,
   ):
     super().__init__(
       text = text,
       data = data,
+      key = key,
       style = style,
     )
 

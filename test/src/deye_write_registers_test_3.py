@@ -72,7 +72,10 @@ async def main_test_logic(
           pass
         output = buffer.getvalue().strip()
 
-      log.info(f'Write command output: {output}')
+      log.info(f'Write command output:')
+
+      for line in output.splitlines():
+        log.info(line)
 
       resp_message = 'An exception occurred: You can write only to master inverter'
 

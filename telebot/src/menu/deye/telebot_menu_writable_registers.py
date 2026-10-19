@@ -268,10 +268,20 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
       old_value = register.value
       old_pretty_value = register.pretty_value
 
-      def on_user_confirmation(chat_id: int, result: bool):
-        self.run_async(on_user_confirmation_async(chat_id, result))
+      is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(
+        message,
+        TelebotConstants.undo_button_name,
+      ) is not None
 
-      async def on_user_confirmation_async(chat_id: int, result: bool):
+      if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed:
+        suffix = f' {register.suffix}'.rstrip()
+        result = await UserChoices.ask_confirmation(
+          self.bot,
+          message.chat.id,
+          f'Do you really want to change <b>{register.description}</b> '
+          f'to {value.pretty}{suffix}?',
+        )
+
         if not result:
           self.bot.send_message(message.chat.id, 'Nothing changed')
           return
@@ -292,20 +302,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
         finally:
           holder.disconnect()
 
-      is_undo_button_pressed = TelebotUtils.get_inline_button_by_text(
-        message,
-        TelebotConstants.undo_button_name,
-      ) is not None
-
-      if isinstance(value, DeyeBaseEnum) and not is_undo_button_pressed:
-        suffix = f' {register.suffix}'.rstrip()
-        UserChoices.ask_confirmation(
-          self.bot,
-          message.chat.id,
-          f'Do you really want to change <b>{register.description}</b> '
-          f'to {value.pretty}{suffix}?',
-          on_user_confirmation,
-        )
         return
 
       await holder.write_register(register, value)
