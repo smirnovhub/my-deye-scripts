@@ -48,7 +48,7 @@ async def main():
   # Initializing global bot variable for access in shutdown
   bot: Optional[AsyncTeleBot] = None
 
-  async def graceful_shutdown(signum, frame):
+  async def graceful_shutdown():
     # Log signal receipt
     logger.info("Telebot is going down...")
 
@@ -78,9 +78,12 @@ async def main():
   # Register signals within the asyncio loop
   loop = asyncio.get_event_loop()
 
+  def handle_exit() -> None:
+    asyncio.create_task(graceful_shutdown())
+
   try:
     for sig in (signal.SIGINT, signal.SIGTERM):
-      loop.add_signal_handler(sig, lambda: asyncio.create_task(graceful_shutdown()))
+      loop.add_signal_handler(sig, handle_exit)
   except Exception:
     pass
 
