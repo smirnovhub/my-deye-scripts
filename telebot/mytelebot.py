@@ -8,6 +8,8 @@ from typing import List
 from telebot_utils import TelebotUtils
 from deye_utils import DeyeUtils
 from env_utils import EnvUtils
+from teletest import TeleTest
+from testable_telebot import TestableTelebot
 from deye_loggers import DeyeLoggers
 from telebot_menu_time_of_use import TelebotMenuTimeOfUse
 from telebot_users import TelebotUsers
@@ -209,9 +211,8 @@ class MyTelebot:
     ]
 
   async def run_tests(self):
-    pass
-    # if not isinstance(self.bot, TestableTelebot):
-    #   raise TypeError(f"Can't run tests because telebot is not {TestableTelebot.__name__}")
+    if not isinstance(self.bot, TestableTelebot):
+      raise TypeError(f"Can't run tests because telebot is not {TestableTelebot.__name__}")
 
-    # teletest = TeleTest(self.bot)
-    # await teletest.run_tests()
+    teletest = TeleTest(self.bot)
+    await teletest.run_tests()
