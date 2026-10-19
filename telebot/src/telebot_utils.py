@@ -4,6 +4,7 @@ import os
 import signal
 import requests
 import telebot
+import logging
 
 from telebot.async_telebot import AsyncTeleBot
 
@@ -267,6 +268,17 @@ class TelebotUtils:
       await bot.process_new_messages([message])
       return True
     return False
+
+  @staticmethod
+  async def monitor_hanging_tasks(interval: int = 10):
+    """Periodically check and log pending asyncio tasks to detect hangs."""
+    while True:
+      await asyncio.sleep(interval)
+      logging.warning("=== ASYNCIO PENDING TASKS MONITOR ===")
+      for task in asyncio.all_tasks():
+        if task is not asyncio.current_task():
+          logging.warning(f"Task: {task}")
+          task.print_stack()
 
   @staticmethod
   async def stop_bot():

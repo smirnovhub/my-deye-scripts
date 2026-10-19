@@ -79,7 +79,7 @@ class TelebotRemoteUpdateCheckerAsync:
     # Check if the remote repository is up to date
     if not await self._git_helper.is_repository_up_to_date():
       # Prompt the user to update the bot
-      CommandChoice.ask_command_choice(
+      await CommandChoice.ask_command_choice(
         bot,
         message.chat.id,
         '<b>Telebot has updates. Do you want to update it now?</b>',

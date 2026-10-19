@@ -240,7 +240,7 @@ class TelebotPageNavigator:
             reply_markup = keyboard,
             parse_mode = 'HTML',
           )
-      except Exception:
+      except Exception as e:
         if "message is not modified" not in str(e).lower():
           self._logger.error(f"Failed to edit message: {e}")
 
@@ -554,11 +554,15 @@ class TelebotPageNavigator:
     message: telebot.types.Message,
     sent_message: telebot.types.Message,
   ):
-    if not self._main_page or not self._current_page:
+    # Cache references locally to prevent race conditions during await points
+    main_page = self._main_page
+    current_page = self._current_page
+
+    if not main_page or not current_page:
       raise RuntimeError("Navigation has not started yet")
 
     if await TelebotUtils.forward_next(self._bot, message):
-      text = self._main_page.get_goodbye_message()
+      text = main_page.get_goodbye_message()
       await self.stop(text)
     else:
       TelebotAsyncStepManager.register_next_step_handler(
@@ -567,15 +571,15 @@ class TelebotPageNavigator:
         sent_message,
       )
 
-      if message.text and self._current_page.need_user_input:
+      if message.text and current_page.need_user_input:
         try:
           async with self._async_lock:
-            if self._current_page.resend_message_on_user_input:
+            if current_page.resend_message_on_user_input:
               await self._resend(message.text)
               await asyncio.sleep(0.5)
 
             self._logger.info(f"{self.__class__.__name__}: running async handler for user input")
-            await self._current_page.on_user_input(self, message.text)
+            await current_page.on_user_input(self, message.text)
 
         except Exception as e:
           self._logger.error(traceback.format_exc())

@@ -1,8 +1,8 @@
 import telebot
-
-from telebot.async_telebot import AsyncTeleBot
 import textwrap
 import traceback
+
+from telebot.async_telebot import AsyncTeleBot
 
 from typing import Any, List, Optional
 from datetime import datetime
@@ -148,7 +148,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     try:
       text = await self.get_register_value(register)
       keyboard = self.create_keyboard_for_register(registers, register)
-      sent = await self.bot.send_message(message.chat.id, text, reply_markup = keyboard, parse_mode = 'HTML')
+      sent = await self.bot.send_message(
+        message.chat.id,
+        text,
+        reply_markup = keyboard,
+        parse_mode = 'HTML',
+      )
       TelebotAsyncStepManager.clear_step_handler_by_chat_id(message.chat.id)
       TelebotAsyncStepManager.register_next_step_handler(message, next_step_callback, sent.message_id, registers)
     except DeyeKnownException as e:

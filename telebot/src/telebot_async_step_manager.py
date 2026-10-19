@@ -1,8 +1,9 @@
+import asyncio
 import telebot
 import threading
 
 from telebot.async_telebot import AsyncTeleBot
-from typing import Dict, Tuple, Callable, Awaitable, Any
+from typing import Dict, Set, Tuple, Callable, Awaitable, Any
 from telebot.asyncio_handler_backends import BaseMiddleware, CancelUpdate
 
 class TelebotAsyncStepManager:
@@ -10,8 +11,8 @@ class TelebotAsyncStepManager:
   Universal helper that provides drop-in asynchronous equivalents for
   clear_step_handler_by_chat_id and register_next_step_handler.
   """
-  _registered_bots = set()
-  _callbacks: Dict[int, Tuple[Callable[..., Awaitable[Any]], tuple]] = {}
+  _registered_bots: Set[AsyncTeleBot] = set()
+  _callbacks: Dict[int, Tuple[Callable[..., Awaitable[Any]], Tuple]] = {}
   _lock = threading.Lock()
 
   @classmethod
@@ -60,8 +61,8 @@ class TelebotAsyncStepManager:
         callback, args = item
         # Clear step immediately for one-shot behavior
         TelebotAsyncStepManager.clear_step_handler_by_chat_id(chat_id)
-        # Execute callback asynchronously
-        await callback(message, *args)
+        # Run callback asynchronously in background without waiting
+        asyncio.ensure_future(callback(message, *args))
         # Block other handlers
         return CancelUpdate()
 

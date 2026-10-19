@@ -69,7 +69,9 @@ class TelebotBaseTestModule:
       user_id = user.id,
       first_name = user.name,
     )
-    await self.bot.process_new_messages([message])
+
+    # Run message processing in the background without blocking
+    asyncio.ensure_future(self.bot.process_new_messages([message]))
 
   async def send_button_click(self, user: TelebotUser, data: str):
     message = TelebotFakeTestMessage.make(
@@ -90,7 +92,8 @@ class TelebotBaseTestModule:
       message = message,
     )
 
-    await self.bot.process_new_callback_query([query])
+    # Run message processing in the background without blocking
+    asyncio.ensure_future(self.bot.process_new_callback_query([query]))
 
   async def wait_for_text(self, text: str):
     def check_message():
