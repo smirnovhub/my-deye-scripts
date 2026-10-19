@@ -76,7 +76,7 @@ class UserChoicePage(TelebotNavigationPage):
         self._result_future.set_result(ButtonNode(text = text))
       await navigator.stop()
     else:
-      navigator.send_message(self._wrong_choice_text)
+      await navigator.send_message(self._wrong_choice_text)
       await navigator.stop()
 
   def on_stop(self):

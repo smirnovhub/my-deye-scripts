@@ -36,7 +36,7 @@ class CallbackCommandMiddleware(BaseMiddleware):
       return
 
     chat_id = call.message.chat.id
-    with self._navigator_cls._lock_threading:
+    with self._navigator_cls._threading_lock:
       instance = self._navigator_cls._instances.get(chat_id)
 
     if instance:
@@ -53,7 +53,7 @@ class TelebotPageNavigator:
   Manager class that handles navigation between different pages in a Telegram bot.
   Maintains session state, instances mapped by chat_id, and global callback routing with native async support.
   """
-  _lock_threading = threading.Lock()
+  _threading_lock = threading.Lock()
   _navigator_data_prefix = "_nav_"
   _instances: Dict[int, "TelebotPageNavigator"] = {}
   _handlers_registered: bool = False
@@ -73,19 +73,14 @@ class TelebotPageNavigator:
     self._pages: Dict[Enum, "TelebotNavigationPage"] = {}
     self._current_page: Optional["TelebotNavigationPage"] = None
     self._main_page: Optional["TelebotNavigationPage"] = None
+    self._markup: Optional[telebot.types.InlineKeyboardMarkup] = None
     self._logger = logging.getLogger()
     self._delayed_tasks: List[asyncio.Task] = []
     self._ws_task: Optional[asyncio.Task] = None
     self._auto_update_task: Optional[asyncio.Task] = None
+    self._async_lock = AsyncRLock()
 
-    try:
-      self._loop = asyncio.get_running_loop()
-    except RuntimeError:
-      self._loop = asyncio.get_event_loop()
-
-    self._lock = AsyncRLock()
-
-    with TelebotPageNavigator._lock_threading:
+    with TelebotPageNavigator._threading_lock:
       if not TelebotPageNavigator._handlers_registered:
         TelebotPageNavigator._register_handlers(self._bot)
         TelebotPageNavigator._handlers_registered = True
@@ -113,7 +108,7 @@ class TelebotPageNavigator:
     chat_id: int,
   ) -> telebot.types.Message:
     # Retrieve and stop the previous navigator for this chat before registering the new one
-    with TelebotPageNavigator._lock_threading:
+    with TelebotPageNavigator._threading_lock:
       old_nav = TelebotPageNavigator._instances.get(chat_id)
 
     if old_nav and old_nav != self:
@@ -122,14 +117,14 @@ class TelebotPageNavigator:
       except Exception as e:
         self._logger.error(f"Error stopping previous navigator for chat {chat_id}: {e}")
 
-    with TelebotPageNavigator._lock_threading:
+    with TelebotPageNavigator._threading_lock:
       TelebotPageNavigator._instances[chat_id] = self
 
     self._main_page = page
     self._current_page = page
     self._chat_id = chat_id
 
-    async with self._lock:
+    async with self._async_lock:
       try:
         await page.update()
         page.clear_buttons()
@@ -177,7 +172,7 @@ class TelebotPageNavigator:
     page_type: Enum,
     **kwargs,
   ) -> None:
-    async with self._lock:
+    async with self._async_lock:
       if not self._message or not self._chat_id:
         raise RuntimeError("Navigation has not started yet")
 
@@ -191,16 +186,16 @@ class TelebotPageNavigator:
         await page.on_navigate(navigator = self, **kwargs)
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(str(e))
 
       try:
         await self.update()
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(str(e))
 
   async def update(self) -> None:
-    async with self._lock:
+    async with self._async_lock:
       if not self._message or not self._chat_id:
         raise RuntimeError("Navigation has not started yet")
 
@@ -211,7 +206,7 @@ class TelebotPageNavigator:
         await self._current_page.update()
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(str(e))
 
       self._current_page.clear_buttons()
 
@@ -219,7 +214,7 @@ class TelebotPageNavigator:
         self._current_page.create_buttons()
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(str(e))
 
       keyboard = TelebotUtils.get_keyboard_for_buttons(
         buttons = self._current_page.buttons,
@@ -246,7 +241,8 @@ class TelebotPageNavigator:
             parse_mode = 'HTML',
           )
       except Exception:
-        pass
+        if "message is not modified" not in str(e).lower():
+          self._logger.error(f"Failed to edit message: {e}")
 
   async def add_delayed_action(
     self,
@@ -264,15 +260,15 @@ class TelebotPageNavigator:
         raise
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(str(e))
 
-    task = self._loop.create_task(delayed_task_wrapper())
+    task = asyncio.create_task(delayed_task_wrapper())
 
-    with self._lock_threading:
+    with self._threading_lock:
       self._delayed_tasks.append(task)
 
     def on_done(t: asyncio.Task) -> None:
-      with self._lock_threading:
+      with self._threading_lock:
         if t in self._delayed_tasks:
           self._delayed_tasks.remove(t)
 
@@ -319,18 +315,18 @@ class TelebotPageNavigator:
                 pass
               except Exception as ee:
                 self._logger.error(f"Error handling websocket update: {ee}")
-        except (websockets.ConnectionClosed, asyncio.CancelledError):
+        except asyncio.CancelledError:
           raise
         except Exception as e:
           self._logger.error(f"WebSocket client error: {e}")
           await asyncio.sleep(5)
 
-    task = self._loop.create_task(instance_listener_worker())
-    with self._lock_threading:
+    task = asyncio.create_task(instance_listener_worker())
+    with self._threading_lock:
       self._ws_task = task
 
     def on_done(t: asyncio.Task) -> None:
-      with self._lock_threading:
+      with self._threading_lock:
         if self._ws_task == t:
           self._ws_task = None
 
@@ -350,7 +346,7 @@ class TelebotPageNavigator:
           if not self._current_page:
             continue
 
-          async with self._lock:
+          async with self._async_lock:
             self._logger.info(f"{self.__class__.__name__}: running async on_auto_update for "
                               f"page {self._current_page.page_type.name}")
             await self._current_page.on_auto_update(navigator = self)
@@ -358,14 +354,14 @@ class TelebotPageNavigator:
           raise
         except Exception as e:
           self._logger.error(traceback.format_exc())
-          self.send_message_with_remove_with_delay(str(e))
+          await self.send_message_with_remove_with_delay(str(e))
 
-    task = self._loop.create_task(auto_update_worker())
-    with self._lock_threading:
+    task = asyncio.create_task(auto_update_worker())
+    with self._threading_lock:
       self._auto_update_task = task
 
     def task_done(t: asyncio.Task) -> None:
-      with self._lock_threading:
+      with self._threading_lock:
         if self._auto_update_task == t:
           self._auto_update_task = None
 
@@ -431,7 +427,7 @@ class TelebotPageNavigator:
     text: Optional[Union[str, telebot.types.InputRichMessage]] = None,
     delete_message: bool = False,
   ) -> None:
-    with self._lock_threading:
+    with self._threading_lock:
       tasks_to_cancel = list(self._delayed_tasks)
       self._delayed_tasks.clear()
       ws_task = self._ws_task
@@ -450,7 +446,7 @@ class TelebotPageNavigator:
       auto_update_task.cancel()
 
     if not self._current_page or not self._message or not self._chat_id:
-      with TelebotPageNavigator._lock_threading:
+      with TelebotPageNavigator._threading_lock:
         if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
           del TelebotPageNavigator._instances[self._chat_id]
       raise RuntimeError("Navigation has not started yet")
@@ -487,7 +483,7 @@ class TelebotPageNavigator:
     except Exception:
       pass
 
-    with TelebotPageNavigator._lock_threading:
+    with TelebotPageNavigator._threading_lock:
       if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
         del TelebotPageNavigator._instances[self._chat_id]
       if self._chat_id:
@@ -500,7 +496,7 @@ class TelebotPageNavigator:
     self._pages.clear()
 
   async def _handle_callback(self, button_id: str) -> None:
-    async with self._lock:
+    async with self._async_lock:
       if not self._current_page:
         raise RuntimeError("No current page")
 
@@ -511,7 +507,7 @@ class TelebotPageNavigator:
         )
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(str(e))
 
   async def _on_command_button_clicked(self, command: str) -> None:
     if not self._current_page:
@@ -521,7 +517,7 @@ class TelebotPageNavigator:
     await self.stop(text)
 
   async def _handle_server_update(self, data: Dict[str, Any]) -> None:
-    async with self._lock:
+    async with self._async_lock:
       if not self._current_page:
         return
 
@@ -529,7 +525,7 @@ class TelebotPageNavigator:
         self._logger.info(f"Websocket update received: {data}")
         await self._current_page.on_websocket_update(navigator = self, data = data)
       except Exception as e:
-        self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(str(e))
         self._logger.error(traceback.format_exc())
 
   @staticmethod
@@ -547,14 +543,11 @@ class TelebotPageNavigator:
       button_id = call.data[len(TelebotPageNavigator._navigator_data_prefix):]
       chat_id = call.message.chat.id
 
-      with TelebotPageNavigator._lock_threading:
+      with TelebotPageNavigator._threading_lock:
         instance = TelebotPageNavigator._instances.get(chat_id)
 
       if instance:
-        asyncio.run_coroutine_threadsafe(
-          instance._handle_callback(button_id = button_id),
-          instance._loop,
-        )
+        await instance._handle_callback(button_id = button_id)
 
   async def _next_step_handler(
     self,
@@ -564,32 +557,26 @@ class TelebotPageNavigator:
     if not self._main_page or not self._current_page:
       raise RuntimeError("Navigation has not started yet")
 
-    async def step_worker():
-      if not self._main_page or not self._current_page:
-        raise RuntimeError("Navigation has not started yet")
+    if await TelebotUtils.forward_next(self._bot, message):
+      text = self._main_page.get_goodbye_message()
+      await self.stop(text)
+    else:
+      TelebotAsyncStepManager.register_next_step_handler(
+        sent_message,
+        self._next_step_handler,
+        sent_message,
+      )
 
-      if await TelebotUtils.forward_next(self._bot, message):
-        text = self._main_page.get_goodbye_message()
-        await self.stop(text)
-      else:
-        TelebotAsyncStepManager.register_next_step_handler(
-          sent_message,
-          self._next_step_handler,
-          sent_message,
-        )
+      if message.text and self._current_page.need_user_input:
+        try:
+          async with self._async_lock:
+            if self._current_page.resend_message_on_user_input:
+              await self._resend(message.text)
+              await asyncio.sleep(0.5)
 
-        if message.text and self._current_page.need_user_input:
-          try:
-            async with self._lock:
-              if self._current_page.resend_message_on_user_input:
-                await self._resend(message.text)
-                await asyncio.sleep(0.5)
+            self._logger.info(f"{self.__class__.__name__}: running async handler for user input")
+            await self._current_page.on_user_input(self, message.text)
 
-              self._logger.info(f"{self.__class__.__name__}: running async handler for user input")
-              await self._current_page.on_user_input(self, message.text)
-
-          except Exception as e:
-            self._logger.error(traceback.format_exc())
-            self.send_message_with_remove_with_delay(str(e))
-
-    asyncio.run_coroutine_threadsafe(step_worker(), self._loop)
+        except Exception as e:
+          self._logger.error(traceback.format_exc())
+          await self.send_message_with_remove_with_delay(str(e))

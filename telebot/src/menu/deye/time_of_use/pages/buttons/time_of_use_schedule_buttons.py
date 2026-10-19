@@ -109,7 +109,7 @@ class TimeOfUseScheduleButtons:
     return handler
 
   async def _handle_nothing(self, navigator: TelebotPageNavigator) -> None:
-    navigator.send_message_with_remove_with_delay(
+    await navigator.send_message_with_remove_with_delay(
       text = "This button does nothing",
       delay = 1,
     )
