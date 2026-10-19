@@ -45,4 +45,4 @@ class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
 
         # Send the fake message into TeleBot's processing pipeline
         # This way, the command handler will process it normally
-        await self.bot.process_new_messages([fake_message])
+        await TelebotUtils.forward_next(self.bot, fake_message)

@@ -1,12 +1,12 @@
 import logging
 import traceback
 import telebot
-
-from telebot.async_telebot import AsyncTeleBot
 import threading
 import asyncio
 import websockets
 import json
+
+from telebot.async_telebot import AsyncTeleBot
 
 from datetime import timedelta
 from enum import Enum
@@ -453,35 +453,53 @@ class TelebotPageNavigator:
 
     self._current_page.on_stop()
 
-    try:
-      if delete_message:
-        await self._bot.delete_message(
-          chat_id = self._chat_id,
-          message_id = self._message.message_id,
-        )
-      elif isinstance(text, str) and text:
-        await self._bot.edit_message_text(
-          text,
-          chat_id = self._chat_id,
-          message_id = self._message.message_id,
-          reply_markup = None,
-          parse_mode = 'HTML',
-        )
-      elif isinstance(text, telebot.types.InputRichMessage):
-        await self._bot.edit_message_text(
-          chat_id = self._chat_id,
-          message_id = self._message.message_id,
-          rich_message = text,
-          reply_markup = None,
-        )
-      else:
-        await self._bot.edit_message_reply_markup(
-          chat_id = self._chat_id,
-          message_id = self._message.message_id,
-          reply_markup = None,
-        )
-    except Exception:
-      pass
+    async def execute_message_action(
+      bot: AsyncTeleBot,
+      chat_id: int,
+      message_id: int,
+      delete_message: bool,
+      text: Optional[Union[str, telebot.types.InputRichMessage]],
+    ) -> None:
+      """Execute message modification or deletion action."""
+      try:
+        if delete_message:
+          await bot.delete_message(
+            chat_id = chat_id,
+            message_id = message_id,
+          )
+        elif isinstance(text, str) and text:
+          await bot.edit_message_text(
+            text,
+            chat_id = chat_id,
+            message_id = message_id,
+            reply_markup = None,
+            parse_mode = 'HTML',
+          )
+        elif isinstance(text, telebot.types.InputRichMessage):
+          await bot.edit_message_text(
+            chat_id = chat_id,
+            message_id = message_id,
+            rich_message = text,
+            reply_markup = None,
+          )
+        else:
+          await bot.edit_message_reply_markup(
+            chat_id = chat_id,
+            message_id = message_id,
+            reply_markup = None,
+          )
+      except Exception:
+        pass
+
+    # Run in background task passing all parameters explicitly
+    asyncio.create_task(
+      execute_message_action(
+        bot = self._bot,
+        chat_id = self._chat_id,
+        message_id = self._message.message_id,
+        delete_message = delete_message,
+        text = text,
+      ))
 
     with TelebotPageNavigator._threading_lock:
       if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:

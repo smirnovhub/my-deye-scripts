@@ -114,13 +114,16 @@ class TelebotProgressMessage:
         await self._animation_task
       except asyncio.CancelledError:
         pass
+
     self._animation_task = None
 
     try:
       if self._chat_id is not None and self._message is not None:
-        await self._bot.delete_message(
+        await TelebotUtils.remove_message_with_delay(
+          bot = self._bot,
           chat_id = self._chat_id,
           message_id = self._message.message_id,
+          delay = 0.5,
         )
     except Exception:
       pass

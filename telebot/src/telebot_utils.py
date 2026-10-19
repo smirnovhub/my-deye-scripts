@@ -121,10 +121,6 @@ class TelebotUtils:
     :param message_id: ID of the message
     :param delay: Time in seconds before removing buttons
     """
-    if delay < 0.01:
-      await TelebotUtils.remove_message(bot, chat_id, message_id)
-      return
-
     async def delayed_task() -> None:
       try:
         await asyncio.sleep(delay)
@@ -146,10 +142,6 @@ class TelebotUtils:
     :param message_id: ID of the message
     :param delay: Time in seconds before removing buttons
     """
-    if delay < 0.01:
-      await TelebotUtils.remove_inline_buttons(bot, chat_id, message_id)
-      return
-
     async def delayed_task() -> None:
       try:
         await asyncio.sleep(delay)
@@ -265,7 +257,7 @@ class TelebotUtils:
     is_forward = message.forward_from_chat is not None and message.forward_from_chat.username is not None
     # Forward new commands or forwarded message to the bot
     if is_forward or message.text.startswith('/'):
-      await bot.process_new_messages([message])
+      asyncio.create_task(bot.process_new_messages([message]))
       return True
     return False
 

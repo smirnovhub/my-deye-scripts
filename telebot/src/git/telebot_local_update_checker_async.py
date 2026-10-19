@@ -92,7 +92,7 @@ class TelebotLocalUpdateCheckerAsync:
       else:
         await bot.send_message(chat_id, 'Restart cancelled')
         if message is not None:
-          await bot.process_new_messages([message])
+          await TelebotUtils.forward_next(bot, message)
 
       return True
 

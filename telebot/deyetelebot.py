@@ -108,6 +108,7 @@ async def main():
       await mybot.run_tests()
 
       try:
+        await bot.close_session()
         await HttpSessionSingletonAsync.close_session()
       except Exception:
         logger.error("Failed to close async session", exc_info = True)
