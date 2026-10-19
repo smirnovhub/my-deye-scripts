@@ -2,7 +2,6 @@ import asyncio
 import json
 import os
 import signal
-import time
 import requests
 import telebot
 
@@ -270,12 +269,12 @@ class TelebotUtils:
     return False
 
   @staticmethod
-  def stop_bot():
+  async def stop_bot():
     """
     Gracefully stops the running TeleBot instance and terminates the process.
     """
-    time.sleep(1)
-    signal.raise_signal(signal.SIGTERM)
-    time.sleep(30)
+    await asyncio.sleep(1)
+    signal.raise_signal(signal.SIGINT)
+    await asyncio.sleep(30)
     # Exit will never fire if bot has stopped in right way
     os._exit(1)

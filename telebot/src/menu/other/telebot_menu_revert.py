@@ -142,7 +142,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
         chat_id,
         f'{CommonUtils.clock_face_one_oclock} Restarting telebot...',
       )
-      TelebotUtils.stop_bot()
+      await TelebotUtils.stop_bot()
     else:
       await self.bot.send_message(
         chat_id,
