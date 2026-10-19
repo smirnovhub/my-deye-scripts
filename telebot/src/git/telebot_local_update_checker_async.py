@@ -2,6 +2,8 @@ import time
 import logging
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import Optional
 
 from env_utils import EnvUtils
@@ -37,7 +39,7 @@ class TelebotLocalUpdateCheckerAsync:
 
   async def check_for_local_updates(
     self,
-    bot: telebot.TeleBot,
+    bot: AsyncTeleBot,
     chat_id: int,
     force: bool = False,
     message: Optional[telebot.types.Message] = None,
@@ -49,7 +51,7 @@ class TelebotLocalUpdateCheckerAsync:
     - If changes are detected, prompts the user via Telegram to restart the bot.
 
     Args:
-        bot (telebot.TeleBot): The Telebot instance for sending messages.
+        bot (AsyncTeleBot): The Telebot instance for sending messages.
         message (telebot.types.Message): The incoming message object from the user.
 
     Returns:
@@ -103,12 +105,12 @@ class TelebotLocalUpdateCheckerAsync:
     hash = await self._git_helper.get_last_commit_hash()
     await self._save_last_commit_hash(hash)
 
-  async def _ask_for_restart(self, bot: telebot.TeleBot, chat_id: int):
+  async def _ask_for_restart(self, bot: AsyncTeleBot, chat_id: int):
     """
     Prompt the user with a countdown and restart the bot automatically.
 
     Args:
-        bot (telebot.TeleBot): The Telebot instance for sending messages.
+        bot (AsyncTeleBot): The Telebot instance for sending messages.
         chat_id (int): The Telegram chat ID to send messages to.
     """
     result = await CountdownWithCancel.show_countdown(

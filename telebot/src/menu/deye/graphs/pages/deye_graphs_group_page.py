@@ -54,7 +54,7 @@ class DeyeGraphsGroupPage(TelebotNavigationPage):
     await navigator.navigate(DeyeGraphsPage.inverter)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(f"{self._title} cancel")
+    await navigator.stop(f"{self._title} cancel")
 
   def _create_navigation_handler(self, group: str):
     async def handler(navigator: TelebotPageNavigator) -> None:

@@ -1,9 +1,10 @@
 import re
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import List, Type
 
-from telebot_async_runner import TelebotAsyncRunner
 from telebot_utils import TelebotUtils
 from deye_registers import DeyeRegisters
 from telebot_command_choice import CommandChoice
@@ -16,18 +17,14 @@ from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 class TelebotMenuSlaveTotalBase(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
     registers_class: Type[DeyeRegisters],
     all_command: TelebotMenuItem,
     master_command: TelebotMenuItem,
     slave_command: TelebotMenuItem,
     title: str = TelebotConstants.default_title,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
     self.registers_class = registers_class
     self.all_command = all_command
     self.master_command = master_command
@@ -58,7 +55,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandlerAsync):
 
     logger = self.loggers.get_logger_by_name(slave_name)
     if logger is None:
-      self.bot.send_message(message.chat.id, f'Logger with name {slave_name} not found')
+      await self.bot.send_message(message.chat.id, f'Logger with name {slave_name} not found')
       return
 
     # should be local to avoid issues with locks
@@ -71,7 +68,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandlerAsync):
     try:
       await holder.read_registers()
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(message.chat.id, str(e))
       return
     finally:
       holder.disconnect()
@@ -94,7 +91,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandlerAsync):
 
     info = TelebotDeyeHelper.get_register_values(registers.all_registers)
 
-    CommandChoice.ask_command_choice(
+    await CommandChoice.ask_command_choice(
       self.bot,
       message.chat.id,
       f'<b>{self.title}: {slave_name}</b>\n{info}',

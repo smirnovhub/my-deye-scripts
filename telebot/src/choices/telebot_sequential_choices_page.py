@@ -62,14 +62,14 @@ class SequentialChoicePage(TelebotNavigationPage):
     if not node.children and not self._result_future.done():
       # End of the tree reached
       self._result_future.set_result(self._results)
-      navigator.stop(self._text)
+      await navigator.stop(self._text)
     else:
       # Move deeper and refresh the current message
       self._current_node = node
       await navigator.update()
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(f"{self._text} cancel")
+    await navigator.stop(f"{self._text} cancel")
 
   async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     text_lower = text.lower()

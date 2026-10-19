@@ -1,6 +1,8 @@
 import logging
 import traceback
 import telebot
+
+from telebot.async_telebot import AsyncTeleBot
 import threading
 import asyncio
 import websockets
@@ -8,13 +10,43 @@ import json
 
 from datetime import timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast, Callable, Awaitable
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast, Callable, Awaitable
 
+from telebot.asyncio_handler_backends import BaseMiddleware
+from telebot_async_step_manager import TelebotAsyncStepManager
 from telebot_utils import TelebotUtils
 from async_rlock import AsyncRLock
 
 if TYPE_CHECKING:
   from telebot_navigation_page import TelebotNavigationPage
+
+class CallbackCommandMiddleware(BaseMiddleware):
+  """Middleware to intercept command-like callback queries and route them to the active navigator instance."""
+  def __init__(self, navigator_cls: Type["TelebotPageNavigator"]) -> None:
+    super().__init__()
+    self.update_types = ['callback_query']
+    self._navigator_cls = navigator_cls
+
+  async def pre_process(self, call: telebot.types.CallbackQuery, data: Dict[str, Any]) -> None:
+    if not call.data or not call.message:
+      return
+
+    button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data)
+    if not button or not button.callback_data or not button.callback_data.startswith("/"):
+      return
+
+    chat_id = call.message.chat.id
+    with self._navigator_cls._lock_threading:
+      instance = self._navigator_cls._instances.get(chat_id)
+
+    if instance:
+      await instance._on_command_button_clicked(button.callback_data)
+
+  async def post_process(self,
+                         call: telebot.types.CallbackQuery,
+                         data: Dict[str, Any],
+                         exception: Optional[Exception] = None) -> None:
+    pass
 
 class TelebotPageNavigator:
   """
@@ -28,7 +60,7 @@ class TelebotPageNavigator:
 
   def __init__(
     self,
-    bot: telebot.TeleBot,
+    bot: AsyncTeleBot,
     auto_update_period: Optional[timedelta] = None,
   ):
     """
@@ -64,7 +96,7 @@ class TelebotPageNavigator:
     self._pages[page.page_type] = page
 
   @property
-  def bot(self) -> telebot.TeleBot:
+  def bot(self) -> AsyncTeleBot:
     return self._bot
 
   @property
@@ -86,7 +118,7 @@ class TelebotPageNavigator:
 
     if old_nav and old_nav != self:
       try:
-        old_nav.stop()
+        await old_nav.stop()
       except Exception as e:
         self._logger.error(f"Error stopping previous navigator for chat {chat_id}: {e}")
 
@@ -104,7 +136,7 @@ class TelebotPageNavigator:
         page.create_buttons()
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        return self.send_message(str(e))
+        return await self.send_message(str(e))
 
       keyboard = TelebotUtils.get_keyboard_for_buttons(
         buttons = page.buttons,
@@ -115,21 +147,21 @@ class TelebotPageNavigator:
       page_text = self._get_page_text(page)
 
       if isinstance(page_text, telebot.types.InputRichMessage):
-        self._message = self._bot.send_rich_message(
+        self._message = await self._bot.send_rich_message(
           chat_id = self._chat_id,
           rich_message = page_text,
           reply_markup = keyboard,
         )
       else:
-        self._message = self._bot.send_message(
+        self._message = await self._bot.send_message(
           chat_id = self._chat_id,
           text = page_text,
           reply_markup = keyboard,
           parse_mode = "HTML",
         )
 
-      self._bot.clear_step_handler_by_chat_id(self._chat_id)
-      self._bot.register_next_step_handler(
+      TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._chat_id)
+      TelebotAsyncStepManager.register_next_step_handler(
         self._message,
         self._next_step_handler,
         self._message,
@@ -199,14 +231,14 @@ class TelebotPageNavigator:
 
       try:
         if isinstance(page_text, telebot.types.InputRichMessage):
-          self._bot.edit_message_text(
+          await self._bot.edit_message_text(
             chat_id = self._chat_id,
             message_id = self._message.message_id,
             rich_message = page_text,
             reply_markup = keyboard,
           )
         else:
-          self._bot.edit_message_text(
+          await self._bot.edit_message_text(
             text = page_text,
             chat_id = self._chat_id,
             message_id = self._message.message_id,
@@ -246,17 +278,17 @@ class TelebotPageNavigator:
 
     task.add_done_callback(on_done)
 
-  def send_message(self, text: str) -> telebot.types.Message:
+  async def send_message(self, text: str) -> telebot.types.Message:
     if not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
-    return self._bot.send_message(
+    return await self._bot.send_message(
       self._chat_id,
       text,
       parse_mode = "HTML",
     )
 
-  def send_message_with_remove_with_delay(
+  async def send_message_with_remove_with_delay(
     self,
     text: str,
     delay = 5,
@@ -264,9 +296,9 @@ class TelebotPageNavigator:
     if not self._chat_id:
       raise RuntimeError("Navigation has not started yet")
 
-    sent = self.send_message(text[:512])
+    sent = await self.send_message(text[:512])
 
-    TelebotUtils.remove_message_with_delay(
+    await TelebotUtils.remove_message_with_delay(
       bot = self._bot,
       chat_id = self._chat_id,
       message_id = sent.id,
@@ -346,7 +378,7 @@ class TelebotPageNavigator:
       self._logger.error(traceback.format_exc())
       return str(e)
 
-  def _resend(self, text: str) -> telebot.types.Message:
+  async def _resend(self, text: str) -> telebot.types.Message:
     if not self._message or not self._chat_id or not self._current_page:
       raise RuntimeError("Navigation has not started yet")
 
@@ -354,7 +386,7 @@ class TelebotPageNavigator:
 
     if isinstance(page_text, telebot.types.InputRichMessage):
       try:
-        self._bot.edit_message_text(
+        await self._bot.edit_message_text(
           chat_id = self._chat_id,
           message_id = self._message.message_id,
           rich_message = page_text,
@@ -362,14 +394,14 @@ class TelebotPageNavigator:
       except Exception:
         pass
 
-      self._message = self._bot.send_rich_message(
+      self._message = await self._bot.send_rich_message(
         chat_id = self._chat_id,
         rich_message = page_text,
         reply_markup = self._markup,
       )
     else:
       try:
-        self._bot.edit_message_text(
+        await self._bot.edit_message_text(
           text = f"{page_text} {text}",
           chat_id = self._chat_id,
           message_id = self._message.message_id,
@@ -378,15 +410,15 @@ class TelebotPageNavigator:
       except Exception:
         pass
 
-      self._message = self._bot.send_message(
+      self._message = await self._bot.send_message(
         chat_id = self._chat_id,
         text = page_text,
         reply_markup = self._markup,
         parse_mode = "HTML",
       )
 
-    self._bot.clear_step_handler_by_chat_id(self._chat_id)
-    self._bot.register_next_step_handler(
+    TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._chat_id)
+    TelebotAsyncStepManager.register_next_step_handler(
       self._message,
       self._next_step_handler,
       self._message,
@@ -394,7 +426,7 @@ class TelebotPageNavigator:
 
     return self._message
 
-  def stop(
+  async def stop(
     self,
     text: Optional[Union[str, telebot.types.InputRichMessage]] = None,
     delete_message: bool = False,
@@ -427,12 +459,12 @@ class TelebotPageNavigator:
 
     try:
       if delete_message:
-        self._bot.delete_message(
+        await self._bot.delete_message(
           chat_id = self._chat_id,
           message_id = self._message.message_id,
         )
       elif isinstance(text, str) and text:
-        self._bot.edit_message_text(
+        await self._bot.edit_message_text(
           text,
           chat_id = self._chat_id,
           message_id = self._message.message_id,
@@ -440,14 +472,14 @@ class TelebotPageNavigator:
           parse_mode = 'HTML',
         )
       elif isinstance(text, telebot.types.InputRichMessage):
-        self._bot.edit_message_text(
+        await self._bot.edit_message_text(
           chat_id = self._chat_id,
           message_id = self._message.message_id,
           rich_message = text,
           reply_markup = None,
         )
       else:
-        self._bot.edit_message_reply_markup(
+        await self._bot.edit_message_reply_markup(
           chat_id = self._chat_id,
           message_id = self._message.message_id,
           reply_markup = None,
@@ -459,7 +491,7 @@ class TelebotPageNavigator:
       if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
         del TelebotPageNavigator._instances[self._chat_id]
       if self._chat_id:
-        self._bot.clear_step_handler_by_chat_id(self._chat_id)
+        TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._chat_id)
 
     self._chat_id = None
     self._message = None
@@ -481,12 +513,12 @@ class TelebotPageNavigator:
         self._logger.error(traceback.format_exc())
         self.send_message_with_remove_with_delay(str(e))
 
-  def _on_command_button_clicked(self, command: str) -> None:
+  async def _on_command_button_clicked(self, command: str) -> None:
     if not self._current_page:
       raise RuntimeError("Navigation has not started yet")
 
     text = self._current_page.get_stop_by_command_message(command)
-    self.stop(text)
+    await self.stop(text)
 
   async def _handle_server_update(self, data: Dict[str, Any]) -> None:
     async with self._lock:
@@ -501,30 +533,16 @@ class TelebotPageNavigator:
         self._logger.error(traceback.format_exc())
 
   @staticmethod
-  def _register_handlers(bot: telebot.TeleBot):
-    @bot.middleware_handler(update_types = ['callback_query'])
-    def handle_callback(bot: telebot.TeleBot, call: telebot.types.CallbackQuery):
-      if not call.data or not call.message:
-        return
-
-      button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message), call.data)
-      if not button or not button.callback_data or not button.callback_data.startswith("/"):
-        return
-
-      chat_id = call.message.chat.id
-      with TelebotPageNavigator._lock_threading:
-        instance = TelebotPageNavigator._instances.get(chat_id)
-
-      if instance:
-        instance._on_command_button_clicked(button.callback_data)
+  def _register_handlers(bot: AsyncTeleBot):
+    bot.setup_middleware(CallbackCommandMiddleware(TelebotPageNavigator))
 
     @bot.callback_query_handler(
       func = lambda call: call.data and call.data.startswith(TelebotPageNavigator._navigator_data_prefix))
-    def _global_nav_handler(call: telebot.types.CallbackQuery):
+    async def _global_nav_handler(call: telebot.types.CallbackQuery):
       if not call.data or not call.message:
         return
 
-      bot.answer_callback_query(call.id)
+      await bot.answer_callback_query(call.id)
 
       button_id = call.data[len(TelebotPageNavigator._navigator_data_prefix):]
       chat_id = call.message.chat.id
@@ -538,7 +556,7 @@ class TelebotPageNavigator:
           instance._loop,
         )
 
-  def _next_step_handler(
+  async def _next_step_handler(
     self,
     message: telebot.types.Message,
     sent_message: telebot.types.Message,
@@ -550,11 +568,11 @@ class TelebotPageNavigator:
       if not self._main_page or not self._current_page:
         raise RuntimeError("Navigation has not started yet")
 
-      if TelebotUtils.forward_next(self._bot, message):
+      if await TelebotUtils.forward_next(self._bot, message):
         text = self._main_page.get_goodbye_message()
-        self.stop(text)
+        await self.stop(text)
       else:
-        self._bot.register_next_step_handler(
+        TelebotAsyncStepManager.register_next_step_handler(
           sent_message,
           self._next_step_handler,
           sent_message,
@@ -564,7 +582,7 @@ class TelebotPageNavigator:
           try:
             async with self._lock:
               if self._current_page.resend_message_on_user_input:
-                self._resend(message.text)
+                await self._resend(message.text)
                 await asyncio.sleep(0.5)
 
               self._logger.info(f"{self.__class__.__name__}: running async handler for user input")

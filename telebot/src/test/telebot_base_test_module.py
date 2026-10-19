@@ -2,6 +2,8 @@ import asyncio
 import logging
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import Any, Callable, List, Optional, Set
 
 from deye_test_helper import DeyeTestHelper

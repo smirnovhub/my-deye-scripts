@@ -1,15 +1,18 @@
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import Dict, Union
 
 from button_node import ButtonNode
+from telebot_async_step_manager import TelebotAsyncStepManager
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 
 class CommandChoice:
   @staticmethod
-  def ask_command_choice(
-    bot: telebot.TeleBot,
+  async def ask_command_choice(
+    bot: AsyncTeleBot,
     chat_id: int,
     text: Union[str, telebot.types.InputRichMessage],
     options: Dict[str, str],
@@ -38,12 +41,12 @@ class CommandChoice:
     """
     if not options:
       if isinstance(text, telebot.types.InputRichMessage):
-        return bot.send_rich_message(
+        return await bot.send_rich_message(
           chat_id,
           text,
         )
       else:
-        return bot.send_message(
+        return await bot.send_message(
           chat_id,
           text,
           parse_mode = "HTML",
@@ -60,21 +63,21 @@ class CommandChoice:
     )
 
     if isinstance(text, telebot.types.InputRichMessage):
-      message = bot.send_rich_message(
+      message = await bot.send_rich_message(
         chat_id,
         text,
         reply_markup = keyboard,
       )
     else:
-      message = bot.send_message(
+      message = await bot.send_message(
         chat_id,
         text,
         reply_markup = keyboard,
         parse_mode = "HTML",
       )
 
-    bot.clear_step_handler_by_chat_id(message.chat.id)
-    bot.register_next_step_handler(
+    TelebotAsyncStepManager.clear_step_handler_by_chat_id(message.chat.id)
+    TelebotAsyncStepManager.register_next_step_handler(
       message,
       CommandChoice._user_command_choice_next_step_handler,
       bot,
@@ -84,9 +87,9 @@ class CommandChoice:
     return message
 
   @staticmethod
-  def _user_command_choice_next_step_handler(
+  async def _user_command_choice_next_step_handler(
     message: telebot.types.Message,
-    bot: telebot.TeleBot,
+    bot: AsyncTeleBot,
     message_id: int,
   ):
     """
@@ -97,7 +100,7 @@ class CommandChoice:
     - Otherwise, does not process input (callback handling is not included
       in this function).
     """
-    TelebotUtils.remove_inline_buttons_with_delay(
+    await TelebotUtils.remove_inline_buttons_with_delay(
       bot = bot,
       chat_id = message.chat.id,
       message_id = message_id,
@@ -105,4 +108,4 @@ class CommandChoice:
     )
 
     # if we received new command, process it
-    TelebotUtils.forward_next(bot, message)
+    await TelebotUtils.forward_next(bot, message)

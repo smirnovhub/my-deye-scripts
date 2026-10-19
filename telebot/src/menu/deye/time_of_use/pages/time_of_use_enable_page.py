@@ -57,9 +57,9 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
         tou_data = data,
       )
     except Exception as e:
-      navigator.stop(str(e))
+      await navigator.stop(str(e))
     else:
       await navigator.navigate(TimeOfUsePage.main)
 
   async def _handle_no(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop("Time of Use is disabled")
+    await navigator.stop("Time of Use is disabled")

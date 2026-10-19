@@ -46,7 +46,7 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     await navigator.navigate(BatterySettingsPage.edit)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(
+    await navigator.stop(
       BatterySettingsHelper.get_data_as_rich_message(
         title = f"{self._title} cancel",
         values = self._batt_data_original_values,

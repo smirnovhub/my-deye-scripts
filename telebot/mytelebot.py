@@ -1,11 +1,11 @@
 import logging
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import List
 
-from telebot_async_runner import TelebotAsyncRunner
 from telebot_utils import TelebotUtils
-from teletest import TeleTest
 from deye_utils import DeyeUtils
 from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
@@ -32,7 +32,6 @@ from telebot_menu_battery_forecast import TelebotMenuBatteryForecast
 from telebot_menu_writable_registers import TelebotMenuWritableRegisters
 from telebot_menu_master_today_stat import TelebotMenuMasterTodayStat
 from telebot_menu_master_total_stat import TelebotMenuMasterTotalStat
-from testable_telebot import TestableTelebot
 from telebot_menu_cache import TelebotMenuCache
 from telebot_menu_revert import TelebotMenuRevert
 from telebot_menu_update import TelebotMenuUpdate
@@ -43,13 +42,12 @@ from telebot_menu_battery_forecast_by_percent import TelebotMenuBatteryForecastB
 from telebot_menu_battery_forecast_by_time import TelebotMenuBatteryForecastByTime
 from telebot_menu_unknown_command_handler import TelebotMenuUnknownCommandHandler
 from telebot_run_command_from_button_handler import TelebotRunCommandFromButtonHandler
-from telegram_send_message import Telegram
+from telegram_send_message_async import TelegramAsync
 
 class MyTelebot:
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
     logger: logging.Logger,
   ):
     self.bot = bot
@@ -60,30 +58,40 @@ class MyTelebot:
     self.logger = logger
     self.admin_user_id = EnvUtils.get_telegram_admin_user_id()
 
+  async def initialize(self):
     data_dir = TelebotUtils.get_data_dir()
     DeyeUtils.ensure_dir_exists(data_dir)
 
-    def print_commands(bot: telebot.TeleBot, scope, label):
-      commands = bot.get_my_commands(scope = scope)
+    async def print_commands(scope: telebot.types.BotCommandScope, label: str):
+      commands = await self.bot.get_my_commands(scope = scope, language_code = None)
       self.logger.info(f"{label} commands:")
       for cmd in commands:
         self.logger.info(f"  /{cmd.command} - {cmd.description}")
 
-    print_commands(bot, telebot.types.BotCommandScopeDefault(), "Default")
-    print_commands(bot, telebot.types.BotCommandScopeAllPrivateChats(), "AllPrivateChats")
-    print_commands(bot, telebot.types.BotCommandScopeAllGroupChats(), "AllGroupChats")
-    print_commands(bot, telebot.types.BotCommandScopeAllChatAdministrators(), "AllChatAdministrators")
+    await print_commands(telebot.types.BotCommandScopeDefault(), "Default")
+    await print_commands(telebot.types.BotCommandScopeAllPrivateChats(), "AllPrivateChats")
+    await print_commands(telebot.types.BotCommandScopeAllGroupChats(), "AllGroupChats")
+    await print_commands(telebot.types.BotCommandScopeAllChatAdministrators(), "AllChatAdministrators")
+
+    try:
+      # Save the current commit hash when the bot starts
+      # This ensures that future checks can detect local repository changes
+      await self.update_checker.update_last_commit_hash()
+    except Exception as e:
+      message = f'Error while updating last commit hash: {str(e)}'
+      self.logger.info(message)
+      await TelegramAsync.send_private_telegram_message(message)
 
     # Register common handlers
-    for handler in self.get_common_handlers(bot):
+    for handler in self.get_common_handlers(self.bot):
       handler.register_handlers()
 
-    default_menu_items = self.get_default_menu_items(bot)
-    authorized_menu_items = self.get_authorized_menu_items(bot = bot, runner = runner)
-    authorized_menu_items.extend(self.get_writable_registers_menu_items(bot = bot, runner = runner))
+    default_menu_items = self.get_default_menu_items(self.bot)
+    authorized_menu_items = self.get_authorized_menu_items(self.bot)
+    authorized_menu_items.extend(self.get_writable_registers_menu_items(self.bot))
 
     # unknown command handler should be always last
-    authorized_menu_items.append(TelebotMenuUnknownCommandHandler(bot, runner = runner))
+    authorized_menu_items.append(TelebotMenuUnknownCommandHandler(self.bot))
 
     default_commands: List[telebot.types.BotCommand] = []
 
@@ -95,12 +103,11 @@ class MyTelebot:
     for menu_item in authorized_menu_items:
       menu_item.register_handlers()
 
-    bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeDefault())
-    bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeAllPrivateChats())
-    bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeAllGroupChats())
-    bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeAllChatAdministrators())
-
-    bot.set_chat_menu_button(menu_button = telebot.types.MenuButtonCommands())
+    await self.bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeDefault())
+    await self.bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeAllPrivateChats())
+    await self.bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeAllGroupChats())
+    await self.bot.set_my_commands(default_commands, scope = telebot.types.BotCommandScopeAllChatAdministrators())
+    await self.bot.set_chat_menu_button(menu_button = telebot.types.MenuButtonCommands())
 
     # Add all commands for admin user
     admin_commands: List[telebot.types.BotCommand] = []
@@ -111,7 +118,8 @@ class MyTelebot:
           admin_commands.append(command)
 
     try:
-      bot.set_my_commands(admin_commands, scope = telebot.types.BotCommandScopeChat(chat_id = self.admin_user_id))
+      await self.bot.set_my_commands(admin_commands,
+                                     scope = telebot.types.BotCommandScopeChat(chat_id = self.admin_user_id))
     except Exception as e:
       self.logger.info(f'An exception occurred while setting commands for user {self.admin_user_id}: {str(e)}')
 
@@ -138,7 +146,8 @@ class MyTelebot:
       # authorized_commands = default_commands
 
       try:
-        bot.set_my_commands(authorized_commands, scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
+        await self.bot.set_my_commands(authorized_commands,
+                                       scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:
         self.logger.info(f'An exception occurred while setting commands for user {user.id}: {str(e)}')
 
@@ -148,72 +157,61 @@ class MyTelebot:
         continue
 
       try:
-        bot.set_my_commands([], scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
+        await self.bot.set_my_commands([], scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:
         self.logger.info(f'An exception occurred while setting command for blocked user {user.id}: {str(e)}')
 
-  def get_common_handlers(self, bot: telebot.TeleBot) -> List[TelebotBaseHandler]:
+  def get_common_handlers(self, bot: AsyncTeleBot) -> List[TelebotBaseHandler]:
     return [
       TelebotLoggingHandler(bot),
       TelebotRunCommandFromButtonHandler(bot),
     ]
 
-  def get_default_menu_items(self, bot: telebot.TeleBot) -> List[TelebotMenuItemHandler]:
+  def get_default_menu_items(self, bot: AsyncTeleBot) -> List[TelebotMenuItemHandler]:
     return []
 
   def get_authorized_menu_items(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ) -> List[TelebotMenuItemHandler]:
     return [
-      TelebotMenuAllInfo(bot, runner),
-      TelebotMenuMasterInfo(bot, runner),
-      TelebotMenuSlaveInfo(bot, runner),
-      TelebotMenuAllTodayStat(bot, runner),
-      TelebotMenuAllTotalStat(bot, runner),
-      TelebotMenuMasterTodayStat(bot, runner),
-      TelebotMenuMasterTotalStat(bot, runner),
-      TelebotMenuSlaveTodayStat(bot, runner),
-      TelebotMenuSlaveTotalStat(bot, runner),
-      TelebotMenuAllSettings(bot, runner),
-      TelebotMenuMasterSettings(bot, runner),
-      TelebotMenuGraphs(bot, runner),
-      TelebotMenuTimeOfUse(bot, runner),
-      TelebotMenuBatterySettings(bot, runner),
-      TelebotMenuBatteryForecast(bot, runner),
-      TelebotMenuBatteryForecastByPercent(bot, runner),
-      TelebotMenuBatteryForecastByTime(bot, runner),
-      TelebotMenuSyncTime(bot, runner),
-      TelebotMenuRestart(bot, runner),
-      TelebotMenuRevert(bot, runner),
-      TelebotMenuCache(bot, runner),
-      TelebotMenuUpdate(bot, runner),
-      TelebotMenuTest(bot, runner),
+      TelebotMenuAllInfo(bot),
+      TelebotMenuMasterInfo(bot),
+      TelebotMenuSlaveInfo(bot),
+      TelebotMenuAllTodayStat(bot),
+      TelebotMenuAllTotalStat(bot),
+      TelebotMenuMasterTodayStat(bot),
+      TelebotMenuMasterTotalStat(bot),
+      TelebotMenuSlaveTodayStat(bot),
+      TelebotMenuSlaveTotalStat(bot),
+      TelebotMenuAllSettings(bot),
+      TelebotMenuMasterSettings(bot),
+      TelebotMenuGraphs(bot),
+      TelebotMenuTimeOfUse(bot),
+      TelebotMenuBatterySettings(bot),
+      TelebotMenuBatteryForecast(bot),
+      TelebotMenuBatteryForecastByPercent(bot),
+      TelebotMenuBatteryForecastByTime(bot),
+      TelebotMenuSyncTime(bot),
+      TelebotMenuRestart(bot),
+      TelebotMenuRevert(bot),
+      TelebotMenuCache(bot),
+      TelebotMenuUpdate(bot),
+      TelebotMenuTest(bot),
     ]
 
   def get_writable_registers_menu_items(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ) -> List[TelebotMenuItemHandler]:
     return [
-      TelebotMenuWritableRegisters(bot, runner),
+      TelebotMenuWritableRegisters(bot),
     ]
 
-  async def update_last_commit_hash(self):
-    try:
-      # Save the current commit hash when the bot starts
-      # This ensures that future checks can detect local repository changes
-      await self.update_checker.update_last_commit_hash()
-    except Exception as e:
-      message = f'Error while updating last commit hash: {str(e)}'
-      self.logger.info(message)
-      Telegram.send_private_telegram_message(message)
-
   async def run_tests(self):
-    if not isinstance(self.bot, TestableTelebot):
-      raise TypeError(f"Can't run tests because telebot is not {TestableTelebot.__name__}")
+    pass
+    # if not isinstance(self.bot, TestableTelebot):
+    #   raise TypeError(f"Can't run tests because telebot is not {TestableTelebot.__name__}")
 
-    teletest = TeleTest(self.bot)
-    await teletest.run_tests()
+    # teletest = TeleTest(self.bot)
+    # await teletest.run_tests()

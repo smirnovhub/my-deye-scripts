@@ -67,7 +67,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
     await navigator.navigate(DeyeGraphsPage.group)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(f"{self._title} cancel")
+    await navigator.stop(f"{self._title} cancel")
 
   def _create_graph_handler(self, graph: DeyeGraphData):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -76,12 +76,12 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
       progress = TelebotProgressMessage(bot)
 
       if not chat_id:
-        navigator.stop(f"{self._title} chat id is not set")
+        await navigator.stop(f"{self._title} chat id is not set")
         return
 
-      navigator.stop(f"{self._title} {graph.description}")
+      await navigator.stop(f"{self._title} {graph.description}")
 
-      progress.show(
+      await progress.show(
         chat_id = chat_id,
         text = "Creating graph",
       )
@@ -96,7 +96,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
           graph_name = graph.name,
         )
 
-        progress.hide()
+        await progress.hide()
 
         # Send the file as a document
         bot.send_document(
@@ -109,6 +109,6 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
           text = str(e),
         )
       finally:
-        progress.hide()
+        await progress.hide()
 
     return handler

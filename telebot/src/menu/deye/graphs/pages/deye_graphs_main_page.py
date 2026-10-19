@@ -74,7 +74,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
     return f"{self._title} cancel"
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(f"{self._title} cancel")
+    await navigator.stop(f"{self._title} cancel")
 
   def _create_navigation_handler(self, target_page: Enum, graph_date: date):
     async def handler(navigator: TelebotPageNavigator) -> None:

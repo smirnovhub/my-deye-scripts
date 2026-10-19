@@ -47,21 +47,21 @@ class CountdownWithCancelPage(TelebotNavigationPage):
   async def _handle_cancel(self, navigator: TelebotPageNavigator):
     if not self._result_future.done():
       self._result_future.set_result(False)
-    navigator.stop(delete_message = True)
+    await navigator.stop(delete_message = True)
 
   async def on_auto_update(self, navigator: TelebotPageNavigator) -> None:
     self._seconds -= 1
     if self._seconds < 0:
       if not self._result_future.done():
         self._result_future.set_result(True)
-      navigator.stop(delete_message = True)
+      await navigator.stop(delete_message = True)
     else:
       await navigator.update()
 
   async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     if not self._result_future.done():
       self._result_future.set_result(False)
-    navigator.stop(delete_message = True)
+    await navigator.stop(delete_message = True)
 
   def on_stop(self):
     if not self._result_future.done():

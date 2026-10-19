@@ -1,19 +1,15 @@
-import telebot
-
+from telebot.async_telebot import AsyncTeleBot
 from master_info_registers import MasterInfoRegisters
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_master_base import TelebotMenuMasterBase
-from telebot_async_runner import TelebotAsyncRunner
 
 class TelebotMenuMasterInfo(TelebotMenuMasterBase):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
     super().__init__(
       bot = bot,
-      runner = runner,
       registers_class = MasterInfoRegisters,
       all_command = TelebotMenuItem.deye_all_info,
       master_command = TelebotMenuItem.deye_master_info,

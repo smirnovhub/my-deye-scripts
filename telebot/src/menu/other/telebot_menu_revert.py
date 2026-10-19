@@ -1,13 +1,15 @@
 import re
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import List
 
 from button_node import ButtonNode
 from git_helper_async import GitHelperAsync
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
-from telebot_async_runner import TelebotAsyncRunner
+
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
@@ -18,13 +20,9 @@ from countdown_with_cancel import CountdownWithCancel
 class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
     self._git_helper = GitHelperAsync()
     self._update_checker = TelebotLocalUpdateCheckerAsync()
 
@@ -34,7 +32,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
 
   async def process_message(self, message: telebot.types.Message) -> None:
     if not await self._remote_update_checker.is_on_branch():
-      self.bot.send_message(message.chat.id, 'Unable to revert: the repository is not currently on a branch')
+      await self.bot.send_message(message.chat.id, 'Unable to revert: the repository is not currently on a branch')
       return
 
     try:
@@ -42,7 +40,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
       if not await self._git_helper.is_repository_up_to_date():
         last_commit = await self._git_helper.get_last_commit_hash_and_comment()
         last_commit = last_commit.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        self.bot.send_message(
+        await self.bot.send_message(
           message.chat.id,
           "Can't revert because repository is not up to date. "
           'Pls run <b>/update</b> and then try again. '
@@ -52,7 +50,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
         await self._update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
         return
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(message.chat.id, str(e))
       return
 
     pos = message.text.find(' ')
@@ -65,7 +63,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     try:
       last_commits = await self._git_helper.get_last_commits()
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(message.chat.id, str(e))
       return
 
     options: List[ButtonNode] = [
@@ -73,7 +71,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     ]
 
     if not last_commits:
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         "No commits found",
       )
@@ -95,7 +93,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
 
       short_hash = await self._git_helper.get_last_commit_short_hash()
       if commit_hash.startswith(short_hash):
-        self.bot.send_message(chat_id, f'You are already on {short_hash}')
+        await self.bot.send_message(chat_id, f'You are already on {short_hash}')
         return
 
       await self._git_helper.stash_push()
@@ -103,23 +101,23 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
       await self._git_helper.submodule_update()
       await self._git_helper.stash_pop()
     except Exception as e:
-      self.bot.send_message(chat_id, f'{str(e)}: trying to reset to HEAD and then stash pop again...')
+      await self.bot.send_message(chat_id, f'{str(e)}: trying to reset to HEAD and then stash pop again...')
       try:
         await self._git_helper.revert_to_revision('HEAD')
         await self._git_helper.pull()
         await self._git_helper.submodule_update()
         await self._git_helper.stash_pop()
 
-        self.bot.send_message(
+        await self.bot.send_message(
           chat_id,
           'All changes rolled back to the latest commit. '
           'Try to revert to another commit without conflicting changes',
         )
       except Exception as ex:
-        self.bot.send_message(chat_id, str(ex))
+        await self.bot.send_message(chat_id, str(ex))
       return
 
-    self.bot.send_message(chat_id, result)
+    await self.bot.send_message(chat_id, result)
 
     res = await UserChoices.ask_confirmation(
       self.bot,
@@ -129,7 +127,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     )
 
     if not res:
-      self.bot.send_message(chat_id, 'Restart cancelled')
+      await self.bot.send_message(chat_id, 'Restart cancelled')
       return
 
     res = await CountdownWithCancel.show_countdown(
@@ -140,13 +138,13 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     )
 
     if res:
-      self.bot.send_message(
+      await self.bot.send_message(
         chat_id,
         f'{CommonUtils.clock_face_one_oclock} Restarting telebot...',
       )
       TelebotUtils.stop_bot()
     else:
-      self.bot.send_message(
+      await self.bot.send_message(
         chat_id,
         'Restart cancelled',
       )

@@ -1,14 +1,14 @@
 import asyncio
-from datetime import timedelta
-import telebot
 
+from datetime import timedelta
+from telebot.async_telebot import AsyncTeleBot
 from telebot_page_navigator import TelebotPageNavigator
 from countdown_with_cancel_page import CountdownWithCancelPage
 
 class CountdownWithCancel:
   @staticmethod
   async def show_countdown(
-    bot: telebot.TeleBot,
+    bot: AsyncTeleBot,
     chat_id: int,
     text: str,
     seconds: int,

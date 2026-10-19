@@ -2,6 +2,8 @@ import time
 import logging
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from env_utils import EnvUtils
 from deye_utils import DeyeUtils
 from telebot_utils import TelebotUtils
@@ -49,7 +51,7 @@ class TelebotRemoteUpdateCheckerAsync:
       await self._save_last_remote_update_ask_time(time.time())
       return False
 
-  async def check_for_remote_updates(self, bot: telebot.TeleBot, message: telebot.types.Message) -> bool:
+  async def check_for_remote_updates(self, bot: AsyncTeleBot, message: telebot.types.Message) -> bool:
     """
     Check if the remote repository has updates and prompt the user to update the bot.
 
@@ -57,7 +59,7 @@ class TelebotRemoteUpdateCheckerAsync:
     - If remote updates are detected, prompts the user via Telegram to update the bot.
 
     Args:
-        bot (telebot.TeleBot): The Telebot instance for sending messages.
+        bot (AsyncTeleBot): The Telebot instance for sending messages.
         message (telebot.types.Message): The incoming message object from the user.
 
     Returns:

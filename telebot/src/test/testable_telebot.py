@@ -3,6 +3,8 @@ import sys
 import logging
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
@@ -15,9 +17,9 @@ class MessageTestData:
   text: str
   reply_markup: Optional[telebot.types.InlineKeyboardMarkup]
 
-class TestableTelebot(telebot.TeleBot):
+class TestableTelebot(AsyncTeleBot):
   """
-  A test-friendly subclass of `telebot.TeleBot` for unit testing and
+  A test-friendly subclass of `AsyncTeleBot` for unit testing and
   simulating Telegram bot behavior without sending real messages.
 
   This class overrides message sending, editing, and deletion methods to:

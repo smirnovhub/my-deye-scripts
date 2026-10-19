@@ -1,8 +1,10 @@
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from env_utils import EnvUtils
 from telebot_menu_item import TelebotMenuItem
-from telebot_async_runner import TelebotAsyncRunner
+
 from telebot_page_navigator import TelebotPageNavigator
 from deye_graphs_data_provider import DeyeGraphsDataProvider
 from deye_graphs_main_page import DeyeGraphsMainPage
@@ -14,13 +16,9 @@ from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 class TelebotMenuGraphs(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
     self._provider = DeyeGraphsDataProvider()
 
   @property
@@ -30,7 +28,7 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerAsync):
   async def process_message(self, message: telebot.types.Message) -> None:
     server_url = EnvUtils.get_remote_graph_server_url()
     if not server_url:
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         f"Environment variable '{EnvUtils.REMOTE_GRAPH_SERVER_URL}' is empty",
       )
@@ -39,7 +37,7 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerAsync):
     try:
       await self._provider.check_graph_server_available()
     except Exception as e:
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         f"Graph server {server_url} seems to be down: {e}",
       )
@@ -48,11 +46,11 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerAsync):
     try:
       graph_dates = await self._provider.load_graph_dates()
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(message.chat.id, str(e))
       return
 
     if not graph_dates:
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         "Graph list is empty",
       )

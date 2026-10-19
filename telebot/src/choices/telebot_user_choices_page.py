@@ -60,7 +60,7 @@ class UserChoicePage(TelebotNavigationPage):
   async def _handle_selection(self, navigator: TelebotPageNavigator, button: ButtonNode):
     if not self._result_future.done():
       self._result_future.set_result(button)
-    navigator.stop()
+    await navigator.stop()
 
   async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     text_lower = text.lower()
@@ -68,16 +68,16 @@ class UserChoicePage(TelebotNavigationPage):
       if button.text.lower() == text_lower:
         if not self._result_future.done():
           self._result_future.set_result(button)
-        navigator.stop()
+        await navigator.stop()
         return
 
     if self._accept_wrong_choice_from_user_input:
       if not self._result_future.done():
         self._result_future.set_result(ButtonNode(text = text))
-      navigator.stop()
+      await navigator.stop()
     else:
       navigator.send_message(self._wrong_choice_text)
-      navigator.stop()
+      await navigator.stop()
 
   def on_stop(self):
     if not self._result_future.done():
