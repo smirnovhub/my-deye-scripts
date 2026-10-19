@@ -51,7 +51,7 @@ class CountdownWithCancelPage(TelebotNavigationPage):
 
   async def on_auto_update(self, navigator: TelebotPageNavigator) -> None:
     self._seconds -= 1
-    if self._seconds < 0:
+    if self._seconds <= 0:
       if not self._result_future.done():
         self._result_future.set_result(True)
       await navigator.stop(delete_message = True)
