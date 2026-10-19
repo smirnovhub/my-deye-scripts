@@ -90,9 +90,9 @@ class TelebotLocalUpdateCheckerAsync:
       if "yes" in button.text.lower():
         await self._ask_for_restart(bot, chat_id)
       else:
-        bot.send_message(chat_id, 'Restart cancelled')
+        await bot.send_message(chat_id, 'Restart cancelled')
         if message is not None:
-          bot.process_new_messages([message])
+          await bot.process_new_messages([message])
 
       return True
 
@@ -121,13 +121,13 @@ class TelebotLocalUpdateCheckerAsync:
     )
 
     if result:
-      bot.send_message(
+      await bot.send_message(
         chat_id,
         f'{CommonUtils.clock_face_one_oclock} Restarting telebot...',
       )
       TelebotUtils.stop_bot()
     else:
-      bot.send_message(
+      await bot.send_message(
         chat_id,
         'Restart cancelled',
       )

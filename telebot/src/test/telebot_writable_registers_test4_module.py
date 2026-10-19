@@ -88,11 +88,11 @@ class TelebotWritableRegistersTest4Module(TelebotBaseTestModule):
 
       self.log.info(f"Sending command '{command}'")
 
-      self.send_text(user, command)
+      await self.send_text(user, command)
       await self.wait_for_text_regex(
         rf'Current.+{register.description}.+value: {random_value.value.pretty}.*Enter new value')
 
-      self.send_text(user, value)
+      await self.send_text(user, value)
 
       await self.wait_for_text_regex(rf'Enum value for .*{register.description}.* is unknown')
 
@@ -101,7 +101,7 @@ class TelebotWritableRegistersTest4Module(TelebotBaseTestModule):
 
       self.log.info(f"Sending command '{command}'")
 
-      self.send_text(user, command)
+      await self.send_text(user, command)
       await self.wait_for_text_regex(rf'Enum value for .*{register.description}.* is unknown')
 
       if master_server.is_something_written():

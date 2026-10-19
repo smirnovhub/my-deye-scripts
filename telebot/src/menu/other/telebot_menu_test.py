@@ -119,7 +119,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
     tests_scripts: List[str],
   ):
     if not test_name:
-      self.bot.send_message(chat_id, 'Test name is empty')
+      await self.bot.send_message(chat_id, 'Test name is empty')
       return
 
     if test_name != self.all_tests:
@@ -131,7 +131,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
           break
 
       if not found:
-        self.bot.send_message(chat_id, f"Test '{test_name}' not found")
+        await self.bot.send_message(chat_id, f"Test '{test_name}' not found")
         return
 
     try:
@@ -144,7 +144,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
       await asyncio.sleep(1)
 
       if failed_count == len(tests):
-        self.send_results(
+        await self.send_results(
           tests_scripts,
           chat_id,
           f'{CommonUtils.large_red_circle_emoji} '
@@ -152,7 +152,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
           'Check logs for details.',
         )
       elif failed_count > 0:
-        self.send_results(
+        await self.send_results(
           tests_scripts,
           chat_id,
           f'{CommonUtils.large_yellow_circle_emoji} '
@@ -161,7 +161,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
           "Check logs for details.",
         )
       else:
-        self.send_results(
+        await self.send_results(
           tests_scripts,
           chat_id,
           f'{CommonUtils.large_green_circle_emoji} '
@@ -170,7 +170,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
     except Exception as e:
       t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
       await asyncio.sleep(1)
-      self.bot.send_message(
+      await self.bot.send_message(
         chat_id,
         f'{CommonUtils.large_red_circle_emoji} '
         f'Tests failed after {t}. '
@@ -226,7 +226,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
           self.write_and_flush(f, f"An exception while running {test_name}: {e}\n")
 
         t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-        self.bot.send_message(
+        await self.bot.send_message(
           chat_id,
           f'{CommonUtils.large_red_circle_emoji} '
           f'[{i + 1}/{len(scripts)}] '
@@ -244,7 +244,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
           self.write_and_flush(f, f"{msg}\n")
 
         t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-        self.bot.send_message(
+        await self.bot.send_message(
           chat_id,
           f'{CommonUtils.large_red_circle_emoji} '
           f'[{i + 1}/{len(scripts)}] '
@@ -265,7 +265,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
       await asyncio.sleep(1)
 
       last_iteration_time = time.time()
-      self.bot.send_message(
+      await self.bot.send_message(
         chat_id,
         f'{CommonUtils.large_green_circle_emoji} '
         f'[{i + 1}/{len(scripts)}] '
@@ -285,7 +285,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
     except Exception:
       pass
 
-  def send_results(self, scripts: List[str], chat_id: int, message: str):
+  async def send_results(self, scripts: List[str], chat_id: int, message: str):
     """
     Collects all available log files related to the provided scripts,
     combines them into a single ZIP archive, sends it to the specified Telegram chat,
@@ -311,7 +311,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
         all_log_files.append(file_path)
 
     if not all_log_files:
-      self.bot.send_message(chat_id, message, parse_mode = "HTML")
+      await self.bot.send_message(chat_id, message, parse_mode = "HTML")
       return
 
     # Create one combined zip
@@ -319,7 +319,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
 
     try:
       with open(zip_file_name, 'rb') as f:
-        self.bot.send_document(
+        await self.bot.send_document(
           chat_id,
           telebot.types.InputFile(f, file_name = os.path.basename(zip_file_name)),
           caption = message + ' Log files attached.',

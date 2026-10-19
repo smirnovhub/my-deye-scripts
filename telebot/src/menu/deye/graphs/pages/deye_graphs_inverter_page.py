@@ -91,13 +91,13 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       )
 
       # Send the file as a document
-      bot.send_document(
+      await bot.send_document(
         chat_id = chat_id,
         document = data_file,
       )
     except Exception as e:
       self._logger.error(f"Error: {e}", exc_info = e)
-      bot.send_message(
+      await bot.send_message(
         chat_id = chat_id,
         text = f"Error: {e}",
       )
@@ -123,12 +123,12 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       )
 
       # Send the file as a document
-      bot.send_document(
+      await bot.send_document(
         chat_id = chat_id,
         document = data_file,
       )
     except Exception as e:
-      bot.send_message(
+      await bot.send_message(
         chat_id = chat_id,
         text = str(e),
       )

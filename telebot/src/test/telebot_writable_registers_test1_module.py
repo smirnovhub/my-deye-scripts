@@ -57,14 +57,14 @@ class TelebotWritableRegistersTest1Module(TelebotBaseTestModule):
       self.log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
       self.log.info(f"Sending command '{command}'")
 
-      self.send_text(user, command)
+      await self.send_text(user, command)
       await self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
 
-      self.send_text(user, value)
+      await self.send_text(user, value)
 
       if isinstance(register.value, DeyeBaseEnum):
         await self.wait_for_text('Do you really want to change')
-        self.send_text(user, 'yes')
+        await self.send_text(user, 'yes')
 
       await self.wait_for_server_changes(master_server, register)
       await self.wait_for_text_regex(rf'{register.description}.+changed from .+ to ')

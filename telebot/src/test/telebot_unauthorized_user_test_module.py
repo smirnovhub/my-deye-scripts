@@ -46,7 +46,7 @@ class TelebotUnauthorizedUserTestModule(TelebotBaseTestModule):
 
       self.log.info(f"Sending command '/{command}' from user {user.id}")
 
-      self.send_text(user, f'/{command}')
+      await self.send_text(user, f'/{command}')
 
       if command == TelebotMenuItem.start.command:
         await self.wait_for_text(f'Access requested for user {user.id}')

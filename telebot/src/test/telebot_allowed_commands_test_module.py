@@ -72,7 +72,7 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
     for command in self.get_all_registered_commands():
       cmd = f'/{command}'
       self.log.info(f"Sending command '{cmd}' from user {user.id} {user.name}")
-      self.send_text(user, cmd)
+      await self.send_text(user, cmd)
 
       titles = [
         TelebotConstants.default_title,
@@ -99,7 +99,7 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
 
       cmd = f'/{command} {random.randint(1000, 9999)}'
       self.log.info(f"Sending command '{cmd}' from user {user.id} {user.name}")
-      self.send_text(user, cmd)
+      await self.send_text(user, cmd)
 
       if command in disabled_registers:
         register = registers.get_register_by_name(command)

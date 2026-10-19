@@ -65,14 +65,14 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
 
     self.log.info(f'Run regular command: {command}')
 
-    self.send_text(user, command)
+    await self.send_text(user, command)
 
     if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
       await self.wait_for_text_regex(f'The difference is about {diff_seconds} seconds'
                                      '.+Are you sure to sync inverter time')
 
       self.log.info(f"Replying 'yes' for time sync confirmation...")
-      self.send_text(user, 'yes')
+      await self.send_text(user, 'yes')
 
     changed_to = DeyeUtils.get_current_time().strftime(DeyeUtils.time_format_str)
     changed_pattern = (rf'{register.description}.+changed '
@@ -101,14 +101,14 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
     time_diff = date_time - DeyeUtils.get_current_time()
     diff_seconds = int(abs(time_diff.total_seconds()))
 
-    self.send_button_click(user, command)
+    await self.send_button_click(user, command)
 
     if diff_seconds > TelebotConstants.inverter_system_time_too_big_difference_sec:
       await self.wait_for_text_regex(f'The difference is about {diff_seconds} seconds'
                                      '.+Are you sure to sync inverter time')
 
       self.log.info(f"Replying 'yes' for time sync confirmation...")
-      self.send_text(user, 'yes')
+      await self.send_text(user, 'yes')
 
     changed_pattern = (rf'{register.description}.+changed '
                        f'from {rnd.value} '

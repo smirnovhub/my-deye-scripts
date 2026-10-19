@@ -71,14 +71,14 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
       self.log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
       self.log.info(f"Sending command '{command}'")
 
-      self.send_text(user, command)
+      await self.send_text(user, command)
       await self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
 
-      self.send_text(user, new_random_value)
+      await self.send_text(user, new_random_value)
 
       if isinstance(register.value, DeyeBaseEnum):
         await self.wait_for_text('Do you really want to change')
-        self.send_text(user, 'yes')
+        await self.send_text(user, 'yes')
 
       await self.wait_for_server_changes(master_server, register)
       undo_data = await self.wait_for_text_regex_and_get_undo_data(rf'{register.description}.+changed from .+ to ')

@@ -82,10 +82,10 @@ class TelebotWritableRegistersTest5Module(TelebotBaseTestModule):
 
       self.log.info(f"Sending command '{command}'")
 
-      self.send_text(self.user, command)
+      await self.send_text(self.user, command)
       await self.wait_for_text_regex(rf'Current.+{register.description}.+value.*Enter new value')
 
-      self.send_text(self.user, str(val))
+      await self.send_text(self.user, str(val))
 
       await self.wait_for_text_regex(
         rf'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')
@@ -93,7 +93,7 @@ class TelebotWritableRegistersTest5Module(TelebotBaseTestModule):
       command = f'/{register.name} {val}'
 
       self.log.info(f"Sending command '{command}'")
-      self.send_text(self.user, command)
+      await self.send_text(self.user, command)
 
       await self.wait_for_text_regex(
         rf'value should be (int|float)?\s?from {register.min_value} to {register.max_value}')

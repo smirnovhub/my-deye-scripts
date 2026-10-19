@@ -99,12 +99,12 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
         await progress.hide()
 
         # Send the file as a document
-        bot.send_document(
+        await bot.send_document(
           chat_id = chat_id,
           document = image_file,
         )
       except Exception as e:
-        bot.send_message(
+        await bot.send_message(
           chat_id = chat_id,
           text = str(e),
         )

@@ -99,27 +99,27 @@ class TestableTelebot(AsyncTeleBot):
 
     return None
 
-  def set_my_commands(self, *args, **kwargs) -> bool:
+  async def set_my_commands(self, *args, **kwargs) -> bool:
     self.log.info(f'[set_my_commands] {self.get_args(*args, **kwargs)}')
     return True
 
-  def set_chat_menu_button(self, *args, **kwargs) -> bool:
+  async def set_chat_menu_button(self, *args, **kwargs) -> bool:
     self.log.info(f'[set_chat_menu_button] {self.get_args(*args, **kwargs)}')
     return True
 
   # Just for logging
-  def process_new_messages(self, new_messages: List[telebot.types.Message], *args, **kwargs):
+  async def process_new_messages(self, new_messages: List[telebot.types.Message], *args, **kwargs):
     for message in new_messages:
       self.log.info(f'[process_new_messages] {self.get_args(json = message.json, *args, **kwargs)}')
-    super().process_new_messages(new_messages)
+    await super().process_new_messages(new_messages)
 
   # Just for logging
-  def process_new_callback_query(self, new_callback_queries: List[telebot.types.CallbackQuery], *args, **kwargs):
+  async def process_new_callback_query(self, new_callback_queries: List[telebot.types.CallbackQuery], *args, **kwargs):
     for callback_query in new_callback_queries:
       self.log.info(f'[process_new_callback_query] {self.get_args(data = callback_query.data, *args, **kwargs)}')
-    super().process_new_callback_query(new_callback_queries)
+    await super().process_new_callback_query(new_callback_queries)
 
-  def send_message(
+  async def send_message(
     self,
     chat_id: Union[int, str],
     text: str,
@@ -134,52 +134,49 @@ class TestableTelebot(AsyncTeleBot):
 
     return TelebotFakeTestMessage.make(text = text, chat_id = chat_id)
 
-  def send_photo(self, *args, **kwargs):
+  async def send_photo(self, *args, **kwargs):
     self.log.info("[send_photo]")
     return None
 
-  def send_document(self, *args, **kwargs):
+  async def send_document(self, *args, **kwargs):
     self.log.info(f'[send_document] {self.get_args(*args, **kwargs)}')
     return None
 
-  def send_audio(self, *args, **kwargs):
+  async def send_audio(self, *args, **kwargs):
     self.log.info(f'[send_audio] {self.get_args(*args, **kwargs)}')
     return None
 
-  def send_video(self, *args, **kwargs):
+  async def send_video(self, *args, **kwargs):
     self.log.info(f'[send_video] {self.get_args(*args, **kwargs)}')
     return None
 
-  def send_media_group(self, *args, **kwargs):
+  async def send_media_group(self, *args, **kwargs):
     self.log.info(f'[send_media_group] {self.get_args(*args, **kwargs)}')
 
-  def edit_message_text(self, *args, **kwargs):
+  async def edit_message_text(self, *args, **kwargs):
     self.log.info(f'[edit_message_text] {self.get_args(*args, **kwargs)}')
     return None
 
-  def edit_message_reply_markup(self, *args, **kwargs) -> Union[telebot.types.Message, bool]:
+  async def edit_message_reply_markup(self, *args, **kwargs) -> Union[telebot.types.Message, bool]:
     self.log.info(f'[edit_message_reply_markup] {self.get_args(*args, **kwargs)}')
     return True
 
-  def delete_message(self, *args, **kwargs) -> bool:
+  async def delete_message(self, *args, **kwargs) -> bool:
     self.log.info(f'[delete_message] {self.get_args(*args, **kwargs)}')
     return True
 
-  def answer_callback_query(self, *args, **kwargs):
+  async def answer_callback_query(self, *args, **kwargs):
     self.log.info(f'[answer_callback_query] {self.get_args(*args, **kwargs)}')
     return True
 
-  def get_updates(self, *args, **kwargs):
+  async def get_updates(self, *args, **kwargs):
     self.log.info(f'[get_updates] {self.get_args(*args, **kwargs)}')
 
-  def infinity_polling(self, *args, **kwargs):
+  async def infinity_polling(self, *args, **kwargs):
     self.log.info(f'[infinity_polling] {self.get_args(*args, **kwargs)}')
 
-  def polling(self, *args, **kwargs):
+  async def polling(self, *args, **kwargs):
     self.log.info(f'[polling] {self.get_args(*args, **kwargs)}')
-
-  def stop_polling(self, *args, **kwargs):
-    self.log.info(f'[stop_polling] {self.get_args(*args, **kwargs)}')
 
   def get_args(self, *args, **kwargs) -> str:
     """

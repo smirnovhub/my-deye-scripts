@@ -168,7 +168,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
       return
 
     # remove buttons from previous message
-    TelebotUtils.remove_inline_buttons_with_delay(
+    await TelebotUtils.remove_inline_buttons_with_delay(
       bot = self.bot,
       chat_id = message.chat.id,
       message_id = message_id,

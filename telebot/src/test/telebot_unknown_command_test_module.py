@@ -60,7 +60,7 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
 
       self.log.info(f"Sending command '/{command}'")
 
-      self.send_text(user, f'/{command}')
+      await self.send_text(user, f'/{command}')
       await self.wait_for_text_regex(rf'Unknown command: /.*{command}')
 
     for i in range(5):
@@ -69,7 +69,7 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
 
       self.log.info(f"Sending command '/{command} {param}'")
 
-      self.send_text(user, f'/{command} {param}')
+      await self.send_text(user, f'/{command} {param}')
       await self.wait_for_text_regex(rf'Unknown command: /.*{command}')
 
     self.log.info('Testing non-writable registers as a command...')
@@ -89,7 +89,7 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
 
       self.log.info(f"Sending command '{command}'")
 
-      self.send_text(user, command)
+      await self.send_text(user, command)
       await self.wait_for_text_regex(rf'Unknown command: /.*{register.name}')
 
       value = ''.join(random.choices(string.ascii_letters, k = 8))
@@ -97,7 +97,7 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
 
       self.log.info(f"Sending command '{command}'")
 
-      self.send_text(user, command)
+      await self.send_text(user, command)
       await self.wait_for_text_regex(rf'Unknown command: /.*{register.name}')
 
     self.log.info('Seems unknown commands processed correctly')

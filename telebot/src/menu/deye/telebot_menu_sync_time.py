@@ -131,7 +131,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
         max_per_row = 2,
       )
 
-      TelebotUtils.remove_inline_buttons_with_delay(
+      await TelebotUtils.remove_inline_buttons_with_delay(
         bot = self.bot,
         chat_id = chat_id,
         message_id = sent.message_id,

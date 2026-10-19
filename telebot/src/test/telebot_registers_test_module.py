@@ -47,7 +47,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.log.info(f'Run regular command: {command}')
 
     holder = await self._init_registers(servers)
-    self.send_text(user, command)
+    await self.send_text(user, command)
     await self.call_with_retry(self._check_results, holder)
 
     self.log.info(f'Run command from button: {command}')
@@ -55,7 +55,7 @@ class TelebotRegistersTestModule(TelebotBaseTestModule):
     self.bot.clear_messages()
 
     holder = await self._init_registers(servers)
-    self.send_button_click(user, command)
+    await self.send_button_click(user, command)
     await self.call_with_retry(self._check_results, holder)
 
   async def _init_registers(self, servers: List[SolarmanTestServer]) -> DeyeRegistersHolderAsync:
