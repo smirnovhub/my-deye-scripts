@@ -1,12 +1,14 @@
 import os
+import queue
 import sys
 import time
 import logging
 import subprocess
 import threading
-import queue
 
+from queue import Queue
 from pathlib import Path
+from typing import List
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -73,8 +75,8 @@ process = subprocess.Popen(
   bufsize = 1,
 )
 
-output_lines = []
-output_queue = queue.Queue()
+output_lines: List[str] = []
+output_queue: Queue[str] = Queue()
 
 # Read process output in a background thread to prevent blocking
 def read_output(pipe, q):
