@@ -102,6 +102,8 @@ async def main():
         logger = logger,
       )
 
+      TelebotAsyncStepManager.setup(bot)
+
       await mybot.initialize()
       await mybot.run_tests()
 
