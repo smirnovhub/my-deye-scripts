@@ -126,6 +126,7 @@ class TelebotPageNavigator:
 
     async with self._async_lock:
       try:
+        await page.on_start()
         await page.update()
         page.clear_buttons()
         page.create_buttons()
@@ -432,8 +433,9 @@ class TelebotPageNavigator:
         del TelebotPageNavigator._instances[self._chat_id]
       TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._chat_id)
 
-    if self._current_page:
-      self._current_page.on_stop()
+    async with self._async_lock:
+      if self._current_page:
+        await self._current_page.on_stop()
 
     async def execute_message_action(
       bot: AsyncTeleBot,

@@ -63,7 +63,7 @@ class CountdownWithCancelPage(TelebotNavigationPage):
       self._result_future.set_result(False)
     await navigator.stop(delete_message = True)
 
-  def on_stop(self):
+  async def on_stop(self) -> None:
     if not self._result_future.done():
       self._result_future.set_result(False)
 

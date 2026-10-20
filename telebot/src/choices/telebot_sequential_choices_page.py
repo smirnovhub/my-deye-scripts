@@ -85,7 +85,7 @@ class SequentialChoicePage(TelebotNavigationPage):
 
     raise RuntimeError("No such option")
 
-  def on_stop(self):
+  async def on_stop(self) -> None:
     if not self._result_future.done():
       self._result_future.cancel()
 

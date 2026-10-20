@@ -146,7 +146,10 @@ class TelebotNavigationPage(ABC):
   ) -> None:
     pass
 
-  def on_stop(self):
+  async def on_start(self) -> None:
+    pass
+
+  async def on_stop(self) -> None:
     pass
 
   async def on_auto_update(self, navigator: TelebotPageNavigator) -> None:

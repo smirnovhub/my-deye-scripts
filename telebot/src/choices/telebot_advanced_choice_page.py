@@ -120,7 +120,7 @@ class AdvancedChoicePage(TelebotNavigationPage):
     final_text = f"{self._text} {button.text}" if self._edit_message_with_user_selection else self._text
     await navigator.stop(final_text)
 
-  def on_stop(self):
+  async def on_stop(self) -> None:
     if not self._result_future.done():
       self._result_future.cancel()
 

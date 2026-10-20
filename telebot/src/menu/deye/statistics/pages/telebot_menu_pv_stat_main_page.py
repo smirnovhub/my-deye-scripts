@@ -1,73 +1,71 @@
 import telebot
 
-from telebot.async_telebot import AsyncTeleBot
-
+from enum import Enum, auto
+from datetime import date
 from http import HTTPStatus
 from urllib.parse import urljoin
-from typing import List, cast
-from datetime import date
+from typing import List, Union, cast
 
 from env_utils import EnvUtils
-from telebot_utils import TelebotUtils
-from telebot_command_choice import CommandChoice
-from telebot_menu_item import TelebotMenuItem
+from deye_loggers import DeyeLoggers
+from button_node import ButtonNode
+from break_button_node import BreakButtonNode
+from telebot_page_navigator import TelebotPageNavigator
+from telebot_navigation_page import TelebotNavigationPage
 from statistics_period import StatisticsPeriod
 from inverter_energy_statistics_dto import InverterEnergyStatisticsDto
 from http_session_singleton_async import HttpSessionSingletonAsync
-from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
-class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
-  def __init__(
-    self,
-    bot: AsyncTeleBot,
-    stat_command: TelebotMenuItem,
-    stat_period: StatisticsPeriod,
-  ):
-    super().__init__(bot = bot)
-    self._stat_command = stat_command
-    self._stat_period = stat_period
+class PvStatMainPageType(Enum):
+  main = auto()
+
+class TelebotMenuPvStatMainPage(TelebotNavigationPage):
+  def __init__(self):
+    super().__init__()
+    self._deye_loggers = DeyeLoggers()
+    self._period = StatisticsPeriod.Day
+    self._texts: List[telebot.types.InputRichBlock] = []
 
   @property
-  def command(self) -> TelebotMenuItem:
-    return self._stat_command
+  def page_type(self) -> Enum:
+    return PvStatMainPageType.main
 
-  async def process_message(self, message: telebot.types.Message) -> None:
-    menu_items = (
-      TelebotMenuItem.deye_pv_stat_day,
-      TelebotMenuItem.deye_pv_stat_month,
-      TelebotMenuItem.deye_pv_stat_year,
-    )
+  @property
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
+    return telebot.types.InputRichMessage(blocks = self._texts)
 
-    choices = {
-      item.description: f"/{item.command}"
-      for item in menu_items if self.auth_helper.is_menu_item_allowed(message.from_user.id, item)
-    }
+  async def on_start(self) -> None:
+    self._texts = await self._get_telegram_table(period = self._period)
 
-    try:
-      table = await self._get_telegram_table(date.today(), self._stat_period)
-    except Exception as e:
-      await CommandChoice.ask_command_choice(
-        bot = self.bot,
-        chat_id = message.chat.id,
-        text = TelebotUtils.escape_html(str(e)),
-        options = choices,
-        max_per_row = 2,
-      )
-      return
+  async def on_auto_update(self, navigator: TelebotPageNavigator) -> None:
+    self._texts = await self._get_telegram_table(period = self._period)
+    await navigator.update()
 
-    await CommandChoice.ask_command_choice(
-      bot = self.bot,
-      chat_id = message.chat.id,
-      text = telebot.types.InputRichMessage(blocks = table),
-      options = choices,
-      max_per_row = 2,
-    )
+  def create_buttons(self) -> None:
+    self._create_pv_stat_button(StatisticsPeriod.Day)
+    self._create_pv_stat_button(StatisticsPeriod.Month)
+    self._create_pv_stat_button(StatisticsPeriod.Year)
+
+    self.register_button(BreakButtonNode())
+    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+
+  def _create_pv_stat_button(self, period: StatisticsPeriod) -> None:
+    async def handler(navigator: TelebotPageNavigator) -> None:
+      self._period = period
+      self._texts = await self._get_telegram_table(period = period)
+
+      await navigator.update()
+
+    self.register_button(ButtonNode(period.description), handler)
+
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+    await navigator.stop()
 
   async def _get_telegram_table(
     self,
-    today: date,
     period: StatisticsPeriod,
   ) -> List[telebot.types.InputRichBlock]:
+    today = date.today()
     period_date = period.get_date_suffix(today)
     server_url = EnvUtils.get_remote_cache_server_url()
     session = await HttpSessionSingletonAsync.get_session()
@@ -80,7 +78,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       if response.status != HTTPStatus.OK:
         err_str = (f"Failed to fetch production data for {period_date} "
                    f"from {url}, status code: {response.status}")
-        self.logger.error(err_str)
+        self._logger.error(err_str)
         raise ValueError(err_str)
 
       dto = InverterEnergyStatisticsDto.from_json(payload)
@@ -98,11 +96,11 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     master_gen_percent = 0
     master_pv2_and_master_gen_percent = 0
 
-    if len(self.loggers.slaves) < 1:
+    if len(self._deye_loggers.slaves) < 1:
       raise ValueError("Slave inverters are empty")
 
-    master_stats = dto.energy_statistics.get(self.loggers.master.name)
-    slave_stats = dto.energy_statistics.get(self.loggers.slaves[0].name)
+    master_stats = dto.energy_statistics.get(self._deye_loggers.master.name)
+    slave_stats = dto.energy_statistics.get(self._deye_loggers.slaves[0].name)
 
     if master_stats is None:
       raise ValueError("Master statistics not found")
