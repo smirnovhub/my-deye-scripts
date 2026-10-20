@@ -9,6 +9,7 @@ from deye_loggers import DeyeLoggers
 from break_button_node import BreakButtonNode
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
+from telebot_utils import TelebotUtils
 from time_of_use_ask_data import TimeOfUseAskData
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_data import TimeOfUseData
@@ -82,7 +83,7 @@ class TimeOfUseBottomButtons:
         tou_data = data,
       )
     except Exception as e:
-      await navigator.stop(str(e))
+      await navigator.stop(TelebotUtils.escape_html(str(e)))
     else:
       text = TimeOfUseHelper.get_time_of_use_as_rich_message(tou_data = self._tou_data, suffx = "saved")
       await navigator.stop(text)

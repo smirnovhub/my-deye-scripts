@@ -1,17 +1,15 @@
 import telebot
+import traceback
 
 from telebot.async_telebot import AsyncTeleBot
-import traceback
 
 from datetime import datetime
 
 from deye_utils import DeyeUtils
-
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_utils import TelebotUtils
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
-from deye_exceptions import DeyeKnownException
 from deye_custom_single_registers import DeyeCustomSingleRegisters
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
@@ -60,7 +58,10 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
     try:
       await holder.read_registers()
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
       return
     finally:
       holder.disconnect()
@@ -138,8 +139,9 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
         delay = TelebotConstants.undo_button_remove_delay_sec,
       )
 
-    except DeyeKnownException as e:
-      await self.bot.send_message(chat_id, str(e))
     except Exception as e:
-      await self.bot.send_message(chat_id, str(e))
-      self.logger.info(traceback.format_exc())
+      await self.bot.send_message(
+        chat_id,
+        TelebotUtils.escape_html(str(e)),
+      )
+      self.logger.error(traceback.format_exc())

@@ -1,4 +1,5 @@
 import asyncio
+import html
 import json
 import os
 import signal
@@ -275,6 +276,12 @@ class TelebotUtils:
       for task in other_tasks:
         logging.warning(f"Task: {task}")
         task.print_stack()
+
+  @staticmethod
+  # Simple and safe way for HTML parse_mode
+  def escape_html(text: str) -> str:
+    # This replaces &, <, and > with &amp;, &lt;, and &gt;
+    return html.escape(text)
 
   @staticmethod
   async def stop_bot():

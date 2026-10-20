@@ -60,6 +60,7 @@ class TelebotPageNavigator:
   _navigator_data_prefix = "_nav_"
   _instances: Dict[int, "TelebotPageNavigator"] = {}
   _handlers_registered: bool = False
+  _start_lock = asyncio.Lock()
 
   def __init__(
     self,
@@ -108,15 +109,16 @@ class TelebotPageNavigator:
     chat_id: int,
   ) -> telebot.types.Message:
     # Retrieve and stop the previous navigator for this chat before registering the new one
-    old_nav = TelebotPageNavigator._instances.get(chat_id)
+    async with TelebotPageNavigator._start_lock:
+      old_nav = TelebotPageNavigator._instances.get(chat_id)
 
-    if old_nav and old_nav != self:
-      try:
-        await old_nav.stop()
-      except Exception as e:
-        self._logger.error(f"Error stopping previous navigator for chat {chat_id}: {e}")
+      if old_nav and old_nav != self:
+        try:
+          await old_nav.stop()
+        except Exception as e:
+          self._logger.error(f"Error stopping previous navigator for chat {chat_id}: {e}")
 
-    TelebotPageNavigator._instances[chat_id] = self
+      TelebotPageNavigator._instances[chat_id] = self
 
     self._main_page = page
     self._current_page = page
@@ -129,7 +131,7 @@ class TelebotPageNavigator:
         page.create_buttons()
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        return await self.send_message(str(e))
+        return await self.send_message(TelebotUtils.escape_html(str(e)))
 
       keyboard = TelebotUtils.get_keyboard_for_buttons(
         buttons = page.buttons,
@@ -184,13 +186,13 @@ class TelebotPageNavigator:
         await page.on_navigate(navigator = self, **kwargs)
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        await self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
 
       try:
         await self.update()
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        await self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
 
   async def update(self) -> None:
     async with self._async_lock:
@@ -204,7 +206,7 @@ class TelebotPageNavigator:
         await self._current_page.update()
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        await self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
 
       self._current_page.clear_buttons()
 
@@ -212,7 +214,7 @@ class TelebotPageNavigator:
         self._current_page.create_buttons()
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        await self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
 
       keyboard = TelebotUtils.get_keyboard_for_buttons(
         buttons = self._current_page.buttons,
@@ -239,8 +241,7 @@ class TelebotPageNavigator:
             parse_mode = 'HTML',
           )
       except Exception as e:
-        if "message is not modified" not in str(e).lower():
-          self._logger.error(f"Failed to edit message: {e}")
+        self._handle_message_error(e)
 
   async def add_delayed_action(
     self,
@@ -258,7 +259,7 @@ class TelebotPageNavigator:
         raise
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        await self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
 
     task = asyncio.create_task(delayed_task_wrapper())
 
@@ -271,7 +272,7 @@ class TelebotPageNavigator:
     task.add_done_callback(on_done)
 
   async def send_message(self, text: str) -> telebot.types.Message:
-    if not self._chat_id:
+    if self._chat_id is None:
       raise RuntimeError("Navigation has not started yet")
 
     return await self._bot.send_message(
@@ -285,7 +286,7 @@ class TelebotPageNavigator:
     text: str,
     delay = 5,
   ) -> None:
-    if not self._chat_id:
+    if self._chat_id is None:
       raise RuntimeError("Navigation has not started yet")
 
     sent = await self.send_message(text[:512])
@@ -348,7 +349,7 @@ class TelebotPageNavigator:
           raise
         except Exception as e:
           self._logger.error(traceback.format_exc())
-          await self.send_message_with_remove_with_delay(str(e))
+          await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
 
     task = asyncio.create_task(auto_update_worker())
     self._tasks.append(task)
@@ -364,7 +365,7 @@ class TelebotPageNavigator:
       return page.text if page.text else "Untitled"
     except Exception as e:
       self._logger.error(traceback.format_exc())
-      return str(e)
+      return TelebotUtils.escape_html(str(e))
 
   async def _resend(self, text: str) -> telebot.types.Message:
     if not self._message or not self._chat_id or not self._current_page:
@@ -379,8 +380,8 @@ class TelebotPageNavigator:
           message_id = self._message.message_id,
           rich_message = page_text,
         )
-      except Exception:
-        pass
+      except Exception as e:
+        self._handle_message_error(e)
 
       self._message = await self._bot.send_rich_message(
         chat_id = self._chat_id,
@@ -395,8 +396,8 @@ class TelebotPageNavigator:
           message_id = self._message.message_id,
           parse_mode = 'HTML',
         )
-      except Exception:
-        pass
+      except Exception as ee:
+        self._handle_message_error(ee)
 
       self._message = await self._bot.send_message(
         chat_id = self._chat_id,
@@ -419,9 +420,6 @@ class TelebotPageNavigator:
     text: Optional[Union[str, telebot.types.InputRichMessage]] = None,
     delete_message: bool = False,
   ) -> None:
-    if not self._current_page or not self._message or not self._chat_id:
-      raise RuntimeError("Navigation has not started yet")
-
     tasks_to_cancel = list(self._tasks)
     self._tasks.clear()
 
@@ -429,12 +427,13 @@ class TelebotPageNavigator:
       if not task.done():
         task.cancel()
 
-    if not self._current_page or not self._message or not self._chat_id:
-      if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
+    if self._chat_id is not None:
+      if TelebotPageNavigator._instances.get(self._chat_id) == self:
         del TelebotPageNavigator._instances[self._chat_id]
-      raise RuntimeError("Navigation has not started yet")
+      TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._chat_id)
 
-    self._current_page.on_stop()
+    if self._current_page:
+      self._current_page.on_stop()
 
     async def execute_message_action(
       bot: AsyncTeleBot,
@@ -471,23 +470,19 @@ class TelebotPageNavigator:
             message_id = message_id,
             reply_markup = None,
           )
-      except Exception:
-        pass
+      except Exception as e:
+        self._handle_message_error(e)
 
     # Run in background task passing all parameters explicitly
-    asyncio.create_task(
-      execute_message_action(
-        bot = self._bot,
-        chat_id = self._chat_id,
-        message_id = self._message.message_id,
-        delete_message = delete_message,
-        text = text,
-      ))
-
-    if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
-      del TelebotPageNavigator._instances[self._chat_id]
-    if self._chat_id:
-      TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._chat_id)
+    if self._message is not None and self._chat_id is not None:
+      asyncio.create_task(
+        execute_message_action(
+          bot = self._bot,
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          delete_message = delete_message,
+          text = text,
+        ))
 
     self._chat_id = None
     self._message = None
@@ -507,7 +502,7 @@ class TelebotPageNavigator:
         )
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        await self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
 
   async def _on_command_button_clicked(self, command: str) -> None:
     if not self._current_page:
@@ -525,7 +520,7 @@ class TelebotPageNavigator:
         self._logger.info(f"Websocket update received: {data}")
         await self._current_page.on_websocket_update(navigator = self, data = data)
       except Exception as e:
-        await self.send_message_with_remove_with_delay(str(e))
+        await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
         self._logger.error(traceback.format_exc())
 
   @staticmethod
@@ -582,4 +577,9 @@ class TelebotPageNavigator:
 
         except Exception as e:
           self._logger.error(traceback.format_exc())
-          await self.send_message_with_remove_with_delay(str(e))
+          await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
+
+  def _handle_message_error(self, e: Exception) -> None:
+    """Logs message editing errors, ignoring harmless 'message is not modified' exceptions."""
+    if "message is not modified" not in str(e).lower():
+      self._logger.error(f"Failed to edit message: {TelebotUtils.escape_html(str(e))}")

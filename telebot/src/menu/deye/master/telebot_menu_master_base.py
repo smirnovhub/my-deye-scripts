@@ -55,7 +55,10 @@ class TelebotMenuMasterBase(TelebotMenuItemHandlerAsync):
     try:
       await holder.read_registers()
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
       return
     finally:
       holder.disconnect()

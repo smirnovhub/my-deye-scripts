@@ -4,11 +4,11 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import List, Type
 
+from telebot_utils import TelebotUtils
 from deye_registers import DeyeRegisters
 from telebot_command_choice import CommandChoice
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_menu_item import TelebotMenuItem
-
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
@@ -51,7 +51,10 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandlerAsync):
     try:
       await holder.read_registers()
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
       return
     finally:
       holder.disconnect()

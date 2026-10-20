@@ -3,8 +3,8 @@ import telebot
 from telebot.async_telebot import AsyncTeleBot
 
 from env_utils import EnvUtils
+from telebot_utils import TelebotUtils
 from telebot_menu_item import TelebotMenuItem
-
 from telebot_page_navigator import TelebotPageNavigator
 from deye_graphs_data_provider import DeyeGraphsDataProvider
 from deye_graphs_main_page import DeyeGraphsMainPage
@@ -46,7 +46,10 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerAsync):
     try:
       graph_dates = await self._provider.load_graph_dates()
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
       return
 
     if not graph_dates:

@@ -7,6 +7,7 @@ from typing import Union
 from button_node import ButtonNode
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
+from telebot_utils import TelebotUtils
 from time_of_use_data import TimeOfUseData
 from break_button_node import BreakButtonNode
 from time_of_use_helper import TimeOfUseHelper
@@ -57,7 +58,7 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
         tou_data = data,
       )
     except Exception as e:
-      await navigator.stop(str(e))
+      await navigator.stop(TelebotUtils.escape_html(str(e)))
     else:
       await navigator.navigate(TimeOfUsePage.main)
 

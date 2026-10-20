@@ -8,7 +8,7 @@ from typing import List, cast
 from datetime import date
 
 from env_utils import EnvUtils
-
+from telebot_utils import TelebotUtils
 from telebot_command_choice import CommandChoice
 from telebot_menu_item import TelebotMenuItem
 from statistics_period import StatisticsPeriod
@@ -49,7 +49,7 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
       await CommandChoice.ask_command_choice(
         bot = self.bot,
         chat_id = message.chat.id,
-        text = str(e),
+        text = TelebotUtils.escape_html(str(e)),
         options = choices,
         max_per_row = 2,
       )

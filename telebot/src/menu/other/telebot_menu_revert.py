@@ -9,7 +9,6 @@ from button_node import ButtonNode
 from git_helper_async import GitHelperAsync
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
-
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
@@ -50,7 +49,10 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
         await self._update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
         return
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
       return
 
     pos = message.text.find(' ')
@@ -63,7 +65,10 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     try:
       last_commits = await self._git_helper.get_last_commits()
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
       return
 
     options: List[ButtonNode] = [
@@ -101,7 +106,10 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
       await self._git_helper.submodule_update()
       await self._git_helper.stash_pop()
     except Exception as e:
-      await self.bot.send_message(chat_id, f'{str(e)}: trying to reset to HEAD and then stash pop again...')
+      await self.bot.send_message(
+        chat_id,
+        f'{TelebotUtils.escape_html(str(e))}: trying to reset to HEAD and then stash pop again...',
+      )
       try:
         await self._git_helper.revert_to_revision('HEAD')
         await self._git_helper.pull()
@@ -113,8 +121,11 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
           'All changes rolled back to the latest commit. '
           'Try to revert to another commit without conflicting changes',
         )
-      except Exception as ex:
-        await self.bot.send_message(chat_id, str(ex))
+      except Exception as ee:
+        await self.bot.send_message(
+          chat_id,
+          TelebotUtils.escape_html(str(ee)),
+        )
       return
 
     await self.bot.send_message(chat_id, result)

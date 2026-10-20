@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Union
 
 from button_node import ButtonNode
+from telebot_utils import TelebotUtils
 from button_style import ButtonStyle
 from deye_loggers import DeyeLoggers
 from battery_settings_helper import BatterySettingsHelper
@@ -127,6 +128,6 @@ class BatterySettingsEditPage(TelebotNavigationPage):
       await navigator.stop(message)
 
     except Exception as ee:
-      await navigator.stop(f"{self._title} {str(ee)}")
+      await navigator.stop(f"{self._title} {TelebotUtils.escape_html(str(ee))}")
     finally:
       holder.disconnect()

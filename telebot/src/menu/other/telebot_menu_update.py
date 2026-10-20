@@ -34,7 +34,10 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
       result = await self._git_helper.pull()
       await self._git_helper.submodule_update()
     except GitException as e:
-      await self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
       return
 
     if 'up to date' in result.lower():
@@ -42,7 +45,10 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
         branch_name = await self._git_helper.get_current_branch_name()
         last_commit = await self._git_helper.get_last_commit_hash_and_comment()
       except Exception as e:
-        await self.bot.send_message(message.chat.id, str(e))
+        await self.bot.send_message(
+          message.chat.id,
+          TelebotUtils.escape_html(str(e)),
+        )
         return
 
       last_commit = last_commit.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

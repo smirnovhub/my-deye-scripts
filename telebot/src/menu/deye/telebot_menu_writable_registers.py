@@ -8,10 +8,8 @@ from typing import Any, List, Optional
 from datetime import datetime
 
 from deye_register import DeyeRegister
-from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeValueException
 from deye_base_enum import DeyeBaseEnum
-
 from telebot_async_step_manager import TelebotAsyncStepManager
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_utils import TelebotUtils
@@ -156,11 +154,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
       )
       TelebotAsyncStepManager.clear_step_handler_by_chat_id(message.chat.id)
       TelebotAsyncStepManager.register_next_step_handler(message, next_step_callback, sent.message_id, registers)
-    except DeyeKnownException as e:
-      await self.bot.send_message(message.chat.id, str(e))
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e))
-      self.logger.info(traceback.format_exc())
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
+      self.logger.error(traceback.format_exc())
 
   async def process_read_write_register_step2(
     self,
@@ -196,11 +195,13 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
 
     try:
       await self.write_register(register, message)
-    except DeyeKnownException as e:
-      await self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
-      self.logger.info(traceback.format_exc())
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+        parse_mode = 'HTML',
+      )
+      self.logger.error(traceback.format_exc())
 
   async def get_register_value(self, register: DeyeRegister) -> str:
     # should be local to avoid issues with locks
@@ -301,11 +302,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
             old_value = old_value,
             old_pretty_value = old_pretty_value,
           )
-        except DeyeKnownException as e:
-          await self.bot.send_message(message.chat.id, str(e))
         except Exception as e:
-          await self.bot.send_message(message.chat.id, str(e))
-          self.logger.info(traceback.format_exc())
+          await self.bot.send_message(
+            message.chat.id,
+            TelebotUtils.escape_html(str(e)),
+          )
+          self.logger.error(traceback.format_exc())
         finally:
           holder.disconnect()
 

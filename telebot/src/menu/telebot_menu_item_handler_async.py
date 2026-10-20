@@ -1,8 +1,8 @@
 import telebot
 import traceback
 
+from telebot_utils import TelebotUtils
 from telebot.async_telebot import AsyncTeleBot
-from deye_exceptions import DeyeKnownException
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
 from telebot_remote_update_checker_async import TelebotRemoteUpdateCheckerAsync
@@ -50,10 +50,11 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
         return
 
       await self.process_message(message)
-    except DeyeKnownException as e:
-      await self.bot.send_message(message.chat.id, str(e))
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
       self.logger.error(traceback.format_exc())
 
   async def process_message(self, message: telebot.types.Message) -> None:
@@ -93,7 +94,7 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        f'Error while checking for updates: {str(e)}',
+        f'Error while checking for updates: {TelebotUtils.escape_html(str(e))}',
       )
       self.logger.info(f'Error while checking for updates: {str(e)}')
 

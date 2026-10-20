@@ -5,8 +5,8 @@ from telebot.async_telebot import AsyncTeleBot
 from typing import Dict
 
 from deye_utils import DeyeUtils
+from telebot_utils import TelebotUtils
 from forecast_registers import ForecastRegisters
-
 from telebot_command_choice import CommandChoice
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_menu_item import TelebotMenuItem
@@ -42,7 +42,10 @@ class TelebotMenuBatteryForecastBase(TelebotMenuItemHandlerAsync):
     try:
       await holder.read_registers()
     except Exception as e:
-      await self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        TelebotUtils.escape_html(str(e)),
+      )
       return
     finally:
       holder.disconnect()
@@ -89,4 +92,8 @@ class TelebotMenuBatteryForecastBase(TelebotMenuItemHandlerAsync):
         max_per_row = 2,
       )
     except Exception as e:
-      await self.bot.send_message(message.chat.id, f'{result}{str(e)}', parse_mode = 'HTML')
+      await self.bot.send_message(
+        message.chat.id,
+        f'{result}{TelebotUtils.escape_html(str(e))}',
+        parse_mode = 'HTML',
+      )
