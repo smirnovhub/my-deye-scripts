@@ -10,14 +10,13 @@ class SwitchButtonNode(ButtonNode):
     key: str = "",
     style = ButtonStyle.default,
   ):
+    self._enabled = enabled
     super().__init__(
       text = text,
       data = data,
       key = key,
       style = style,
     )
-
-    self._enabled = enabled
 
   @property
   def enabled(self) -> bool:
