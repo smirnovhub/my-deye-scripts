@@ -16,6 +16,7 @@
     "../common/locker",
     "../common/statistics",
     "../common/utils",
+    "../common/websocket",
     "../deye/src",
     "../deye/src/commandline",
     "../deye/src/ecoflow",

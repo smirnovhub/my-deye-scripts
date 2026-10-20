@@ -16,6 +16,7 @@
     "../common/locker",
     "../common/statistics",
     "../common/utils",
+    "../common/websocket",
     "src"
   ],
   "python.analysis.useImportHeuristic": true,
