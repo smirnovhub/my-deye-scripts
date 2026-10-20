@@ -40,14 +40,10 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     return "Battery SOC, %:"
 
   @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
-
-  @property
   def need_user_input(self) -> bool:
     return True
 
-  def on_navigate(
+  async def on_navigate(
     self,
     navigator: TelebotPageNavigator,
     **kwargs: Any,
@@ -59,22 +55,18 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     TimeOfUseHelper.check_upper_bounds(self._tou_socs.values, index)
     self._time_of_use_line_index = index
 
-  def update(self) -> None:
-    buttons: List[ButtonNode] = []
-
+  def create_buttons(self) -> None:
     for index, value in enumerate(self._values):
       if index > 0 and (index % self._row_length) == 0:
-        buttons.append(BreakButtonNode())
+        self.register_button(BreakButtonNode())
 
       btn = ButtonNode(text = str(value), data = str(value))
-      buttons.append(self.register_button_handler(btn, self._create_soc_handler(value)))
+      self.register_button(btn, self._create_soc_handler(value))
 
-    buttons.append(BreakButtonNode())
-    buttons.append(self.register_button_handler(ButtonNode("Back"), self._handle_back))
+    self.register_button(BreakButtonNode())
+    self.register_button(ButtonNode("Back"), self._handle_back)
 
-    self._buttons = buttons
-
-  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+  async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     try:
       soc = int(text)
     except Exception:
@@ -83,21 +75,21 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     if not (self._min_val <= soc <= self._max_val):
       raise ValueError(f"SOC value should be from {self._min_val} to {self._max_val}")
 
-    self._set_soc_and_go_back(
+    await self._set_soc_and_go_back(
       navigator = navigator,
       soc = soc,
     )
 
-  def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    navigator.navigate(TimeOfUsePage.main)
+  async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
+    await navigator.navigate(TimeOfUsePage.main)
 
   def _create_soc_handler(self, soc: int):
-    def handler(navigator: TelebotPageNavigator) -> None:
-      self._set_soc_and_go_back(navigator, soc)
+    async def handler(navigator: TelebotPageNavigator) -> None:
+      await self._set_soc_and_go_back(navigator, soc)
 
     return handler
 
-  def _set_soc_and_go_back(
+  async def _set_soc_and_go_back(
     self,
     navigator: TelebotPageNavigator,
     soc: int,
@@ -111,7 +103,7 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     else:
       self._tou_socs.values[self._time_of_use_line_index] = soc
 
-    navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePage.main)
 
   def _generate_values(
     self,

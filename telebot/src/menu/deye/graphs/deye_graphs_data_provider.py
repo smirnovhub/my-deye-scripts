@@ -9,12 +9,11 @@ from env_utils import EnvUtils
 from telebot_utils import TelebotUtils
 from deye_graph_inverters import DeyeGraphInverters
 from deye_graph_inverter_data import DeyeGraphInverterData
-from http_session_singleton import HttpSessionSingleton
+from http_session_singleton_async import HttpSessionSingletonAsync
 
 class DeyeGraphsDataProvider:
   def __init__(self):
     self._server_url = EnvUtils.get_remote_graph_server_url()
-    self._session = HttpSessionSingleton().session
     self._dates: List[date] = []
     self._inverters: List[DeyeGraphInverterData] = []
     self._selected_date: Optional[date] = None
@@ -76,19 +75,24 @@ class DeyeGraphsDataProvider:
     # Update the selected graph name value
     self._selected_graph_name = value
 
-  def check_graph_server_available(self) -> None:
+  async def check_graph_server_available(self) -> None:
+    session = await HttpSessionSingletonAsync.get_session()
     ping_endpoint = urljoin(self._server_url, "/ping")
-    with self._session.get(ping_endpoint, timeout = 3) as response:
+    async with session.get(ping_endpoint, timeout = 3) as response:
+      # Read the entire response body to allow aiohttp to reuse the connection (Keep-Alive)
+      await response.read()
       response.raise_for_status()
 
-  def load_graph_dates(self) -> List[date]:
+  async def load_graph_dates(self) -> List[date]:
     url = urljoin(self._server_url, "/graphs")
-    with self._session.get(url, timeout = 5) as response:
-      if response.status_code != HTTPStatus.OK:
-        raise RuntimeError(TelebotUtils.get_response_message(response.text))
+    session = await HttpSessionSingletonAsync.get_session()
+    async with session.get(url, timeout = 5) as response:
+      if response.status != HTTPStatus.OK:
+        text = await response.text()
+        raise RuntimeError(TelebotUtils.get_response_message(text))
 
       # Check if the response body is valid JSON
-      data = response.json()
+      data = await response.json()
 
     if not isinstance(data, dict):
       raise RuntimeError(f"Graphs server {self._server_url} returned wrong json type")
@@ -99,16 +103,18 @@ class DeyeGraphsDataProvider:
     self._dates = sorted([date.fromisoformat(d) for d in data['dates']], reverse = True)
     return self._dates
 
-  def load_graph_inverters(self, graph_date: date) -> List[DeyeGraphInverterData]:
+  async def load_graph_inverters(self, graph_date: date) -> List[DeyeGraphInverterData]:
     url = urljoin(self._server_url, f"/graphs/{graph_date.isoformat()}")
-    with self._session.get(url, timeout = 5) as response:
-      if response.status_code != HTTPStatus.OK:
-        raise RuntimeError(TelebotUtils.get_response_message(response.text))
+    session = await HttpSessionSingletonAsync.get_session()
+    async with session.get(url, timeout = 5) as response:
+      text = await response.text()
+      if response.status != HTTPStatus.OK:
+        raise RuntimeError(TelebotUtils.get_response_message(text))
 
-      self._inverters = DeyeGraphInverters.from_json(response.text).inverters
+      self._inverters = DeyeGraphInverters.from_json(text).inverters
       return self._inverters
 
-  def get_graph_image(
+  async def get_graph_image(
     self,
     graph_date: date,
     inverter: str,
@@ -116,26 +122,31 @@ class DeyeGraphsDataProvider:
   ) -> BytesIO:
     format = EnvUtils.get_deye_graphs_format()
     url = urljoin(self._server_url, f"/graphs/{format}/{graph_date.isoformat()}/{inverter}/{graph_name}")
-    with self._session.get(url) as response:
-      if response.status_code != HTTPStatus.OK:
-        raise RuntimeError(TelebotUtils.get_response_message(response.text))
+    session = await HttpSessionSingletonAsync.get_session()
+    async with session.get(url) as response:
+      if response.status != HTTPStatus.OK:
+        text = await response.text()
+        raise RuntimeError(TelebotUtils.get_response_message(text))
 
-      file = BytesIO(response.content)
+      content = await response.read()
+      file = BytesIO(content)
 
     file.name = f"deye-{graph_date}-{inverter}-{graph_name}.{format}"
     return file
 
-  def get_graph_data(
+  async def get_graph_data(
     self,
     graph_date: date,
     format: str,
   ) -> BytesIO:
     url = urljoin(self._server_url, f"/graphs/{format}/{graph_date.isoformat()}")
-    with self._session.get(url) as response:
-      if response.status_code != HTTPStatus.OK:
-        raise RuntimeError(TelebotUtils.get_response_message(response.text))
+    session = await HttpSessionSingletonAsync.get_session()
+    async with session.get(url, timeout = 300) as response:
+      if response.status != HTTPStatus.OK:
+        text = await response.text()
+        raise RuntimeError(TelebotUtils.get_response_message(text))
 
-      content = response.content
+      content = await response.read()
       content_disposition = response.headers.get("Content-Disposition", "")
 
     filename = f"deye.{format}"

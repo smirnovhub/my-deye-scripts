@@ -2,12 +2,11 @@ import copy
 import telebot
 
 from enum import Enum
-from typing import List, Union
+from typing import Union
 
 from button_node import ButtonNode
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
-from telebot_async_runner import TelebotAsyncRunner
 from time_of_use_data import TimeOfUseData
 from break_button_node import BreakButtonNode
 from time_of_use_helper import TimeOfUseHelper
@@ -18,11 +17,10 @@ from telebot_navigation_page import TelebotNavigationPage
 class TimeOfUseEnablePage(TelebotNavigationPage):
   def __init__(
     self,
-    runner: TelebotAsyncRunner,
     tou_register: DeyeRegister,
     tou_data: TimeOfUseData,
   ):
-    super().__init__(runner)
+    super().__init__()
     self._tou_register = tou_register
     self._tou_data = tou_data
     self._loggers = DeyeLoggers()
@@ -35,17 +33,11 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Time of Use is disabled"
 
-  @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
-
-  def update(self) -> None:
-    self._buttons = [
-      ButtonNode("Enable Time of Use?"),
-      BreakButtonNode(),
-      self.register_button_handler(ButtonNode("Yes"), self._handle_yes),
-      self.register_button_handler(ButtonNode("No"), self._handle_no),
-    ]
+  def create_buttons(self) -> None:
+    self.register_button(ButtonNode("Enable Time of Use?"))
+    self.register_button(BreakButtonNode())
+    self.register_button(ButtonNode("Yes"), self._handle_yes)
+    self.register_button(ButtonNode("No"), self._handle_no)
 
   async def _handle_yes(self, navigator: TelebotPageNavigator) -> None:
     # Enable Time of Use
@@ -67,7 +59,7 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
     except Exception as e:
       navigator.stop(str(e))
     else:
-      navigator.navigate(TimeOfUsePage.main)
+      await navigator.navigate(TimeOfUsePage.main)
 
-  def _handle_no(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_no(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop("Time of Use is disabled")

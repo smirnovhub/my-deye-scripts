@@ -2,7 +2,7 @@ import copy
 import telebot
 
 from enum import Enum
-from typing import List, Union
+from typing import Union
 
 from button_node import ButtonNode
 from button_style import ButtonStyle
@@ -11,7 +11,6 @@ from battery_settings_helper import BatterySettingsHelper
 from break_button_node import BreakButtonNode
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
-from telebot_async_runner import TelebotAsyncRunner
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_deye_helper import TelebotDeyeHelper
@@ -21,11 +20,10 @@ from battery_settings_registers import BatterySettingsRegisters
 class BatterySettingsEditPage(TelebotNavigationPage):
   def __init__(
     self,
-    runner: TelebotAsyncRunner,
     batt_data: BatterySettingsData,
     title: str,
   ):
-    super().__init__(runner)
+    super().__init__()
     self._loggers = DeyeLoggers()
     self._batt_data = batt_data
     self._batt_data_original_values = copy.deepcopy(batt_data.values)
@@ -40,16 +38,10 @@ class BatterySettingsEditPage(TelebotNavigationPage):
     return self._title
 
   @property
-  def buttons(self) -> List[ButtonNode]:
-    return self._buttons
-
-  @property
   def need_user_input(self) -> bool:
     return True
 
-  def update(self) -> None:
-    buttons: List[ButtonNode] = []
-
+  def create_buttons(self) -> None:
     value = 0
     style = ButtonStyle.default
 
@@ -57,15 +49,13 @@ class BatterySettingsEditPage(TelebotNavigationPage):
       if val < value:
         style = ButtonStyle.danger
 
-      buttons.extend(self._get_buttons(page_type = page, title = page.name, style = style))
+      self._make_buttons(page_type = page, title = page.name, style = style)
       value = val
 
     if self._need_save():
-      buttons.append(self.register_button_handler(ButtonNode("Save"), self._handle_save))
+      self.register_button(ButtonNode("Save"), self._handle_save)
 
-    buttons.append(self.register_button_handler(ButtonNode("Cancel"), self._handle_cancel))
-
-    self._buttons = buttons
+    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return BatterySettingsHelper.get_data_as_rich_message(
@@ -73,27 +63,25 @@ class BatterySettingsEditPage(TelebotNavigationPage):
       values = self._batt_data_original_values,
     )
 
-  def _get_buttons(
+  def _make_buttons(
     self,
     page_type: BatterySettingsPage,
     title: str,
     style: ButtonStyle,
-  ) -> List[ButtonNode]:
+  ) -> None:
     button = ButtonNode(text = f"{self._batt_data.values[page_type]}%", style = style)
-    return [
-      self.register_button_handler(ButtonNode(text = title, style = style), self._create_navigation_handler(page_type)),
-      self.register_button_handler(button, self._create_navigation_handler(page_type)),
-      BreakButtonNode(),
-    ]
+    self.register_button(ButtonNode(text = title, style = style), self._create_navigation_handler(page_type))
+    self.register_button(button, self._create_navigation_handler(page_type))
+    self.register_button(BreakButtonNode())
 
-  def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     navigator.stop(
       BatterySettingsHelper.get_data_as_rich_message(
         title = f"{self._title} cancel",
         values = self._batt_data_original_values,
       ))
 
-  def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
+  async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     navigator.stop(
       BatterySettingsHelper.get_data_as_rich_message(
         title = self._title,
@@ -101,9 +89,8 @@ class BatterySettingsEditPage(TelebotNavigationPage):
       ))
 
   def _create_navigation_handler(self, target_page: Enum):
-    def handler(navigator: TelebotPageNavigator) -> None:
-      navigator.navigate(target_page)
-
+    async def handler(navigator: TelebotPageNavigator) -> None:
+      await navigator.navigate(target_page)
     return handler
 
   def _need_save(self) -> bool:

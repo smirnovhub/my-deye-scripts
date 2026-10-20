@@ -11,7 +11,6 @@ from telebot_async_runner import TelebotAsyncRunner
 from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
-from telebot_constants import TelebotConstants
 from telebot_user_choices import UserChoices
 from telebot_advanced_choice import AdvancedChoice
 from countdown_with_cancel import CountdownWithCancel
@@ -34,7 +33,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     return TelebotMenuItem.revert
 
   async def process_message(self, message: telebot.types.Message) -> None:
-    if not self._remote_update_checker.is_on_branch():
+    if not await self._remote_update_checker.is_on_branch():
       self.bot.send_message(message.chat.id, 'Unable to revert: the repository is not currently on a branch')
       return
 
@@ -73,40 +72,22 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
       ButtonNode(text = item, data = f"/revert {hash}") for item, hash in last_commits.items()
     ]
 
-    if last_commits:
-      sent = AdvancedChoice.ask_advanced_choice(
-        bot = self.bot,
-        chat_id = message.chat.id,
-        text = (f"You are currently on branch '{branch_name}'.\n"
-                "Enter commit hash to revert to:"),
-        options = options,
-        max_per_row = 1,
-        edit_message_with_user_selection = True,
+    if not last_commits:
+      self.bot.send_message(
+        message.chat.id,
+        "No commits found",
       )
-    else:
-      sent = self.bot.send_message(message.chat.id, 'Enter commit hash to revert to:')
-
-    self.bot.clear_step_handler_by_chat_id(message.chat.id)
-    self.bot.register_next_step_handler(message, self.handle_step2, sent.message_id)
-
-  def handle_step2(self, message: telebot.types.Message, message_id: int):
-    TelebotUtils.remove_inline_buttons_with_delay(
-      bot = self.bot,
-      chat_id = message.chat.id,
-      message_id = message_id,
-      delay = TelebotConstants.buttons_remove_delay_sec,
-    )
-
-    # If we received new command, skip it
-    if TelebotUtils.forward_next(self.bot, message):
       return
 
-    if message.text is not None:
-      commit_hash = re.sub(r'[^0-9a-f]', '', message.text)
-      if len(commit_hash) >= 32:
-        self.run_async(self._do_revert(message.chat.id, message.text))
-      else:
-        self.bot.send_message(message.chat.id, f'Wrong commit hash')
+    await AdvancedChoice.ask_advanced_choice(
+      bot = self.bot,
+      chat_id = message.chat.id,
+      text = (f"You are currently on branch '{branch_name}'.\n"
+              "Enter commit hash to revert to:"),
+      options = options,
+      max_per_row = 1,
+      edit_message_with_user_selection = True,
+    )
 
   async def _do_revert(self, chat_id: int, commit_hash: str):
     try:
@@ -140,31 +121,32 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
 
     self.bot.send_message(chat_id, result)
 
-    UserChoices.ask_confirmation(
+    res = await UserChoices.ask_confirmation(
       self.bot,
       chat_id,
       'Revert completed. For the changes to take effect, need to restart the bot. '
       '<b>Do you want to restart it now?</b>',
-      self.on_user_confirmation,
     )
 
-  def on_user_confirmation(self, chat_id: int, result: bool):
-    if not result:
+    if not res:
       self.bot.send_message(chat_id, 'Restart cancelled')
       return
 
-    CountdownWithCancel.show_countdown(
+    res = await CountdownWithCancel.show_countdown(
       bot = self.bot,
       chat_id = chat_id,
       text = 'Will restart in: ',
       seconds = 5,
-      on_finish = self.on_finish,
-      on_cancel = self.on_cancel,
     )
 
-  def on_finish(self, chat_id: int):
-    self.bot.send_message(chat_id, f'{CommonUtils.clock_face_one_oclock} Restarting telebot...')
-    TelebotUtils.stop_bot()
-
-  def on_cancel(self, chat_id: int):
-    self.bot.send_message(chat_id, 'Restart cancelled')
+    if res:
+      self.bot.send_message(
+        chat_id,
+        f'{CommonUtils.clock_face_one_oclock} Restarting telebot...',
+      )
+      TelebotUtils.stop_bot()
+    else:
+      self.bot.send_message(
+        chat_id,
+        'Restart cancelled',
+      )

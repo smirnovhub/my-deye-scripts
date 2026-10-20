@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-import subprocess
+import asyncio
 import zipfile
 import telebot
 import datetime
@@ -17,15 +17,25 @@ from telebot_advanced_choice import AdvancedChoice
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_utils import TelebotTestUtils
 from telebot_utils import TelebotUtils
-from telebot_menu_item_handler_sync import TelebotMenuItemHandlerSync
-from telebot_local_update_checker import TelebotLocalUpdateChecker
-from lock_exceptions import DeyeLockAlreadyAcquiredException
+from telebot_async_runner import TelebotAsyncRunner
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 from telebot_progress_message import TelebotProgressMessage
 
-class TelebotMenuTest(TelebotMenuItemHandlerSync):
-  def __init__(self, bot: telebot.TeleBot):
-    super().__init__(bot)
-    self.update_checker = TelebotLocalUpdateChecker()
+from lock_exceptions import (
+  DeyeLockAlreadyAcquiredException,
+  DeyeLockTimeoutException,
+)
+
+class TelebotMenuTest(TelebotMenuItemHandlerAsync):
+  def __init__(
+    self,
+    bot: telebot.TeleBot,
+    runner: TelebotAsyncRunner,
+  ):
+    super().__init__(
+      bot = bot,
+      runner = runner,
+    )
     self.progress = TelebotProgressMessage(bot)
     lockfile = os.path.join(DeyeFileLock.lock_path, 'teletest.lock')
     self.locker = DeyeFileLocker('teletest', lockfile)
@@ -40,7 +50,8 @@ class TelebotMenuTest(TelebotMenuItemHandlerSync):
   def command(self) -> TelebotMenuItem:
     return TelebotMenuItem.test
 
-  def process_message(self, message: telebot.types.Message) -> None:
+  async def process_message(self, message: telebot.types.Message) -> None:
+    # Acquire lock at the very beginning to prevent opening menu if tests are running
     if not self.acquire_lock(message.chat.id):
       return
 
@@ -54,14 +65,11 @@ class TelebotMenuTest(TelebotMenuItemHandlerSync):
       if message.from_user and pos != -1:
         test_name = message.text[pos + 1:].strip()
         if test_name:
-          self.release_lock()
-
-          self.process_test_next_step(
+          await self._execute_tests_workflow(
             chat_id = message.chat.id,
             test_name = test_name,
             tests_scripts = tests_scripts,
           )
-
           return
 
       tests_names = [os.path.splitext(os.path.basename(f))[0] for f in tests_scripts]
@@ -73,27 +81,40 @@ class TelebotMenuTest(TelebotMenuItemHandlerSync):
 
       options.extend([ButtonNode(text = s, data = f"/{TelebotMenuItem.test.command} {s}") for s in tests_names])
 
-      def on_choice(chat_id: int, choice: ButtonNode):
-        self.process_test_next_step(
-          chat_id = chat_id,
-          test_name = choice.text,
-          tests_scripts = tests_scripts,
-        )
-
-      AdvancedChoice.ask_advanced_choice(
+      button = await AdvancedChoice.ask_advanced_choice(
         bot = self.bot,
         chat_id = message.chat.id,
         text = self.intro_text,
         options = options,
-        callback = on_choice,
         max_per_row = 1,
         edit_message_with_user_selection = True,
+      )
+
+      await self._execute_tests_workflow(
+        chat_id = message.chat.id,
+        test_name = button.text,
+        tests_scripts = tests_scripts,
       )
 
     finally:
       self.release_lock()
 
-  def process_test_next_step(
+  async def process_test_next_step(
+    self,
+    chat_id: int,
+    test_name: str,
+    tests_scripts: List[str],
+  ):
+    if not self.acquire_lock(chat_id):
+      return
+
+    try:
+      await self._execute_tests_workflow(chat_id, test_name, tests_scripts)
+    finally:
+      self.release_lock()
+      self.remove_logs(tests_scripts)
+
+  async def _execute_tests_workflow(
     self,
     chat_id: int,
     test_name: str,
@@ -115,17 +136,14 @@ class TelebotMenuTest(TelebotMenuItemHandlerSync):
         self.bot.send_message(chat_id, f"Test '{test_name}' not found")
         return
 
-    if not self.acquire_lock(chat_id):
-      return
-
     try:
       all_start_time = datetime.datetime.now()
       tests = tests_scripts if test_name == self.all_tests else [test_name]
 
-      failed_count = self.run_tests(chat_id, tests)
+      failed_count = await self.run_tests(chat_id, tests)
       t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
 
-      time.sleep(1)
+      await asyncio.sleep(1)
 
       if failed_count == len(tests):
         self.send_results(
@@ -153,16 +171,14 @@ class TelebotMenuTest(TelebotMenuItemHandlerSync):
         )
     except Exception as e:
       t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
-      time.sleep(1)
+      await asyncio.sleep(1)
       self.bot.send_message(
         chat_id,
         f'{CommonUtils.large_red_circle_emoji} '
         f'Tests failed after {t}. '
         f'Check log files for details: {str(e)}',
       )
-
     finally:
-      self.release_lock()
       self.remove_logs(tests_scripts)
 
   def remove_logs(self, scripts: List[str]):
@@ -173,7 +189,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerSync):
       except Exception:
         pass
 
-  def run_tests(
+  async def run_tests(
     self,
     chat_id: int,
     scripts: List[str],
@@ -182,84 +198,84 @@ class TelebotMenuTest(TelebotMenuItemHandlerSync):
     last_iteration_time = time.time()
     for i, script in enumerate(scripts):
       log_file = os.path.join(self.logs_path, os.path.basename(script).replace('.py', '.log'))
+      test_name = os.path.basename(script).replace('.py', '').replace('_', ' ')
+
+      # Initialize log file with running header
       with open(log_file, 'w', encoding = 'utf-8') as f:
-        try:
-          start_time = datetime.datetime.now()
-          test_name = os.path.basename(script).replace('.py', '').replace('_', ' ')
+        self.write_and_flush(f, f"--- RUNNING [{i + 1}/{len(scripts)}] {test_name} ---\n\n")
 
-          self.write_and_flush(f, f"--- RUNNING [{i + 1}/{len(scripts)}] {test_name} ---\n\n")
+      await asyncio.sleep(1)
+      self.running_test = (f'{CommonUtils.white_circle_emoji} '
+                           f'[{i + 1}/{len(scripts)}] Running: {test_name}')
+      self.progress.show(
+        chat_id,
+        self.running_test,
+      )
 
-          time.sleep(1)
-          self.running_test = (f'{CommonUtils.white_circle_emoji} '
-                               f'[{i + 1}/{len(scripts)}] Running: {test_name}')
-          self.progress.show(
-            chat_id,
-            self.running_test,
-          )
+      await asyncio.sleep(1)
+      start_time = datetime.datetime.now()
 
-          time.sleep(1)
+      try:
+        # Redirect stdout and stderr directly via shell to avoid file object buffer deadlocks
+        cmd = f'"{sys.executable}" -u "{script}" >> "{log_file}" 2>&1'
+        process = await asyncio.create_subprocess_shell(cmd)
+        await process.wait()
+        returncode = process.returncode
+      except Exception as e:
+        self.progress.hide()
+        await asyncio.sleep(1)
+        with open(log_file, 'a', encoding = 'utf-8') as f:
+          self.write_and_flush(f, f"An exception while running {test_name}: {e}\n")
 
-          try:
-            result = subprocess.run(
-              [sys.executable, "-u", script],
-              stdout = f,
-              stderr = subprocess.STDOUT,
-              text = True,
-            )
-          except Exception as e:
-            self.progress.hide()
-            time.sleep(1)
-            self.write_and_flush(f, f"An exception while running {test_name}: {e}\n")
-            t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-            self.bot.send_message(
-              chat_id,
-              f'{CommonUtils.large_red_circle_emoji} '
-              f'[{i + 1}/{len(scripts)}] '
-              f'<b>Failed</b> after {t}: {test_name}',
-              parse_mode = 'HTML',
-            )
-            failed_count += 1
-            continue
+        t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+        self.bot.send_message(
+          chat_id,
+          f'{CommonUtils.large_red_circle_emoji} '
+          f'[{i + 1}/{len(scripts)}] '
+          f'<b>Failed</b> after {t}: {test_name}',
+          parse_mode = 'HTML',
+        )
+        failed_count += 1
+        continue
 
-          if result.returncode != 0:
-            self.progress.hide()
-            time.sleep(1)
-            msg = f"Error: {test_name} exited with code {result.returncode}. Tests failed."
-            self.write_and_flush(f, f"{msg}\n")
-            t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-            self.bot.send_message(
-              chat_id,
-              f'{CommonUtils.large_red_circle_emoji} '
-              f'[{i + 1}/{len(scripts)}] '
-              f'<b>Failed</b> after {t}: {test_name}',
-              parse_mode = 'HTML',
-            )
-            failed_count += 1
-            continue
+      if returncode != 0:
+        self.progress.hide()
+        await asyncio.sleep(1)
+        msg = f"Error: {test_name} exited with code {returncode}. Tests failed."
+        with open(log_file, 'a', encoding = 'utf-8') as f:
+          self.write_and_flush(f, f"{msg}\n")
 
-          t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+        t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
+        self.bot.send_message(
+          chat_id,
+          f'{CommonUtils.large_red_circle_emoji} '
+          f'[{i + 1}/{len(scripts)}] '
+          f'<b>Failed</b> after {t}: {test_name}',
+          parse_mode = 'HTML',
+        )
+        failed_count += 1
+        continue
 
-          # Ensure at least X seconds since the previous iteration
-          elapsed = time.time() - last_iteration_time
-          if elapsed < 5:
-            time.sleep(5 - elapsed)
+      t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
 
-          self.progress.hide()
-          time.sleep(1)
+      # Ensure at least X seconds since the previous iteration
+      elapsed = time.time() - last_iteration_time
+      if elapsed < 5:
+        await asyncio.sleep(5 - elapsed)
 
-          last_iteration_time = time.time()
-          self.bot.send_message(
-            chat_id,
-            f'{CommonUtils.large_green_circle_emoji} '
-            f'[{i + 1}/{len(scripts)}] '
-            f'<b>Success</b> after {t}: {test_name}',
-            parse_mode = 'HTML',
-          )
-        except Exception as e:
-          self.write_and_flush(f, f'\nAn exception occurred while running tests: {str(e)}\n')
-          raise
+      self.progress.hide()
+      await asyncio.sleep(1)
 
-    time.sleep(1)
+      last_iteration_time = time.time()
+      self.bot.send_message(
+        chat_id,
+        f'{CommonUtils.large_green_circle_emoji} '
+        f'[{i + 1}/{len(scripts)}] '
+        f'<b>Success</b> after {t}: {test_name}',
+        parse_mode = 'HTML',
+      )
+
+    await asyncio.sleep(1)
     return failed_count
 
   def write_and_flush(self, f: TextIO, text: str) -> None:
@@ -347,9 +363,9 @@ class TelebotMenuTest(TelebotMenuItemHandlerSync):
 
   def acquire_lock(self, chat_id: int) -> bool:
     try:
-      self.locker.acquire()
+      self.locker.acquire(timeout = 0)
       return True
-    except DeyeLockAlreadyAcquiredException:
+    except (DeyeLockAlreadyAcquiredException, DeyeLockTimeoutException):
       self.progress.hide()
       self.progress.show(chat_id, self.running_test)
       return False

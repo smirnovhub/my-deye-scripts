@@ -1,4 +1,3 @@
-import sys
 import asyncio
 import logging
 
@@ -80,7 +79,6 @@ class TeleTest:
       Telegram.send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} '
                                              f'<b>Telebot test failed</b> while running '
                                              f'{type(module).__name__}{info}: {str(e)}')
-      sys.exit(1)
 
   def _clear_data(self, servers: List[SolarmanTestServer], log: logging.Logger):
     self.bot.clear_messages()

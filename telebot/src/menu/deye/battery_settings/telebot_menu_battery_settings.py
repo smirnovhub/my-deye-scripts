@@ -64,13 +64,11 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
     title = "Battery settings:"
 
     main_page = BatterySettingsMainPage(
-      runner = self.runner,
       batt_data = batt_data,
       title = title,
     )
 
     edit_page = BatterySettingsEditPage(
-      runner = self.runner,
       batt_data = batt_data,
       title = title,
     )
@@ -84,7 +82,7 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
         batt_data = batt_data,
       ))
 
-    navigator.start(
+    await navigator.start(
       page = main_page,
       chat_id = message.chat.id,
     )
