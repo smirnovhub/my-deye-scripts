@@ -1,8 +1,8 @@
 import asyncio
-import telebot
 
 from typing import List
 
+from telebot.async_telebot import AsyncTeleBot
 from button_node import ButtonNode
 from telebot_advanced_choice_page import AdvancedChoicePage
 from telebot_page_navigator import TelebotPageNavigator
@@ -10,7 +10,7 @@ from telebot_page_navigator import TelebotPageNavigator
 class AdvancedChoice:
   @staticmethod
   async def ask_advanced_choice(
-    bot: telebot.TeleBot,
+    bot: AsyncTeleBot,
     chat_id: int,
     text: str,
     options: List[ButtonNode],

@@ -58,7 +58,7 @@ class TelebotWritableRegistersButtonsTestModule(TelebotBaseTestModule):
       self.log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
       self.log.info(f"Sending command '{command}'")
 
-      self.send_text(user, command)
+      await self.send_text(user, command)
       data = await self.wait_for_text_regex_and_get_buttons_data(rf'Current.+{register.description}.+value.*Enter new value')
 
       for cmd_str in data:

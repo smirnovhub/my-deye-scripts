@@ -103,7 +103,7 @@ class AdvancedChoicePage(TelebotNavigationPage):
       self._result_future.set_result(ButtonNode(text = text))
 
     final_text = f"{self._text} {text}" if self._edit_message_with_user_selection else self._text
-    navigator.stop(final_text)
+    await navigator.stop(final_text)
 
   async def _move_next(self, navigator: TelebotPageNavigator) -> None:
     self._current_page_index = (self._current_page_index + 1) % self._total_pages
@@ -118,7 +118,7 @@ class AdvancedChoicePage(TelebotNavigationPage):
       self._result_future.set_result(button)
 
     final_text = f"{self._text} {button.text}" if self._edit_message_with_user_selection else self._text
-    navigator.stop(final_text)
+    await navigator.stop(final_text)
 
   def on_stop(self):
     if not self._result_future.done():

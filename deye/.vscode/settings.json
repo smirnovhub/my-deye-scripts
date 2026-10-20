@@ -16,6 +16,7 @@
     "../common/locker",
     "../common/statistics",
     "../common/utils",
+    "../common/websocket",
     "src",
     "src/commandline",
     "src/ecoflow",

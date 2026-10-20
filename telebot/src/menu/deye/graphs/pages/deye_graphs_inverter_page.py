@@ -71,18 +71,18 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
     chat_id = navigator.chat_id
 
     if not chat_id:
-      navigator.stop(f"{self._title} chat id is not set")
+      await navigator.stop(f"{self._title} chat id is not set")
       return
 
     if not self._acquire_lock():
-      navigator.stop(f"{self._title} already working")
+      await navigator.stop(f"{self._title} already working")
       return
 
     try:
       progress = TelebotProgressMessage(bot)
-      progress.show(chat_id, "Generating full report")
+      await progress.show(chat_id, "Generating full report")
 
-      navigator.stop(f"{self._title} full report")
+      await navigator.stop(f"{self._title} full report")
 
       selected_date = self._provider.selected_date
       data_file = await self._provider.get_graph_data(
@@ -91,29 +91,29 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       )
 
       # Send the file as a document
-      bot.send_document(
+      await bot.send_document(
         chat_id = chat_id,
         document = data_file,
       )
     except Exception as e:
       self._logger.error(f"Error: {e}", exc_info = e)
-      bot.send_message(
+      await bot.send_message(
         chat_id = chat_id,
         text = f"Error: {e}",
       )
     finally:
       self._release_lock()
-      progress.hide()
+      await progress.hide()
 
   async def _handle_raw_data(self, navigator: TelebotPageNavigator) -> None:
     chat_id = navigator.chat_id
     bot = navigator.bot
 
     if not chat_id:
-      navigator.stop(f"{self._title} chat id is not set")
+      await navigator.stop(f"{self._title} chat id is not set")
       return
 
-    navigator.stop(f"{self._title} raw data")
+    await navigator.stop(f"{self._title} raw data")
 
     try:
       selected_date = self._provider.selected_date
@@ -123,12 +123,12 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       )
 
       # Send the file as a document
-      bot.send_document(
+      await bot.send_document(
         chat_id = chat_id,
         document = data_file,
       )
     except Exception as e:
-      bot.send_message(
+      await bot.send_message(
         chat_id = chat_id,
         text = str(e),
       )
@@ -137,7 +137,7 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
     await navigator.navigate(DeyeGraphsPage.main)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(f"{self._title} cancel")
+    await navigator.stop(f"{self._title} cancel")
 
   def _create_navigation_handler(self, inverter: str):
     async def handler(navigator: TelebotPageNavigator) -> None:

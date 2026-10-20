@@ -72,7 +72,7 @@ class TelebotWritableRegistersTest3Module(TelebotBaseTestModule):
       self.log.info(f"Processing register '{register.name}' with value type {type(register.value).__name__}...")
       self.log.info(f"Sending command '{command}'")
 
-      self.send_text(user, command)
+      await self.send_text(user, command)
 
       suffix = f' {register.suffix}'.rstrip()
       await self.wait_for_text(rf'New value ({value}{suffix}) is the same as old value. Nothing changed')

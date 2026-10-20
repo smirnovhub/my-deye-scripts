@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Union
 
 from button_node import ButtonNode
+from telebot_utils import TelebotUtils
 from button_style import ButtonStyle
 from deye_loggers import DeyeLoggers
 from battery_settings_helper import BatterySettingsHelper
@@ -75,14 +76,14 @@ class BatterySettingsEditPage(TelebotNavigationPage):
     self.register_button(BreakButtonNode())
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(
+    await navigator.stop(
       BatterySettingsHelper.get_data_as_rich_message(
         title = f"{self._title} cancel",
         values = self._batt_data_original_values,
       ))
 
   async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
-    navigator.stop(
+    await navigator.stop(
       BatterySettingsHelper.get_data_as_rich_message(
         title = self._title,
         values = self._batt_data_original_values,
@@ -91,6 +92,7 @@ class BatterySettingsEditPage(TelebotNavigationPage):
   def _create_navigation_handler(self, target_page: Enum):
     async def handler(navigator: TelebotPageNavigator) -> None:
       await navigator.navigate(target_page)
+
     return handler
 
   def _need_save(self) -> bool:
@@ -123,9 +125,9 @@ class BatterySettingsEditPage(TelebotNavigationPage):
         title = f"{self._title} saved",
         values = self._batt_data.values,
       )
-      navigator.stop(message)
+      await navigator.stop(message)
 
-    except Exception as ee:
-      navigator.stop(f"{self._title} {str(ee)}")
+    except Exception as e:
+      await navigator.stop(f"{self._title} {TelebotUtils.escape_html(str(e))}")
     finally:
       holder.disconnect()

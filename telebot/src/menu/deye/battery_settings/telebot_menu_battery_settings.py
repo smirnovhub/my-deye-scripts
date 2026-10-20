@@ -1,6 +1,7 @@
 import telebot
 
-from telebot_async_runner import TelebotAsyncRunner
+from telebot.async_telebot import AsyncTeleBot
+
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_menu_item import TelebotMenuItem
 from telebot_deye_helper import TelebotDeyeHelper
@@ -16,13 +17,9 @@ from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -39,7 +36,10 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
     try:
       await holder.read_registers()
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        str(e),
+      )
       return
     finally:
       holder.disconnect()

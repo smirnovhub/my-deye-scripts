@@ -1,71 +1,61 @@
 import telebot
-import threading
-import time
+import asyncio
 
-from typing import Optional, List
-
+from typing import Optional
+from telebot.async_telebot import AsyncTeleBot
+from telebot_async_step_manager import TelebotAsyncStepManager
 from telebot_utils import TelebotUtils
 
 class TelebotProgressMessage:
-  def __init__(self, bot: telebot.TeleBot) -> None:
+  def __init__(self, bot: AsyncTeleBot) -> None:
     """
     A helper class to show and manage a progress message in a Telegram chat.
 
     Features:
-    - Displays a message with animated dots (1 → 2 → 3 → 1 ...).
-    - Runs the animation in a background thread.
+    - Displays a message with animated dots.
+    - Runs the animation asynchronously via asyncio tasks.
     - Registers a next-step handler: if the user sends any message, the progress message will be deleted.
     - Can be hidden manually by calling `hide()`.
     """
-    self._bot = bot # TeleBot instance
-    self._chat_id: Optional[int] = None # Chat ID (set in show())
-    self._text: Optional[str] = None # Base message text (set in show())
-    self._message: Optional[telebot.types.Message] = None # The sent Telegram message
-    self._running: bool = False # Running flag for animation loop
-    self._threads: List[threading.Thread] = [] # List of animation threads
+    self._bot = bot
+    self._chat_id: Optional[int] = None
+    self._text: Optional[str] = None
+    self._message: Optional[telebot.types.Message] = None
+    self._running: bool = False
+    self._animation_task: Optional[asyncio.Task] = None
 
-  def show(self, chat_id: int, text: str) -> None:
+    try:
+      self._loop = asyncio.get_running_loop()
+    except RuntimeError:
+      self._loop = asyncio.get_event_loop()
+
+  async def show(self, chat_id: int, text: str) -> None:
     """
     Show the progress message in the given chat and start animation.
-
-    Args:
-        chat_id (int): Chat ID where the message should be sent.
-        base_text (str): The base text to display before the animated dots.
     """
-    # Stop all previous animations
     if self._running:
-      self.hide()
+      await self.hide()
 
-    # Store parameters
     self._chat_id = chat_id
     self._text = text
-
     self._running = True
 
-    # Send initial message
-    self._message = self._bot.send_message(
+    self._message = await self._bot.send_message(
       chat_id = self._chat_id,
       text = self._text,
       parse_mode = 'HTML',
     )
 
-    # Start animation thread
-    thread = threading.Thread(
-      target = self._animate,
-      daemon = True,
-    )
+    # Start animation task instead of thread
+    self._animation_task = self._loop.create_task(self._animate())
 
-    self._threads.append(thread)
-    thread.start()
+    # Register next step handler using AsyncStepManager
+    TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._message.chat.id)
+    TelebotAsyncStepManager.register_next_step_handler(self._message, self._on_user_response)
 
-    # Register next step handler
-    self._bot.clear_step_handler_by_chat_id(self._message.chat.id)
-    self._bot.register_next_step_handler(self._message, self._on_user_response)
-
-  def _animate(self) -> None:
+  async def _animate(self) -> None:
     """
-    Internal method: runs in a background thread and updates the message text every second.
-    Cycles the number of dots from 1 to 3 and back to 1.
+    Internal method: runs asynchronously and updates the message text every half second.
     """
     if self._text is None or self._message is None:
       return
@@ -74,9 +64,12 @@ class TelebotProgressMessage:
     count: int = 0
     while count < 15 and self._running:
       try:
-        time.sleep(0.5)
+        await asyncio.sleep(0.5)
+        if not self._running:
+          break
+
         text: str = self._text + ("." * dots)
-        self._bot.edit_message_text(
+        await self._bot.edit_message_text(
           text = text,
           chat_id = self._chat_id,
           message_id = self._message.message_id,
@@ -84,46 +77,53 @@ class TelebotProgressMessage:
         )
         dots = (dots + 1) % 4
         count += 1
+      except asyncio.CancelledError:
+        raise
       except Exception:
         pass
 
     try:
-      self._bot.edit_message_text(
-        text = f'{self._text}...',
-        chat_id = self._chat_id,
-        message_id = self._message.message_id,
-        parse_mode = 'HTML',
-      )
+      if self._running and self._message and self._chat_id:
+        await self._bot.edit_message_text(
+          text = f'{self._text}...',
+          chat_id = self._chat_id,
+          message_id = self._message.message_id,
+          parse_mode = 'HTML',
+        )
     except Exception:
       pass
 
-  def _on_user_response(self, message: telebot.types.Message) -> None:
+  async def _on_user_response(self, message: telebot.types.Message) -> None:
     """
     Internal method: called when the user sends the next message.
     Automatically hides the progress message.
     """
-    self.hide()
+    await self.hide()
+    await TelebotUtils.forward_next(self._bot, message)
 
-    # If we received new command, process it
-    TelebotUtils.forward_next(self._bot, message)
-
-  def hide(self) -> None:
+  async def hide(self) -> None:
     """
     Stop the animation and delete the progress message.
     Safe to call multiple times.
     """
     self._running = False
 
-    for t in self._threads:
-      t.join()
+    if self._animation_task and not self._animation_task.done():
+      self._animation_task.cancel()
+      try:
+        await self._animation_task
+      except asyncio.CancelledError:
+        pass
 
-    self._threads.clear()
+    self._animation_task = None
 
     try:
       if self._chat_id is not None and self._message is not None:
-        self._bot.delete_message(
+        await TelebotUtils.remove_message_with_delay(
+          bot = self._bot,
           chat_id = self._chat_id,
           message_id = self._message.message_id,
+          delay = 0.5,
         )
     except Exception:
       pass

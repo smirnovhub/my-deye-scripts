@@ -1,11 +1,12 @@
 import os
 import sys
-import time
 import html
+import asyncio
 import logging
 import signal
 import traceback
 
+from typing import Optional
 from pathlib import Path
 
 current_path = Path(__file__).parent.resolve()
@@ -18,23 +19,24 @@ from common_modules import import_dirs
 
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
-import telebot
+from telebot.async_telebot import AsyncTeleBot
 
 # Should be first in imports list to make possible
 # to send error messages if some import fails
 from log_utils import LogUtils
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
-from telegram_send_message import Telegram
-from telebot_async_runner import TelebotAsyncRunner
+from testable_telebot import TestableTelebot
+from telegram_send_message_async import TelegramAsync
 from http_session_singleton_async import HttpSessionSingletonAsync
+from telebot_async_step_manager import TelebotAsyncStepManager
 
 # Simple and safe way for HTML parse_mode
 def escape_html(text: str) -> str:
   # This replaces &, <, and > with &amp;, &lt;, and &gt;
   return html.escape(text)
 
-def main():
+async def main():
   dir_name = TelebotUtils.get_data_dir()
   log_dir_name = os.path.join(dir_name, 'logs')
 
@@ -43,32 +45,25 @@ def main():
     log_file_template = "telebot-{0}.log",
   )
 
-  # Create async runner
-  runner = TelebotAsyncRunner(logger)
+  # Initializing global bot variable for access in shutdown
+  bot: Optional[AsyncTeleBot] = None
 
-  def graceful_shutdown(signum, frame):
+  async def graceful_shutdown():
     # Log signal receipt
     logger.info("Telebot is going down...")
 
     try:
       # Send a final message synchronously
-      Telegram.send_private_telegram_message(f"{CommonUtils.large_yellow_circle_emoji} "
-                                             "Telebot is going down...")
+      await TelegramAsync.send_private_telegram_message(f"{CommonUtils.large_yellow_circle_emoji} "
+                                                        "Telebot is going down...")
     except Exception as e:
       # Log error if message fails
       logger.info(f"Failed to send goodbye message: {e}")
 
     try:
-      future = runner.run(HttpSessionSingletonAsync.close_session())
-      future.result(timeout = 3)
+      await HttpSessionSingletonAsync.close_session()
     except Exception:
       logger.error("Failed to close async session", exc_info = True)
-
-    # Stop event loop
-    runner.stop()
-
-    # Stop the polling loop
-    bot.stop_polling()
 
     for handler in logging.getLogger().handlers:
       handler.flush()
@@ -76,19 +71,27 @@ def main():
     sys.stdout.flush()
     sys.stderr.flush()
 
-    # Exit the process
-    sys.exit(0)
+    # Stop the event loop and exit
+    loop = asyncio.get_event_loop()
+    loop.stop()
 
-  # Register for both manual interrupt and system termination
-  signal.signal(signal.SIGINT, graceful_shutdown)
-  signal.signal(signal.SIGTERM, graceful_shutdown)
+  # Register signals within the asyncio loop
+  loop = asyncio.get_event_loop()
+
+  def handle_exit() -> None:
+    asyncio.create_task(graceful_shutdown())
+
+  try:
+    for sig in (signal.SIGINT, signal.SIGTERM):
+      loop.add_signal_handler(sig, handle_exit)
+  except Exception:
+    pass
 
   logger.info('Telebot is starting...')
 
   try:
     from mytelebot import MyTelebot
     from env_utils import EnvUtils
-    from testable_telebot import TestableTelebot
 
     if EnvUtils.is_tests_on():
       token = EnvUtils.get_telegram_bot_api_test_token()
@@ -96,40 +99,56 @@ def main():
 
       mybot = MyTelebot(
         bot = bot,
-        runner = runner,
         logger = logger,
       )
 
-      future = runner.run(mybot.run_tests())
-      future.result()
+      TelebotAsyncStepManager.setup(bot)
+
+      await mybot.initialize()
+      await mybot.run_tests()
+
+      try:
+        await bot.close_session()
+        await HttpSessionSingletonAsync.close_session()
+      except Exception:
+        logger.error("Failed to close async session", exc_info = True)
+
+      for handler in logging.getLogger().handlers:
+        handler.flush()
+
+      sys.stdout.flush()
+      sys.stderr.flush()
 
       sys.exit(0)
 
-    Telegram.send_private_telegram_message(f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')
+    await TelegramAsync.send_private_telegram_message(
+      f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')
 
-    bot = telebot.TeleBot(
-      EnvUtils.get_telegram_bot_api_token(),
-      num_threads = 10,
-    )
+    bot = AsyncTeleBot(token = EnvUtils.get_telegram_bot_api_token())
 
     mybot = MyTelebot(
       bot = bot,
-      runner = runner,
       logger = logger,
     )
 
-    future = runner.run(mybot.update_last_commit_hash())
-    future.result()
+    TelebotAsyncStepManager.setup(bot)
 
-    bot.infinity_polling()
+    await mybot.initialize()
+
+    # Non-blocking infinity polling
+    await bot.infinity_polling()
+
   except Exception as e:
     if not EnvUtils.is_tests_on():
       stack_trace = escape_html(traceback.format_exc()[-2048:])
-      Telegram.send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
-                                             f"Telebot unexpectedly stopped working:\n"
-                                             f"<code>{stack_trace}</code>")
-      time.sleep(60)
+      await TelegramAsync.send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
+                                                        f"Telebot unexpectedly stopped working:\n"
+                                                        f"<code>{stack_trace}</code>")
+      await asyncio.sleep(60)
     raise
 
 if __name__ == "__main__":
-  main()
+  try:
+    asyncio.run(main())
+  except (KeyboardInterrupt, SystemExit):
+    pass

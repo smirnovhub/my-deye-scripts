@@ -1,6 +1,8 @@
 import asyncio
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import List, Union
 
 from button_node import ButtonNode
@@ -10,7 +12,7 @@ from telebot_user_choices_page import UserChoicePage
 class UserChoices:
   @staticmethod
   async def ask_confirmation(
-    bot: telebot.TeleBot,
+    bot: AsyncTeleBot,
     chat_id: int,
     text: Union[str, telebot.types.InputRichMessage],
   ) -> bool:
@@ -29,7 +31,7 @@ class UserChoices:
 
   @staticmethod
   async def ask_choice(
-    bot: telebot.TeleBot,
+    bot: AsyncTeleBot,
     chat_id: int,
     text: Union[str, telebot.types.InputRichMessage],
     options: List[ButtonNode],

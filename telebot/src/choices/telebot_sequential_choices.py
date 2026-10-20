@@ -1,5 +1,6 @@
 import asyncio
-import telebot
+
+from telebot.async_telebot import AsyncTeleBot
 
 from typing import List
 
@@ -10,13 +11,13 @@ from telebot_sequential_choices_page import SequentialChoicePage
 class SequentialChoices:
   @staticmethod
   async def ask_sequential_choices(
-    bot: telebot.TeleBot,
+    bot: AsyncTeleBot,
     chat_id: int,
     text: str,
     root: SequentialChoiceButton,
   ) -> List[SequentialChoiceButton]:
     if not root.children:
-      bot.send_message(
+      await bot.send_message(
         chat_id,
         text,
         parse_mode = "HTML",

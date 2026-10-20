@@ -1,11 +1,13 @@
+import asyncio
+import html
 import json
 import os
 import signal
-import time
-import threading
-
 import requests
 import telebot
+import logging
+
+from telebot.async_telebot import AsyncTeleBot
 
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -73,7 +75,7 @@ class TelebotUtils:
     return None
 
   @staticmethod
-  def remove_message(bot: telebot.TeleBot, chat_id: int, message_id: int) -> None:
+  async def remove_message(bot: AsyncTeleBot, chat_id: int, message_id: int) -> None:
     """
     Safely remove a message.
     
@@ -82,12 +84,12 @@ class TelebotUtils:
     :param message_id: ID of the message to update
     """
     try:
-      bot.delete_message(chat_id, message_id)
+      await bot.delete_message(chat_id, message_id)
     except Exception:
       pass
 
   @staticmethod
-  def remove_inline_buttons(bot: telebot.TeleBot, chat_id: int, message_id: int) -> None:
+  async def remove_inline_buttons(bot: AsyncTeleBot, chat_id: int, message_id: int) -> None:
     """
     Safely remove inline buttons from a message.
     
@@ -96,13 +98,22 @@ class TelebotUtils:
     :param message_id: ID of the message to update
     """
     try:
-      bot.edit_message_reply_markup(chat_id = chat_id, message_id = message_id, reply_markup = None)
+      await bot.edit_message_reply_markup(
+        chat_id = chat_id,
+        message_id = message_id,
+        reply_markup = None,
+      )
     except Exception:
       # Ignore errors (e.g., already removed, message deleted, not modified)
       pass
 
   @staticmethod
-  def remove_message_with_delay(bot: telebot.TeleBot, chat_id: int, message_id: int, delay: float) -> None:
+  async def remove_message_with_delay(
+    bot: AsyncTeleBot,
+    chat_id: int,
+    message_id: int,
+    delay: float,
+  ) -> None:
     """
     Schedule removal of a message after a delay.
 
@@ -111,16 +122,19 @@ class TelebotUtils:
     :param message_id: ID of the message
     :param delay: Time in seconds before removing buttons
     """
-    if delay < 0.01:
-      TelebotUtils.remove_message(bot, chat_id, message_id)
-      return
+    async def delayed_task() -> None:
+      try:
+        await asyncio.sleep(delay)
+        await TelebotUtils.remove_message(bot, chat_id, message_id)
+      except asyncio.CancelledError:
+        raise
+      except Exception:
+        pass
 
-    timer = threading.Timer(delay, lambda: TelebotUtils.remove_message(bot, chat_id, message_id))
-    timer.daemon = True # thread won't block program exit
-    timer.start()
+    asyncio.create_task(delayed_task())
 
   @staticmethod
-  def remove_inline_buttons_with_delay(bot: telebot.TeleBot, chat_id: int, message_id: int, delay: float) -> None:
+  async def remove_inline_buttons_with_delay(bot: AsyncTeleBot, chat_id: int, message_id: int, delay: float) -> None:
     """
     Schedule removal of inline buttons from a message after a delay.
 
@@ -129,13 +143,16 @@ class TelebotUtils:
     :param message_id: ID of the message
     :param delay: Time in seconds before removing buttons
     """
-    if delay < 0.01:
-      TelebotUtils.remove_inline_buttons(bot, chat_id, message_id)
-      return
+    async def delayed_task() -> None:
+      try:
+        await asyncio.sleep(delay)
+        await TelebotUtils.remove_inline_buttons(bot, chat_id, message_id)
+      except asyncio.CancelledError:
+        raise
+      except Exception:
+        pass
 
-    timer = threading.Timer(delay, lambda: TelebotUtils.remove_inline_buttons(bot, chat_id, message_id))
-    timer.daemon = True # thread won't block program exit
-    timer.start()
+    asyncio.create_task(delayed_task())
 
   @staticmethod
   def get_keyboard_for_buttons(
@@ -237,21 +254,42 @@ class TelebotUtils:
     return filter_func
 
   @staticmethod
-  def forward_next(bot: telebot.TeleBot, message: telebot.types.Message) -> bool:
+  async def forward_next(bot: AsyncTeleBot, message: telebot.types.Message) -> bool:
     is_forward = message.forward_from_chat is not None and message.forward_from_chat.username is not None
     # Forward new commands or forwarded message to the bot
     if is_forward or message.text.startswith('/'):
-      bot.process_new_messages([message])
+      asyncio.create_task(bot.process_new_messages([message]))
       return True
     return False
 
   @staticmethod
-  def stop_bot():
+  async def monitor_hanging_tasks(interval: int):
+    """Periodically check and log pending asyncio tasks to detect hangs."""
+    while True:
+      await asyncio.sleep(interval)
+
+      # Collect all tasks except the current monitor task itself
+      other_tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+
+      logging.warning(f"=== ASYNCIO PENDING TASKS MONITOR (TOTAL: {len(other_tasks)}) ===")
+
+      for task in other_tasks:
+        logging.warning(f"Task: {task}")
+        task.print_stack()
+
+  @staticmethod
+  # Simple and safe way for HTML parse_mode
+  def escape_html(text: str) -> str:
+    # This replaces &, <, and > with &amp;, &lt;, and &gt;
+    return html.escape(text)
+
+  @staticmethod
+  async def stop_bot():
     """
     Gracefully stops the running TeleBot instance and terminates the process.
     """
-    time.sleep(1)
-    signal.raise_signal(signal.SIGTERM)
-    time.sleep(30)
+    await asyncio.sleep(1)
+    signal.raise_signal(signal.SIGINT)
+    await asyncio.sleep(30)
     # Exit will never fire if bot has stopped in right way
     os._exit(1)

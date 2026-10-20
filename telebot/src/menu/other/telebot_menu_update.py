@@ -1,12 +1,14 @@
 import re
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from git_helper_async import GitHelperAsync
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from git_exceptions import GitException
 from telebot_menu_item import TelebotMenuItem
-from telebot_async_runner import TelebotAsyncRunner
+
 from telebot_user_choices import UserChoices
 from countdown_with_cancel import CountdownWithCancel
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
@@ -14,13 +16,9 @@ from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
     self._git_helper = GitHelperAsync()
 
   @property
@@ -29,27 +27,33 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
 
   async def process_message(self, message: telebot.types.Message) -> None:
     if not await self._remote_update_checker.is_on_branch():
-      self.bot.send_message(message.chat.id, 'Unable to update: the repository is not currently on a branch')
+      await self.bot.send_message(message.chat.id, 'Unable to update: the repository is not currently on a branch')
       return
 
     try:
       result = await self._git_helper.pull()
       await self._git_helper.submodule_update()
     except GitException as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        str(e),
+      )
       return
 
     if 'up to date' in result.lower():
       try:
         branch_name = await self._git_helper.get_current_branch_name()
         last_commit = await self._git_helper.get_last_commit_hash_and_comment()
-      except Exception as e:
-        self.bot.send_message(message.chat.id, str(e))
+      except Exception as ee:
+        await self.bot.send_message(
+          message.chat.id,
+          str(ee),
+        )
         return
 
       last_commit = last_commit.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         'Already up to date. '
         f"You are currently on branch '{branch_name}':\n<b>{last_commit}</b>",
@@ -64,7 +68,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
     matches = re.findall(pattern, result)
 
     for match in matches:
-      self.bot.send_message(message.chat.id, match)
+      await self.bot.send_message(message.chat.id, match)
 
     res = await UserChoices.ask_confirmation(
       self.bot,
@@ -74,7 +78,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
     )
 
     if not res:
-      self.bot.send_message(message.chat.id, 'Restart cancelled')
+      await self.bot.send_message(message.chat.id, 'Restart cancelled')
       return
 
     res = await CountdownWithCancel.show_countdown(
@@ -85,13 +89,13 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
     )
 
     if res:
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         f'{CommonUtils.clock_face_one_oclock} Restarting telebot...',
       )
-      TelebotUtils.stop_bot()
+      await TelebotUtils.stop_bot()
     else:
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         'Restart cancelled',
       )

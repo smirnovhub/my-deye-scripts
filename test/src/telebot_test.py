@@ -1,10 +1,14 @@
 import os
+import queue
 import sys
 import time
 import logging
 import subprocess
+import threading
 
+from queue import Queue
 from pathlib import Path
+from typing import List
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -58,19 +62,57 @@ commands = [
 ]
 
 log.info(f'Command to execute: {commands}')
+log.info('Command output:')
 
-result = subprocess.run(
+# Timeout for test execution in seconds (e.g., 300 seconds / 5 minutes)
+TEST_TIMEOUT_SEC = 180
+
+process = subprocess.Popen(
   commands,
-  capture_output = True,
+  stdout = subprocess.PIPE,
+  stderr = subprocess.STDOUT,
   text = True,
+  bufsize = 1,
 )
 
-output = result.stdout.strip() + '\n' + result.stderr.strip()
-log.info(f'Command output:')
+output_lines: List[str] = []
+output_queue: Queue[str] = Queue()
 
-for line in output.splitlines():
-  log.info(line)
+# Read process output in a background thread to prevent blocking
+def read_output(pipe, q):
+  try:
+    for line in iter(pipe.readline, ''):
+      q.put(line)
+  finally:
+    pipe.close()
 
+reader_thread = threading.Thread(target = read_output, args = (process.stdout, output_queue))
+reader_thread.daemon = True
+reader_thread.start()
+
+exec_start_time = time.time()
+
+# Stream output in real-time and check for timeout
+while True:
+  if process.poll() is not None and output_queue.empty():
+    break
+
+  if time.time() - exec_start_time > TEST_TIMEOUT_SEC:
+    process.kill()
+    reader_thread.join()
+    log.error(f'Test execution timed out after {TEST_TIMEOUT_SEC} seconds')
+    sys.exit(1)
+
+  try:
+    line = output_queue.get(timeout = 0.1)
+    stripped_line = line.strip()
+    if stripped_line:
+      log.info(stripped_line)
+      output_lines.append(line)
+  except queue.Empty:
+    continue
+
+output = ''.join(output_lines)
 str_to_find = DeyeTestHelper.test_success_str.lower()
 
 if str_to_find in output.lower():

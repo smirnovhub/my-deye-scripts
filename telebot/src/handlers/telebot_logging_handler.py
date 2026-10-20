@@ -1,6 +1,9 @@
 import os
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+from telebot.asyncio_handler_backends import BaseMiddleware
+
 from typing import Optional, cast
 from datetime import datetime
 
@@ -10,10 +13,25 @@ from telebot_users import TelebotUsers
 from deye_file_lock import DeyeFileLock
 from telebot_base_handler import TelebotBaseHandler
 
-telebot.apihelper.ENABLE_MIDDLEWARE = True
+class TelebotLoggingMiddleware(BaseMiddleware):
+  """Middleware to log incoming messages and callback queries."""
+  def __init__(self, handler: "TelebotLoggingHandler"):
+    super().__init__()
+    self.update_types = ['message', 'callback_query']
+    self._handler = handler
+
+  async def pre_process(self, update, data):
+    if isinstance(update, telebot.types.Message):
+      self._handler.log_message_event(update)
+    elif isinstance(update, telebot.types.CallbackQuery):
+      self._handler.log_callback_event(update)
+    return None
+
+  async def post_process(self, update, data, exception = None):
+    pass
 
 class TelebotLoggingHandler(TelebotBaseHandler):
-  def __init__(self, bot: telebot.TeleBot):
+  def __init__(self, bot: AsyncTeleBot):
     self.bot = bot
     data_dir = TelebotUtils.get_data_dir()
     self.known_users_messages_path = f'{data_dir}/logs/known_users'
@@ -25,25 +43,26 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     DeyeUtils.ensure_dir_exists(self.unknown_users_messages_path)
 
   def register_handlers(self) -> None:
-    @self.bot.middleware_handler(update_types = ['message'])
-    def handle_message(bot: telebot.TeleBot, message: telebot.types.Message):
-      self.log_event(
-        user = message.from_user,
-        event_type = 'send_message',
-        content = repr(message.text),
-      )
+    # Register logging middleware on AsyncTeleBot instance
+    self.bot.setup_middleware(TelebotLoggingMiddleware(self))
 
-    @self.bot.middleware_handler(update_types = ['callback_query'])
-    def handle_callback(bot: telebot.TeleBot, call: telebot.types.CallbackQuery):
-      button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message),
-                                                      call.data) if call.data else None
-      button_text = button.text if button is not None else 'Unknown'
+  def log_message_event(self, message: telebot.types.Message) -> None:
+    self.log_event(
+      user = message.from_user,
+      event_type = 'send_message',
+      content = repr(message.text),
+    )
 
-      self.log_event(
-        user = call.from_user,
-        event_type = 'press_button',
-        content = f'text = {repr(button_text)}, data = {repr(call.data)}',
-      )
+  def log_callback_event(self, call: telebot.types.CallbackQuery) -> None:
+    button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message),
+                                                    call.data) if call.data else None
+    button_text = button.text if button is not None else 'Unknown'
+
+    self.log_event(
+      user = call.from_user,
+      event_type = 'press_button',
+      content = f'text = {repr(button_text)}, data = {repr(call.data)}',
+    )
 
   def log_event(self, user: Optional[telebot.types.User], event_type: str, content: str):
     if user is None:
@@ -82,7 +101,7 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     if not os.path.exists(filename):
       return
 
-    # wait while file increased up to 20% and then trim
+    # Wait while file increases up to 20 percent and then trim
     max_size = int(trim_size * 1.2)
     file_size = os.path.getsize(filename)
     if file_size <= max_size:
@@ -93,11 +112,11 @@ class TelebotLoggingHandler(TelebotBaseHandler):
         # Acquire exclusive lock for writing
         DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)
 
-        # Move to position where last `max_size` bytes start
+        # Move to position where last max_size bytes start
         f.seek(-trim_size, os.SEEK_END)
         data = f.read()
 
-        # Rewrite file with only last `max_size` bytes
+        # Rewrite file with only last max_size bytes
         f.seek(0)
         f.write(data)
         f.truncate()

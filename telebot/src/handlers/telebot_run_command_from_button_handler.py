@@ -1,14 +1,18 @@
+import asyncio
+
 import telebot
 
 from typing import cast
+from telebot.async_telebot import AsyncTeleBot
 
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
 from telebot_fake_message import TelebotFakeMessage
 from telebot_base_handler import TelebotBaseHandler
+from telebot_async_step_manager import TelebotAsyncStepManager
 
 class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
-  def __init__(self, bot: telebot.TeleBot):
+  def __init__(self, bot: AsyncTeleBot):
     self.bot = bot
 
   def register_handlers(self) -> None:
@@ -20,7 +24,7 @@ class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
     Otherwise, the callback will be handled as a normal inline button.
     """
     @self.bot.callback_query_handler(func = TelebotUtils.make_callback_query_filter('/'))
-    def handle(call: telebot.types.CallbackQuery):
+    async def handle(call: telebot.types.CallbackQuery):
       if call.data:
         # If callback_data looks like a command (starts with '/'),
         # we create a fake Message object that contains this command.
@@ -30,17 +34,18 @@ class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
           call.from_user, # user who clicked the button
         )
 
-        self.bot.answer_callback_query(call.id)
+        # Run callback answering in the background to avoid blocking execution
+        asyncio.create_task(self.bot.answer_callback_query(call.id))
 
-        TelebotUtils.remove_inline_buttons_with_delay(
+        await TelebotUtils.remove_inline_buttons_with_delay(
           bot = self.bot,
           chat_id = call.message.chat.id,
           message_id = call.message.message_id,
           delay = TelebotConstants.buttons_remove_delay_sec,
         )
 
-        self.bot.clear_step_handler_by_chat_id(call.message.chat.id)
+        TelebotAsyncStepManager.clear_step_handler_by_chat_id(call.message.chat.id)
 
         # Send the fake message into TeleBot's processing pipeline
         # This way, the command handler will process it normally
-        self.bot.process_new_messages([fake_message])
+        await TelebotUtils.forward_next(self.bot, fake_message)

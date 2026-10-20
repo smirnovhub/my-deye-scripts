@@ -4,6 +4,8 @@ import time
 import asyncio
 import zipfile
 import telebot
+
+from telebot.async_telebot import AsyncTeleBot
 import datetime
 
 from typing import List, TextIO
@@ -17,7 +19,7 @@ from telebot_advanced_choice import AdvancedChoice
 from telebot_menu_item import TelebotMenuItem
 from telebot_test_utils import TelebotTestUtils
 from telebot_utils import TelebotUtils
-from telebot_async_runner import TelebotAsyncRunner
+
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 from telebot_progress_message import TelebotProgressMessage
 
@@ -29,13 +31,9 @@ from lock_exceptions import (
 class TelebotMenuTest(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
     self.progress = TelebotProgressMessage(bot)
     lockfile = os.path.join(DeyeFileLock.lock_path, 'teletest.lock')
     self.locker = DeyeFileLocker('teletest', lockfile)
@@ -52,7 +50,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
 
   async def process_message(self, message: telebot.types.Message) -> None:
     # Acquire lock at the very beginning to prevent opening menu if tests are running
-    if not self.acquire_lock(message.chat.id):
+    if not await self.acquire_lock(message.chat.id):
       return
 
     try:
@@ -97,7 +95,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
       )
 
     finally:
-      self.release_lock()
+      await self.release_lock()
 
   async def process_test_next_step(
     self,
@@ -105,13 +103,13 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
     test_name: str,
     tests_scripts: List[str],
   ):
-    if not self.acquire_lock(chat_id):
+    if not await self.acquire_lock(chat_id):
       return
 
     try:
       await self._execute_tests_workflow(chat_id, test_name, tests_scripts)
     finally:
-      self.release_lock()
+      await self.release_lock()
       self.remove_logs(tests_scripts)
 
   async def _execute_tests_workflow(
@@ -121,7 +119,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
     tests_scripts: List[str],
   ):
     if not test_name:
-      self.bot.send_message(chat_id, 'Test name is empty')
+      await self.bot.send_message(chat_id, 'Test name is empty')
       return
 
     if test_name != self.all_tests:
@@ -133,7 +131,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
           break
 
       if not found:
-        self.bot.send_message(chat_id, f"Test '{test_name}' not found")
+        await self.bot.send_message(chat_id, f"Test '{test_name}' not found")
         return
 
     try:
@@ -146,7 +144,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
       await asyncio.sleep(1)
 
       if failed_count == len(tests):
-        self.send_results(
+        await self.send_results(
           tests_scripts,
           chat_id,
           f'{CommonUtils.large_red_circle_emoji} '
@@ -154,7 +152,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
           'Check logs for details.',
         )
       elif failed_count > 0:
-        self.send_results(
+        await self.send_results(
           tests_scripts,
           chat_id,
           f'{CommonUtils.large_yellow_circle_emoji} '
@@ -163,7 +161,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
           "Check logs for details.",
         )
       else:
-        self.send_results(
+        await self.send_results(
           tests_scripts,
           chat_id,
           f'{CommonUtils.large_green_circle_emoji} '
@@ -172,7 +170,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
     except Exception as e:
       t = DeyeUtils.format_timedelta(datetime.datetime.now() - all_start_time, add_seconds = True)
       await asyncio.sleep(1)
-      self.bot.send_message(
+      await self.bot.send_message(
         chat_id,
         f'{CommonUtils.large_red_circle_emoji} '
         f'Tests failed after {t}. '
@@ -207,7 +205,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
       await asyncio.sleep(1)
       self.running_test = (f'{CommonUtils.white_circle_emoji} '
                            f'[{i + 1}/{len(scripts)}] Running: {test_name}')
-      self.progress.show(
+      await self.progress.show(
         chat_id,
         self.running_test,
       )
@@ -222,13 +220,13 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
         await process.wait()
         returncode = process.returncode
       except Exception as e:
-        self.progress.hide()
+        await self.progress.hide()
         await asyncio.sleep(1)
         with open(log_file, 'a', encoding = 'utf-8') as f:
           self.write_and_flush(f, f"An exception while running {test_name}: {e}\n")
 
         t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-        self.bot.send_message(
+        await self.bot.send_message(
           chat_id,
           f'{CommonUtils.large_red_circle_emoji} '
           f'[{i + 1}/{len(scripts)}] '
@@ -239,14 +237,14 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
         continue
 
       if returncode != 0:
-        self.progress.hide()
+        await self.progress.hide()
         await asyncio.sleep(1)
         msg = f"Error: {test_name} exited with code {returncode}. Tests failed."
         with open(log_file, 'a', encoding = 'utf-8') as f:
           self.write_and_flush(f, f"{msg}\n")
 
         t = DeyeUtils.format_timedelta(datetime.datetime.now() - start_time, add_seconds = True)
-        self.bot.send_message(
+        await self.bot.send_message(
           chat_id,
           f'{CommonUtils.large_red_circle_emoji} '
           f'[{i + 1}/{len(scripts)}] '
@@ -263,11 +261,11 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
       if elapsed < 5:
         await asyncio.sleep(5 - elapsed)
 
-      self.progress.hide()
+      await self.progress.hide()
       await asyncio.sleep(1)
 
       last_iteration_time = time.time()
-      self.bot.send_message(
+      await self.bot.send_message(
         chat_id,
         f'{CommonUtils.large_green_circle_emoji} '
         f'[{i + 1}/{len(scripts)}] '
@@ -287,7 +285,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
     except Exception:
       pass
 
-  def send_results(self, scripts: List[str], chat_id: int, message: str):
+  async def send_results(self, scripts: List[str], chat_id: int, message: str):
     """
     Collects all available log files related to the provided scripts,
     combines them into a single ZIP archive, sends it to the specified Telegram chat,
@@ -313,7 +311,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
         all_log_files.append(file_path)
 
     if not all_log_files:
-      self.bot.send_message(chat_id, message, parse_mode = "HTML")
+      await self.bot.send_message(chat_id, message, parse_mode = "HTML")
       return
 
     # Create one combined zip
@@ -321,7 +319,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
 
     try:
       with open(zip_file_name, 'rb') as f:
-        self.bot.send_document(
+        await self.bot.send_document(
           chat_id,
           telebot.types.InputFile(f, file_name = os.path.basename(zip_file_name)),
           caption = message + ' Log files attached.',
@@ -361,22 +359,25 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
 
     return zip_file_name
 
-  def acquire_lock(self, chat_id: int) -> bool:
+  async def acquire_lock(self, chat_id: int) -> bool:
     try:
       self.locker.acquire(timeout = 0)
       return True
     except (DeyeLockAlreadyAcquiredException, DeyeLockTimeoutException):
-      self.progress.hide()
-      self.progress.show(chat_id, self.running_test)
+      await self.progress.hide()
+      await self.progress.show(chat_id, self.running_test)
       return False
     except Exception as e:
-      self.progress.hide()
-      self.bot.send_message(chat_id, str(e))
+      await self.progress.hide()
+      await self.bot.send_message(
+        chat_id,
+        str(e),
+      )
       return False
 
-  def release_lock(self) -> None:
+  async def release_lock(self) -> None:
     try:
       self.locker.release()
-      self.progress.hide()
+      await self.progress.hide()
     except Exception:
       pass

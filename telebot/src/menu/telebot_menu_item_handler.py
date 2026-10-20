@@ -4,6 +4,7 @@ import telebot
 from typing import List
 from abc import abstractmethod
 
+from telebot.async_telebot import AsyncTeleBot
 from telebot_user import TelebotUser
 from telebot_users import TelebotUsers
 from deye_loggers import DeyeLoggers
@@ -15,12 +16,12 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
   """
   Base class for handling Telebot menu item commands and user authorization
   """
-  def __init__(self, bot: telebot.TeleBot):
+  def __init__(self, bot: AsyncTeleBot):
     """
     Initialize the TelebotMenuItemHandler with a bot instance
 
     Args:
-        bot (telebot.TeleBot): The Telegram bot instance
+        bot (AsyncTeleBot): The Telegram bot instance
     """
     self.bot = bot
     self.users = TelebotUsers()
@@ -57,7 +58,7 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
     """
     return self.auth_helper.is_menu_item_allowed_for_user(user, self.command)
 
-  def is_authorized(self, message: telebot.types.Message) -> bool:
+  async def is_authorized(self, message: telebot.types.Message) -> bool:
     """
     Check if the user is authorized to execute this command
 
@@ -69,19 +70,19 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
         bool: True if authorized, False otherwise
     """
     if self.users.is_user_blocked(message.from_user.id):
-      self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
+      await self.bot.send_message(message.chat.id, 'Command is not allowed for this user')
       return False
 
     if not self.users.is_user_allowed(message.from_user.id):
-      self.bot.send_message(message.chat.id, f'User {message.from_user.id} is not authorized')
+      await self.bot.send_message(message.chat.id, f'User {message.from_user.id} is not authorized')
       return False
 
-    if not self._is_item_allowed(message.from_user.id, message.chat.id):
+    if not await self._is_item_allowed(message.from_user.id, message.chat.id):
       return False
 
     return True
 
-  def _is_item_allowed(self, user_id: int, chat_id: int) -> bool:
+  async def _is_item_allowed(self, user_id: int, chat_id: int) -> bool:
     """
     Check if the command is allowed for the user
 
@@ -96,6 +97,6 @@ class TelebotMenuItemHandler(TelebotBaseHandler):
       return False
 
     if not self.auth_helper.is_menu_item_allowed(user_id, self.command):
-      self.bot.send_message(chat_id, f'Command is not allowed for user {user_id}')
+      await self.bot.send_message(chat_id, f'Command is not allowed for user {user_id}')
       return False
     return True

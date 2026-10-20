@@ -1,23 +1,21 @@
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from telebot_menu_item import TelebotMenuItem
 from telebot_user_choices import UserChoices
-from telebot_async_runner import TelebotAsyncRunner
+
 from countdown_with_cancel import CountdownWithCancel
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
 class TelebotMenuRestart(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -33,7 +31,7 @@ class TelebotMenuRestart(TelebotMenuItemHandlerAsync):
     )
 
     if not result:
-      self.bot.send_message(message.chat.id, 'Restart cancelled')
+      await self.bot.send_message(message.chat.id, 'Restart cancelled')
       return
 
     result = await CountdownWithCancel.show_countdown(
@@ -44,13 +42,13 @@ class TelebotMenuRestart(TelebotMenuItemHandlerAsync):
     )
 
     if result:
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         f'{CommonUtils.clock_face_one_oclock} Restarting telebot...',
       )
-      TelebotUtils.stop_bot()
+      await TelebotUtils.stop_bot()
     else:
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         'Restart cancelled',
       )

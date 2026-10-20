@@ -13,6 +13,8 @@ from telebot_menu_item import TelebotMenuItem
 from accumulated_info_registers import AccumulatedInfoRegisters
 from slave_info_registers import SlaveInfoRegisters
 from telebot_base_test_module import TelebotBaseTestModule
+from telebot_utils import TelebotUtils
+from telegram_send_message import Telegram
 from testable_telebot import TestableTelebot
 from deye_test_helper import DeyeTestHelper
 from solarman_test_server import SolarmanTestServer
@@ -33,7 +35,6 @@ from telebot_writable_registers_test4_module import TelebotWritableRegistersTest
 from telebot_writable_registers_test5_module import TelebotWritableRegistersTest5Module
 from telebot_writable_registers_undo_test_module import TelebotWritableRegistersUndoTestModule
 from telebot_writable_registers_buttons_test_module import TelebotWritableRegistersButtonsTestModule
-from telegram_send_message import Telegram
 
 class TeleTest:
   def __init__(self, bot: TestableTelebot):
@@ -73,12 +74,12 @@ class TeleTest:
       if isinstance(module, TelebotRegistersTestModule):
         info = (f'(name = {module.name}, command = {module.command}, '
                 f'register_creator = {type(module.register_creator(module.name)).__name__})')
-      msg = f'An exception occurred while running {type(module).__name__}{info}: {str(e)}'
+      msg = f'An exception occurred while running {type(module).__name__}{info}: {TelebotUtils.escape_html(str(e))}'
       log.info(msg)
       await asyncio.sleep(1)
       Telegram.send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} '
                                              f'<b>Telebot test failed</b> while running '
-                                             f'{type(module).__name__}{info}: {str(e)}')
+                                             f'{type(module).__name__}{info}: {TelebotUtils.escape_html(str(e))}')
 
   def _clear_data(self, servers: List[SolarmanTestServer], log: logging.Logger):
     self.bot.clear_messages()

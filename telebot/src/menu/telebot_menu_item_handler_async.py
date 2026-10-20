@@ -1,8 +1,7 @@
 import telebot
 import traceback
 
-from deye_exceptions import DeyeKnownException
-from telebot_async_runner import TelebotAsyncRunner
+from telebot.async_telebot import AsyncTeleBot
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
 from telebot_remote_update_checker_async import TelebotRemoteUpdateCheckerAsync
@@ -13,24 +12,17 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
   """
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
     """
     Initialize the TelebotMenuItemHandler with a bot instance
 
     Args:
-        bot (telebot.TeleBot): The Telegram bot instance
+        bot (AsyncTeleBot): The Telegram bot instance
     """
     super().__init__(bot = bot)
-
-    self._runner = runner
     self._local_update_checker = TelebotLocalUpdateCheckerAsync()
     self._remote_update_checker = TelebotRemoteUpdateCheckerAsync()
-
-  @property
-  def runner(self) -> TelebotAsyncRunner:
-    return self._runner
 
   def register_handlers(self) -> None:
     """
@@ -42,26 +34,26 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
     commands = [cmd.command for cmd in self.get_commands()]
 
     @self.bot.message_handler(commands = commands)
-    def handle(message: telebot.types.Message):
-      # Wrap sync handler → async execution
-      self._runner.run(self._handle_async(message))
+    async def handle(message: telebot.types.Message):
+      await self._handle_async(message)
 
   async def _handle_async(self, message: telebot.types.Message) -> None:
     """
     Async processing pipeline
     """
     try:
-      if not self.is_authorized(message):
+      if not await self.is_authorized(message):
         return
 
       if await self.has_updates(message):
         return
 
       await self.process_message(message)
-    except DeyeKnownException as e:
-      self.bot.send_message(message.chat.id, str(e))
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        str(e),
+      )
       self.logger.error(traceback.format_exc())
 
   async def process_message(self, message: telebot.types.Message) -> None:
@@ -82,7 +74,10 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
   async def has_updates(self, message: telebot.types.Message) -> bool:
     try:
       if not await self._remote_update_checker.is_on_branch():
-        self.bot.send_message(message.chat.id, 'Update check skipped: the repository is not currently on a branch')
+        await self.bot.send_message(
+          message.chat.id,
+          'Update check skipped: the repository is not currently on a branch',
+        )
         return False
 
       if await self._remote_update_checker.check_for_remote_updates(self.bot, message):
@@ -96,7 +91,10 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
       ):
         return True
     except Exception as e:
-      self.bot.send_message(message.chat.id, f'Error while checking for updates: {str(e)}')
+      await self.bot.send_message(
+        message.chat.id,
+        f'Error while checking for updates: {str(e)}',
+      )
       self.logger.info(f'Error while checking for updates: {str(e)}')
 
     return False

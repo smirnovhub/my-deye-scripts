@@ -2,14 +2,15 @@ import telebot
 import textwrap
 import traceback
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import Any, List, Optional
 from datetime import datetime
 
 from deye_register import DeyeRegister
-from deye_exceptions import DeyeKnownException
 from deye_exceptions import DeyeValueException
 from deye_base_enum import DeyeBaseEnum
-from telebot_async_runner import TelebotAsyncRunner
+from telebot_async_step_manager import TelebotAsyncStepManager
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
@@ -25,10 +26,9 @@ from deye_custom_single_registers import DeyeCustomSingleRegisters
 class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(bot = bot, runner = runner)
+    super().__init__(bot = bot)
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -66,11 +66,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     return textwrap.dedent('''\
     from deye_registers import DeyeRegisters
     @self.bot.message_handler(commands = ['{register_name}'])
-    def set_{register_name}(message):
-      self._runner.run(self.process_read_write_register_step1(message, registers, '{register_name}', set_{register_name}_step2))
+    async def set_{register_name}(message):
+      await self.process_read_write_register_step1(message, registers, '{register_name}', set_{register_name}_step2)
 
-    def set_{register_name}_step2(message, message_id: int, registers: DeyeRegisters):
-      self._runner.run(self.process_read_write_register_step2(message, message_id, registers, '{register_name}'))
+    async def set_{register_name}_step2(message, message_id: int, registers: DeyeRegisters):
+      await self.process_read_write_register_step2(message, message_id, registers, '{register_name}')
   ''').format(register_name = register.name)
 
   def create_keyboard_for_register(
@@ -99,15 +99,15 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     register_name: str,
     next_step_callback,
   ):
-    if not self.is_authorized(message):
+    if not await self.is_authorized(message):
       return
 
     registers = DeyeRegisters()
 
     register = registers.get_register_by_name(register_name)
     if register is None:
-      self.bot.send_message(message.chat.id, f'Register {register_name} not found')
-      self.bot.clear_step_handler_by_chat_id(message.chat.id)
+      await self.bot.send_message(message.chat.id, f'Register {register_name} not found')
+      TelebotAsyncStepManager.clear_step_handler_by_chat_id(message.chat.id)
       return
 
     if not self.auth_helper.is_writable_register_allowed(message.from_user.id, register_name):
@@ -117,7 +117,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
         message.from_user.id,
       )
 
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         f"You can't change <b>{register.description}</b>. "
         f"Available registers to change:\n{available_registers}",
@@ -146,14 +146,20 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     try:
       text = await self.get_register_value(register)
       keyboard = self.create_keyboard_for_register(registers, register)
-      sent = self.bot.send_message(message.chat.id, text, reply_markup = keyboard, parse_mode = 'HTML')
-      self.bot.clear_step_handler_by_chat_id(message.chat.id)
-      self.bot.register_next_step_handler(message, next_step_callback, sent.message_id, registers)
-    except DeyeKnownException as e:
-      self.bot.send_message(message.chat.id, str(e))
+      sent = await self.bot.send_message(
+        message.chat.id,
+        text,
+        reply_markup = keyboard,
+        parse_mode = 'HTML',
+      )
+      TelebotAsyncStepManager.clear_step_handler_by_chat_id(message.chat.id)
+      TelebotAsyncStepManager.register_next_step_handler(message, next_step_callback, sent.message_id, registers)
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
-      self.logger.info(traceback.format_exc())
+      await self.bot.send_message(
+        message.chat.id,
+        str(e),
+      )
+      self.logger.error(traceback.format_exc())
 
   async def process_read_write_register_step2(
     self,
@@ -162,11 +168,11 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     registers: DeyeRegisters,
     register_name: str,
   ):
-    if not self.is_authorized(message):
+    if not await self.is_authorized(message):
       return
 
     # remove buttons from previous message
-    TelebotUtils.remove_inline_buttons_with_delay(
+    await TelebotUtils.remove_inline_buttons_with_delay(
       bot = self.bot,
       chat_id = message.chat.id,
       message_id = message_id,
@@ -174,26 +180,27 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     )
 
     if not message.text:
-      self.bot.send_message(message.chat.id, f'Register value is empty')
+      await self.bot.send_message(message.chat.id, f'Register value is empty')
       return
 
     # if we received new command, process it
-    if TelebotUtils.forward_next(self.bot, message):
+    if await TelebotUtils.forward_next(self.bot, message):
       return
 
     register = registers.get_register_by_name(register_name)
     if register is None:
-      self.bot.send_message(message.chat.id, f'Register {register_name} not found')
-      self.bot.clear_step_handler_by_chat_id(message.chat.id)
+      await self.bot.send_message(message.chat.id, f'Register {register_name} not found')
+      TelebotAsyncStepManager.clear_step_handler_by_chat_id(message.chat.id)
       return
 
     try:
       await self.write_register(register, message)
-    except DeyeKnownException as e:
-      self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e), parse_mode = 'HTML')
-      self.logger.info(traceback.format_exc())
+      await self.bot.send_message(
+        message.chat.id,
+        str(e),
+      )
+      self.logger.error(traceback.format_exc())
 
   async def get_register_value(self, register: DeyeRegister) -> str:
     # should be local to avoid issues with locks
@@ -283,29 +290,30 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
         )
 
         if not result:
-          self.bot.send_message(message.chat.id, 'Nothing changed')
+          await self.bot.send_message(message.chat.id, 'Nothing changed')
           return
 
         try:
           await holder.write_register(register, value)
-          self.print_result_after_write_register(
+          await self.print_result_after_write_register(
             register,
             message,
             old_value = old_value,
             old_pretty_value = old_pretty_value,
           )
-        except DeyeKnownException as e:
-          self.bot.send_message(message.chat.id, str(e))
         except Exception as e:
-          self.bot.send_message(message.chat.id, str(e))
-          self.logger.info(traceback.format_exc())
+          await self.bot.send_message(
+            message.chat.id,
+            str(e),
+          )
+          self.logger.error(traceback.format_exc())
         finally:
           holder.disconnect()
 
         return
 
       await holder.write_register(register, value)
-      self.print_result_after_write_register(
+      await self.print_result_after_write_register(
         register,
         message,
         old_value = old_value,
@@ -315,7 +323,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     finally:
       holder.disconnect()
 
-  def print_result_after_write_register(
+  async def print_result_after_write_register(
     self,
     register: DeyeRegister,
     message: telebot.types.Message,
@@ -334,7 +342,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     ) is not None
 
     if old_value != register.value and not is_undo_button_pressed:
-      sent = CommandChoice.ask_command_choice(
+      sent = await CommandChoice.ask_command_choice(
         self.bot,
         message.chat.id,
         text,
@@ -342,14 +350,14 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
         max_per_row = 2,
       )
 
-      TelebotUtils.remove_inline_buttons_with_delay(
+      await TelebotUtils.remove_inline_buttons_with_delay(
         bot = self.bot,
         chat_id = message.chat.id,
         message_id = sent.message_id,
         delay = TelebotConstants.undo_button_remove_delay_sec,
       )
     else:
-      self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
+      await self.bot.send_message(message.chat.id, text, parse_mode = 'HTML')
 
   def get_nothing_changed_exception(self, register: DeyeRegister) -> Exception:
     suffix = f' {register.suffix}'.rstrip()

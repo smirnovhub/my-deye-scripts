@@ -1,15 +1,15 @@
 import telebot
 import traceback
 
+from telebot.async_telebot import AsyncTeleBot
+
 from datetime import datetime
 
 from deye_utils import DeyeUtils
-from telebot_async_runner import TelebotAsyncRunner
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_utils import TelebotUtils
 from deye_register import DeyeRegister
 from deye_registers import DeyeRegisters
-from deye_exceptions import DeyeKnownException
 from deye_custom_single_registers import DeyeCustomSingleRegisters
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
@@ -21,10 +21,9 @@ from telebot_command_choice import CommandChoice
 class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(bot = bot, runner = runner)
+    super().__init__(bot = bot)
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -41,7 +40,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
         message.from_user.id,
       )
 
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         f"You can't change <b>{register.description}</b>. "
         f"Available registers to change:\n{available_registers}",
@@ -59,13 +58,16 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
     try:
       await holder.read_registers()
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        str(e),
+      )
       return
     finally:
       holder.disconnect()
 
     if not isinstance(register.value, datetime):
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         f'Register type is not {datetime.__name__}',
       )
@@ -89,7 +91,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
     elif diff_seconds > TelebotConstants.inverter_system_time_need_sync_difference_sec:
       await self._on_confirmation(register, message.chat.id, True)
     else:
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         'The inverter time is already synced',
       )
@@ -101,7 +103,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
     result: bool,
   ):
     if not result:
-      self.bot.send_message(chat_id, 'Time sync cancelled')
+      await self.bot.send_message(chat_id, 'Time sync cancelled')
       return
 
     try:
@@ -122,7 +124,7 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
       text = (f'<b>{register.description}</b> changed from {old_value} '
               f'to {value} {register.suffix}')
 
-      sent = CommandChoice.ask_command_choice(
+      sent = await CommandChoice.ask_command_choice(
         self.bot,
         chat_id,
         text,
@@ -130,15 +132,16 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
         max_per_row = 2,
       )
 
-      TelebotUtils.remove_inline_buttons_with_delay(
+      await TelebotUtils.remove_inline_buttons_with_delay(
         bot = self.bot,
         chat_id = chat_id,
         message_id = sent.message_id,
         delay = TelebotConstants.undo_button_remove_delay_sec,
       )
 
-    except DeyeKnownException as e:
-      self.bot.send_message(chat_id, str(e))
     except Exception as e:
-      self.bot.send_message(chat_id, str(e))
-      self.logger.info(traceback.format_exc())
+      await self.bot.send_message(
+        chat_id,
+        str(e),
+      )
+      self.logger.error(traceback.format_exc())

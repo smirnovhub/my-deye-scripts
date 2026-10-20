@@ -1,6 +1,7 @@
 import telebot
 
-from telebot_async_runner import TelebotAsyncRunner
+from telebot.async_telebot import AsyncTeleBot
+
 from time_of_use_page import TimeOfUsePage
 from time_of_use_enable_page import TimeOfUseEnablePage
 from time_of_use_hours_page import TimeOfUseHoursPage
@@ -19,13 +20,9 @@ from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -42,7 +39,10 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
     try:
       await holder.read_registers()
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        str(e),
+      )
       return
     finally:
       holder.disconnect()
@@ -53,7 +53,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
     tou_data = tou_register.value
 
     if not isinstance(tou_data, TimeOfUseData):
-      self.bot.send_message(
+      await self.bot.send_message(
         message.chat.id,
         f"Register value type should be {TimeOfUseData.__name__}, but "
         f"{type(tou_register.value).__name__} received",

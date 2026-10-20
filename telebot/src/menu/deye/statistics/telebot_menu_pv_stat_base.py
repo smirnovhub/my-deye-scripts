@@ -1,12 +1,14 @@
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from http import HTTPStatus
 from urllib.parse import urljoin
 from typing import List, cast
 from datetime import date
 
 from env_utils import EnvUtils
-from telebot_async_runner import TelebotAsyncRunner
+from telebot_utils import TelebotUtils
 from telebot_command_choice import CommandChoice
 from telebot_menu_item import TelebotMenuItem
 from statistics_period import StatisticsPeriod
@@ -17,12 +19,11 @@ from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
     stat_command: TelebotMenuItem,
     stat_period: StatisticsPeriod,
   ):
-    super().__init__(bot = bot, runner = runner)
+    super().__init__(bot = bot)
     self._stat_command = stat_command
     self._stat_period = stat_period
 
@@ -45,16 +46,16 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
     try:
       table = await self._get_telegram_table(date.today(), self._stat_period)
     except Exception as e:
-      CommandChoice.ask_command_choice(
+      await CommandChoice.ask_command_choice(
         bot = self.bot,
         chat_id = message.chat.id,
-        text = str(e),
+        text = TelebotUtils.escape_html(str(e)),
         options = choices,
         max_per_row = 2,
       )
       return
 
-    CommandChoice.ask_command_choice(
+    await CommandChoice.ask_command_choice(
       bot = self.bot,
       chat_id = message.chat.id,
       text = telebot.types.InputRichMessage(blocks = table),
@@ -162,10 +163,11 @@ class TelebotMenuPvStatBase(TelebotMenuItemHandlerAsync):
 
     return [
       telebot.types.InputRichBlockParagraph(
-        telebot.types.RichTextBold(cast(
-          telebot.types.RichText,
-          f"Statistics for {period.description.lower()} {period_date}:",
-        ))),
+        telebot.types.RichTextBold(
+          cast(
+            telebot.types.RichText,
+            f"Statistics for {period.description.lower()} {period_date}:",
+          ))),
       telebot.types.InputRichBlockTable(
         cells = cells,
         is_bordered = True,

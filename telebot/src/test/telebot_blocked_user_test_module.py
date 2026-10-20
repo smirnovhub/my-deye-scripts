@@ -40,7 +40,7 @@ class TelebotBlockedUserTestModule(TelebotBaseTestModule):
       for command in self.get_all_registered_commands():
         self.log.info(f"Sending command '/{command}' from user {user.id}")
 
-        self.send_text(user, f'/{command}')
+        await self.send_text(user, f'/{command}')
         await self.wait_for_text('Command is not allowed for this user')
 
     self.log.info('Seems blocked users processed correctly')

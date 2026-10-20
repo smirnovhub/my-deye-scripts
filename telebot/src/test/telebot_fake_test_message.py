@@ -1,6 +1,8 @@
 import time
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import Union
 
 class TelebotFakeTestMessage:

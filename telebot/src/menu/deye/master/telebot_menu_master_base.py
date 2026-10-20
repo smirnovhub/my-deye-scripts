@@ -1,5 +1,7 @@
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from typing import List, Type
 
 from telebot_utils import TelebotUtils
@@ -9,24 +11,20 @@ from deye_registers_holder_async import DeyeRegistersHolderAsync
 from telebot_menu_item import TelebotMenuItem
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_constants import TelebotConstants
-from telebot_async_runner import TelebotAsyncRunner
+
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
 class TelebotMenuMasterBase(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
     registers_class: Type[DeyeRegisters],
     all_command: TelebotMenuItem,
     master_command: TelebotMenuItem,
     slave_command: TelebotMenuItem,
     title: str = TelebotConstants.default_title,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
     self.registers_class = registers_class
     self.all_command = all_command
     self.master_command = master_command
@@ -57,7 +55,10 @@ class TelebotMenuMasterBase(TelebotMenuItemHandlerAsync):
     try:
       await holder.read_registers()
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        str(e),
+      )
       return
     finally:
       holder.disconnect()
@@ -80,7 +81,7 @@ class TelebotMenuMasterBase(TelebotMenuItemHandlerAsync):
 
     info = TelebotDeyeHelper.get_register_values(registers.all_registers)
 
-    CommandChoice.ask_command_choice(
+    await CommandChoice.ask_command_choice(
       self.bot,
       message.chat.id,
       f'<b>{self.title}: {self.loggers.master.name}</b>\n{info}',

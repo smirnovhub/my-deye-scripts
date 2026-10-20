@@ -63,15 +63,17 @@ class TelebotBaseTestModule:
 
     return sorted(commands)
 
-  def send_text(self, user: TelebotUser, text: str):
+  async def send_text(self, user: TelebotUser, text: str):
     message = TelebotFakeTestMessage.make(
       text = text,
       user_id = user.id,
       first_name = user.name,
     )
-    self.bot.process_new_messages([message])
 
-  def send_button_click(self, user: TelebotUser, data: str):
+    # Run message processing in the background without blocking
+    asyncio.create_task(self.bot.process_new_messages([message]))
+
+  async def send_button_click(self, user: TelebotUser, data: str):
     message = TelebotFakeTestMessage.make(
       text = data,
       user_id = user.id,
@@ -90,7 +92,8 @@ class TelebotBaseTestModule:
       message = message,
     )
 
-    self.bot.process_new_callback_query([query])
+    # Run message processing in the background without blocking
+    asyncio.create_task(self.bot.process_new_callback_query([query]))
 
   async def wait_for_text(self, text: str):
     def check_message():

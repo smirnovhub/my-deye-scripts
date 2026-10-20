@@ -15,7 +15,8 @@
     "graphs",
     "locker",
     "statistics",
-    "utils"
+    "utils",
+    "websocket"
   ],
   "python.analysis.useImportHeuristic": true,
   "python.languageServer": "Pylance",

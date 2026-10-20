@@ -9,6 +9,7 @@ from deye_loggers import DeyeLoggers
 from break_button_node import BreakButtonNode
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
+from telebot_utils import TelebotUtils
 from time_of_use_ask_data import TimeOfUseAskData
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_data import TimeOfUseData
@@ -65,7 +66,7 @@ class TimeOfUseBottomButtons:
   async def _handle_save(self, navigator: TelebotPageNavigator) -> None:
     if not self._need_save():
       text = TimeOfUseHelper.get_time_of_use_as_rich_message(tou_data = self._tou_data)
-      navigator.stop(text)
+      await navigator.stop(text)
       return
 
     data = copy.deepcopy(self._tou_data)
@@ -82,10 +83,10 @@ class TimeOfUseBottomButtons:
         tou_data = data,
       )
     except Exception as e:
-      navigator.stop(str(e))
+      await navigator.stop(TelebotUtils.escape_html(str(e)))
     else:
       text = TimeOfUseHelper.get_time_of_use_as_rich_message(tou_data = self._tou_data, suffx = "saved")
-      navigator.stop(text)
+      await navigator.stop(text)
 
   async def _handle_fix_yes(self, navigator: TelebotPageNavigator) -> None:
     self._ask_data.ask_for_fix_times = False
@@ -114,7 +115,7 @@ class TimeOfUseBottomButtons:
     await navigator.update()
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    navigator.stop(
+    await navigator.stop(
       TimeOfUseHelper.get_time_of_use_as_rich_message(
         tou_data = self._tou_original_data,
         suffx = "cancel",

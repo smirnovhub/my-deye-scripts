@@ -1,7 +1,8 @@
 import telebot
 
+from telebot.async_telebot import AsyncTeleBot
+
 from telebot_menu_item import TelebotMenuItem
-from telebot_async_runner import TelebotAsyncRunner
 from telebot_deye_helper import TelebotDeyeHelper
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 from deye_registers_holder_async import DeyeRegistersHolderAsync
@@ -9,13 +10,9 @@ from deye_registers_holder_async import DeyeRegistersHolderAsync
 class TelebotMenuCache(TelebotMenuItemHandlerAsync):
   def __init__(
     self,
-    bot: telebot.TeleBot,
-    runner: TelebotAsyncRunner,
+    bot: AsyncTeleBot,
   ):
-    super().__init__(
-      bot = bot,
-      runner = runner,
-    )
+    super().__init__(bot = bot, )
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -31,7 +28,10 @@ class TelebotMenuCache(TelebotMenuItemHandlerAsync):
     try:
       rates = await holder.get_cache_hit_rates()
     except Exception as e:
-      self.bot.send_message(message.chat.id, str(e))
+      await self.bot.send_message(
+        message.chat.id,
+        str(e),
+      )
       return
 
     result = ""
@@ -43,7 +43,7 @@ class TelebotMenuCache(TelebotMenuItemHandlerAsync):
       result += f"Cache hit rate : {rate.cache_hit_rate_percent}%\n"
       result += "</pre>"
 
-    self.bot.send_message(
+    await self.bot.send_message(
       message.chat.id,
       result,
       parse_mode = 'HTML',
