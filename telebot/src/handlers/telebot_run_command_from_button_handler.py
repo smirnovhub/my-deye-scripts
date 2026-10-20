@@ -1,3 +1,5 @@
+import asyncio
+
 import telebot
 
 from typing import cast
@@ -32,7 +34,8 @@ class TelebotRunCommandFromButtonHandler(TelebotBaseHandler):
           call.from_user, # user who clicked the button
         )
 
-        await self.bot.answer_callback_query(call.id)
+        # Run callback answering in the background to avoid blocking execution
+        asyncio.create_task(self.bot.answer_callback_query(call.id))
 
         await TelebotUtils.remove_inline_buttons_with_delay(
           bot = self.bot,

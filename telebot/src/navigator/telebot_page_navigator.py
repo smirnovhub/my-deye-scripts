@@ -1,7 +1,6 @@
 import logging
 import traceback
 import telebot
-import threading
 import asyncio
 import websockets
 import json
@@ -27,7 +26,11 @@ class CallbackCommandMiddleware(BaseMiddleware):
     self.update_types = ['callback_query']
     self._navigator_cls = navigator_cls
 
-  async def pre_process(self, call: telebot.types.CallbackQuery, data: Dict[str, Any]) -> None:
+  async def pre_process(
+    self,
+    call: telebot.types.CallbackQuery,
+    data: Dict[str, Any],
+  ) -> None:
     if not call.data or not call.message:
       return
 
@@ -36,16 +39,17 @@ class CallbackCommandMiddleware(BaseMiddleware):
       return
 
     chat_id = call.message.chat.id
-    with self._navigator_cls._threading_lock:
-      instance = self._navigator_cls._instances.get(chat_id)
+    instance = self._navigator_cls._instances.get(chat_id)
 
     if instance:
       await instance._on_command_button_clicked(button.callback_data)
 
-  async def post_process(self,
-                         call: telebot.types.CallbackQuery,
-                         data: Dict[str, Any],
-                         exception: Optional[Exception] = None) -> None:
+  async def post_process(
+    self,
+    call: telebot.types.CallbackQuery,
+    data: Dict[str, Any],
+    exception: Optional[Exception] = None,
+  ) -> None:
     pass
 
 class TelebotPageNavigator:
@@ -53,7 +57,6 @@ class TelebotPageNavigator:
   Manager class that handles navigation between different pages in a Telegram bot.
   Maintains session state, instances mapped by chat_id, and global callback routing with native async support.
   """
-  _threading_lock = threading.Lock()
   _navigator_data_prefix = "_nav_"
   _instances: Dict[int, "TelebotPageNavigator"] = {}
   _handlers_registered: bool = False
@@ -75,15 +78,12 @@ class TelebotPageNavigator:
     self._main_page: Optional["TelebotNavigationPage"] = None
     self._markup: Optional[telebot.types.InlineKeyboardMarkup] = None
     self._logger = logging.getLogger()
-    self._delayed_tasks: List[asyncio.Task] = []
-    self._ws_task: Optional[asyncio.Task] = None
-    self._auto_update_task: Optional[asyncio.Task] = None
+    self._tasks: List[asyncio.Task] = []
     self._async_lock = AsyncRLock()
 
-    with TelebotPageNavigator._threading_lock:
-      if not TelebotPageNavigator._handlers_registered:
-        TelebotPageNavigator._register_handlers(self._bot)
-        TelebotPageNavigator._handlers_registered = True
+    if not TelebotPageNavigator._handlers_registered:
+      TelebotPageNavigator._register_handlers(self._bot)
+      TelebotPageNavigator._handlers_registered = True
 
   def register_page(self, page: "TelebotNavigationPage") -> None:
     if page.page_type in self._pages:
@@ -108,8 +108,7 @@ class TelebotPageNavigator:
     chat_id: int,
   ) -> telebot.types.Message:
     # Retrieve and stop the previous navigator for this chat before registering the new one
-    with TelebotPageNavigator._threading_lock:
-      old_nav = TelebotPageNavigator._instances.get(chat_id)
+    old_nav = TelebotPageNavigator._instances.get(chat_id)
 
     if old_nav and old_nav != self:
       try:
@@ -117,8 +116,7 @@ class TelebotPageNavigator:
       except Exception as e:
         self._logger.error(f"Error stopping previous navigator for chat {chat_id}: {e}")
 
-    with TelebotPageNavigator._threading_lock:
-      TelebotPageNavigator._instances[chat_id] = self
+    TelebotPageNavigator._instances[chat_id] = self
 
     self._main_page = page
     self._current_page = page
@@ -264,13 +262,11 @@ class TelebotPageNavigator:
 
     task = asyncio.create_task(delayed_task_wrapper())
 
-    with self._threading_lock:
-      self._delayed_tasks.append(task)
+    self._tasks.append(task)
 
     def on_done(t: asyncio.Task) -> None:
-      with self._threading_lock:
-        if t in self._delayed_tasks:
-          self._delayed_tasks.remove(t)
+      if t in self._tasks:
+        self._tasks.remove(t)
 
     task.add_done_callback(on_done)
 
@@ -322,13 +318,11 @@ class TelebotPageNavigator:
           await asyncio.sleep(5)
 
     task = asyncio.create_task(instance_listener_worker())
-    with self._threading_lock:
-      self._ws_task = task
+    self._tasks.append(task)
 
     def on_done(t: asyncio.Task) -> None:
-      with self._threading_lock:
-        if self._ws_task == t:
-          self._ws_task = None
+      if t in self._tasks:
+        self._tasks.remove(t)
 
     task.add_done_callback(on_done)
 
@@ -357,13 +351,11 @@ class TelebotPageNavigator:
           await self.send_message_with_remove_with_delay(str(e))
 
     task = asyncio.create_task(auto_update_worker())
-    with self._threading_lock:
-      self._auto_update_task = task
+    self._tasks.append(task)
 
     def task_done(t: asyncio.Task) -> None:
-      with self._threading_lock:
-        if self._auto_update_task == t:
-          self._auto_update_task = None
+      if t in self._tasks:
+        self._tasks.remove(t)
 
     task.add_done_callback(task_done)
 
@@ -427,28 +419,19 @@ class TelebotPageNavigator:
     text: Optional[Union[str, telebot.types.InputRichMessage]] = None,
     delete_message: bool = False,
   ) -> None:
-    with self._threading_lock:
-      tasks_to_cancel = list(self._delayed_tasks)
-      self._delayed_tasks.clear()
-      ws_task = self._ws_task
-      self._ws_task = None
-      auto_update_task = self._auto_update_task
-      self._auto_update_task = None
+    if not self._current_page or not self._message or not self._chat_id:
+      raise RuntimeError("Navigation has not started yet")
+
+    tasks_to_cancel = list(self._tasks)
+    self._tasks.clear()
 
     for task in tasks_to_cancel:
       if not task.done():
         task.cancel()
 
-    if ws_task and not ws_task.done():
-      ws_task.cancel()
-
-    if auto_update_task and not auto_update_task.done():
-      auto_update_task.cancel()
-
     if not self._current_page or not self._message or not self._chat_id:
-      with TelebotPageNavigator._threading_lock:
-        if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
-          del TelebotPageNavigator._instances[self._chat_id]
+      if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
+        del TelebotPageNavigator._instances[self._chat_id]
       raise RuntimeError("Navigation has not started yet")
 
     self._current_page.on_stop()
@@ -501,11 +484,10 @@ class TelebotPageNavigator:
         text = text,
       ))
 
-    with TelebotPageNavigator._threading_lock:
-      if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
-        del TelebotPageNavigator._instances[self._chat_id]
-      if self._chat_id:
-        TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._chat_id)
+    if self._chat_id and TelebotPageNavigator._instances.get(self._chat_id) == self:
+      del TelebotPageNavigator._instances[self._chat_id]
+    if self._chat_id:
+      TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._chat_id)
 
     self._chat_id = None
     self._message = None
@@ -556,14 +538,13 @@ class TelebotPageNavigator:
       if not call.data or not call.message:
         return
 
-      await bot.answer_callback_query(call.id)
+      # Run callback answering in the background to avoid blocking execution
+      asyncio.create_task(bot.answer_callback_query(call.id))
 
       button_id = call.data[len(TelebotPageNavigator._navigator_data_prefix):]
       chat_id = call.message.chat.id
 
-      with TelebotPageNavigator._threading_lock:
-        instance = TelebotPageNavigator._instances.get(chat_id)
-
+      instance = TelebotPageNavigator._instances.get(chat_id)
       if instance:
         await instance._handle_callback(button_id = button_id)
 
