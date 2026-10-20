@@ -9,7 +9,10 @@ from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 from telebot_menu_pv_stat_main_page import TelebotMenuPvStatMainPage
 
 class TelebotMenuPvStat(TelebotMenuItemHandlerAsync):
-  def __init__(self, bot: AsyncTeleBot):
+  def __init__(
+    self,
+    bot: AsyncTeleBot,
+  ):
     super().__init__(bot)
 
   @property

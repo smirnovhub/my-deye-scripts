@@ -24,7 +24,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandlerAsync):
     slave_command: TelebotMenuItem,
     title: str = TelebotConstants.default_title,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
     self.registers_class = registers_class
     self.all_command = all_command
     self.master_command = master_command

@@ -27,7 +27,10 @@ class TelebotWritableRegistersUndoTestModule(TelebotBaseTestModule):
   This module confirms that all writable registers produce correct Undo buttons
   and that the bot supports reliable rollback of recent changes.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
 
   @property

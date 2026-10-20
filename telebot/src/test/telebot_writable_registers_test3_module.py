@@ -30,7 +30,10 @@ class TelebotWritableRegistersTest3Module(TelebotBaseTestModule):
       is the same as the old value and nothing changed.
     - Raises an error if no such confirmation message is found.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
 
   @property

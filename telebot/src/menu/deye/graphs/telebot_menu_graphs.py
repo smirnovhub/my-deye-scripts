@@ -17,7 +17,7 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerAsync):
     self,
     bot: AsyncTeleBot,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
     self._provider = DeyeGraphsDataProvider()
 
   @property

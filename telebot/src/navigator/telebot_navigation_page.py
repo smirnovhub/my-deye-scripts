@@ -1,5 +1,6 @@
 import inspect
 import logging
+import secrets
 import telebot
 
 from enum import Enum
@@ -19,6 +20,10 @@ class TelebotNavigationPage(ABC):
   Abstract base class representing a single UI page in the telegram bot navigation system.
   Each page manages its own buttons and click handlers.
   """
+
+  # Global session key to invalidate and disable inline buttons created during previous bot runs
+  _global_session_key = secrets.randbits(32)
+
   def __init__(self):
     """
     Initializes the page and its internal button handler storage.
@@ -102,8 +107,12 @@ class TelebotNavigationPage(ABC):
     """
     for button in self.buttons:
       if button.id == button_id:
+        self._logger.info(f"Clicked on button id '{button.id}', "
+                          f"text ='{button.text}', data = '{button.data}'")
         await self.on_button_clicked(navigator, button)
         break
+    else:
+      self._logger.warning(f"Button with id '{button_id}' not found")
 
   async def on_button_clicked(
     self,
@@ -160,7 +169,7 @@ class TelebotNavigationPage(ABC):
     button: ButtonNode,
     handler: Optional[ButtonHandler] = None,
   ) -> None:
-    page_key = f":{self.page_type}"
+    page_key = f":{self.page_type}:{TelebotNavigationPage._global_session_key}"
 
     if page_key in button.key:
       raise RuntimeError(f"Button was already used on page {self.page_type} {button.__class__.__name__} "

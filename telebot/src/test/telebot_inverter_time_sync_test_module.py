@@ -31,7 +31,10 @@ class TelebotInverterTimeSyncTestModule(TelebotBaseTestModule):
   This module ensures reliable time synchronization, proper handling of large
   time differences, and correct reporting by the bot.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
     self.registers = DeyeRegisters()
 

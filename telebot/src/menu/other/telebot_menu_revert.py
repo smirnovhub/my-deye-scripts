@@ -21,7 +21,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     self,
     bot: AsyncTeleBot,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
     self._git_helper = GitHelperAsync()
     self._update_checker = TelebotLocalUpdateCheckerAsync()
 

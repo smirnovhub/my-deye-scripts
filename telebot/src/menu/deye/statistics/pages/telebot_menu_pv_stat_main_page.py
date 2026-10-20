@@ -51,6 +51,9 @@ class TelebotMenuPvStatMainPage(TelebotNavigationPage):
 
   def _create_pv_stat_button(self, period: StatisticsPeriod) -> None:
     async def handler(navigator: TelebotPageNavigator) -> None:
+      if self._period == period:
+        return
+
       self._period = period
       self._texts = await self._get_telegram_table(period = period)
 

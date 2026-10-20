@@ -33,7 +33,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
     self,
     bot: AsyncTeleBot,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
     self.progress = TelebotProgressMessage(bot)
     lockfile = os.path.join(DeyeFileLock.lock_path, 'teletest.lock')
     self.locker = DeyeFileLocker('teletest', lockfile)

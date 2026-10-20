@@ -22,7 +22,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
     self,
     bot: AsyncTeleBot,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
 
   @property
   def command(self) -> TelebotMenuItem:

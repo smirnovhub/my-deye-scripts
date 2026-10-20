@@ -3,8 +3,8 @@ import telebot
 from telebot.async_telebot import AsyncTeleBot
 
 from typing import List
-from telebot_menu_item import TelebotMenuItem
 
+from telebot_menu_item import TelebotMenuItem
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
 class TelebotMenuUnknownCommandHandler(TelebotMenuItemHandlerAsync):
@@ -12,9 +12,7 @@ class TelebotMenuUnknownCommandHandler(TelebotMenuItemHandlerAsync):
     self,
     bot: AsyncTeleBot,
   ):
-    super().__init__(
-      bot = bot,
-    )
+    super().__init__(bot)
 
   @property
   def command(self) -> TelebotMenuItem:

@@ -32,7 +32,10 @@ class TelebotWritableRegistersButtonsTestModule(TelebotBaseTestModule):
   This module ensures that all generated command buttons are properly formatted
   and correspond to valid register operations.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
 
   @property
@@ -59,7 +62,8 @@ class TelebotWritableRegistersButtonsTestModule(TelebotBaseTestModule):
       self.log.info(f"Sending command '{command}'")
 
       await self.send_text(user, command)
-      data = await self.wait_for_text_regex_and_get_buttons_data(rf'Current.+{register.description}.+value.*Enter new value')
+      data = await self.wait_for_text_regex_and_get_buttons_data(
+        rf'Current.+{register.description}.+value.*Enter new value')
 
       for cmd_str in data:
         if not cmd_str.startswith('/'):

@@ -23,7 +23,10 @@ class TelebotBlockedUserTestModule(TelebotBaseTestModule):
   This module confirms that blocked users are prevented from performing
   actions and that the bot handles them consistently.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
 
   @property
