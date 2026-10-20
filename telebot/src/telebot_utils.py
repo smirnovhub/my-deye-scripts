@@ -262,15 +262,19 @@ class TelebotUtils:
     return False
 
   @staticmethod
-  async def monitor_hanging_tasks(interval: int = 10):
+  async def monitor_hanging_tasks(interval: int):
     """Periodically check and log pending asyncio tasks to detect hangs."""
     while True:
       await asyncio.sleep(interval)
-      logging.warning("=== ASYNCIO PENDING TASKS MONITOR ===")
-      for task in asyncio.all_tasks():
-        if task is not asyncio.current_task():
-          logging.warning(f"Task: {task}")
-          task.print_stack()
+
+      # Collect all tasks except the current monitor task itself
+      other_tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+
+      logging.warning(f"=== ASYNCIO PENDING TASKS MONITOR (TOTAL: {len(other_tasks)}) ===")
+
+      for task in other_tasks:
+        logging.warning(f"Task: {task}")
+        task.print_stack()
 
   @staticmethod
   async def stop_bot():

@@ -62,8 +62,8 @@ class MyTelebot:
     self.admin_user_id = EnvUtils.get_telegram_admin_user_id()
 
   async def initialize(self):
-    # # Launch the monitoring task in the background loop
-    # asyncio.create_task(TelebotUtils.monitor_hanging_tasks(10))
+    # Launch the monitoring task in the background loop
+    asyncio.create_task(TelebotUtils.monitor_hanging_tasks(300))
 
     data_dir = TelebotUtils.get_data_dir()
     DeyeUtils.ensure_dir_exists(data_dir)
