@@ -1,7 +1,6 @@
 import telebot
 import traceback
 
-from telebot_utils import TelebotUtils
 from telebot.async_telebot import AsyncTeleBot
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
@@ -53,7 +52,7 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       self.logger.error(traceback.format_exc())
 
@@ -94,7 +93,7 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        f'Error while checking for updates: {TelebotUtils.escape_html(str(e))}',
+        f'Error while checking for updates: {str(e)}',
       )
       self.logger.info(f'Error while checking for updates: {str(e)}')
 

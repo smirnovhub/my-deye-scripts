@@ -2,7 +2,6 @@ import telebot
 
 from telebot.async_telebot import AsyncTeleBot
 
-from telebot_utils import TelebotUtils
 from time_of_use_page import TimeOfUsePage
 from time_of_use_enable_page import TimeOfUseEnablePage
 from time_of_use_hours_page import TimeOfUseHoursPage
@@ -42,7 +41,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       return
     finally:

@@ -127,7 +127,7 @@ class BatterySettingsEditPage(TelebotNavigationPage):
       )
       await navigator.stop(message)
 
-    except Exception as ee:
-      await navigator.stop(f"{self._title} {TelebotUtils.escape_html(str(ee))}")
+    except Exception as e:
+      await navigator.stop(f"{self._title} {TelebotUtils.escape_html(str(e))}")
     finally:
       holder.disconnect()

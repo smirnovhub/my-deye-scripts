@@ -3,7 +3,6 @@ import telebot
 from telebot.async_telebot import AsyncTeleBot
 
 from env_utils import EnvUtils
-from telebot_utils import TelebotUtils
 from telebot_menu_item import TelebotMenuItem
 from telebot_page_navigator import TelebotPageNavigator
 from deye_graphs_data_provider import DeyeGraphsDataProvider
@@ -48,7 +47,7 @@ class TelebotMenuGraphs(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       return
 

@@ -36,7 +36,7 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
     except GitException as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       return
 
@@ -44,10 +44,10 @@ class TelebotMenuUpdate(TelebotMenuItemHandlerAsync):
       try:
         branch_name = await self._git_helper.get_current_branch_name()
         last_commit = await self._git_helper.get_last_commit_hash_and_comment()
-      except Exception as e:
+      except Exception as ee:
         await self.bot.send_message(
           message.chat.id,
-          TelebotUtils.escape_html(str(e)),
+          str(ee),
         )
         return
 

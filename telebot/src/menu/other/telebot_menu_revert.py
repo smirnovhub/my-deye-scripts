@@ -31,7 +31,10 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
 
   async def process_message(self, message: telebot.types.Message) -> None:
     if not await self._remote_update_checker.is_on_branch():
-      await self.bot.send_message(message.chat.id, 'Unable to revert: the repository is not currently on a branch')
+      await self.bot.send_message(
+        message.chat.id,
+        'Unable to revert: the repository is not currently on a branch',
+      )
       return
 
     try:
@@ -51,7 +54,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       return
 
@@ -67,7 +70,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       return
 
@@ -108,7 +111,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         chat_id,
-        f'{TelebotUtils.escape_html(str(e))}: trying to reset to HEAD and then stash pop again...',
+        f'{str(e)}: trying to reset to HEAD and then stash pop again...',
       )
       try:
         await self._git_helper.revert_to_revision('HEAD')
@@ -124,7 +127,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
       except Exception as ee:
         await self.bot.send_message(
           chat_id,
-          TelebotUtils.escape_html(str(ee)),
+          str(ee),
         )
       return
 

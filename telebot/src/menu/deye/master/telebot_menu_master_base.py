@@ -57,7 +57,7 @@ class TelebotMenuMasterBase(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       return
     finally:

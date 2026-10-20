@@ -174,7 +174,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
         chat_id,
         f'{CommonUtils.large_red_circle_emoji} '
         f'Tests failed after {t}. '
-        f'Check log files for details: {TelebotUtils.escape_html(str(e))}',
+        f'Check log files for details: {str(e)}',
       )
     finally:
       self.remove_logs(tests_scripts)
@@ -371,7 +371,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
       await self.progress.hide()
       await self.bot.send_message(
         chat_id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       return False
 

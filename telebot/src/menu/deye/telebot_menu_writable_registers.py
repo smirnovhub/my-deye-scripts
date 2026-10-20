@@ -157,7 +157,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       self.logger.error(traceback.format_exc())
 
@@ -198,8 +198,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
-        parse_mode = 'HTML',
+        str(e),
       )
       self.logger.error(traceback.format_exc())
 
@@ -305,7 +304,7 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
         except Exception as e:
           await self.bot.send_message(
             message.chat.id,
-            TelebotUtils.escape_html(str(e)),
+            str(e),
           )
           self.logger.error(traceback.format_exc())
         finally:

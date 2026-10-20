@@ -4,7 +4,6 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import List, Type
 
-from telebot_utils import TelebotUtils
 from deye_registers import DeyeRegisters
 from telebot_command_choice import CommandChoice
 from telebot_deye_helper import TelebotDeyeHelper
@@ -53,7 +52,7 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       return
     finally:

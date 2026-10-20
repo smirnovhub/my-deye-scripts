@@ -3,7 +3,6 @@ import telebot
 from enum import Enum
 from typing import List, Union
 
-from telebot_utils import TelebotUtils
 from button_node import ButtonNode
 from deye_graph_data import DeyeGraphData
 from break_button_node import BreakButtonNode
@@ -107,7 +106,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
       except Exception as e:
         await bot.send_message(
           chat_id = chat_id,
-          text = TelebotUtils.escape_html(str(e)),
+          text = str(e),
         )
       finally:
         await progress.hide()

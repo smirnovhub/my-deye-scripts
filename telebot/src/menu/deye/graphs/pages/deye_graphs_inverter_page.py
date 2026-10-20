@@ -5,7 +5,6 @@ import telebot
 from enum import Enum
 from typing import Optional, Union
 
-from telebot_utils import TelebotUtils
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
 from deye_graphs_page import DeyeGraphsPage
@@ -131,7 +130,7 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
     except Exception as e:
       await bot.send_message(
         chat_id = chat_id,
-        text = TelebotUtils.escape_html(str(e)),
+        text = str(e),
       )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:

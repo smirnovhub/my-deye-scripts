@@ -2,7 +2,6 @@ import telebot
 
 from telebot.async_telebot import AsyncTeleBot
 
-from telebot_utils import TelebotUtils
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_menu_item import TelebotMenuItem
 from telebot_deye_helper import TelebotDeyeHelper
@@ -39,7 +38,7 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        TelebotUtils.escape_html(str(e)),
+        str(e),
       )
       return
     finally:
