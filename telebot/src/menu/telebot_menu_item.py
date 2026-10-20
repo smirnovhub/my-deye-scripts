@@ -41,18 +41,6 @@ class TelebotMenuItem(Enum):
 
   deye_writable_registers = ('{0}', '{0}')
 
-  mikrotik_gate_status = ('gate_status', 'Gateway router status')
-  mikrotik_guest_status = ('guest_status', 'Guest router status')
-  mikrotik_camera_status = ('camera_status', 'Camera status')
-  mikrotik_routeros6_tests = ('ros6_tests', 'RouterOS 6 tests')
-  mikrotik_routeros7_tests = ('ros7_tests', 'RouterOS 7 tests')
-
-  scheduler_show_schedule = ('show_schedule', 'Blackout schedule')
-  scheduler_charge_current = ('charge_current', 'Get charge current')
-  scheduler_cek_schedule_parser = ('', '')
-
-  current_limit = ('current_limit', "Current limit")
-
   unknown_command_echo = ('', '')
 
   unknown = ('', '')
