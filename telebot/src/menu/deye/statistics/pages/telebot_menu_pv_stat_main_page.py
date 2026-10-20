@@ -24,7 +24,7 @@ class TelebotMenuPvStatMainPage(TelebotNavigationPage):
   def __init__(self):
     super().__init__()
     self._deye_loggers = DeyeLoggers()
-    self._period = StatisticsPeriod.Day
+    self._period = next(iter(StatisticsPeriod))
     self._texts: List[telebot.types.InputRichBlock] = []
 
   @property
@@ -43,9 +43,8 @@ class TelebotMenuPvStatMainPage(TelebotNavigationPage):
     await navigator.update()
 
   def create_buttons(self) -> None:
-    self._create_pv_stat_button(StatisticsPeriod.Day)
-    self._create_pv_stat_button(StatisticsPeriod.Month)
-    self._create_pv_stat_button(StatisticsPeriod.Year)
+    for period in StatisticsPeriod:
+      self._create_pv_stat_button(period)
 
     self.register_button(BreakButtonNode())
     self.register_button(ButtonNode("Cancel"), self._handle_cancel)
