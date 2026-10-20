@@ -1,7 +1,6 @@
-from datetime import timedelta
-
 import telebot
 
+from datetime import timedelta
 from telebot.async_telebot import AsyncTeleBot
 
 from telebot_page_navigator import TelebotPageNavigator

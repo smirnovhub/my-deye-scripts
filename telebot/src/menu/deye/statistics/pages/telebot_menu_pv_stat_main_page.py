@@ -8,6 +8,7 @@ from typing import List, Union, cast
 
 from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
+from button_style import ButtonStyle
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
 from telebot_page_navigator import TelebotPageNavigator
@@ -56,7 +57,17 @@ class TelebotMenuPvStatMainPage(TelebotNavigationPage):
 
       await navigator.update()
 
-    self.register_button(ButtonNode(period.description), handler)
+    style = ButtonStyle.default
+    if self._period == period:
+      style = ButtonStyle.success
+
+    self.register_button(
+      ButtonNode(
+        text = period.description,
+        style = style,
+      ),
+      handler,
+    )
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     await navigator.stop()
