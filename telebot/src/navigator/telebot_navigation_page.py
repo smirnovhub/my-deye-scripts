@@ -172,6 +172,7 @@ class TelebotNavigationPage(ABC):
     page_key = f":{self.page_type}:{TelebotNavigationPage._global_session_key}"
 
     if page_key in button.key:
+      self.clear_buttons()
       raise ValueError(f"Button was already used on page {self.page_type} {button.__class__.__name__} "
                        f"(id: '{button.id}', text: '{button.text}', data: '{button.data}', key: '{button.key}')")
 
@@ -194,6 +195,7 @@ class TelebotNavigationPage(ABC):
         ButtonNode: The same button instance for chaining.
     """
     if button.id in self._button_handlers:
+      self.clear_buttons()
       raise ValueError(f"Duplicated button handler detected on page {self.page_type} {button.__class__.__name__} "
                        f"(id: '{button.id}', text: '{button.text}', data: '{button.data}', key: '{button.key}')")
 
