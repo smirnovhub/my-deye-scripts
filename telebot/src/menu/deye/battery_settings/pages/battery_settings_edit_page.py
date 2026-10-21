@@ -51,7 +51,11 @@ class BatterySettingsEditPage(TelebotNavigationPage):
       if val < value:
         style = ButtonStyle.danger
 
-      self._make_buttons(page_type = page, title = page.name, style = style)
+      self._make_buttons(
+        page_type = page,
+        title = page.name,
+        style = style,
+      )
       value = val
 
     if self._need_save():
@@ -71,7 +75,11 @@ class BatterySettingsEditPage(TelebotNavigationPage):
     title: str,
     style: ButtonStyle,
   ) -> None:
-    button = ButtonNode(text = f"{self._batt_data.values[page_type]}%", style = style)
+    button = ButtonNode(
+      text = f"{self._batt_data.values[page_type]}%",
+      style = style,
+      key = f"{page_type}",
+    )
     self.register_button(ButtonNode(text = title, style = style), self._create_navigation_handler(page_type))
     self.register_button(button, self._create_navigation_handler(page_type))
     self.register_button(BreakButtonNode())
