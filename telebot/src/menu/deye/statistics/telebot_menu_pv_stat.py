@@ -22,7 +22,7 @@ class TelebotMenuPvStat(TelebotMenuItemHandlerAsync):
   async def process_message(self, message: telebot.types.Message) -> None:
     navigator = TelebotPageNavigator(
       self.bot,
-      auto_update_period = timedelta(seconds = 15),
+      auto_update_period = timedelta(seconds = 59),
     )
 
     main_page = TelebotMenuPvStatMainPage()
