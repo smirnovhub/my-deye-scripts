@@ -4,6 +4,7 @@ from dataclasses import asdict
 
 from button_node import ButtonNode
 from button_style import ButtonStyle
+from cancel_button_node import CancelButtonNode
 from deye_register import DeyeRegister
 from deye_loggers import DeyeLoggers
 from break_button_node import BreakButtonNode
@@ -58,7 +59,7 @@ class TimeOfUseBottomButtons:
       elif self._need_reset_intervals():
         page.register_button(ButtonNode("Reset times"), self._handle_reset_ask)
 
-      page.register_button(ButtonNode("Cancel"), self._handle_cancel)
+      page.register_button(CancelButtonNode(), self._handle_cancel)
 
     self._ask_data.ask_for_fix_times = False
     self._ask_data.ask_for_reset_times = False

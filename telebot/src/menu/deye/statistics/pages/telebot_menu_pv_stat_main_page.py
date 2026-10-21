@@ -10,6 +10,7 @@ from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
 from button_style import ButtonStyle
 from button_node import ButtonNode
+from cancel_button_node import CancelButtonNode
 from break_button_node import BreakButtonNode
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
@@ -47,7 +48,7 @@ class TelebotMenuPvStatMainPage(TelebotNavigationPage):
       self._create_pv_stat_button(period)
 
     self.register_button(BreakButtonNode())
-    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+    self.register_button(CancelButtonNode(), self._handle_cancel)
 
   def _create_pv_stat_button(self, period: StatisticsPeriod) -> None:
     async def handler(navigator: TelebotPageNavigator) -> None:

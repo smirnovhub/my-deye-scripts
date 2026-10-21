@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Union
 
 from button_node import ButtonNode
+from cancel_button_node import CancelButtonNode
 from battery_settings_helper import BatterySettingsHelper
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
@@ -34,7 +35,7 @@ class BatterySettingsMainPage(TelebotNavigationPage):
 
   def create_buttons(self) -> None:
     self.register_button(ButtonNode("Edit"), self._handle_edit)
-    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+    self.register_button(CancelButtonNode(), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return BatterySettingsHelper.get_data_as_rich_message(

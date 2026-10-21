@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any, Union
 
 from button_node import ButtonNode
+from back_button_node import BackButtonNode
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_times import TimeOfUseTimes
 from break_button_node import BreakButtonNode
@@ -55,11 +56,11 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
       if i > 0 and i % 4 == 0:
         self.register_button(BreakButtonNode())
 
-      btn = ButtonNode(text = f"{minute:02}", data = str(minute))
+      btn = ButtonNode(text = f"{minute:02}")
       self.register_button(btn, self._create_minute_handler(minute))
 
     self.register_button(BreakButtonNode())
-    self.register_button(ButtonNode("Back"), self._handle_back)
+    self.register_button(BackButtonNode(), self._handle_back)
 
   async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     try:

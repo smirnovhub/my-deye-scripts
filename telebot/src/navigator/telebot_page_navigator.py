@@ -344,7 +344,7 @@ class TelebotPageNavigator:
 
           async with self._async_lock:
             self._logger.info(f"{self.__class__.__name__}: running async on_auto_update for "
-                              f"page {self._current_page.page_type.name}")
+                              f"page {self._current_page.page_type}")
             await self._current_page.on_auto_update(navigator = self)
         except asyncio.CancelledError:
           raise
@@ -519,7 +519,7 @@ class TelebotPageNavigator:
         return
 
       try:
-        self._logger.info(f"Websocket update received: {data}")
+        self._logger.info(f"Websocket update received for page {self._current_page.page_type}: {data}")
         await self._current_page.on_websocket_update(navigator = self, data = data)
       except Exception as e:
         await self.send_message_with_remove_with_delay(TelebotUtils.escape_html(str(e)))
@@ -574,7 +574,8 @@ class TelebotPageNavigator:
               await self._resend(message.text)
               await asyncio.sleep(0.5)
 
-            self._logger.info(f"{self.__class__.__name__}: running async handler for user input")
+            self._logger.info(f"{self.__class__.__name__}: running async handler for user input "
+                              f"page {current_page.page_type}")
             await current_page.on_user_input(self, message.text)
 
         except Exception as e:

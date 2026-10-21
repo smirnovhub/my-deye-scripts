@@ -4,6 +4,8 @@ from enum import Enum
 from typing import List, Union
 
 from button_node import ButtonNode
+from back_button_node import BackButtonNode
+from cancel_button_node import CancelButtonNode
 from break_button_node import BreakButtonNode
 from deye_graphs_page import DeyeGraphsPage
 from telebot_page_navigator import TelebotPageNavigator
@@ -47,8 +49,8 @@ class DeyeGraphsGroupPage(TelebotNavigationPage):
       )
 
     self.register_button(BreakButtonNode())
-    self.register_button(ButtonNode("Back"), self._handle_back)
-    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+    self.register_button(BackButtonNode(), self._handle_back)
+    self.register_button(CancelButtonNode(), self._handle_cancel)
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
     await navigator.navigate(DeyeGraphsPage.inverter)

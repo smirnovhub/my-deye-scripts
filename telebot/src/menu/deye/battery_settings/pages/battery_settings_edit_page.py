@@ -8,6 +8,7 @@ from button_node import ButtonNode
 from telebot_utils import TelebotUtils
 from button_style import ButtonStyle
 from deye_loggers import DeyeLoggers
+from cancel_button_node import CancelButtonNode
 from battery_settings_helper import BatterySettingsHelper
 from break_button_node import BreakButtonNode
 from battery_settings_data import BatterySettingsData
@@ -56,7 +57,7 @@ class BatterySettingsEditPage(TelebotNavigationPage):
     if self._need_save():
       self.register_button(ButtonNode("Save"), self._handle_save)
 
-    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+    self.register_button(CancelButtonNode(), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return BatterySettingsHelper.get_data_as_rich_message(

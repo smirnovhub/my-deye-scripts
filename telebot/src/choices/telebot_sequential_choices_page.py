@@ -6,6 +6,7 @@ from typing import List, Union
 
 from button_node import ButtonNode
 from break_button_node import BreakButtonNode
+from cancel_button_node import CancelButtonNode
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_sequential_choice_button import SequentialChoiceButton
@@ -51,7 +52,7 @@ class SequentialChoicePage(TelebotNavigationPage):
         self.register_button(BreakButtonNode())
 
     if self._current_node.add_cancel_button:
-      self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+      self.register_button(CancelButtonNode(), self._handle_cancel)
 
   async def _handle_step(self, navigator: TelebotPageNavigator, node: ButtonNode):
     if not isinstance(node, SequentialChoiceButton):

@@ -4,7 +4,7 @@ import telebot
 from enum import Enum, auto
 from typing import Union
 
-from button_node import ButtonNode
+from cancel_button_node import CancelButtonNode
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 
@@ -42,7 +42,7 @@ class CountdownWithCancelPage(TelebotNavigationPage):
     return False
 
   def create_buttons(self) -> None:
-    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+    self.register_button(CancelButtonNode(), self._handle_cancel)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator):
     if not self._result_future.done():
