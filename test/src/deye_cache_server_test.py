@@ -49,7 +49,8 @@ class TestDeyeCacheExtended(unittest.IsolatedAsyncioTestCase):
     """
     Global cleanup and session initialization.
     """
-    self.session = aiohttp.ClientSession()
+    connector = aiohttp.TCPConnector(limit = 256, limit_per_host = 256)
+    self.session = aiohttp.ClientSession(connector = connector)
     self.config = DeyeStorageConfig()
     try:
       async with self.session.delete(CACHE_URL) as response:
