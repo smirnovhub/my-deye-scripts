@@ -107,12 +107,12 @@ class TelebotNavigationPage(ABC):
     """
     for button in self.buttons:
       if button.id == button_id:
-        self._logger.info(f"Clicked on button id '{button.id}', "
+        self._logger.info(f"Page {self.page_type}: button clicked, id '{button.id}', "
                           f"text ='{button.text}', data = '{button.data}'")
         await self.on_button_clicked(navigator, button)
         break
     else:
-      self._logger.warning(f"Button with id '{button_id}' not found")
+      self._logger.warning(f"Page {self.page_type}: button with id '{button_id}' not found")
 
   async def on_button_clicked(
     self,
@@ -143,7 +143,7 @@ class TelebotNavigationPage(ABC):
       # Handler expects two arguments (navigator and button)
       await handler(navigator, button) # type: ignore
     else:
-      raise ValueError(f"Unsupported argument count for button {button.text}")
+      raise ValueError(f"Unsupported argument count for button {button.text} on page {self.page_type}")
 
   async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     pass
@@ -172,8 +172,8 @@ class TelebotNavigationPage(ABC):
     page_key = f":{self.page_type}:{TelebotNavigationPage._global_session_key}"
 
     if page_key in button.key:
-      raise RuntimeError(f"Button was already used on page {self.page_type} {button.__class__.__name__} "
-                         f"(id: '{button.id}', text: '{button.text}', data: '{button.data}', key: '{button.key}')")
+      raise ValueError(f"Button was already used on page {self.page_type} {button.__class__.__name__} "
+                       f"(id: '{button.id}', text: '{button.text}', data: '{button.data}', key: '{button.key}')")
 
     button.set_key(f"{button.key}{page_key}")
 
@@ -194,8 +194,8 @@ class TelebotNavigationPage(ABC):
         ButtonNode: The same button instance for chaining.
     """
     if button.id in self._button_handlers:
-      raise RuntimeError(f"Duplicated button handler detected on page {self.page_type} {button.__class__.__name__} "
-                         f"(id: '{button.id}', text: '{button.text}', data: '{button.data}', key: '{button.key}')")
+      raise ValueError(f"Duplicated button handler detected on page {self.page_type} {button.__class__.__name__} "
+                       f"(id: '{button.id}', text: '{button.text}', data: '{button.data}', key: '{button.key}')")
 
     self._button_handlers[button.id] = handler
 
