@@ -61,7 +61,7 @@ class TestDeyeCacheExtended(unittest.IsolatedAsyncioTestCase):
 
   async def asyncTearDown(self):
     """
-    Reset cache after each test to ensure isolation.
+    Reset cache after each test and close the session properly.
     """
     try:
       async with self.session.delete(CACHE_URL):
@@ -233,9 +233,9 @@ class TestDeyeCacheExtended(unittest.IsolatedAsyncioTestCase):
     updates = [{"update_id": i} for i in range(num_updates)]
 
     async def send_post(data):
-      async with aiohttp.ClientSession() as s:
-        async with s.post(f"{CACHE_URL}/{key}", json = data) as resp:
-          return resp.status
+      # Use the shared session pool instead of creating a new session
+      async with self.session.post(f"{CACHE_URL}/{key}", json = data) as resp:
+        return resp.status
 
     statuses = await asyncio.gather(*(send_post(data) for data in updates))
 
@@ -724,7 +724,8 @@ class TestDeyeCacheExtended(unittest.IsolatedAsyncioTestCase):
   async def test_massive_concurrent_stress_and_integrity(self):
     """
     STRESS/INTEGRITY TEST:
-    Simulate massive concurrent async requests (1000 requests) updating a single key.
+    Simulate massive concurrent async requests (1000 requests) updating a single key
+    using the shared session pool.
     """
     key = "massive_stress_key"
     async with self.session.delete(f"{CACHE_URL}/{key}"):
@@ -733,9 +734,9 @@ class TestDeyeCacheExtended(unittest.IsolatedAsyncioTestCase):
     updates = [{f"field_{i}": i} for i in range(STRESS_REQUESTS)]
 
     async def send_post(data):
-      async with aiohttp.ClientSession() as s:
-        async with s.post(f"{CACHE_URL}/{key}", json = data) as resp:
-          return resp.status
+      # Use the shared session pool instead of creating a new session per request
+      async with self.session.post(f"{CACHE_URL}/{key}", json = data) as resp:
+        return resp.status
 
     statuses = await asyncio.gather(*(send_post(data) for data in updates))
 
@@ -753,7 +754,7 @@ class TestDeyeCacheExtended(unittest.IsolatedAsyncioTestCase):
     """
     STRESS / DATA INTEGRITY:
 
-    Send thousands of concurrent updates to the same key.
+    Send thousands of concurrent updates to the same key using the shared session pool.
     Each request adds a unique nested field.
 
     Verify that:
@@ -787,14 +788,14 @@ class TestDeyeCacheExtended(unittest.IsolatedAsyncioTestCase):
       }
 
       try:
-        async with aiohttp.ClientSession() as client:
-          async with client.post(
-              f"{CACHE_URL}/{key}",
-              json = payload,
-              timeout = aiohttp.ClientTimeout(total = 60),
-          ) as response:
-            text = await response.text()
-            return i, response.status, text
+        # Use the shared session pool instead of creating a new session per request
+        async with self.session.post(
+            f"{CACHE_URL}/{key}",
+            json = payload,
+            timeout = aiohttp.ClientTimeout(total = 60),
+        ) as response:
+          text = await response.text()
+          return i, response.status, text
       except Exception as exc:
         return i, None, str(exc)
 
@@ -895,13 +896,12 @@ class TestDeyeCacheExtended(unittest.IsolatedAsyncioTestCase):
 
     async def send_increment(i: int):
       try:
-        async with aiohttp.ClientSession() as client:
-          async with client.post(
-              f"{BASE_URL}/average/{key}/1/2",
-              timeout = aiohttp.ClientTimeout(total = 60),
-          ) as response:
-            text = await response.text()
-            return i, response.status, text
+        async with self.session.post(
+            f"{BASE_URL}/average/{key}/1/2",
+            timeout = aiohttp.ClientTimeout(total = 60),
+        ) as response:
+          text = await response.text()
+          return i, response.status, text
       except Exception as exc:
         return i, None, str(exc)
 
