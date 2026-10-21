@@ -1,5 +1,6 @@
 import asyncio
 import html
+import io
 import json
 import os
 import signal
@@ -271,11 +272,21 @@ class TelebotUtils:
       # Collect all tasks except the current monitor task itself
       other_tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
 
-      logging.warning(f"=== ASYNCIO PENDING TASKS MONITOR (TOTAL: {len(other_tasks)}) ===")
+      if other_tasks:
+        header = f"=== ASYNCIO PENDING TASKS (TOTAL: {len(other_tasks)}) ==="
+        separator = "-" * len(header)
+        footer = "=" * len(header)
 
-      for task in other_tasks:
-        logging.warning(f"Task: {task}")
-        task.print_stack()
+        logging.warning(header)
+        for index, task in enumerate(other_tasks, start = 1):
+          if index > 1:
+            logging.warning(separator)
+
+          buf = io.StringIO()
+          task.print_stack(file = buf)
+          logging.warning(f"TASK #{index}: {task}\n{buf.getvalue().strip()}")
+
+        logging.warning(footer)
 
   @staticmethod
   # Simple and safe way for HTML parse_mode
