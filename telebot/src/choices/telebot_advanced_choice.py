@@ -16,6 +16,7 @@ class AdvancedChoice:
     options: List[ButtonNode],
     max_per_row: int = 5,
     max_lines_per_page: int = 5,
+    add_cancel_button: bool = True,
     edit_message_with_user_selection: bool = False,
   ) -> ButtonNode:
     navigator = TelebotPageNavigator(bot)
@@ -30,6 +31,7 @@ class AdvancedChoice:
       result_future = future,
       max_per_row = max_per_row,
       max_lines_per_page = max_lines_per_page,
+      add_cancel_button = add_cancel_button,
       edit_message_with_user_selection = edit_message_with_user_selection,
     )
 

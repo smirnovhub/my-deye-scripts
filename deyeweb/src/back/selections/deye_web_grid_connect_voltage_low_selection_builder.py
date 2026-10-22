@@ -34,10 +34,10 @@ class DeyeWebGridConnectVoltageLowSelectionBuilder(DeyeWebBaseSelectionBuilder):
     if is_power_too_high:
       warning = f"""
         <div class="{style_id1}">
-            <div class="{style_id2}">
-              Can't change!<br>
-              Grid power is too high!
-            </div>
+          <div class="{style_id2}">
+            Can't change!<br>
+            Grid power is too high!
+          </div>
         </div>    
         <br>
       """
