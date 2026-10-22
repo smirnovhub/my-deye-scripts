@@ -6,10 +6,7 @@ import telebot
 from enum import Enum
 from typing import Optional, Union
 
-from button_node import ButtonNode
-from back_button_node import BackButtonNode
-from cancel_button_node import CancelButtonNode
-from break_button_node import BreakButtonNode
+from telebot_buttons import *
 from deye_graphs_page import DeyeGraphsPage
 from deye_file_lock import DeyeFileLock
 from deye_file_locker import DeyeFileLocker

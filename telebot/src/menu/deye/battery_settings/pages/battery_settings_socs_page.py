@@ -3,9 +3,7 @@ import telebot
 from enum import Enum
 from typing import List, Union
 
-from button_node import ButtonNode
-from back_button_node import BackButtonNode
-from break_button_node import BreakButtonNode
+from telebot_buttons import *
 from battery_settings_data import BatterySettingsData
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage

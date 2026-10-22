@@ -12,14 +12,12 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import Any, Dict, List, Optional, Sequence
 
+from telebot_buttons import *
 from env_utils import EnvUtils
-from button_node import ButtonNode
 from button_style import ButtonStyle
 from telebot_constants import TelebotConstants
 
 class TelebotUtils:
-  row_break_str = '!break!'
-
   @staticmethod
   def get_data_dir() -> str:
     log_name = EnvUtils.get_log_name()
@@ -173,7 +171,7 @@ class TelebotUtils:
 
     for button in buttons:
       # Check for row break in either text or data
-      if TelebotUtils.row_break_str in (button.text, button.data):
+      if BreakButtonNode.row_break_str in (button.text, button.data):
         # Commit the current row (if not empty) and start a new one
         if row:
           keyboard.row(*row)

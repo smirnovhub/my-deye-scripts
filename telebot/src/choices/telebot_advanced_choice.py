@@ -2,8 +2,8 @@ import asyncio
 
 from typing import List
 
+from telebot_buttons import *
 from telebot.async_telebot import AsyncTeleBot
-from button_node import ButtonNode
 from telebot_advanced_choice_page import AdvancedChoicePage
 from telebot_page_navigator import TelebotPageNavigator
 

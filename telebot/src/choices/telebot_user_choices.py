@@ -5,7 +5,7 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import List, Union
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_user_choices_page import UserChoicePage
 

@@ -4,7 +4,7 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import List, Type
 
-from telebot_utils import TelebotUtils
+from telebot_buttons import *
 from deye_registers import DeyeRegisters
 from telebot_command_choice import CommandChoice
 from telebot_menu_item import TelebotMenuItem
@@ -75,7 +75,7 @@ class TelebotMenuAllBase(TelebotMenuItemHandlerAsync):
     if abs(registers.inverter_system_time_diff_register.value
            ) > TelebotConstants.inverter_system_time_need_sync_difference_sec:
       # add line break for keyboard
-      choices[TelebotUtils.row_break_str] = TelebotUtils.row_break_str
+      choices[BreakButtonNode.row_break_str] = BreakButtonNode.row_break_str
       # add time sync command
       choices[TelebotConstants.sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
 

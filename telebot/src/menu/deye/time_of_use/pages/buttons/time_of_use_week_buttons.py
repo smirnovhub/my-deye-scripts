@@ -1,6 +1,5 @@
-from button_node import ButtonNode
+from telebot_buttons import *
 from time_of_use_week import TimeOfUseWeek
-from break_button_node import BreakButtonNode
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_switch_button_node import TimeOfUseSwitchButtonNode

@@ -3,6 +3,7 @@ import telebot
 
 from typing import Dict, List, Optional, Set, Union
 
+from telebot_buttons import *
 from env_utils import EnvUtils
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
@@ -10,7 +11,6 @@ from deye_registers import DeyeRegisters
 from telebot_auth_helper import TelebotAuthHelper
 from deye_base_enum import DeyeBaseEnum
 from telebot_menu_item import TelebotMenuItem
-from telebot_utils import TelebotUtils
 
 class TelebotDeyeHelper:
   holder_kwargs = {
@@ -170,7 +170,7 @@ class TelebotDeyeHelper:
       for enum_item in type(register.value):
         if enum_item.value >= 0:
           buttons_dict[enum_item.pretty] = f'/{register.name} {enum_item}'
-          buttons_dict[str(enum_item.value)] = TelebotUtils.row_break_str
+          buttons_dict[str(enum_item.value)] = BreakButtonNode.row_break_str
       return TelebotDeyeHelper.build_keyboard_for_register(register, [buttons_dict])
     return None
 
@@ -225,7 +225,7 @@ class TelebotDeyeHelper:
         # If the row is a list of strings, create buttons with text = label
         # and callback_data = "/{register.name} {value}"
         for value in row:
-          if value == TelebotUtils.row_break_str:
+          if value == BreakButtonNode.row_break_str:
             if buttons:
               keyboard.row(*buttons)
               buttons = []
@@ -236,7 +236,7 @@ class TelebotDeyeHelper:
         # If the row is a dict, each key-value pair becomes a button
         # Key = button text, Value = callback_data
         for text, callback in row.items():
-          if TelebotUtils.row_break_str in (text, callback):
+          if BreakButtonNode.row_break_str in (text, callback):
             if buttons:
               keyboard.row(*buttons)
               buttons = []
@@ -287,7 +287,7 @@ class TelebotDeyeHelper:
       description = all_command.description.format(loggers.accumulated_registers_prefix.title())
       choices[description] = f'/{command}'
       # add line break
-      choices[TelebotUtils.row_break_str] = TelebotUtils.row_break_str
+      choices[BreakButtonNode.row_break_str] = BreakButtonNode.row_break_str
 
     if auth_helper.is_menu_item_allowed(user_id, master_command):
       master_name = loggers.master.name

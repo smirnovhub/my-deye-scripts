@@ -5,9 +5,9 @@ import telebot
 
 from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
-
 from abc import ABC, abstractmethod
-from button_node import ButtonNode
+
+from telebot_buttons import *
 from telebot_page_navigator import TelebotPageNavigator
 
 ButtonHandler = Union[

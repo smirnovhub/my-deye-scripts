@@ -5,7 +5,7 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import List
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from git_helper_async import GitHelperAsync
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils

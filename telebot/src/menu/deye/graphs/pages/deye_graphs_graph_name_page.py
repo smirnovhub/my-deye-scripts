@@ -3,11 +3,8 @@ import telebot
 from enum import Enum
 from typing import List, Union
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from deye_graph_data import DeyeGraphData
-from cancel_button_node import CancelButtonNode
-from break_button_node import BreakButtonNode
-from back_button_node import BackButtonNode
 from deye_graphs_page import DeyeGraphsPage
 from deye_graph_group_data import DeyeGraphGroupData
 from telebot_page_navigator import TelebotPageNavigator

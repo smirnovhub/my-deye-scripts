@@ -4,9 +4,7 @@ import telebot
 from enum import Enum, auto
 from typing import List, Union
 
-from button_node import ButtonNode
-from break_button_node import BreakButtonNode
-from cancel_button_node import CancelButtonNode
+from telebot_buttons import *
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_sequential_choice_button import SequentialChoiceButton

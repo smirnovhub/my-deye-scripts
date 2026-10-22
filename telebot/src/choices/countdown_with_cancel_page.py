@@ -4,7 +4,7 @@ import telebot
 from enum import Enum, auto
 from typing import Union
 
-from cancel_button_node import CancelButtonNode
+from telebot_buttons import *
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 

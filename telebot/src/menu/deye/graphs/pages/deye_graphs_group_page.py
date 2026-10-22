@@ -3,10 +3,7 @@ import telebot
 from enum import Enum
 from typing import List, Union
 
-from button_node import ButtonNode
-from back_button_node import BackButtonNode
-from cancel_button_node import CancelButtonNode
-from break_button_node import BreakButtonNode
+from telebot_buttons import *
 from deye_graphs_page import DeyeGraphsPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage

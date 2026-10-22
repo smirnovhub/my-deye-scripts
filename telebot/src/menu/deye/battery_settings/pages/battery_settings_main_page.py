@@ -4,8 +4,7 @@ import telebot
 from enum import Enum
 from typing import Union
 
-from button_node import ButtonNode
-from cancel_button_node import CancelButtonNode
+from telebot_buttons import *
 from battery_settings_helper import BatterySettingsHelper
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage

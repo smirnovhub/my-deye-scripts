@@ -3,11 +3,9 @@ import telebot
 from enum import Enum
 from typing import Any, Union
 
-from button_node import ButtonNode
-from back_button_node import BackButtonNode
+from telebot_buttons import *
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_times import TimeOfUseTimes
-from break_button_node import BreakButtonNode
 from time_of_use_page import TimeOfUsePage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
