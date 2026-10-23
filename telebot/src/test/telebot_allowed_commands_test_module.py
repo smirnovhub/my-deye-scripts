@@ -32,7 +32,10 @@ class TelebotAllowedCommandsTestModule(TelebotBaseTestModule):
   This module ensures that command permissions and access controls are
   enforced correctly for the user.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
 
   @property

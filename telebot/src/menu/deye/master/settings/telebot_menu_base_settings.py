@@ -20,7 +20,7 @@ class TelebotMenuBaseSettings(TelebotMenuItemHandlerAsync):
     all_command: TelebotMenuItem,
     master_command: TelebotMenuItem,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
     self.registers_class = registers_class
     self.main_command = main_command
     self.all_command = all_command

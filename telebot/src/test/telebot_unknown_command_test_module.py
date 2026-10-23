@@ -40,7 +40,10 @@ class TelebotUnknownCommandTestModule(TelebotBaseTestModule):
   This module ensures that the bot reliably rejects all unrecognized inputs,
   maintaining predictable and user-friendly command handling behavior.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
 
   @property

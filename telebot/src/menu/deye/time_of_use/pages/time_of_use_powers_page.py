@@ -3,9 +3,8 @@ import telebot
 from enum import Enum
 from typing import Any, Union
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from time_of_use_data import TimeOfUsePowers
-from break_button_node import BreakButtonNode
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
 from telebot_page_navigator import TelebotPageNavigator
@@ -59,11 +58,11 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
         self.register_button(BreakButtonNode())
 
       for value in row:
-        btn = ButtonNode(text = str(value), data = str(value))
+        btn = ButtonNode(text = str(value))
         self.register_button(btn, self._create_power_handler(value))
 
     self.register_button(BreakButtonNode())
-    self.register_button(ButtonNode("Back"), self._handle_back)
+    self.register_button(BackButtonNode(), self._handle_back)
 
   async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     try:

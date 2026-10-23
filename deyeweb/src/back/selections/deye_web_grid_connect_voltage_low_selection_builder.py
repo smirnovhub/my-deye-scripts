@@ -26,21 +26,19 @@ class DeyeWebGridConnectVoltageLowSelectionBuilder(DeyeWebBaseSelectionBuilder):
     )
 
     style_id1 = self.style_manager.register_style(DeyeWebConstants.flex_center_style)
-    style_id2 = self.style_manager.register_style("text-align: center; font-size: 30px; color: red;")
+    style_id2 = self.style_manager.register_style(
+      "text-align: center; font-size: 30px; font-weight: bold; color: red; width: 100%; box-sizing: border-box; padding: 0 10px;"
+    )
 
     warning = ''
     if is_power_too_high:
       warning = f"""
         <div class="{style_id1}">
-            <table>
-              <tr>
-                <td class="{style_id2}">
-                  Can't change!<br>
-                  Grid power is too high!
-                </td>
-              </tr>
-            </table>
-        </div>
+          <div class="{style_id2}">
+            Can't change!<br>
+            Grid power is too high!
+          </div>
+        </div>    
         <br>
       """
 

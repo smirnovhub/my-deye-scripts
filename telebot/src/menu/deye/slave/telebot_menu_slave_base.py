@@ -5,7 +5,7 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import List, Type
 
-from telebot_utils import TelebotUtils
+from telebot_buttons import *
 from deye_registers import DeyeRegisters
 from telebot_command_choice import CommandChoice
 from telebot_deye_helper import TelebotDeyeHelper
@@ -24,7 +24,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandlerAsync):
     slave_command: TelebotMenuItem,
     title: str = TelebotConstants.default_title,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
     self.registers_class = registers_class
     self.all_command = all_command
     self.master_command = master_command
@@ -88,7 +88,7 @@ class TelebotMenuSlaveTotalBase(TelebotMenuItemHandlerAsync):
     if abs(registers.inverter_system_time_diff_register.value
            ) > TelebotConstants.inverter_system_time_need_sync_difference_sec:
       # add line break for keyboard
-      choices[TelebotUtils.row_break_str] = TelebotUtils.row_break_str
+      choices[BreakButtonNode.row_break_str] = BreakButtonNode.row_break_str
       # add time sync command
       choices[TelebotConstants.sync_inverter_time_button_name] = f'/{TelebotMenuItem.deye_sync_time.command}'
 

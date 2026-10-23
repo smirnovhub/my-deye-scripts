@@ -4,8 +4,7 @@ import telebot
 from enum import Enum, auto
 from typing import List, Union
 
-from button_node import ButtonNode
-from break_button_node import BreakButtonNode
+from telebot_buttons import *
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 
@@ -79,6 +78,6 @@ class UserChoicePage(TelebotNavigationPage):
       await navigator.send_message(self._wrong_choice_text)
       await navigator.stop()
 
-  def on_stop(self):
+  async def on_stop(self) -> None:
     if not self._result_future.done():
       self._result_future.cancel()

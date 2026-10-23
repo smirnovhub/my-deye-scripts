@@ -1,15 +1,13 @@
 import os
 import sys
 import logging
+import asyncio
 import time
-import requests
+import aiohttp
 import unittest
-import threading
 
-import concurrent.futures
-
-from typing import Any, Union
 from pathlib import Path
+from typing import Any, Union
 
 base_path = '../..'
 current_path = Path(__file__).parent.resolve()
@@ -42,73 +40,67 @@ PING_URL = f"{BASE_URL}/ping"
 log = logging.getLogger()
 
 STRESS_REQUESTS = 1000
-STRESS_WORKERS = 64
 
-_thread_local = threading.local()
-
-def get_thread_session() -> requests.Session:
-  """Reuse one HTTP session per worker thread."""
-  if not hasattr(_thread_local, "session"):
-    _thread_local.session = requests.Session()
-
-  return _thread_local.session
-
-class TestDeyeCacheExtended(unittest.TestCase):
-  session: requests.Session
+class TestDeyeCacheExtended(unittest.IsolatedAsyncioTestCase):
+  session: aiohttp.ClientSession
   config: DeyeStorageConfig
 
-  @classmethod
-  def setUpClass(cls):
+  async def asyncSetUp(self):
     """
     Global cleanup and session initialization.
     """
-    cls.session = requests.Session()
-    cls.config = DeyeStorageConfig()
+    self.session = aiohttp.ClientSession()
+    self.config = DeyeStorageConfig()
     try:
-      cls.session.delete(CACHE_URL)
-    except requests.exceptions.ConnectionError:
+      async with self.session.delete(CACHE_URL) as response:
+        if response.status not in (200, 404):
+          log.warning(f"Unexpected status code during cache cleanup: {response.status}")
+    except aiohttp.ClientConnectionError:
       log.error(f"Error: Server not found at {BASE_URL}")
       sys.exit(1)
 
-  def tearDown(self):
+  async def asyncTearDown(self):
     """
-    Reset cache after each test to ensure isolation.
+    Reset cache after each test and close the session properly.
     """
-    self.session.delete(CACHE_URL)
+    try:
+      async with self.session.delete(CACHE_URL):
+        pass
+    except Exception:
+      pass
+    await self.session.close()
 
-  def test_ping(self):
+  async def test_ping(self):
     """Test health check endpoint."""
-    with self.session.get(PING_URL) as response:
-      self.assertEqual(response.status_code, 200)
-      self.assertEqual(response.json(), {"status": "success"})
+    async with self.session.get(PING_URL) as response:
+      self.assertEqual(response.status, 200)
+      data = await response.json()
+      self.assertEqual(data, {"status": "success"})
 
-  def test_complex_nested_merge(self):
+  async def test_complex_nested_merge(self):
     """
     Test deep merging with multi-level nested dictionaries.
     """
     key = "nested_dev"
 
-    # Level 1: Initial state
     initial = {"settings": {"mode": "auto", "limits": {"max_temp": 60}}}
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = initial).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = initial) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Level 2: Partial update of a deeply nested field
     update = {"settings": {"limits": {"min_temp": 10}, "active": True}}
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = update).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = update) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Verify result
-    res = self.session.get(f"{CACHE_URL}/{key}")
-    self.assertEqual(res.status_code, 200)
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      self.assertEqual(res.status, 200)
+      res_json = await res.json()
 
-    res_json = res.json()
-
-    # Check that 'mode' (L2) was preserved while 'min_temp' (L3) was added
     self.assertEqual(res_json["settings"]["mode"], "auto")
     self.assertEqual(res_json["settings"]["limits"]["max_temp"], 60)
     self.assertEqual(res_json["settings"]["limits"]["min_temp"], 10)
     self.assertEqual(res_json["settings"]["active"], True)
 
-  def test_different_data_types(self):
+  async def test_different_data_types(self):
     """
     Test that various JSON types (lists, strings, nulls) are handled correctly.
     """
@@ -122,661 +114,545 @@ class TestDeyeCacheExtended(unittest.TestCase):
       "null_val": None
     }
 
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = payload).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = payload) as resp:
+      self.assertEqual(resp.status, 200)
 
-    res = self.session.get(f"{CACHE_URL}/{key}")
-    self.assertEqual(res.status_code, 200)
-
-    res_json = res.json()
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      self.assertEqual(res.status, 200)
+      res_json = await res.json()
 
     for k, v in payload.items():
       self.assertEqual(res_json[k], v, f"Value mismatch for key: {k}")
 
-  def test_delete_specific_key(self):
+  async def test_delete_specific_key(self):
     """Test DELETE /cache/{key} method."""
     key = "to_be_deleted"
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"data": 1}).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"data": 1}) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Ensure it exists
-    self.assertEqual(self.session.get(f"{CACHE_URL}/{key}").status_code, 200)
+    async with self.session.get(f"{CACHE_URL}/{key}") as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Delete
-    del_res = self.session.delete(f"{CACHE_URL}/{key}")
-    self.assertEqual(del_res.status_code, 200)
+    async with self.session.delete(f"{CACHE_URL}/{key}") as del_res:
+      self.assertEqual(del_res.status, 200)
 
-    # Verify 404 after deletion
-    self.assertEqual(self.session.get(f"{CACHE_URL}/{key}").status_code, 404)
+    async with self.session.get(f"{CACHE_URL}/{key}") as resp:
+      self.assertEqual(resp.status, 404)
 
-  def test_global_delete(self):
+  async def test_global_delete(self):
     """Test global cache reset (DELETE /cache)."""
-    # Populate with multiple keys
-    self.assertEqual(self.session.post(f"{CACHE_URL}/k1", json = {"v": 1}).status_code, 200)
-    self.assertEqual(self.session.post(f"{CACHE_URL}/k2", json = {"v": 2}).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/k1", json = {"v": 1}) as resp:
+      self.assertEqual(resp.status, 200)
+    async with self.session.post(f"{CACHE_URL}/k2", json = {"v": 2}) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Reset all
-    self.assertEqual(self.session.delete(CACHE_URL).status_code, 200)
+    async with self.session.delete(CACHE_URL) as resp:
+      self.assertEqual(resp.status, 200)
 
-    stats = self.session.options(CACHE_URL)
-    self.assertEqual(stats.status_code, 200)
-
-    stats_json = stats.json()
+    async with self.session.options(CACHE_URL) as stats:
+      self.assertEqual(stats.status, 200)
+      stats_json = await stats.json()
 
     self.assertEqual(stats_json["keys_used"], 0)
     self.assertEqual(stats_json["bytes_used"], 0)
 
-  def test_max_keys_limit(self):
+  async def test_max_keys_limit(self):
     """
     Test that server returns 403 when trying to exceed MAX_KEYS_COUNT.
-    Note: This test assumes MAX_KEYS_COUNT is small enough to test (e.g., 32).
     """
-    # Clear first
-    self.assertEqual(self.session.delete(CACHE_URL).status_code, 200)
+    async with self.session.delete(CACHE_URL) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Fill cache to the limit
     limit = self.config.MAX_KEYS_COUNT
     for i in range(limit):
-      self.assertEqual(self.session.post(f"{CACHE_URL}/dev_{i}", json = {"data": i}).status_code, 200)
+      async with self.session.post(f"{CACHE_URL}/dev_{i}", json = {"data": i}) as resp:
+        self.assertEqual(resp.status, 200)
 
-    # Try to add 33rd key
-    res = self.session.post(f"{CACHE_URL}/overflow_key", json = {"data": "fail"})
-    self.assertEqual(res.status_code, 403)
-    self.assertIn("Maximum number of keys exceeded", res.json()["detail"])
+    async with self.session.post(f"{CACHE_URL}/overflow_key", json = {"data": "fail"}) as res:
+      self.assertEqual(res.status, 403)
+      res_json = await res.json()
+      self.assertIn("Maximum number of keys exceeded", res_json["detail"])
 
-  def test_json_size_limit_per_reqeust(self):
+  async def test_json_size_limit_per_reqeust(self):
     """
     Test that each json request cannot exceed MAX_JSON_SIZE.
     """
     key = "big_storage_dev"
-    # Create a large object that is below single request limit (256KB)
-    # but combined with metadata might exceed storage limit
     large_chunk = {"data": "x" * (self.config.MAX_JSON_SIZE - 150)}
 
-    # First send is fine
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = large_chunk).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = large_chunk) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Second merge might push it over the limit if we keep adding
-    # We'll send a very large update to trigger the 413 from the trial merge logic
     huge_update = {"extra": "y" * (self.config.MAX_JSON_SIZE + 10)}
+    async with self.session.post(f"{CACHE_URL}/{key}", json = huge_update) as res:
+      self.assertEqual(res.status, 413)
+      res_json = await res.json()
+      detail = res_json.get("detail", "")
+      self.assertIn("JSON body size exceeded", detail)
 
-    res = self.session.post(f"{CACHE_URL}/{key}", json = huge_update)
-    self.assertEqual(res.status_code, 413)
-
-    detail = res.json().get("detail", "")
-    self.assertIn("JSON body size exceeded", detail)
-
-  def test_storage_size_limit_per_key_cumulative(self):
+  async def test_storage_size_limit_per_key_cumulative(self):
     """
     SECURITY: Test that the cumulative storage for a single key
     cannot exceed MAX_JSON_STORAGE_SIZE through multiple updates.
     """
     key = "cumulative_test_inverter"
 
-    # 1. Clean up potential previous test data
-    self.assertEqual(self.session.delete(f"{CACHE_URL}").status_code, 200)
+    async with self.session.delete(CACHE_URL) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # 2. Define chunk size slightly below the single request limit
-    # Subtracting 1000 bytes to account for JSON overhead (quotes, keys, braces)
     chunk_size = self.config.MAX_JSON_SIZE - 100
     chunk_data = "x" * chunk_size
 
-    # 3. Calculate how many chunks are needed to hit the storage limit
-    # Example: If storage is 1MB and chunk is 250KB, the 5th request should fail
-    # WE ALLOW JUST ONE REQUEST WITH EXCEEDED JSON SIZE STORAGE!
     num_requests_to_fill = (self.config.MAX_JSON_STORAGE_SIZE // chunk_size) + 2
 
     log.info(f"Filling storage for '{key}'")
     log.info(f"Chunk: {chunk_size}, Storage Limit: {self.config.MAX_JSON_STORAGE_SIZE}")
 
     for i in range(num_requests_to_fill):
-      # Use unique keys to force the server to expand the dictionary
-      # If keys were identical, the server would just overwrite data
       payload = {f"register_group_{i}": chunk_data}
-      with self.session.post(f"{CACHE_URL}/{key}", json = payload) as response:
+      async with self.session.post(f"{CACHE_URL}/{key}", json = payload) as response:
         if i < num_requests_to_fill - 1:
-          # These requests should be accepted (under total limit)
-          self.assertEqual(response.status_code, 200,
-                           f"Batch {i} failed prematurely with status {response.status_code}")
+          self.assertEqual(response.status, 200, f"Batch {i} failed prematurely with status {response.status}")
         else:
-          # The final request must trigger the storage limit protection (413)
-          # It passes the 'MAX_JSON_SIZE' check but fails the 'trial merge' check
-          self.assertEqual(response.status_code, 413, "Server failed to block cumulative storage overflow")
-
-          # Check for the specific error message
-          detail = response.json().get("detail", "")
+          self.assertEqual(response.status, 413, "Server failed to block cumulative storage overflow")
+          res_json = await response.json()
+          detail = res_json.get("detail", "")
           self.assertIn("JSON storage size exceeded", detail)
 
-  def test_concurrent_updates(self):
+  async def test_concurrent_updates(self):
     """
     STRESS/RACE CONDITION TEST:
     Simulate multiple concurrent clients updating the same key.
     Verifies that asyncio.Lock on the server prevents data loss.
     """
     key = "race_condition_test"
-    self.session.delete(f"{CACHE_URL}/{key}")
+    async with self.session.delete(f"{CACHE_URL}/{key}"):
+      pass
 
-    # We will send 20 rapid updates to the same key
     num_updates = 20
     updates = [{"update_id": i} for i in range(num_updates)]
 
-    def send_post(data):
-      # Using a new session per thread to simulate different clients
-      with requests.Session() as s:
-        return s.post(f"{CACHE_URL}/{key}", json = data)
+    async def send_post(data):
+      # Use the shared session pool instead of creating a new session
+      async with self.session.post(f"{CACHE_URL}/{key}", json = data) as resp:
+        return resp.status
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers = 10) as executor:
-      responses = list(executor.map(send_post, updates))
+    statuses = await asyncio.gather(*(send_post(data) for data in updates))
 
-    # Check that all requests were successful
-    for resp in responses:
-      self.assertEqual(resp.status_code, 200)
+    for status in statuses:
+      self.assertEqual(status, 200)
 
-    # Verify that the final object contains all update_id fields
-    # (since deep_merge combines them)
-    res = self.session.get(f"{CACHE_URL}/{key}").json()
+    async with self.session.get(f"{CACHE_URL}/{key}") as res_get:
+      res = await res_get.json()
     for i in range(num_updates):
       self.assertIn("update_id", res)
-      # Note: in your deep_merge, 'update_id' will be overwritten by the last one,
-      # but the server must not crash and must process all requests.
 
-  def test_data_type_conflict_overwrite(self):
+  async def test_data_type_conflict_overwrite(self):
     """
     EDGE CASE:
     Verify behavior when a dictionary field is overwritten by a non-dictionary value.
-    This tests the robustness of the deep_merge function.
     """
     key = "conflict_dev"
 
-    # 1. Set a dictionary
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"data": {"nested": 1}}).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"data": {"nested": 1}}) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # 2. Overwrite 'data' with a simple integer (not a dict)
-    # Your deep_merge: if not (isinstance(value, dict) and ... isinstance(source[key], dict))
-    # it should just overwrite source[key] = value.
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"data": 100}).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"data": 100}) as resp:
+      self.assertEqual(resp.status, 200)
 
-    res = self.session.get(f"{CACHE_URL}/{key}")
-    self.assertEqual(res.status_code, 200)
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      self.assertEqual(res.status, 200)
+      res_json = await res.json()
+      self.assertEqual(res_json["data"], 100)
 
-    res_json = res.json()
-    self.assertEqual(res_json["data"], 100)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"data": {"new_nested": 2}}) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # 3. Overwrite back to dict
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"data": {"new_nested": 2}}).status_code, 200)
+    async with self.session.get(f"{CACHE_URL}/{key}") as res2:
+      self.assertEqual(res2.status, 200)
+      res_json2 = await res2.json()
+      self.assertEqual(res_json2["data"]["new_nested"], 2)
 
-    res2 = self.session.get(f"{CACHE_URL}/{key}")
-    self.assertEqual(res2.status_code, 200)
-
-    res_json2 = res2.json()
-    self.assertEqual(res_json2["data"]["new_nested"], 2)
-
-  def test_malformed_json_and_empty_payload(self):
+  async def test_malformed_json_and_empty_payload(self):
     """
     SECURITY/ROBUSTNESS:
     Verify server behavior with empty bodies or invalid content types.
     """
     key = "malformed_test"
 
-    # Send empty body with JSON content-type
-    with self.session.post(f"{CACHE_URL}/{key}", headers = {"Content-Type": "application/json"}) as response:
-      # FastAPI should return 422 Unprocessable Entity for missing body
-      self.assertEqual(response.status_code, 422)
+    async with self.session.post(f"{CACHE_URL}/{key}", headers = {"Content-Type": "application/json"}) as response:
+      self.assertEqual(response.status, 422)
 
-  def test_deep_merge_array_handling(self):
+  async def test_deep_merge_array_handling(self):
     """
     LOGIC TEST:
     Verify how deep_merge handles lists (should overwrite, not extend).
     """
     key = "array_test"
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"list": [1, 2]}).status_code, 200)
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"list": [3, 4]}).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"list": [1, 2]}) as resp:
+      self.assertEqual(resp.status, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"list": [3, 4]}) as resp:
+      self.assertEqual(resp.status, 200)
 
-    res = self.session.get(f"{CACHE_URL}/{key}")
-    self.assertEqual(res.status_code, 200)
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      self.assertEqual(res.status, 200)
+      res_json = await res.json()
+      self.assertEqual(res_json["list"], [3, 4])
 
-    res_json = res.json()
-    # In standard deep_merge, lists are treated as values and overwritten
-    self.assertEqual(res_json["list"], [3, 4])
-
-  def test_extreme_nesting_depth(self):
+  async def test_extreme_nesting_depth(self):
     """
     PERFORMANCE/STABILITY:
     Test very deep JSON nesting (20+ levels).
     """
     key = "extreme_nest"
-    # Dynamically build a 20-level dict
     current: Any = "bottom"
     for i in range(20, 0, -1):
       current = {f"L{i}": current}
 
-    with self.session.post(f"{CACHE_URL}/{key}", json = current) as response:
-      self.assertEqual(response.status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = current) as response:
+      self.assertEqual(response.status, 200)
 
-    with self.session.get(f"{CACHE_URL}/{key}") as res:
-      # Verify we can reach the deepest value
-      val = res.json()
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      val = await res.json()
       for i in range(1, 21):
         val = val[f"L{i}"]
       self.assertEqual(val, "bottom")
 
-  def test_type_swapping_in_nesting(self):
+  async def test_type_swapping_in_nesting(self):
     """
     ROBUSTNESS:
-    Tests what happens when a deep nested dict is suddenly replaced by a primitive,
-    and then vice-versa.
+    Tests what happens when a deep nested dict is suddenly replaced by a primitive.
     """
     key = "swap_test"
 
-    # Initial: {"a": {"b": {"c": 1}}}
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"a": {"b": {"c": 1}}}).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"a": {"b": {"c": 1}}}) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Swap: {"a": {"b": "now_i_am_a_string"}}
-    # Deep merge should see that "b" is no longer a dict in the update
-    # and overwrite the old dict.
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"a": {"b": "string_value"}}).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"a": {"b": "string_value"}}) as resp:
+      self.assertEqual(resp.status, 200)
 
-    res = self.session.get(f"{CACHE_URL}/{key}").json()
-    self.assertEqual(res["a"]["b"], "string_value")
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      res_json = await res.json()
+      self.assertEqual(res_json["a"]["b"], "string_value")
 
-    # Swap back: {"a": {"b": {"new_dict": True}}}
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"a": {"b": {"new_dict": True}}}).status_code, 200)
-    res = self.session.get(f"{CACHE_URL}/{key}").json()
-    self.assertIsInstance(res["a"]["b"], dict)
-    self.assertTrue(res["a"]["b"]["new_dict"])
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"a": {"b": {"new_dict": True}}}) as resp:
+      self.assertEqual(resp.status, 200)
 
-  def test_large_number_of_keys_rapidly(self):
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      res_json = await res.json()
+      self.assertIsInstance(res_json["a"]["b"], dict)
+      self.assertTrue(res_json["a"]["b"]["new_dict"])
+
+  async def test_large_number_of_keys_rapidly(self):
     """
     STRESS:
     Rapidly create many keys and then perform a global reset.
-    Verifies that locks are cleaned up and don't leak memory.
     """
-    # Create 50 unique keys (more than your MAX_KEYS_COUNT to trigger some 403s)
     for i in range(self.config.MAX_KEYS_COUNT + 15):
-      self.session.post(f"{CACHE_URL}/stress_{i}", json = {"data": i})
+      async with self.session.post(f"{CACHE_URL}/stress_{i}", json = {"data": i}):
+        pass
 
-    # Check stats before reset
-    stat_res = self.session.options(CACHE_URL).json()
-    self.assertEqual(stat_res["keys_used"], self.config.MAX_KEYS_COUNT)
-    self.assertGreater(stat_res["bytes_used"], 0)
+    async with self.session.options(CACHE_URL) as stat_res_obj:
+      stat_res = await stat_res_obj.json()
+      self.assertEqual(stat_res["keys_used"], self.config.MAX_KEYS_COUNT)
+      self.assertGreater(stat_res["bytes_used"], 0)
 
-    # Global reset
-    self.assertEqual(self.session.delete(CACHE_URL).status_code, 200)
+    async with self.session.delete(CACHE_URL) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Check stats after reset
-    stat_after = self.session.options(CACHE_URL).json()
-    self.assertEqual(stat_after["keys_used"], 0)
-    self.assertEqual(stat_after["bytes_used"], 0)
+    async with self.session.options(CACHE_URL) as stat_after_obj:
+      stat_after = await stat_after_obj.json()
+      self.assertEqual(stat_after["keys_used"], 0)
+      self.assertEqual(stat_after["bytes_used"], 0)
 
-  def test_invalid_endpoints(self):
+  async def test_invalid_endpoints(self):
     """
     ROBUSTNESS:
     Test requests to non-existent paths.
     """
-    # 1. Random non-existent path
-    resp = self.session.get(f"{BASE_URL}/invalid/path/to/resource")
-    self.assertEqual(resp.status_code, 404)
+    async with self.session.get(f"{BASE_URL}/invalid/path/to/resource") as resp:
+      self.assertEqual(resp.status, 404)
 
-    # 2. Path that looks like cache but is slightly wrong
-    resp = self.session.get(f"{BASE_URL}/caches") # extra 's'
-    self.assertEqual(resp.status_code, 404)
+    async with self.session.get(f"{BASE_URL}/caches") as resp:
+      self.assertEqual(resp.status, 404)
 
-  def test_invalid_http_methods(self):
+  async def test_invalid_http_methods(self):
     """
     ROBUSTNESS:
     Test using wrong HTTP methods for valid endpoints.
     """
-    # 1. POST to /ping (which only supports GET)
-    resp = self.session.post(PING_URL)
-    self.assertEqual(resp.status_code, 405) # Method Not Allowed
+    async with self.session.post(PING_URL) as resp:
+      self.assertEqual(resp.status, 405)
 
-    # 2. GET to /cache without a key (only DELETE is supported for base /cache)
-    resp = self.session.get(CACHE_URL)
-    self.assertEqual(resp.status_code, 405)
+    async with self.session.get(CACHE_URL) as resp:
+      self.assertEqual(resp.status, 405)
 
-    # 3. PUT to /cache/key (you use POST for updates)
-    resp = self.session.put(f"{CACHE_URL}/some_key", json = {"a": 1})
-    self.assertEqual(resp.status_code, 405)
+    async with self.session.put(f"{CACHE_URL}/some_key", json = {"a": 1}) as resp:
+      self.assertEqual(resp.status, 405)
 
-  def test_url_encoding_and_special_chars(self):
+  async def test_url_encoding_and_special_chars(self):
     """
     EDGE CASE:
     Test keys with special characters and URL encoding.
     """
-    # 1. Key with spaces and symbols
-    # Requests will automatically URL-encode this to 'key%20with%20%24ymbols'
     special_key = "key with $symbols"
     payload = {"data": "test"}
 
-    resp_post = self.session.post(f"{CACHE_URL}/{special_key}", json = payload)
-    self.assertEqual(resp_post.status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{special_key}", json = payload) as resp_post:
+      self.assertEqual(resp_post.status, 200)
 
-    resp_get = self.session.get(f"{CACHE_URL}/{special_key}")
-    self.assertEqual(resp_get.status_code, 200)
-    self.assertEqual(resp_get.json()["data"], "test")
+    async with self.session.get(f"{CACHE_URL}/{special_key}") as resp_get:
+      self.assertEqual(resp_get.status, 200)
+      data = await resp_get.json()
+      self.assertEqual(data["data"], "test")
 
-  def test_malformed_url_traversal(self):
+  async def test_malformed_url_traversal(self):
     """
     SECURITY:
     Test for directory traversal attempts in the URL key.
     """
-    # Attempt to use '../' in the key
     key = "../root_key"
-    resp = self.session.post(f"{CACHE_URL}/{key}", json = {"hack": "attempt"})
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"hack": "attempt"}) as resp:
+      self.assertEqual(resp.status, 404)
 
-    # FastAPI/Uvicorn might normalize this or treat it as a path.
-    # If it's treated as /cache/root_key, it's fine.
-    # If it tries to access /root_key (which doesn't exist), it's 404/405.
-    self.assertEqual(resp.status_code, 404)
-
-  def test_docs_and_openapi_exposure(self):
+  async def test_docs_and_openapi_exposure(self):
     """
     SECURITY:
     Check if FastAPI default documentation is enabled.
-    Usually, in production/critical services, /docs and /redoc should be disabled.
     """
-    # FastAPI by default hosts these:
     for path in ["/docs", "/redoc", "/openapi.json"]:
-      resp = self.session.get(f"{BASE_URL}{path}")
-      # If you didn't disable them in FastAPI(docs_url=None), they will return 200
-      # This test just documents the current state.
-      status = "ENABLED" if resp.status_code == 200 else "DISABLED"
-      log.info(f"FastAPI auto-doc {path} is {status}")
+      async with self.session.get(f"{BASE_URL}{path}") as resp:
+        status = "ENABLED" if resp.status == 200 else "DISABLED"
+        log.info(f"FastAPI auto-doc {path} is {status}")
 
-  def test_case_sensitivity(self):
+  async def test_case_sensitivity(self):
     """
     EDGE CASE:
     Verify if paths are case-sensitive.
-    /CACHE/key should typically return 404 if the route is defined as /cache/key.
     """
     key = "case_test"
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"v": 1}).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"v": 1}) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Test uppercase endpoint
-    resp = self.session.get(f"{BASE_URL}/CACHE/{key}")
-    self.assertEqual(resp.status_code, 404)
+    async with self.session.get(f"{BASE_URL}/CACHE/{key}") as resp:
+      self.assertEqual(resp.status, 404)
 
-    # Test uppercase ping
-    resp = self.session.get(f"{BASE_URL}/PING")
-    self.assertEqual(resp.status_code, 404)
+    async with self.session.get(f"{BASE_URL}/PING") as resp:
+      self.assertEqual(resp.status, 404)
 
-  def test_path_parameter_abuse(self):
+  async def test_path_parameter_abuse(self):
     """
     SECURITY:
     Test sending forbidden characters or path segments within the key parameter.
     """
-    # 1. Attempting to access a nested path where only one level is expected
-    # Your route is /cache/{key}. What if key contains a slash?
-    # Requests will encode it, but let's see how FastAPI handles it.
     key_with_slash = "inverter/01"
-    resp = self.session.get(f"{CACHE_URL}/{key_with_slash}")
-    # It should be 404 because the router expects /cache/{key}
-    # and 'inverter/01' is seen as two path segments.
-    self.assertEqual(resp.status_code, 404)
+    async with self.session.get(f"{CACHE_URL}/{key_with_slash}") as resp:
+      self.assertEqual(resp.status, 404)
 
-  def test_trailing_slashes(self):
+  async def test_trailing_slashes(self):
     """
     ROBUSTNESS:
     Check behavior with trailing slashes.
-    FastAPI by default is sensitive to trailing slashes unless configured otherwise.
     """
-    # /ping/ vs /ping
-    resp = self.session.get(f"{PING_URL}/")
-    self.assertEqual(resp.status_code, 200)
+    async with self.session.get(f"{PING_URL}/") as resp:
+      self.assertEqual(resp.status, 200)
 
-    # /cache/key/ vs /cache/key
-    resp = self.session.get(f"{CACHE_URL}/somekey/")
-    self.assertEqual(resp.status_code, 404)
+    async with self.session.get(f"{CACHE_URL}/somekey/") as resp:
+      self.assertEqual(resp.status, 404)
 
-  def test_proxy_headers_spoofing(self):
+  async def test_proxy_headers_spoofing(self):
     """
     SECURITY:
     Test how the server handles typical proxy headers.
-    Useful if you rely on 'last_update_by' logic.
     """
     key = "proxy_test"
 
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = {"data": 1}).status_code, 200)
-    res_no_proxy = self.session.get(f"{CACHE_URL}/{key}").json()
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"data": 1}) as resp:
+      self.assertEqual(resp.status, 200)
+    async with self.session.get(f"{CACHE_URL}/{key}") as resp:
+      res_no_proxy = await resp.json()
 
     ip = res_no_proxy.get("last_update_by")
 
-    # Try to spoof the source IP via X-Forwarded-For
     headers = {"X-Forwarded-For": "8.8.8.8"}
-    self.session.post(f"{CACHE_URL}/{key}", json = {"data": 1}, headers = headers)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"data": 1}, headers = headers):
+      pass
 
-    res_with_proxy = self.session.get(f"{CACHE_URL}/{key}").json()
-    self.assertEqual(res_with_proxy.get("last_update_by"), ip)
+    async with self.session.get(f"{CACHE_URL}/{key}") as resp:
+      res_with_proxy = await resp.json()
+      self.assertEqual(res_with_proxy.get("last_update_by"), ip)
 
-  def test_deep_null_merging_logic(self):
+  async def test_deep_null_merging_logic(self):
     """
     LOGIC/STABILITY:
-    Verify how the server handles 'null' (None in Python) during a deep merge.
-    In JSON, sending null often means 'clear this value'.
-    We check if the server can store nulls without crashing the deep_merge function.
+    Verify how the server handles 'null' during a deep merge.
     """
     key = "null_logic_test"
 
-    # 1. Create initial deep structure
     initial = {"status": "online", "metrics": {"power": 5000, "temp": 45}}
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = initial).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = initial) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # 2. Update power with a real value, but set temp to null
-    # We want to see if 'temp' becomes null or if it crashes the merge
     update = {"metrics": {"power": 6000, "temp": None}}
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = update).status_code, 200)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = update) as resp:
+      self.assertEqual(resp.status, 200)
 
-    res = self.session.get(f"{CACHE_URL}/{key}")
-    self.assertEqual(res.status_code, 200)
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      self.assertEqual(res.status, 200)
+      res_json = await res.json()
 
-    res_json = res.json()
-
-    # Verify
     self.assertEqual(res_json["metrics"]["power"], 6000)
-    self.assertIsNone(res_json["metrics"]["temp"]) # temp should be null now
-    self.assertEqual(res_json["status"], "online") # status should be preserved
+    self.assertIsNone(res_json["metrics"]["temp"])
+    self.assertEqual(res_json["status"], "online")
 
-    # 3. CRITICAL: Try to merge a dict into a null value
-    # This is where many merge functions fail (TypeError: 'NoneType' object is not subscriptable)
-    killer_update = {
-      "metrics": {
-        "temp": {
-          "sub_temp": 20
-        } # 'temp' was None, now we try to make it a dict
-      }
-    }
-    resp = self.session.post(f"{CACHE_URL}/{key}", json = killer_update)
-    self.assertEqual(resp.status_code, 200)
+    killer_update = {"metrics": {"temp": {"sub_temp": 20}}}
+    async with self.session.post(f"{CACHE_URL}/{key}", json = killer_update) as resp:
+      self.assertEqual(resp.status, 200)
 
-    final_res = self.session.get(f"{CACHE_URL}/{key}").json()
-    self.assertEqual(final_res["metrics"]["temp"]["sub_temp"], 20)
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      final_res = await res.json()
+      self.assertEqual(final_res["metrics"]["temp"]["sub_temp"], 20)
 
-  def test_stale_data_ignored_by_timestamp(self):
+  async def test_stale_data_ignored_by_timestamp(self):
     """
     LOGIC TEST:
-    Verify that incoming data is ignored if its 'ts_label' is older than or equal to the cached one.
+    Verify that incoming data is ignored if its 'ts_label' is older than or equal to cached.
     """
     key = "timestamp_test_dev"
 
-    # 1. Initial state with a specific timestamp
-    initial_payload = {
-      "data": {
-        "value": 100,
-        "ts_label": 1700000000 # Newer timestamp
-      }
-    }
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = initial_payload).status_code, 200)
+    initial_payload = {"data": {"value": 100, "ts_label": 1700000000}}
+    async with self.session.post(f"{CACHE_URL}/{key}", json = initial_payload) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # 2. Try to update with an OLDER timestamp
-    stale_payload = {
-      "data": {
-        "value": 50, # This change should be ignored
-        "ts_label": 1600000000 # Older timestamp
-      }
-    }
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = stale_payload).status_code, 200)
+    stale_payload = {"data": {"value": 50, "ts_label": 1600000000}}
+    async with self.session.post(f"{CACHE_URL}/{key}", json = stale_payload) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Verify: value remains 100
-    res = self.session.get(f"{CACHE_URL}/{key}").json()
-    self.assertEqual(res["data"]["value"], 100)
-    self.assertEqual(res["data"]["ts_label"], 1700000000)
+    async with self.session.get(f"{CACHE_URL}/{key}") as res_obj:
+      res = await res_obj.json()
+      self.assertEqual(res["data"]["value"], 100)
+      self.assertEqual(res["data"]["ts_label"], 1700000000)
 
-    # 3. Try to update with an EQUAL timestamp
-    equal_payload = {
-      "data": {
-        "value": 200, # This change should also be ignored
-        "ts_label": 1700000000 # Same timestamp
-      }
-    }
-    self.assertEqual(self.session.post(f"{CACHE_URL}/{key}", json = equal_payload).status_code, 200)
+    equal_payload = {"data": {"value": 200, "ts_label": 1700000000}}
+    async with self.session.post(f"{CACHE_URL}/{key}", json = equal_payload) as resp:
+      self.assertEqual(resp.status, 200)
 
-    # Verify: value still remains 100
-    res_equal = self.session.get(f"{CACHE_URL}/{key}").json()
-    self.assertEqual(res_equal["data"]["value"], 100)
+    async with self.session.get(f"{CACHE_URL}/{key}") as res_equal_obj:
+      res_equal = await res_equal_obj.json()
+      self.assertEqual(res_equal["data"]["value"], 100)
 
-  def test_mixed_timestamp_update(self):
+  async def test_mixed_timestamp_update(self):
     """
     LOGIC TEST:
-    Verify that in a single request, only stale nested objects are ignored
-    while fresh ones are updated.
+    Verify that in a single request, only stale nested objects are ignored.
     """
     key = "mixed_ts_test"
 
     initial = {"sensor_a": {"val": 10, "ts_label": 1000}, "sensor_b": {"val": 20, "ts_label": 1000}}
-    self.session.post(f"{CACHE_URL}/{key}", json = initial)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = initial):
+      pass
 
-    # Update: sensor_a is NEW, sensor_b is STALE
-    mixed_update = {
-      "sensor_a": {
-        "val": 15,
-        "ts_label": 1100
-      }, # Should update
-      "sensor_b": {
-        "val": 99,
-        "ts_label": 900
-      } # Should be ignored
-    }
-    self.session.post(f"{CACHE_URL}/{key}", json = mixed_update)
+    mixed_update = {"sensor_a": {"val": 15, "ts_label": 1100}, "sensor_b": {"val": 99, "ts_label": 900}}
+    async with self.session.post(f"{CACHE_URL}/{key}", json = mixed_update):
+      pass
 
-    res = self.session.get(f"{CACHE_URL}/{key}").json()
+    async with self.session.get(f"{CACHE_URL}/{key}") as res_obj:
+      res = await res_obj.json()
+      self.assertEqual(res["sensor_a"]["val"], 15)
+      self.assertEqual(res["sensor_b"]["val"], 20)
 
-    # sensor_a updated to 15
-    self.assertEqual(res["sensor_a"]["val"], 15)
-    # sensor_b stayed at 20
-    self.assertEqual(res["sensor_b"]["val"], 20)
-
-  def test_timestamp_with_different_types(self):
+  async def test_timestamp_with_different_types(self):
     """
     EDGE CASE:
-    Verify that the timestamp logic only triggers when both fields are numbers.
-    If 'ts_label' is missing or not a number, the merge should proceed as usual.
+    Verify timestamp logic only triggers when both fields are numbers.
     """
     key = "ts_type_test"
 
-    # 1. Initial with integer ts
-    self.session.post(f"{CACHE_URL}/{key}", json = {"obj": {"val": 1, "ts_label": 100}})
+    async with self.session.post(f"{CACHE_URL}/{key}", json = {"obj": {"val": 1, "ts_label": 100}}):
+      pass
 
-    # 2. Update with string ts (should ignore the ts logic and overwrite because it's not int/float)
-    # Based on: if isinstance(value_time, (int, float)) and isinstance(src_time, (int, float))
-    # If one is a string, the condition is False, and it falls through to the standard deep_merge.
     update = {"obj": {"val": 2, "ts_label": "100"}}
-    self.session.post(f"{CACHE_URL}/{key}", json = update)
+    async with self.session.post(f"{CACHE_URL}/{key}", json = update):
+      pass
 
-    res = self.session.get(f"{CACHE_URL}/{key}").json()
-    self.assertEqual(res["obj"]["val"], 2)
-    self.assertEqual(res["obj"]["ts_label"], "100")
+    async with self.session.get(f"{CACHE_URL}/{key}") as res_obj:
+      res = await res_obj.json()
+      self.assertEqual(res["obj"]["val"], 2)
+      self.assertEqual(res["obj"]["ts_label"], "100")
 
-  def test_update_and_get_average_int(self):
+  async def test_update_and_get_average_int(self):
     """
     LOGIC TEST:
-    Verify that update_average correctly calculates cumulative totals
-    and the weighted average using path parameters.
+    Verify update_average calculation using path parameters.
     """
     key = "avg_path_test"
 
-    # 1. First update: /average/avg_path_test/10/30
-    # Total=40, Avg=10/40=0.25
     c1, c2 = 10, 30
     endpoint1 = f"{BASE_URL}/average/{key}/{c1}/{c2}"
-    res1 = self.session.post(endpoint1)
-    self.assertEqual(res1.status_code, 200)
-    data1 = res1.json()
-    self.assertEqual(data1["average"], c1 / (c1 + c2))
-    self.assertEqual(data1["total"], c1 + c2)
+    async with self.session.post(endpoint1) as res1:
+      self.assertEqual(res1.status, 200)
+      data1 = await res1.json()
+      self.assertEqual(data1["average"], c1 / (c1 + c2))
+      self.assertEqual(data1["total"], c1 + c2)
 
-    # 2. Second update: /average/avg_path_test/10/10
-    # New totals: count1=20, count2=40. Total=60, Avg=20/60=0.333...
     c3, c4 = 10, 10
     endpoint2 = f"{BASE_URL}/average/{key}/{c3}/{c4}"
-    res2 = self.session.post(endpoint2)
-    self.assertEqual(res2.status_code, 200)
-    data2 = res2.json()
-    self.assertAlmostEqual(data2["average"], (c1 + c3) / (c1 + c2 + c3 + c4), places = 5)
+    async with self.session.post(endpoint2) as res2:
+      self.assertEqual(res2.status, 200)
+      data2 = await res2.json()
+      self.assertAlmostEqual(data2["average"], (c1 + c3) / (c1 + c2 + c3 + c4), places = 5)
 
-    # 3. Verify via GET method: /average/avg_path_test
     get_endpoint = f"{BASE_URL}/average/{key}"
-    res_get = self.session.get(get_endpoint)
-    self.assertEqual(res_get.status_code, 200)
-    data_get = res_get.json()
-    self.assertEqual(data_get["key"], key)
-    self.assertEqual(data_get["count1"], c1 + c3)
-    self.assertEqual(data_get["count2"], c2 + c4)
+    async with self.session.get(get_endpoint) as res_get:
+      self.assertEqual(res_get.status, 200)
+      data_get = await res_get.json()
+      self.assertEqual(data_get["key"], key)
+      self.assertEqual(data_get["count1"], c1 + c3)
+      self.assertEqual(data_get["count2"], c2 + c4)
 
-  def test_update_average_small_floats(self):
+  async def test_update_average_small_floats(self):
     """
     LOGIC TEST: Small floats (1-10 range).
-    Sum = 1.25 + 3.75 = 5.0. Average = 1.25 / 5.0 = 0.25
     """
     key = "avg_small_floats"
     c1, c2 = 1.25, 3.75
 
     endpoint = f"{BASE_URL}/average/{key}/{c1}/{c2}"
-    res = self.session.post(endpoint)
-    self.assertEqual(res.status_code, 200)
+    async with self.session.post(endpoint) as res:
+      self.assertEqual(res.status, 200)
+      data = await res.json()
+      self.assertEqual(data["average"], c1 / (c1 + c2))
+      self.assertEqual(data["total"], c1 + c2)
 
-    data = res.json()
-    # Using formula in asserts
-    self.assertEqual(data["average"], c1 / (c1 + c2))
-    self.assertEqual(data["total"], c1 + c2)
-
-  def test_update_average_large_floats(self):
+  async def test_update_average_large_floats(self):
     """
     LOGIC TEST: Large floats (>100 range).
-    Sum = 120.5 + 379.5 = 500.0. Average = 120.5 / 500.0 = 0.241
     """
     key = "avg_large_floats"
     c1, c2 = 120.5, 379.5
 
     endpoint = f"{BASE_URL}/average/{key}/{c1}/{c2}"
-    res = self.session.post(endpoint)
-    self.assertEqual(res.status_code, 200)
+    async with self.session.post(endpoint) as res:
+      self.assertEqual(res.status, 200)
+      data = await res.json()
+      self.assertEqual(data["average"], c1 / (c1 + c2))
+      self.assertEqual(data["total"], c1 + c2)
 
-    data = res.json()
-    # Using formula in asserts
-    self.assertEqual(data["average"], c1 / (c1 + c2))
-    self.assertEqual(data["total"], c1 + c2)
-
-  def test_update_average_mixed_accumulation(self):
+  async def test_update_average_mixed_accumulation(self):
     """
     LOGIC TEST: Mixed ranges with accumulation.
-    1. Small: 1.1 + 0.9 = 2.0
-    2. Large addition: 148.9 + 249.1 = 398.0
-    Final Total: 2.0 + 398.0 = 400.0
-    Final Count1: 1.1 + 148.9 = 150.0
-    Final Avg: 150.0 / 400.0 = 0.375
     """
     key = "avg_mixed_accum"
 
-    # Step 1: Initial small values
     c1_small, c2_small = 1.1, 0.9
-    self.session.post(f"{BASE_URL}/average/{key}/{c1_small}/{c2_small}")
+    async with self.session.post(f"{BASE_URL}/average/{key}/{c1_small}/{c2_small}"):
+      pass
 
-    # Step 2: Add large values
     c1_large, c2_large = 148.9, 249.1
-    res = self.session.post(f"{BASE_URL}/average/{key}/{c1_large}/{c2_large}")
-    self.assertEqual(res.status_code, 200)
+    async with self.session.post(f"{BASE_URL}/average/{key}/{c1_large}/{c2_large}") as res:
+      self.assertEqual(res.status, 200)
+      data = await res.json()
 
-    data = res.json()
-
-    # Formula-based expectations
     expected_c1 = c1_small + c1_large
     expected_c2 = c2_small + c2_large
     expected_total = expected_c1 + expected_c2
@@ -786,175 +662,122 @@ class TestDeyeCacheExtended(unittest.TestCase):
     self.assertEqual(data["total"], expected_total)
     self.assertEqual(data["average"], expected_avg)
 
-  def test_average_with_float_artifact(self):
+  async def test_average_with_float_artifact(self):
     """
-    EDGE CASE: Verify handling of tiny float artifacts (e.g., 150.00000000000003).
-    This occurs due to IEEE 754 precision limits.
+    EDGE CASE: Verify handling of tiny float artifacts.
     """
     key = "artifact_test"
-
-    # 1.1 + 2.2 in floating point is NOT 3.3, it's 3.3000000000000003
     c1 = 1.1
     c2 = 2.2
 
-    # Expected behavior if using clean_num without rounding:
-    # (c1 + c2) will be 3.3000000000000003
-    # .is_integer() will be False, and it will remain a float in JSON.
-
     endpoint = f"{BASE_URL}/average/{key}/{c1}/{c2}"
-    res = self.session.post(endpoint)
-    self.assertEqual(res.status_code, 200)
-
-    data = res.json()
+    async with self.session.post(endpoint) as res:
+      self.assertEqual(res.status, 200)
+      data = await res.json()
 
     def clean_num(v: float) -> Union[float, int]:
-      """
-      Normalizes a float value by rounding and type conversion.
-      
-      Rounds the input to 10 decimal places to eliminate floating-point 
-      arithmetic artifacts (IEEE 754). If the resulting value is a 
-      whole number, it returns an integer to ensure a clean JSON 
-      representation without trailing zeros. Otherwise, returns the 
-      rounded float.
-      
-      Args:
-          v: The float value to be cleaned.
-          
-      Returns:
-          int | float: An integer if v has no fractional part, else a rounded float.
-      """
       v = round(v, 10)
       return int(v) if v.is_integer() else v
 
-    # Calculate the same artifact locally for comparison
     expected_total = clean_num(c1 + c2)
     expected_avg = clean_num(c1 / expected_total)
 
-    # Verify that the server returned the "dirty" float correctly
     self.assertEqual(data["total"], expected_total)
     self.assertAlmostEqual(data["average"], expected_avg)
 
-  def test_average_with_sum_to_integer_artifact(self):
+  async def test_average_with_sum_to_integer_artifact(self):
     """
     EDGE CASE: When sums slightly exceed an integer.
-    Example: 100.00000000000003
     """
     key = "sum_artifact_key"
-
-    # This specific sum often results in a tiny tail
     c1 = 100.00000000000001
     c2 = 0.00000000000002
 
-    res = self.session.post(f"{BASE_URL}/average/{key}/{c1}/{c2}")
-    data = res.json()
+    async with self.session.post(f"{BASE_URL}/average/{key}/{c1}/{c2}") as res:
+      data = await res.json()
+      self.assertTrue(float(data["total"]).is_integer())
 
-    # Total will be 100
-    self.assertTrue(float(data["total"]).is_integer())
-
-  def test_average_delete(self):
+  async def test_average_delete(self):
     """
-    LOGIC TEST:
-    Verify that an average entry can be removed.
+    LOGIC TEST: Verify average entry removal.
     """
     key = "delete_test_key"
-    # Create
-    self.session.post(f"{BASE_URL}/average/{key}/5/5")
+    async with self.session.post(f"{BASE_URL}/average/{key}/5/5"):
+      pass
 
-    # Delete
-    res_del = self.session.delete(f"{BASE_URL}/average/{key}")
-    self.assertEqual(res_del.status_code, 200)
+    async with self.session.delete(f"{BASE_URL}/average/{key}") as res_del:
+      self.assertEqual(res_del.status, 200)
 
-    # Verify 404
-    res_get = self.session.get(f"{BASE_URL}/average/{key}")
-    self.assertEqual(res_get.status_code, 404)
+    async with self.session.get(f"{BASE_URL}/average/{key}") as res_get:
+      self.assertEqual(res_get.status, 404)
 
-  def test_average_division_by_zero_path(self):
+  async def test_average_division_by_zero_path(self):
     """
-    EDGE CASE:
-    Verify zero values in path parameters.
+    EDGE CASE: Verify zero values in path parameters.
     """
     key = "zero_path_test"
-    # /average/zero_path_test/0/0
-    res = self.session.post(f"{BASE_URL}/average/{key}/0/0")
-    self.assertEqual(res.status_code, 200)
-    self.assertEqual(res.json()["average"], 0.0)
+    async with self.session.post(f"{BASE_URL}/average/{key}/0/0") as res:
+      self.assertEqual(res.status, 200)
+      data = await res.json()
+      self.assertEqual(data["average"], 0.0)
 
-  def test_massive_concurrent_stress_and_integrity(self):
+  async def test_massive_concurrent_stress_and_integrity(self):
     """
     STRESS/INTEGRITY TEST:
-    Simulate a massive number of concurrent requests (300 requests across 
-    multiple worker threads) updating a single key with unique nested subfields.
-    Verifies that the server handles high concurrency without errors, drops, or corruption,
-    and that deep merge preserves every single nested update.
+    Simulate massive concurrent async requests (1000 requests) updating a single key
+    using the shared session pool.
     """
     key = "massive_stress_key"
-    self.session.delete(f"{CACHE_URL}/{key}")
+    async with self.session.delete(f"{CACHE_URL}/{key}"):
+      pass
 
-    # Create distinct payloads for each request to ensure no overwrites
-    # and verify data integrity of all combined entries.
     updates = [{f"field_{i}": i} for i in range(STRESS_REQUESTS)]
 
-    def send_post(data):
-      with requests.Session() as s:
-        return s.post(f"{CACHE_URL}/{key}", json = data)
+    async def send_post(data):
+      # Use the shared session pool instead of creating a new session per request
+      async with self.session.post(f"{CACHE_URL}/{key}", json = data) as resp:
+        return resp.status
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers = STRESS_WORKERS) as executor:
-      responses = list(executor.map(send_post, updates))
+    statuses = await asyncio.gather(*(send_post(data) for data in updates))
 
-    # Verify that every single request was processed successfully
-    for resp in responses:
-      self.assertEqual(resp.status_code, 200)
+    for status in statuses:
+      self.assertEqual(status, 200)
 
-    # Verify data integrity: fetch the final merged document and check all fields
-    res = self.session.get(f"{CACHE_URL}/{key}")
-    self.assertEqual(res.status_code, 200)
+    async with self.session.get(f"{CACHE_URL}/{key}") as res:
+      self.assertEqual(res.status, 200)
+      res_json = await res.json()
+      for i in range(STRESS_REQUESTS):
+        self.assertIn(f"field_{i}", res_json)
+        self.assertEqual(res_json[f"field_{i}"], i)
 
-    res_json = res.json()
-
-    # Ensure all fields from all concurrent requests are present and accurate
-    for i in range(STRESS_REQUESTS):
-      field_name = f"field_{i}"
-      self.assertIn(field_name, res_json)
-      self.assertEqual(res_json[field_name], i)
-
-    # Verify server storage stats match the expected state
-    stats_res = self.session.options(CACHE_URL)
-    self.assertEqual(stats_res.status_code, 200)
-    stats_json = stats_res.json()
-    self.assertGreaterEqual(stats_json["keys_used"], 1)
-
-  def test_stress_concurrent_deep_merge_integrity(self):
+  async def test_stress_concurrent_deep_merge_integrity(self):
     """
-      STRESS / DATA INTEGRITY:
+    STRESS / DATA INTEGRITY:
 
-      Send thousands of concurrent updates to the same key.
-      Each request adds a unique nested field.
+    Send thousands of concurrent updates to the same key using the shared session pool.
+    Each request adds a unique nested field.
 
-      Verify that:
-      1. Every request succeeds.
-      2. No update is lost.
-      3. Every field contains the expected value.
-      4. The final number of fields matches the number of requests.
-      """
+    Verify that:
+    1. Every request succeeds.
+    2. No update is lost.
+    3. Every field contains the expected value.
+    4. The final number of fields matches the number of requests.
+    """
     key = "stress_concurrent_merge"
 
     # Ensure a clean initial state.
-    self.assertEqual(
-      self.session.delete(CACHE_URL).status_code,
-      200,
-    )
+    async with self.session.delete(CACHE_URL) as response:
+      self.assertEqual(response.status, 200)
 
     num_requests = STRESS_REQUESTS
-    num_workers = STRESS_WORKERS
 
     log.info(
       "Starting concurrent deep merge stress test: "
-      "%s requests, %s workers",
+      "%s requests",
       num_requests,
-      num_workers,
     )
 
-    def send_update(i: int):
+    async def send_update(i: int):
       payload = {
         "updates": {
           f"update_{i}": {
@@ -965,21 +788,20 @@ class TestDeyeCacheExtended(unittest.TestCase):
       }
 
       try:
-        response = get_thread_session().post(
-          f"{CACHE_URL}/{key}",
-          json = payload,
-          timeout = 60,
-        )
-
-        return i, response.status_code, response.text
-
-      except requests.RequestException as exc:
+        # Use the shared session pool instead of creating a new session per request
+        async with self.session.post(
+            f"{CACHE_URL}/{key}",
+            json = payload,
+            timeout = aiohttp.ClientTimeout(total = 60),
+        ) as response:
+          text = await response.text()
+          return i, response.status, text
+      except Exception as exc:
         return i, None, str(exc)
 
     started_at = time.monotonic()
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers = num_workers, ) as executor:
-      results = list(executor.map(send_update, range(num_requests)))
+    results = await asyncio.gather(*(send_update(i) for i in range(num_requests)))
 
     elapsed = time.monotonic() - started_at
 
@@ -1001,14 +823,13 @@ class TestDeyeCacheExtended(unittest.TestCase):
     )
 
     # Verify the final stored state.
-    response = self.session.get(
+    async with self.session.get(
       f"{CACHE_URL}/{key}",
-      timeout = 30,
-    )
+      timeout = aiohttp.ClientTimeout(total = 30),
+    ) as response:
+      self.assertEqual(response.status, 200)
+      result = await response.json()
 
-    self.assertEqual(response.status_code, 200)
-
-    result = response.json()
     updates = result.get("updates")
 
     self.assertIsInstance(updates, dict)
@@ -1044,54 +865,49 @@ class TestDeyeCacheExtended(unittest.TestCase):
       num_requests,
     )
 
-  def test_stress_concurrent_average_integrity(self):
+  async def test_stress_concurrent_average_integrity(self):
     """
-      STRESS / LOST UPDATE DETECTION:
+    STRESS / LOST UPDATE DETECTION:
 
-      Concurrently increment count1 and count2 through the average API.
+    Concurrently increment count1 and count2 through the average API.
 
-      Every request adds exactly 1 to count1 and 2 to count2.
-      The final totals must account for every successful request.
-      """
+    Every request adds exactly 1 to count1 and 2 to count2.
+    The final totals must account for every successful request.
+    """
     key = "stress_concurrent_average"
 
     # Remove data left by a previous run.
-    delete_response = self.session.delete(
+    async with self.session.delete(
       f"{BASE_URL}/average/{key}",
-      timeout = 30,
-    )
-
-    self.assertIn(
-      delete_response.status_code,
-      (200, 404),
-    )
+      timeout = aiohttp.ClientTimeout(total = 30),
+    ) as delete_response:
+      self.assertIn(
+        delete_response.status,
+        (200, 404),
+      )
 
     num_requests = STRESS_REQUESTS
-    num_workers = STRESS_WORKERS
 
     log.info(
       "Starting concurrent average stress test: "
-      "%s requests, %s workers",
+      "%s requests",
       num_requests,
-      num_workers,
     )
 
-    def send_increment(i: int):
+    async def send_increment(i: int):
       try:
-        response = get_thread_session().post(
-          f"{BASE_URL}/average/{key}/1/2",
-          timeout = 60,
-        )
-
-        return i, response.status_code, response.text
-
-      except requests.RequestException as exc:
+        async with self.session.post(
+            f"{BASE_URL}/average/{key}/1/2",
+            timeout = aiohttp.ClientTimeout(total = 60),
+        ) as response:
+          text = await response.text()
+          return i, response.status, text
+      except Exception as exc:
         return i, None, str(exc)
 
     started_at = time.monotonic()
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers = num_workers, ) as executor:
-      results = list(executor.map(send_increment, range(num_requests)))
+    results = await asyncio.gather(*(send_increment(i) for i in range(num_requests)))
 
     elapsed = time.monotonic() - started_at
 
@@ -1112,14 +928,12 @@ class TestDeyeCacheExtended(unittest.TestCase):
     )
 
     # Verify the final state through the GET endpoint.
-    response = self.session.get(
+    async with self.session.get(
       f"{BASE_URL}/average/{key}",
-      timeout = 30,
-    )
-
-    self.assertEqual(response.status_code, 200)
-
-    result = response.json()
+      timeout = aiohttp.ClientTimeout(total = 30),
+    ) as response:
+      self.assertEqual(response.status, 200)
+      result = await response.json()
 
     expected_count1 = num_requests
     expected_count2 = num_requests * 2
@@ -1160,12 +974,13 @@ class TestDeyeCacheExtended(unittest.TestCase):
     )
 
     # Clean up.
-    self.session.delete(
+    async with self.session.delete(
       f"{BASE_URL}/average/{key}",
-      timeout = 30,
-    )
+      timeout = aiohttp.ClientTimeout(total = 30),
+    ):
+      pass
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   logging.basicConfig(
     level = logging.INFO,
     format = "[%(asctime)s.%(msecs)03d] [%(levelname)s] %(message)s",

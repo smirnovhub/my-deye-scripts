@@ -5,7 +5,7 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import List, Union
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_user_choices_page import UserChoicePage
 
@@ -39,11 +39,9 @@ class UserChoices:
     accept_wrong_choice_from_user_input: bool = False,
     wrong_choice_text: str = 'No such option',
   ) -> ButtonNode:
-    loop = asyncio.get_running_loop()
-    future = loop.create_future()
-
     navigator = TelebotPageNavigator(bot)
 
+    future = asyncio.get_running_loop().create_future()
     page = UserChoicePage(
       text = text,
       options = options,

@@ -1,5 +1,5 @@
+from telebot_buttons import *
 from common_utils import CommonUtils
-from switch_button_node import SwitchButtonNode
 
 class TimeOfUseSwitchButtonNode(SwitchButtonNode):
   def __init__(

@@ -4,7 +4,7 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import Dict, Union
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from telebot_async_step_manager import TelebotAsyncStepManager
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants

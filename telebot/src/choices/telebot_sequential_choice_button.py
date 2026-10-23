@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from button_node import ButtonNode
+from telebot_buttons import *
 
 class SequentialChoiceButton(ButtonNode):
   def __init__(

@@ -24,11 +24,9 @@ class SequentialChoices:
       )
       return []
 
-    loop = asyncio.get_running_loop()
-    future = loop.create_future()
-
     navigator = TelebotPageNavigator(bot)
 
+    future = asyncio.get_running_loop().create_future()
     page = SequentialChoicePage(
       text = text,
       root = root,

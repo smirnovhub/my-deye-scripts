@@ -3,9 +3,8 @@ import telebot
 from enum import Enum
 from typing import Any, List, Union
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from time_of_use_data import TimeOfUseSocs
-from break_button_node import BreakButtonNode
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page import TimeOfUsePage
 from telebot_page_navigator import TelebotPageNavigator
@@ -60,11 +59,11 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
       if index > 0 and (index % self._row_length) == 0:
         self.register_button(BreakButtonNode())
 
-      btn = ButtonNode(text = str(value), data = str(value))
+      btn = ButtonNode(text = str(value))
       self.register_button(btn, self._create_soc_handler(value))
 
     self.register_button(BreakButtonNode())
-    self.register_button(ButtonNode("Back"), self._handle_back)
+    self.register_button(BackButtonNode(), self._handle_back)
 
   async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     try:

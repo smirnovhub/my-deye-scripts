@@ -28,7 +28,10 @@ class TelebotWritableRegistersTest2Module(TelebotBaseTestModule):
     - Checks that the server registers are updated according to the sent values.
     - Raises an error if any writable register did not change as expected.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
 
   @property

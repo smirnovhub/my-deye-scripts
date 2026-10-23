@@ -24,11 +24,6 @@ class TelebotProgressMessage:
     self._running: bool = False
     self._animation_task: Optional[asyncio.Task] = None
 
-    try:
-      self._loop = asyncio.get_running_loop()
-    except RuntimeError:
-      self._loop = asyncio.get_event_loop()
-
   async def show(self, chat_id: int, text: str) -> None:
     """
     Show the progress message in the given chat and start animation.
@@ -47,7 +42,7 @@ class TelebotProgressMessage:
     )
 
     # Start animation task instead of thread
-    self._animation_task = self._loop.create_task(self._animate())
+    self._animation_task = asyncio.create_task(self._animate())
 
     # Register next step handler using AsyncStepManager
     TelebotAsyncStepManager.clear_step_handler_by_chat_id(self._message.chat.id)

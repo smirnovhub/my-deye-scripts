@@ -4,12 +4,11 @@ import telebot
 from enum import Enum
 from typing import Union
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from telebot_utils import TelebotUtils
 from button_style import ButtonStyle
 from deye_loggers import DeyeLoggers
 from battery_settings_helper import BatterySettingsHelper
-from break_button_node import BreakButtonNode
 from battery_settings_data import BatterySettingsData
 from battery_settings_page import BatterySettingsPage
 from telebot_page_navigator import TelebotPageNavigator
@@ -50,13 +49,17 @@ class BatterySettingsEditPage(TelebotNavigationPage):
       if val < value:
         style = ButtonStyle.danger
 
-      self._make_buttons(page_type = page, title = page.name, style = style)
+      self._make_buttons(
+        page_type = page,
+        title = page.name,
+        style = style,
+      )
       value = val
 
     if self._need_save():
       self.register_button(ButtonNode("Save"), self._handle_save)
 
-    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+    self.register_button(CancelButtonNode(), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return BatterySettingsHelper.get_data_as_rich_message(
@@ -70,7 +73,11 @@ class BatterySettingsEditPage(TelebotNavigationPage):
     title: str,
     style: ButtonStyle,
   ) -> None:
-    button = ButtonNode(text = f"{self._batt_data.values[page_type]}%", style = style)
+    button = ButtonNode(
+      text = f"{self._batt_data.values[page_type]}%",
+      style = style,
+      key = f"{page_type}",
+    )
     self.register_button(ButtonNode(text = title, style = style), self._create_navigation_handler(page_type))
     self.register_button(button, self._create_navigation_handler(page_type))
     self.register_button(BreakButtonNode())

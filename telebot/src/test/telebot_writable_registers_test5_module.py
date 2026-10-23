@@ -39,7 +39,10 @@ class TelebotWritableRegistersTest5Module(TelebotBaseTestModule):
   This module ensures robust validation for numeric writable registers,
   guaranteeing that the bot prevents any out-of-range assignments.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
     self.registers = DeyeRegisters()
     self.user = TelebotTestUsers().test_user1

@@ -5,7 +5,7 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import List
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from git_helper_async import GitHelperAsync
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
@@ -21,7 +21,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     self,
     bot: AsyncTeleBot,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
     self._git_helper = GitHelperAsync()
     self._update_checker = TelebotLocalUpdateCheckerAsync()
 

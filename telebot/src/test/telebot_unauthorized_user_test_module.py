@@ -27,7 +27,10 @@ class TelebotUnauthorizedUserTestModule(TelebotBaseTestModule):
   This module ensures unauthorized users cannot execute commands and that
   access requests are handled correctly.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
 
   @property

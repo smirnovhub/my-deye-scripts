@@ -2,11 +2,10 @@ import copy
 
 from dataclasses import asdict
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from button_style import ButtonStyle
 from deye_register import DeyeRegister
 from deye_loggers import DeyeLoggers
-from break_button_node import BreakButtonNode
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_utils import TelebotUtils
@@ -58,7 +57,7 @@ class TimeOfUseBottomButtons:
       elif self._need_reset_intervals():
         page.register_button(ButtonNode("Reset times"), self._handle_reset_ask)
 
-      page.register_button(ButtonNode("Cancel"), self._handle_cancel)
+      page.register_button(CancelButtonNode(), self._handle_cancel)
 
     self._ask_data.ask_for_fix_times = False
     self._ask_data.ask_for_reset_times = False

@@ -23,7 +23,7 @@ class TelebotMenuBatteryForecastBase(TelebotMenuItemHandlerAsync):
     command: TelebotMenuItem,
     order_type: BatteryForecastOrderType,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
     self.cmd = command
     self.order_type = order_type
 

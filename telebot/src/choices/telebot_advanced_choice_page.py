@@ -4,8 +4,7 @@ import telebot
 from enum import Enum, auto
 from typing import List, Union
 
-from button_node import ButtonNode
-from break_button_node import BreakButtonNode
+from telebot_buttons import *
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 
@@ -21,6 +20,7 @@ class AdvancedChoicePage(TelebotNavigationPage):
     result_future: asyncio.Future[ButtonNode],
     max_per_row: int = 5,
     max_lines_per_page: int = 5,
+    add_cancel_button: bool = True,
     edit_message_with_user_selection: bool = False,
   ):
     super().__init__()
@@ -30,6 +30,7 @@ class AdvancedChoicePage(TelebotNavigationPage):
     self._result_future = result_future
     self._max_per_row = max_per_row
     self._max_lines_per_page = max_lines_per_page
+    self._add_cancel_button = add_cancel_button
     self._edit_message_with_user_selection = edit_message_with_user_selection
     self._current_page_index = 0
     self._items_per_page = self._max_lines_per_page * self._max_per_row
@@ -98,6 +99,10 @@ class AdvancedChoicePage(TelebotNavigationPage):
       self.register_button(ButtonNode("Next"), self._move_next)
       self.register_button(BreakButtonNode())
 
+    if self._add_cancel_button:
+      self.register_button(BreakButtonNode())
+      self.register_button(CancelButtonNode(), self._handle_cancel)
+
   async def on_user_input(self, navigator: TelebotPageNavigator, text: str) -> None:
     if not self._result_future.done():
       self._result_future.set_result(ButtonNode(text = text))
@@ -120,7 +125,10 @@ class AdvancedChoicePage(TelebotNavigationPage):
     final_text = f"{self._text} {button.text}" if self._edit_message_with_user_selection else self._text
     await navigator.stop(final_text)
 
-  def on_stop(self):
+  async def _handle_cancel(self, navigator: TelebotPageNavigator):
+    await navigator.stop(f"{self._text} cancel")
+
+  async def on_stop(self) -> None:
     if not self._result_future.done():
       self._result_future.cancel()
 

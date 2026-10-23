@@ -46,7 +46,10 @@ class TelebotWritableRegistersTest4Module(TelebotBaseTestModule):
   This module validates that the bot consistently rejects invalid enum inputs
   in both interactive and direct command modes, ensuring reliable user input handling.
   """
-  def __init__(self, bot: TestableTelebot):
+  def __init__(
+    self,
+    bot: TestableTelebot,
+  ):
     super().__init__(bot)
 
   @property

@@ -4,8 +4,7 @@ import telebot
 from enum import Enum, auto
 from typing import List, Union
 
-from button_node import ButtonNode
-from break_button_node import BreakButtonNode
+from telebot_buttons import *
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_sequential_choice_button import SequentialChoiceButton
@@ -51,7 +50,7 @@ class SequentialChoicePage(TelebotNavigationPage):
         self.register_button(BreakButtonNode())
 
     if self._current_node.add_cancel_button:
-      self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+      self.register_button(CancelButtonNode(), self._handle_cancel)
 
   async def _handle_step(self, navigator: TelebotPageNavigator, node: ButtonNode):
     if not isinstance(node, SequentialChoiceButton):
@@ -85,7 +84,7 @@ class SequentialChoicePage(TelebotNavigationPage):
 
     raise RuntimeError("No such option")
 
-  def on_stop(self):
+  async def on_stop(self) -> None:
     if not self._result_future.done():
       self._result_future.cancel()
 

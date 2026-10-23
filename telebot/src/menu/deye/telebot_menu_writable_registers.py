@@ -1,5 +1,4 @@
 import telebot
-import textwrap
 import traceback
 
 from telebot.async_telebot import AsyncTeleBot
@@ -51,27 +50,33 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
       # already have separated features for it
       if register.name in registers_to_skip:
         continue
+
       command_name = self.command.command.format(register.name)
       command_description = self.command.description.format(register.description)
       commands.append(telebot.types.BotCommand(command = command_name, description = command_description))
+
     return commands
 
   def register_handlers(self) -> None:
     registers = DeyeRegisters()
+
     for register in registers.read_write_registers:
-      code = self.get_writable_register_handler(registers, register)
-      exec(code, locals())
+      self._register_writable_register_handler(registers, register)
 
-  def get_writable_register_handler(self, registers: DeyeRegisters, register: DeyeRegister) -> str:
-    return textwrap.dedent('''\
-    from deye_registers import DeyeRegisters
-    @self.bot.message_handler(commands = ['{register_name}'])
-    async def set_{register_name}(message):
-      await self.process_read_write_register_step1(message, registers, '{register_name}', set_{register_name}_step2)
+  def _register_writable_register_handler(
+    self,
+    registers: DeyeRegisters,
+    register: DeyeRegister,
+  ) -> None:
+    register_name = register.name
 
-    async def set_{register_name}_step2(message, message_id: int, registers: DeyeRegisters):
-      await self.process_read_write_register_step2(message, message_id, registers, '{register_name}')
-  ''').format(register_name = register.name)
+    async def step2(message, message_id: int, registers: DeyeRegisters) -> None:
+      await self.process_read_write_register_step2(message, message_id, registers, register_name)
+
+    async def handler(message) -> None:
+      await self.process_read_write_register_step1(message, registers, register_name, step2)
+
+    self.bot.message_handler(commands = [register_name])(handler)
 
   def create_keyboard_for_register(
     self,
@@ -101,8 +106,6 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
   ):
     if not await self.is_authorized(message):
       return
-
-    registers = DeyeRegisters()
 
     register = registers.get_register_by_name(register_name)
     if register is None:

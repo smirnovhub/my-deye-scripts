@@ -1,12 +1,12 @@
 import os
 import re
+
 import telebot
 
 from enum import Enum
 from typing import Optional, Union
 
-from button_node import ButtonNode
-from break_button_node import BreakButtonNode
+from telebot_buttons import *
 from deye_graphs_page import DeyeGraphsPage
 from deye_file_lock import DeyeFileLock
 from deye_file_locker import DeyeFileLocker
@@ -60,8 +60,8 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
     self.register_button(BreakButtonNode())
     self.register_button(ButtonNode("Raw data"), self._handle_raw_data)
     self.register_button(BreakButtonNode())
-    self.register_button(ButtonNode("Back"), self._handle_back)
-    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+    self.register_button(BackButtonNode(), self._handle_back)
+    self.register_button(CancelButtonNode(), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._title} cancel"

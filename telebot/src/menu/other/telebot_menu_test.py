@@ -10,7 +10,7 @@ import datetime
 
 from typing import List, TextIO
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from deye_utils import DeyeUtils
 from common_utils import CommonUtils
 from deye_file_lock import DeyeFileLock
@@ -33,7 +33,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
     self,
     bot: AsyncTeleBot,
   ):
-    super().__init__(bot = bot, )
+    super().__init__(bot)
     self.progress = TelebotProgressMessage(bot)
     lockfile = os.path.join(DeyeFileLock.lock_path, 'teletest.lock')
     self.locker = DeyeFileLocker('teletest', lockfile)

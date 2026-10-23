@@ -5,9 +5,9 @@ class StatisticsPeriod(Enum):
   _description: str
   _date_format: str
 
-  Day = ("Day", "%Y-%m-%d")
-  Month = ("Month", "%Y-%m")
-  Year = ("Year", "%Y")
+  day = ("Day", "%Y-%m-%d")
+  month = ("Month", "%Y-%m")
+  year = ("Year", "%Y")
 
   @property
   def description(self) -> str:

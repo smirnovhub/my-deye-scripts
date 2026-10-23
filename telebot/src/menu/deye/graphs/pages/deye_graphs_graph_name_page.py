@@ -3,9 +3,8 @@ import telebot
 from enum import Enum
 from typing import List, Union
 
-from button_node import ButtonNode
+from telebot_buttons import *
 from deye_graph_data import DeyeGraphData
-from break_button_node import BreakButtonNode
 from deye_graphs_page import DeyeGraphsPage
 from deye_graph_group_data import DeyeGraphGroupData
 from telebot_page_navigator import TelebotPageNavigator
@@ -57,8 +56,8 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
       )
 
     self.register_button(BreakButtonNode())
-    self.register_button(ButtonNode("Back"), self._handle_back)
-    self.register_button(ButtonNode("Cancel"), self._handle_cancel)
+    self.register_button(BackButtonNode(), self._handle_back)
+    self.register_button(CancelButtonNode(), self._handle_cancel)
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return f"{self._title} cancel"

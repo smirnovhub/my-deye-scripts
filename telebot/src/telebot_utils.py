@@ -1,5 +1,6 @@
 import asyncio
 import html
+import io
 import json
 import os
 import signal
@@ -11,14 +12,12 @@ from telebot.async_telebot import AsyncTeleBot
 
 from typing import Any, Dict, List, Optional, Sequence
 
+from telebot_buttons import *
 from env_utils import EnvUtils
-from button_node import ButtonNode
 from button_style import ButtonStyle
 from telebot_constants import TelebotConstants
 
 class TelebotUtils:
-  row_break_str = '!break!'
-
   @staticmethod
   def get_data_dir() -> str:
     log_name = EnvUtils.get_log_name()
@@ -172,7 +171,7 @@ class TelebotUtils:
 
     for button in buttons:
       # Check for row break in either text or data
-      if TelebotUtils.row_break_str in (button.text, button.data):
+      if BreakButtonNode.row_break_str in (button.text, button.data):
         # Commit the current row (if not empty) and start a new one
         if row:
           keyboard.row(*row)
@@ -271,11 +270,21 @@ class TelebotUtils:
       # Collect all tasks except the current monitor task itself
       other_tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
 
-      logging.warning(f"=== ASYNCIO PENDING TASKS MONITOR (TOTAL: {len(other_tasks)}) ===")
+      if other_tasks:
+        header = f"=== ASYNCIO PENDING TASKS (TOTAL: {len(other_tasks)}) ==="
+        separator = "-" * len(header)
+        footer = "=" * len(header)
 
-      for task in other_tasks:
-        logging.warning(f"Task: {task}")
-        task.print_stack()
+        logging.warning(header)
+        for index, task in enumerate(other_tasks, start = 1):
+          if index > 1:
+            logging.warning(separator)
+
+          buf = io.StringIO()
+          task.print_stack(file = buf)
+          logging.warning(f"TASK #{index}: {task}\n{buf.getvalue().strip()}")
+
+        logging.warning(footer)
 
   @staticmethod
   # Simple and safe way for HTML parse_mode

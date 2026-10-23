@@ -1,5 +1,7 @@
 import os
+import time
 import telebot
+import logging
 
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_handler_backends import BaseMiddleware
@@ -21,10 +23,22 @@ class TelebotLoggingMiddleware(BaseMiddleware):
     self._handler = handler
 
   async def pre_process(self, update, data):
-    if isinstance(update, telebot.types.Message):
-      self._handler.log_message_event(update)
-    elif isinstance(update, telebot.types.CallbackQuery):
-      self._handler.log_callback_event(update)
+    start_time = time.perf_counter()
+
+    try:
+      if isinstance(update, telebot.types.Message):
+        self._handler.log_message_event(update)
+      elif isinstance(update, telebot.types.CallbackQuery):
+        self._handler.log_callback_event(update)
+    except Exception as e:
+      logging.error("Error while writing log", exc_info = e)
+
+    # Calculate execution time in milliseconds
+    elapsed_ms = time.perf_counter() - start_time
+
+    # Output to console or system log
+    logging.info(f"Log write took {elapsed_ms:.3f}s")
+
     return None
 
   async def post_process(self, update, data, exception = None):
@@ -47,24 +61,35 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     self.bot.setup_middleware(TelebotLoggingMiddleware(self))
 
   def log_message_event(self, message: telebot.types.Message) -> None:
-    self.log_event(
+    self._log_event(
       user = message.from_user,
       event_type = 'send_message',
       content = repr(message.text),
     )
 
   def log_callback_event(self, call: telebot.types.CallbackQuery) -> None:
-    button = TelebotUtils.get_inline_button_by_data(cast(telebot.types.Message, call.message),
-                                                    call.data) if call.data else None
+    button = TelebotUtils.get_inline_button_by_data(
+      cast(
+        telebot.types.Message,
+        call.message,
+      ),
+      call.data,
+    ) if call.data else None
+
     button_text = button.text if button is not None else 'Unknown'
 
-    self.log_event(
+    self._log_event(
       user = call.from_user,
       event_type = 'press_button',
       content = f'text = {repr(button_text)}, data = {repr(call.data)}',
     )
 
-  def log_event(self, user: Optional[telebot.types.User], event_type: str, content: str):
+  def _log_event(
+    self,
+    user: Optional[telebot.types.User],
+    event_type: str,
+    content: str,
+  ):
     if user is None:
       return
 
@@ -74,14 +99,42 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     name = f'{first_name} {last_name}'.strip() if (first_name or last_name) else 'None'
 
     if self.users.is_user_allowed(user.id):
-      self.log_to_file(self.known_users_messages_path, user.id, name, event_type, content)
+      self._log_to_file(
+        file_path = self.known_users_messages_path,
+        user_id = user.id,
+        user_name = name,
+        type = event_type,
+        message = content,
+      )
+
+      self._trim_file(
+        file_path = self.known_users_messages_path,
+        trim_size = self.max_file_size,
+        user_id = user.id,
+      )
     else:
-      self.log_to_file(self.unknown_users_messages_path, user.id, name, event_type, content)
+      self._log_to_file(
+        file_path = self.unknown_users_messages_path,
+        user_id = user.id,
+        user_name = name,
+        type = event_type,
+        message = content,
+      )
 
-    self.trim_file(self.known_users_messages_path, self.max_file_size)
-    self.trim_file(self.unknown_users_messages_path, self.max_file_size)
+      self._trim_file(
+        file_path = self.unknown_users_messages_path,
+        trim_size = self.max_file_size,
+        user_id = user.id,
+      )
 
-  def log_to_file(self, file_path: str, user_id: int, user_name: str, type: str, message: str):
+  def _log_to_file(
+    self,
+    file_path: str,
+    user_id: int,
+    user_name: str,
+    type: str,
+    message: str,
+  ):
     file_name = os.path.join(file_path, f'{user_id}.txt')
     with open(file_name, "a+", encoding = "utf-8") as f:
       try:
@@ -97,17 +150,26 @@ class TelebotLoggingHandler(TelebotBaseHandler):
       finally:
         DeyeFileLock.flock(f, DeyeFileLock.LOCK_UN)
 
-  def trim_file(self, filename, trim_size):
-    if not os.path.exists(filename):
+  def _trim_file(
+    self,
+    file_path: str,
+    trim_size: int,
+    user_id: int,
+  ):
+    file_name = os.path.join(file_path, f'{user_id}.txt')
+    if not os.path.exists(file_name):
       return
 
-    # Wait while file increases up to 20 percent and then trim
-    max_size = int(trim_size * 1.2)
-    file_size = os.path.getsize(filename)
+    # Wait while file increases up to 30 percent and then trim
+    max_size = int(trim_size * 1.3)
+    file_size = os.path.getsize(file_name)
+
     if file_size <= max_size:
       return # trimming not needed
 
-    with open(filename, "rb+") as f:
+    logging.warning(f"Trimming log file {file_name} from {file_size} to {max_size}")
+
+    with open(file_name, "rb+") as f:
       try:
         # Acquire exclusive lock for writing
         DeyeFileLock.flock(f, DeyeFileLock.LOCK_EX)

@@ -16,6 +16,7 @@ from telebot_menu_time_of_use import TelebotMenuTimeOfUse
 from telebot_users import TelebotUsers
 from telebot_base_handler import TelebotBaseHandler
 from telebot_auth_helper import TelebotAuthHelper
+from telebot_async_step_manager import TelebotAsyncStepManager
 from telebot_menu_item import TelebotMenuItem
 from telebot_logging_handler import TelebotLoggingHandler
 from telebot_menu_item_handler import TelebotMenuItemHandler
@@ -62,6 +63,8 @@ class MyTelebot:
     self.admin_user_id = EnvUtils.get_telegram_admin_user_id()
 
   async def initialize(self):
+    TelebotAsyncStepManager.setup(self.bot)
+
     # Launch the monitoring task in the background loop
     asyncio.create_task(TelebotUtils.monitor_hanging_tasks(300))
 
