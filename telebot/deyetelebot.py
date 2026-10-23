@@ -1,12 +1,10 @@
 import os
 import sys
-import html
 import asyncio
 import logging
 import signal
 import traceback
 
-from typing import Optional
 from pathlib import Path
 
 current_path = Path(__file__).parent.resolve()
@@ -29,12 +27,6 @@ from telebot_utils import TelebotUtils
 from testable_telebot import TestableTelebot
 from telegram_send_message_async import TelegramAsync
 from http_session_singleton_async import HttpSessionSingletonAsync
-from telebot_async_step_manager import TelebotAsyncStepManager
-
-# Simple and safe way for HTML parse_mode
-def escape_html(text: str) -> str:
-  # This replaces &, <, and > with &amp;, &lt;, and &gt;
-  return html.escape(text)
 
 async def main():
   dir_name = TelebotUtils.get_data_dir()
@@ -44,9 +36,6 @@ async def main():
     log_dir = log_dir_name,
     log_file_template = "telebot-{0}.log",
   )
-
-  # Initializing global bot variable for access in shutdown
-  bot: Optional[AsyncTeleBot] = None
 
   async def graceful_shutdown():
     # Log signal receipt
@@ -94,21 +83,19 @@ async def main():
     from env_utils import EnvUtils
 
     if EnvUtils.is_tests_on():
-      token = EnvUtils.get_telegram_bot_api_test_token()
-      bot = TestableTelebot(token)
+      test_token = EnvUtils.get_telegram_bot_api_test_token()
+      test_bot = TestableTelebot(test_token)
 
-      mybot = MyTelebot(
-        bot = bot,
+      test_telebot = MyTelebot(
+        bot = test_bot,
         logger = logger,
       )
 
-      TelebotAsyncStepManager.setup(bot)
-
-      await mybot.initialize()
-      await mybot.run_tests()
+      await test_telebot.initialize()
+      await test_telebot.run_tests()
 
       try:
-        await bot.close_session()
+        await test_bot.close_session()
         await HttpSessionSingletonAsync.close_session()
       except Exception:
         logger.error("Failed to close async session", exc_info = True)
@@ -124,23 +111,22 @@ async def main():
     await TelegramAsync.send_private_telegram_message(
       f'{CommonUtils.clock_face_two_oclock_emoji} Telebot is starting...')
 
-    bot = AsyncTeleBot(token = EnvUtils.get_telegram_bot_api_token())
+    token = EnvUtils.get_telegram_bot_api_token()
+    bot = AsyncTeleBot(token = token)
 
-    mybot = MyTelebot(
+    telebot = MyTelebot(
       bot = bot,
       logger = logger,
     )
 
-    TelebotAsyncStepManager.setup(bot)
-
-    await mybot.initialize()
+    await telebot.initialize()
 
     # Non-blocking infinity polling
     await bot.infinity_polling()
 
   except Exception as e:
     if not EnvUtils.is_tests_on():
-      stack_trace = escape_html(traceback.format_exc()[-2048:])
+      stack_trace = TelebotUtils.escape_html(traceback.format_exc()[-2048:])
       await TelegramAsync.send_private_telegram_message(f"{CommonUtils.large_red_circle_emoji} "
                                                         f"Telebot unexpectedly stopped working:\n"
                                                         f"<code>{stack_trace}</code>")

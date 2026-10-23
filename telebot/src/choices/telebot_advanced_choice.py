@@ -21,9 +21,7 @@ class AdvancedChoice:
   ) -> ButtonNode:
     navigator = TelebotPageNavigator(bot)
 
-    loop = asyncio.get_running_loop()
-    future = loop.create_future()
-
+    future = asyncio.get_running_loop().create_future()
     page = AdvancedChoicePage(
       text = text,
       options = options,

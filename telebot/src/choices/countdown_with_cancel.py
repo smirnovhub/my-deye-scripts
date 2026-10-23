@@ -13,14 +13,12 @@ class CountdownWithCancel:
     text: str,
     seconds: int,
   ) -> bool:
-    loop = asyncio.get_running_loop()
-    future = loop.create_future()
-
     navigator = TelebotPageNavigator(
       bot,
       auto_update_period = timedelta(seconds = 1),
     )
 
+    future = asyncio.get_running_loop().create_future()
     page = CountdownWithCancelPage(
       chat_id = chat_id,
       text = text,

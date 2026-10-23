@@ -39,11 +39,9 @@ class UserChoices:
     accept_wrong_choice_from_user_input: bool = False,
     wrong_choice_text: str = 'No such option',
   ) -> ButtonNode:
-    loop = asyncio.get_running_loop()
-    future = loop.create_future()
-
     navigator = TelebotPageNavigator(bot)
 
+    future = asyncio.get_running_loop().create_future()
     page = UserChoicePage(
       text = text,
       options = options,
