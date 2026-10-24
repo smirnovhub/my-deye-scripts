@@ -1,3 +1,4 @@
+import random
 import time
 import asyncio
 
@@ -91,14 +92,22 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
     else:
       self._registers = cached_registers
 
+    if self._wait_bg_tasks:
+      delay = 0
+    else:
+      delay = random.uniform(0.5, 1.5)
+
+    async def delayed_update() -> None:
+      # Wait for the random delay before updating cache hit rate
+      await asyncio.sleep(delay)
+      await self._update_cache_hit_rate(
+        got_from_cache = cached_registers,
+        got_from_inverter = uncached_registers,
+      )
+
     # Launch the update in the background without blocking the current flow
     if self._can_cache():
-      task = asyncio.create_task(
-        self._update_cache_hit_rate(
-          got_from_cache = cached_registers,
-          got_from_inverter = uncached_registers,
-        ))
-
+      task = asyncio.create_task(delayed_update())
       if self._wait_bg_tasks:
         await task
 
@@ -112,8 +121,8 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
         got_from_cache = sum(item.quantity for item in got_from_cache.values()),
         got_from_inverter = sum(item.quantity for item in got_from_inverter.values()),
       )
-    except Exception:
-      pass
+    except Exception as e:
+      self._log.error(f"Failed to update cache hit rate: {e}", exc_info = True)
 
   async def _read_from_inverter(
     self,
