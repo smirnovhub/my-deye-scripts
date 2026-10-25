@@ -25,11 +25,12 @@ class StatisticsPeriod(Enum):
   def get_date_suffix(self, today: date) -> str:
     return today.strftime(self._date_format)
 
-  def __new__(cls, description: str, date_format: str):
+  def __new__(cls, description: str, date_format: str, save_interval: timedelta):
     obj = object.__new__(cls)
     obj._value_ = cls._next_value()
     obj._date_format = date_format
     obj._description = description
+    obj._save_interval = save_interval
     return obj
 
   @classmethod
