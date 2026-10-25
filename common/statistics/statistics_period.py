@@ -7,8 +7,8 @@ class StatisticsPeriod(Enum):
   _save_interval: timedelta
 
   day = ("Day", "%Y-%m-%d", timedelta(seconds = 0))
-  month = ("Month", "%Y-%m", timedelta(minutes = 3))
-  year = ("Year", "%Y", timedelta(minutes = 5))
+  month = ("Month", "%Y-%m", timedelta(minutes = 5))
+  year = ("Year", "%Y", timedelta(minutes = 15))
 
   @property
   def description(self) -> str:
