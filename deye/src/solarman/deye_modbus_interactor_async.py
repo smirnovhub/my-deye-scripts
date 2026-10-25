@@ -97,12 +97,16 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
     else:
       delay = random.uniform(0.5, 1.5)
 
+    # Create local copies to prevent state mutation before background update
+    cached_snapshot = cached_registers.copy()
+    uncached_snapshot = uncached_registers.copy()
+
     async def delayed_update() -> None:
       # Wait for the random delay before updating cache hit rate
       await asyncio.sleep(delay)
       await self._update_cache_hit_rate(
-        got_from_cache = cached_registers,
-        got_from_inverter = uncached_registers,
+        got_from_cache = cached_snapshot,
+        got_from_inverter = uncached_snapshot,
       )
 
     # Launch the update in the background without blocking the current flow
