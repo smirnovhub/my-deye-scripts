@@ -97,16 +97,15 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
     else:
       delay = random.uniform(0.5, 1.5)
 
-    # Create local copies to prevent state mutation before background update
-    cached_snapshot = cached_registers.copy()
-    uncached_snapshot = uncached_registers.copy()
+    got_from_cache = sum(item.quantity for item in cached_registers.values())
+    got_from_inverter = sum(item.quantity for item in uncached_registers.values())
 
     async def delayed_update() -> None:
       # Wait for the random delay before updating cache hit rate
       await asyncio.sleep(delay)
       await self._update_cache_hit_rate(
-        got_from_cache = cached_snapshot,
-        got_from_inverter = uncached_snapshot,
+        got_from_cache = got_from_cache,
+        got_from_inverter = got_from_inverter,
       )
 
     # Launch the update in the background without blocking the current flow
@@ -117,13 +116,13 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
 
   async def _update_cache_hit_rate(
     self,
-    got_from_cache: Dict[int, DeyeRegisterCacheData],
-    got_from_inverter: Dict[int, DeyeRegisterCacheData],
+    got_from_cache: int,
+    got_from_inverter: int,
   ) -> None:
     try:
       self._cache_hit_rate = await self._cache_manager.update_cache_hit_rate(
-        got_from_cache = sum(item.quantity for item in got_from_cache.values()),
-        got_from_inverter = sum(item.quantity for item in got_from_inverter.values()),
+        got_from_cache = got_from_cache,
+        got_from_inverter = got_from_inverter,
       )
     except Exception as e:
       self._log.error(f"Failed to update cache hit rate: {e}", exc_info = True)
