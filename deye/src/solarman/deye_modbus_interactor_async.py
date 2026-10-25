@@ -93,7 +93,7 @@ class DeyeModbusInteractorAsync(DeyeModbusInteractor):
       self._registers = cached_registers
 
     if self._wait_bg_tasks:
-      delay = 0
+      delay = 0.0
     else:
       delay = random.uniform(0.5, 1.5)
 
