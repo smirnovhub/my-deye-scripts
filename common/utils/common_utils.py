@@ -29,6 +29,8 @@ class CommonUtils:
       log.info("No waiting tasks found")
       return
 
+    log.info(f"Waiting for {len(active_tasks)} task(s)...")
+
     try:
       results = await asyncio.wait_for(
         asyncio.gather(
