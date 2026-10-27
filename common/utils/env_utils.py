@@ -56,31 +56,19 @@ class EnvUtils:
 
   @staticmethod
   def get_deye_repository_name() -> str:
-    val = os.getenv(EnvUtils.DEYE_REPOSITORY_NAME, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_REPOSITORY_NAME}' is not set")
-    return val
+    return EnvUtils._get_required_env(EnvUtils.DEYE_REPOSITORY_NAME)
 
   @staticmethod
   def get_deye_repository_url() -> str:
-    val = os.getenv(EnvUtils.DEYE_REPOSITORY_URL, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_REPOSITORY_URL}' is not set")
-    return val
+    return EnvUtils._get_required_env(EnvUtils.DEYE_REPOSITORY_URL)
 
   @staticmethod
   def get_deye_repository_branch() -> str:
-    val = os.getenv(EnvUtils.DEYE_REPOSITORY_BRANCH, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_REPOSITORY_BRANCH}' is not set")
-    return val
+    return EnvUtils._get_required_env(EnvUtils.DEYE_REPOSITORY_BRANCH)
 
   @staticmethod
   def get_master_logger_host() -> str:
-    val = os.getenv(EnvUtils.DEYE_MASTER_LOGGER_HOST, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_MASTER_LOGGER_HOST}' is not set")
-    return val
+    return EnvUtils._get_required_env(EnvUtils.DEYE_MASTER_LOGGER_HOST)
 
   @staticmethod
   def get_master_logger_serial() -> int:
@@ -108,46 +96,35 @@ class EnvUtils:
 
   @staticmethod
   def get_remote_graph_server_url() -> str:
-    return os.getenv(EnvUtils.REMOTE_GRAPH_SERVER_URL, '').strip()
+    return EnvUtils._get_required_env(EnvUtils.REMOTE_GRAPH_SERVER_URL)
 
   @staticmethod
   def get_mikrotik_repository_name() -> str:
-    val = os.getenv(EnvUtils.MIKROTIK_REPOSITORY_NAME, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.MIKROTIK_REPOSITORY_NAME}' is not set")
-    return val
+    return EnvUtils._get_required_env(EnvUtils.MIKROTIK_REPOSITORY_NAME)
 
   @staticmethod
   def get_mikrotik_repository_url() -> str:
-    val = os.getenv(EnvUtils.MIKROTIK_REPOSITORY_URL, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.MIKROTIK_REPOSITORY_URL}' is not set")
-    return val
+    return EnvUtils._get_required_env(EnvUtils.MIKROTIK_REPOSITORY_URL)
 
   @staticmethod
   def get_mikrotik_repository_branch() -> str:
-    val = os.getenv(EnvUtils.MIKROTIK_REPOSITORY_BRANCH, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.MIKROTIK_REPOSITORY_BRANCH}' is not set")
-    return val
+    return EnvUtils._get_required_env(EnvUtils.MIKROTIK_REPOSITORY_BRANCH)
 
   @staticmethod
   def get_mikrotik_server_url() -> str:
-    return os.getenv(EnvUtils.MIKROTIK_SERVER_URL, '').strip()
+    return EnvUtils._get_required_env(EnvUtils.MIKROTIK_SERVER_URL)
 
   @staticmethod
   def get_scheduler_server_url() -> str:
-    return os.getenv(EnvUtils.SCHEDULER_SERVER_URL, '').strip()
+    return EnvUtils._get_required_env(EnvUtils.SCHEDULER_SERVER_URL)
 
   @staticmethod
   def get_scheduler_server_websocket_url() -> str:
-    return os.getenv(EnvUtils.SCHEDULER_SERVER_WEBSOCKET_URL, '').strip()
+    return EnvUtils._get_required_env(EnvUtils.SCHEDULER_SERVER_WEBSOCKET_URL)
 
   @staticmethod
   def get_telegram_bot_api_token() -> str:
-    val = os.getenv(EnvUtils.TELEGRAM_BOT_API_TOKEN, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.TELEGRAM_BOT_API_TOKEN}' is not set")
+    val = EnvUtils._get_required_env(EnvUtils.TELEGRAM_BOT_API_TOKEN)
 
     if not re.fullmatch(r"^\d+:.+$", val):
       raise RuntimeError(f"Telegram bot API token '{EnvUtils.TELEGRAM_BOT_API_TOKEN}' is invalid")
@@ -156,9 +133,7 @@ class EnvUtils:
 
   @staticmethod
   def get_telegram_admin_user_id() -> int:
-    id = os.getenv(EnvUtils.TELEGRAM_ADMIN_USER_ID, '').strip()
-    if not id:
-      raise RuntimeError(f"Environment variable '{EnvUtils.TELEGRAM_ADMIN_USER_ID}' is not set")
+    id = EnvUtils._get_required_env(EnvUtils.TELEGRAM_ADMIN_USER_ID)
 
     if not re.fullmatch(r"\d+", id):
       raise RuntimeError(f"Telegram admin user id '{EnvUtils.TELEGRAM_ADMIN_USER_ID}' is invalid")
@@ -167,9 +142,7 @@ class EnvUtils:
 
   @staticmethod
   def get_telegram_private_chat_id() -> str:
-    val = os.getenv(EnvUtils.TELEGRAM_PRIVATE_CHAT_ID, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.TELEGRAM_PRIVATE_CHAT_ID}' is not set")
+    val = EnvUtils._get_required_env(EnvUtils.TELEGRAM_PRIVATE_CHAT_ID)
 
     if not re.fullmatch(r"\d+", val):
       raise RuntimeError(f"Telegram private chat id '{EnvUtils.TELEGRAM_PRIVATE_CHAT_ID}' is invalid")
@@ -187,9 +160,7 @@ class EnvUtils:
 
   @staticmethod
   def get_telegram_bot_api_test_token() -> str:
-    val = os.getenv(EnvUtils.TELEGRAM_BOT_API_TEST_TOKEN, '').strip()
-    if not val:
-      raise RuntimeError(f"Environment variable '{EnvUtils.TELEGRAM_BOT_API_TEST_TOKEN}' is not set")
+    val = EnvUtils._get_required_env(EnvUtils.TELEGRAM_BOT_API_TEST_TOKEN)
 
     if not re.fullmatch(r"^\d+:.+$", val):
       raise RuntimeError(f"Telegram bot API token '{EnvUtils.TELEGRAM_BOT_API_TEST_TOKEN}' is invalid")
@@ -198,9 +169,7 @@ class EnvUtils:
 
   @staticmethod
   def get_gps_latitude() -> float:
-    lat = os.getenv(EnvUtils.DEYE_GPS_LATITUDE, '').strip()
-    if not lat:
-      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GPS_LATITUDE}' is not set")
+    lat = EnvUtils._get_required_env(EnvUtils.DEYE_GPS_LATITUDE)
 
     try:
       val = float(lat)
@@ -213,9 +182,7 @@ class EnvUtils:
 
   @staticmethod
   def get_gps_longitude() -> float:
-    lon = os.getenv(EnvUtils.DEYE_GPS_LONGITUDE, '').strip()
-    if not lon:
-      raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GPS_LONGITUDE}' is not set")
+    lon = EnvUtils._get_required_env(EnvUtils.DEYE_GPS_LONGITUDE)
 
     try:
       val = float(lon)
@@ -229,15 +196,15 @@ class EnvUtils:
 
   @staticmethod
   def get_open_weather_map_appid() -> str:
-    return os.getenv(EnvUtils.OPEN_WEATHER_MAP_APPID, '').strip()
+    return EnvUtils._get_required_env(EnvUtils.OPEN_WEATHER_MAP_APPID)
 
   @staticmethod
   def get_ecoflow_access_key() -> str:
-    return os.getenv(EnvUtils.ECOFLOW_ACCESS_KEY, '').strip()
+    return EnvUtils._get_required_env(EnvUtils.ECOFLOW_ACCESS_KEY)
 
   @staticmethod
   def get_ecoflow_secret_key() -> str:
-    return os.getenv(EnvUtils.ECOFLOW_SECRET_KEY, '').strip()
+    return EnvUtils._get_required_env(EnvUtils.ECOFLOW_SECRET_KEY)
 
   @staticmethod
   def get_ecoflow_device_json(num: int) -> str:
@@ -381,3 +348,10 @@ class EnvUtils:
     if not re.fullmatch(r'\d{1,5}', port_num):
       return False
     return 1 <= int(port_num) <= 65535
+
+  @staticmethod
+  def _get_required_env(env_name: str) -> str:
+    val = os.getenv(env_name, '').strip()
+    if not val:
+      raise RuntimeError(f"Environment variable '{env_name}' is not set")
+    return val
