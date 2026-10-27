@@ -198,7 +198,7 @@ class EnvUtils:
 
   @staticmethod
   def get_gps_latitude() -> float:
-    lat = os.getenv(EnvUtils.DEYE_GPS_LATITUDE, '50.45').strip()
+    lat = os.getenv(EnvUtils.DEYE_GPS_LATITUDE, '').strip()
     if not lat:
       raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GPS_LATITUDE}' is not set")
 
@@ -213,7 +213,7 @@ class EnvUtils:
 
   @staticmethod
   def get_gps_longitude() -> float:
-    lon = os.getenv(EnvUtils.DEYE_GPS_LONGITUDE, '30.52').strip()
+    lon = os.getenv(EnvUtils.DEYE_GPS_LONGITUDE, '').strip()
     if not lon:
       raise RuntimeError(f"Environment variable '{EnvUtils.DEYE_GPS_LONGITUDE}' is not set")
 
