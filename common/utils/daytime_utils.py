@@ -66,7 +66,9 @@ class DayTimeUtils:
         bool: True if the sun has risen, False otherwise.
     """
     actual_shift = shift if shift is not None else timedelta()
-    return datetime.now() >= (self.sunrise_time + actual_shift)
+    sunrise_time = self.sunrise_time
+    now = datetime.now(sunrise_time.tzinfo)
+    return now >= (sunrise_time + actual_shift)
 
   def is_sun_set(self, shift: Optional[timedelta] = None) -> bool:
     """
@@ -81,7 +83,9 @@ class DayTimeUtils:
         bool: True if the sun has set, False otherwise.
     """
     actual_shift = shift if shift is not None else timedelta()
-    return datetime.now() >= (self.sunset_time + actual_shift)
+    sunset_time = self.sunset_time
+    now = datetime.now(sunset_time.tzinfo)
+    return now >= (sunset_time + actual_shift)
 
   def is_day_time(
     self,
