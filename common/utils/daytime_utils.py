@@ -10,7 +10,27 @@ class DayTimeUtils:
   and GpsCoordinates for the observer's location.
   """
   def __init__(self, latitude: float, longitude: float):
-    self.sun = Sun(latitude, longitude)
+    self._sun = Sun(latitude, longitude)
+
+  @property
+  def sunrise_time(self) -> datetime:
+    """
+    Get the sunrise time as a datetime object.
+
+    Returns:
+        datetime: The calculated sunrise time.
+    """
+    return self._sun.get_sunrise_time()
+
+  @property
+  def sunset_time(self) -> datetime:
+    """
+    Get the sunset time as a datetime object.
+
+    Returns:
+        datetime: The calculated sunset time.
+    """
+    return self._sun.get_sunset_time()
 
   @property
   def sunrise_timestamp(self) -> float:
@@ -20,7 +40,7 @@ class DayTimeUtils:
     Returns:
         float: Sunrise time as a Unix timestamp.
     """
-    return self.sun.get_sunrise_time().timestamp()
+    return self._sun.get_sunrise_time().timestamp()
 
   @property
   def sunset_timestamp(self) -> float:
@@ -30,7 +50,7 @@ class DayTimeUtils:
     Returns:
         float: Sunset time as a Unix timestamp.
     """
-    return self.sun.get_sunset_time().timestamp()
+    return self._sun.get_sunset_time().timestamp()
 
   def is_sun_risen(self, shift_seconds: float = 0) -> bool:
     """
