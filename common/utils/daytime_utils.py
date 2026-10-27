@@ -1,5 +1,6 @@
 from suntime import Sun
-from datetime import datetime
+from typing import Optional
+from datetime import datetime, timedelta
 
 class DayTimeUtils:
   """
@@ -52,48 +53,54 @@ class DayTimeUtils:
     """
     return self._sun.get_sunset_time().timestamp()
 
-  def is_sun_risen(self, shift_seconds: float = 0) -> bool:
+  def is_sun_risen(self, shift: Optional[timedelta] = None) -> bool:
     """
     Check if the sun has already risen, optionally applying a time shift.
 
     Args:
-        shift_seconds (float): Shift the sunrise time by this many seconds.
+        shift (Optional[timedelta]): Shift the sunrise time by this delta.
             - Positive: sunrise is considered later.
             - Negative: sunrise is considered earlier.
 
     Returns:
         bool: True if the sun has risen, False otherwise.
     """
-    return datetime.now().timestamp() >= (self.sunrise_timestamp + shift_seconds)
+    actual_shift = shift if shift is not None else timedelta()
+    return datetime.now() >= (self.sunrise_time + actual_shift)
 
-  def is_sun_set(self, shift_seconds: float = 0) -> bool:
+  def is_sun_set(self, shift: Optional[timedelta] = None) -> bool:
     """
     Check if the sun has already set, optionally applying a time shift.
 
     Args:
-        shift_seconds (float): Shift the sunset time by this many seconds.
+        shift (Optional[timedelta]): Shift the sunset time by this delta.
             - Positive: sunset is considered later.
             - Negative: sunset is considered earlier.
 
     Returns:
         bool: True if the sun has set, False otherwise.
     """
-    return datetime.now().timestamp() >= (self.sunset_timestamp + shift_seconds)
+    actual_shift = shift if shift is not None else timedelta()
+    return datetime.now() >= (self.sunset_time + actual_shift)
 
-  def is_day_time(self, sunrise_shift_hours: float = 0, sunset_shift_hours: float = 0) -> bool:
+  def is_day_time(
+    self,
+    sunrise_shift: Optional[timedelta] = None,
+    sunset_shift: Optional[timedelta] = None,
+  ) -> bool:
     """
     Determine if it is currently daytime at the GPS location, optionally
     applying shifts to sunrise and sunset times.
 
     Args:
-        sunrise_shift_hours (float): Shift sunrise time by this many hours.
+        sunrise_shift (Optional[timedelta]): Shift sunrise time by this delta.
             - Positive: sunrise considered later.
             - Negative: sunrise considered earlier.
-        sunset_shift_hours (float): Shift sunset time by this many hours.
+        sunset_shift (Optional[timedelta]): Shift sunset time by this delta.
             - Positive: sunset considered later.
             - Negative: sunset considered earlier.
 
     Returns:
         bool: True if it is daytime, False if it is night.
     """
-    return self.is_sun_risen(sunrise_shift_hours * 3600) and not self.is_sun_set(sunset_shift_hours * 3600)
+    return self.is_sun_risen(sunrise_shift) and not self.is_sun_set(sunset_shift)
