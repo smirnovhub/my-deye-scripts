@@ -37,28 +37,28 @@ class DayTimeUtils:
     Check if the sun has already risen, optionally applying a time shift.
 
     Args:
-        shift_seconds (float): Shift the current time by this many seconds.
-            - Positive: check as if the current time is later.
-            - Negative: check as if the current time is earlier.
+        shift_seconds (float): Shift the sunrise time by this many seconds.
+            - Positive: sunrise is considered later.
+            - Negative: sunrise is considered earlier.
 
     Returns:
         bool: True if the sun has risen, False otherwise.
     """
-    return (datetime.now().timestamp() + shift_seconds) >= self.sunrise_timestamp
+    return datetime.now().timestamp() >= (self.sunrise_timestamp + shift_seconds)
 
   def is_sun_set(self, shift_seconds: float = 0) -> bool:
     """
     Check if the sun has already set, optionally applying a time shift.
 
     Args:
-        shift_seconds (float): Shift the current time by this many seconds.
-            - Positive: check as if the current time is later.
-            - Negative: check as if the current time is earlier.
+        shift_seconds (float): Shift the sunset time by this many seconds.
+            - Positive: sunset is considered later.
+            - Negative: sunset is considered earlier.
 
     Returns:
         bool: True if the sun has set, False otherwise.
     """
-    return (datetime.now().timestamp() + shift_seconds) >= self.sunset_timestamp
+    return datetime.now().timestamp() >= (self.sunset_timestamp + shift_seconds)
 
   def is_day_time(self, sunrise_shift_hours: float = 0, sunset_shift_hours: float = 0) -> bool:
     """
