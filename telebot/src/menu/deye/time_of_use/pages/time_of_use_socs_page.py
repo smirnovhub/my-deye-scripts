@@ -80,7 +80,7 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePage.edit)
 
   def _create_soc_handler(self, soc: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -102,7 +102,7 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     else:
       self._tou_socs.values[self._time_of_use_line_index] = soc
 
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePage.edit)
 
   def _generate_values(
     self,

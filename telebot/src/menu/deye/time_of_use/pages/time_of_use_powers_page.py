@@ -79,7 +79,7 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePage.edit)
 
   def _create_power_handler(self, power: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -98,4 +98,4 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     else:
       self._tou_powers.values[self._time_of_use_line_index] = power
 
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePage.edit)

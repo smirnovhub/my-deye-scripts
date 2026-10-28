@@ -97,7 +97,7 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
       )
 
   async def _handle_back(self, navigator: TelebotPageNavigator):
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePage.edit)
 
   def _create_hour_handler(self, hour: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -110,8 +110,11 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     navigator: TelebotPageNavigator,
     hour: int,
   ) -> None:
-    self._tou_times.values[self._time_of_use_line_index].hour = hour
-    await navigator.navigate(self._next_page_type, time_of_use_line_index = self._time_of_use_line_index)
+    await navigator.navigate(
+      self._next_page_type,
+      selected_hour = hour,
+      time_of_use_line_index = self._time_of_use_line_index,
+    )
 
   async def _set_hour_and_minute_and_go_next(
     self,
@@ -121,4 +124,4 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
   ) -> None:
     self._tou_times.values[self._time_of_use_line_index].hour = hour
     self._tou_times.values[self._time_of_use_line_index].minute = minute
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePage.edit)

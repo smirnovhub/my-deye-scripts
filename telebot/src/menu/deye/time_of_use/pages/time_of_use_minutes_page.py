@@ -16,12 +16,15 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     tou_times: TimeOfUseTimes,
     title: str,
     page_type: TimeOfUsePage,
+    prev_page_type: TimeOfUsePage,
   ):
     super().__init__()
     self._tou_times = tou_times
     self._title = title
     self._page_type = page_type
+    self._prev_page_type = prev_page_type
     self._time_of_use_line_index = -1
+    self._selected_hour = -1
 
   @property
   def page_type(self) -> Enum:
@@ -46,6 +49,12 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
 
     TimeOfUseHelper.check_bounds(self._tou_times.values, index)
     self._time_of_use_line_index = index
+
+    selected_hour = kwargs.get("selected_hour")
+    if selected_hour is None:
+      raise RuntimeError("selected_hour not found")
+
+    self._selected_hour = selected_hour
 
   def create_buttons(self) -> None:
     minutes = list(range(0, 60, 5))
@@ -78,7 +87,10 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(
+      self._prev_page_type,
+      time_of_use_line_index = self._time_of_use_line_index,
+    )
 
   def _create_minute_handler(self, minute: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -91,5 +103,6 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     navigator: TelebotPageNavigator,
     minute: int,
   ) -> None:
+    self._tou_times.values[self._time_of_use_line_index].hour = self._selected_hour
     self._tou_times.values[self._time_of_use_line_index].minute = minute
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePage.edit)
