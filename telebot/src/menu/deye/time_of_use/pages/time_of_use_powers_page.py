@@ -40,11 +40,11 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
   def need_user_input(self) -> bool:
     return True
 
-  async def on_navigate(
+  async def on_navigate( # type: ignore[override]
     self,
     navigator: TelebotPageNavigator,
     *,
-    time_of_use_line_index: int,
+    time_of_use_line_index: int
   ) -> None:
     TimeOfUseHelper.check_upper_bounds(self._tou_powers.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index

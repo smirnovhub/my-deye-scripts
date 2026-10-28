@@ -42,7 +42,7 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
   def need_user_input(self) -> bool:
     return True
 
-  async def on_navigate(
+  async def on_navigate( # type: ignore[override]
     self,
     navigator: TelebotPageNavigator,
     *,
