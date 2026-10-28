@@ -5,7 +5,7 @@ from typing import List, Union
 
 from telebot_buttons import *
 from deye_graph_data import DeyeGraphData
-from deye_graphs_page import DeyeGraphsPage
+from deye_graphs_page_type import DeyeGraphsPageType
 from deye_graph_group_data import DeyeGraphGroupData
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
@@ -24,7 +24,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return DeyeGraphsPage.graph_name
+    return DeyeGraphsPageType.graph_name
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -63,7 +63,7 @@ class DeyeGraphsGraphNamePage(TelebotNavigationPage):
     return f"{self._title} cancel"
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(DeyeGraphsPage.group)
+    await navigator.navigate(DeyeGraphsPageType.group)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     await navigator.stop(f"{self._title} cancel")

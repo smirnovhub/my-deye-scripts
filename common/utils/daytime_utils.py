@@ -1,5 +1,6 @@
 from suntime import Sun
-from datetime import datetime
+from typing import Optional
+from datetime import datetime, timedelta
 
 class DayTimeUtils:
   """
@@ -10,7 +11,27 @@ class DayTimeUtils:
   and GpsCoordinates for the observer's location.
   """
   def __init__(self, latitude: float, longitude: float):
-    self.sun = Sun(latitude, longitude)
+    self._sun = Sun(latitude, longitude)
+
+  @property
+  def sunrise_time(self) -> datetime:
+    """
+    Get the sunrise time as a datetime object.
+
+    Returns:
+        datetime: The calculated sunrise time.
+    """
+    return self._sun.get_sunrise_time().astimezone().replace(tzinfo = None)
+
+  @property
+  def sunset_time(self) -> datetime:
+    """
+    Get the sunset time as a datetime object.
+
+    Returns:
+        datetime: The calculated sunset time.
+    """
+    return self._sun.get_sunset_time().astimezone().replace(tzinfo = None)
 
   @property
   def sunrise_timestamp(self) -> float:
@@ -20,7 +41,7 @@ class DayTimeUtils:
     Returns:
         float: Sunrise time as a Unix timestamp.
     """
-    return self.sun.get_sunrise_time().timestamp()
+    return self._sun.get_sunrise_time().timestamp()
 
   @property
   def sunset_timestamp(self) -> float:
@@ -30,50 +51,56 @@ class DayTimeUtils:
     Returns:
         float: Sunset time as a Unix timestamp.
     """
-    return self.sun.get_sunset_time().timestamp()
+    return self._sun.get_sunset_time().timestamp()
 
-  def is_sun_risen(self, shift_seconds: float = 0) -> bool:
+  def is_sun_risen(self, shift: Optional[timedelta] = None) -> bool:
     """
     Check if the sun has already risen, optionally applying a time shift.
 
     Args:
-        shift_seconds (float): Shift the current time by this many seconds.
-            - Positive: check as if the current time is later.
-            - Negative: check as if the current time is earlier.
+        shift (Optional[timedelta]): Shift the sunrise time by this delta.
+            - Positive: sunrise is considered later.
+            - Negative: sunrise is considered earlier.
 
     Returns:
         bool: True if the sun has risen, False otherwise.
     """
-    return (datetime.now().timestamp() + shift_seconds) >= self.sunrise_timestamp
+    actual_shift = shift if shift is not None else timedelta()
+    return datetime.now() >= (self.sunrise_time + actual_shift)
 
-  def is_sun_set(self, shift_seconds: float = 0) -> bool:
+  def is_sun_set(self, shift: Optional[timedelta] = None) -> bool:
     """
     Check if the sun has already set, optionally applying a time shift.
 
     Args:
-        shift_seconds (float): Shift the current time by this many seconds.
-            - Positive: check as if the current time is later.
-            - Negative: check as if the current time is earlier.
+        shift (Optional[timedelta]): Shift the sunset time by this delta.
+            - Positive: sunset is considered later.
+            - Negative: sunset is considered earlier.
 
     Returns:
         bool: True if the sun has set, False otherwise.
     """
-    return (datetime.now().timestamp() + shift_seconds) >= self.sunset_timestamp
+    actual_shift = shift if shift is not None else timedelta()
+    return datetime.now() >= (self.sunset_time + actual_shift)
 
-  def is_day_time(self, sunrise_shift_hours: float = 0, sunset_shift_hours: float = 0) -> bool:
+  def is_day_time(
+    self,
+    sunrise_shift: Optional[timedelta] = None,
+    sunset_shift: Optional[timedelta] = None,
+  ) -> bool:
     """
     Determine if it is currently daytime at the GPS location, optionally
     applying shifts to sunrise and sunset times.
 
     Args:
-        sunrise_shift_hours (float): Shift sunrise time by this many hours.
+        sunrise_shift (Optional[timedelta]): Shift sunrise time by this delta.
             - Positive: sunrise considered later.
             - Negative: sunrise considered earlier.
-        sunset_shift_hours (float): Shift sunset time by this many hours.
+        sunset_shift (Optional[timedelta]): Shift sunset time by this delta.
             - Positive: sunset considered later.
             - Negative: sunset considered earlier.
 
     Returns:
         bool: True if it is daytime, False if it is night.
     """
-    return self.is_sun_risen(sunrise_shift_hours * 3600) and not self.is_sun_set(sunset_shift_hours * 3600)
+    return self.is_sun_risen(sunrise_shift) and not self.is_sun_set(sunset_shift)

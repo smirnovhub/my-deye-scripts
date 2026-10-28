@@ -1,13 +1,14 @@
 from enum import Enum
-from datetime import date
+from datetime import date, timedelta
 
 class StatisticsPeriod(Enum):
   _description: str
   _date_format: str
+  _save_interval: timedelta
 
-  day = ("Day", "%Y-%m-%d")
-  month = ("Month", "%Y-%m")
-  year = ("Year", "%Y")
+  day = ("Day", "%Y-%m-%d", timedelta(seconds = 0))
+  month = ("Month", "%Y-%m", timedelta(minutes = 5))
+  year = ("Year", "%Y", timedelta(minutes = 15))
 
   @property
   def description(self) -> str:
@@ -17,14 +18,19 @@ class StatisticsPeriod(Enum):
   def date_format(self) -> str:
     return self._date_format
 
+  @property
+  def save_interval(self) -> timedelta:
+    return self._save_interval
+
   def get_date_suffix(self, today: date) -> str:
     return today.strftime(self._date_format)
 
-  def __new__(cls, description: str, date_format: str):
+  def __new__(cls, description: str, date_format: str, save_interval: timedelta):
     obj = object.__new__(cls)
     obj._value_ = cls._next_value()
     obj._date_format = date_format
     obj._description = description
+    obj._save_interval = save_interval
     return obj
 
   @classmethod

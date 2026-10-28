@@ -1,59 +1,46 @@
-import copy
 import telebot
 
 from enum import Enum
 from typing import Union
 
-from deye_register import DeyeRegister
-from time_of_use_ask_data import TimeOfUseAskData
+from telebot_buttons import *
+from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from time_of_use_data import TimeOfUseData
-from time_of_use_week_buttons import TimeOfUseWeekButtons
 from telebot_navigation_page import TelebotNavigationPage
-from time_of_use_schedule_buttons import TimeOfUseScheduleButtons
-from time_of_use_bottom_buttons import TimeOfUseBottomButtons
 
 class TimeOfUseMainPage(TelebotNavigationPage):
   def __init__(
     self,
-    tou_register: DeyeRegister,
     tou_data: TimeOfUseData,
   ):
     super().__init__()
-    self._tou_register = tou_register
     self._tou_data = tou_data
-    self._tou_original_data = copy.deepcopy(tou_data)
-    self._ask_data = TimeOfUseAskData()
 
   @property
   def page_type(self) -> Enum:
-    return TimeOfUsePage.main
+    return TimeOfUsePageType.main
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
-    return "Time of Use schedule:"
+    return TimeOfUseHelper.get_time_of_use_as_rich_message(self._tou_data, )
 
   def create_buttons(self) -> None:
-    week_buttons = TimeOfUseWeekButtons(tou_week = self._tou_data.week)
-    schedule_buttons = TimeOfUseScheduleButtons(tou_data = self._tou_data)
+    self.register_button(ButtonNode("Edit"), self._handle_edit)
+    self.register_button(CancelButtonNode(), self._handle_cancel)
 
-    bottom_buttons = TimeOfUseBottomButtons(
-      tou_register = self._tou_register,
-      tou_data = self._tou_data,
-      tou_original_data = self._tou_original_data,
-      ask_data = self._ask_data,
-    )
+  async def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
+    await navigator.navigate(TimeOfUsePageType.edit)
 
-    week_buttons.create_buttons(page = self)
-    schedule_buttons.create_buttons(page = self)
-    bottom_buttons.create_buttons(
-      page = self,
-      can_save = schedule_buttons.is_data_correct,
-    )
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+    await navigator.stop(TimeOfUseHelper.get_time_of_use_as_rich_message(
+      self._tou_data,
+      suffx = "cancel",
+    ))
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return TimeOfUseHelper.get_time_of_use_as_rich_message(
-      self._tou_original_data,
+      self._tou_data,
       suffx = "cancel",
     )

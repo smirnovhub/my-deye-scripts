@@ -1,13 +1,13 @@
 import telebot
 
 from typing import Dict, cast
-from battery_settings_page import BatterySettingsPage
+from battery_settings_page_type import BatterySettingsPageType
 
 class BatterySettingsHelper:
   @staticmethod
   def get_data_as_rich_message(
     title: str,
-    values: Dict[BatterySettingsPage, int],
+    values: Dict[BatterySettingsPageType, int],
   ) -> telebot.types.InputRichMessage:
     rows = []
     for page, value in values.items():

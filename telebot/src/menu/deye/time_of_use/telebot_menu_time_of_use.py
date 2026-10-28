@@ -2,10 +2,11 @@ import telebot
 
 from telebot.async_telebot import AsyncTeleBot
 
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from time_of_use_enable_page import TimeOfUseEnablePage
 from time_of_use_hours_page import TimeOfUseHoursPage
 from time_of_use_main_page import TimeOfUseMainPage
+from time_of_use_edit_page import TimeOfUseEditPage
 from time_of_use_minutes_page import TimeOfUseMinutesPage
 from time_of_use_powers_page import TimeOfUsePowersPage
 from time_of_use_registers import TimeOfUseRegisters
@@ -67,35 +68,38 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
       tou_data = tou_data,
     )
 
-    main_page = TimeOfUseMainPage(
-      tou_register = tou_register,
-      tou_data = tou_data,
-    )
+    main_page = TimeOfUseMainPage(tou_data = tou_data)
 
     navigator.register_pages([
       enable_page,
       main_page,
+      TimeOfUseEditPage(
+        tou_register = tou_register,
+        tou_data = tou_data,
+      ),
       TimeOfUseHoursPage(
         tou_times = tou_data.times,
         title = "Start hour:",
-        page_type = TimeOfUsePage.start_hours,
-        next_page_type = TimeOfUsePage.start_minutes,
+        page_type = TimeOfUsePageType.start_hours,
+        next_page_type = TimeOfUsePageType.start_minutes,
       ),
       TimeOfUseMinutesPage(
         tou_times = tou_data.times,
         title = "Start minute:",
-        page_type = TimeOfUsePage.start_minutes,
+        page_type = TimeOfUsePageType.start_minutes,
+        prev_page_type = TimeOfUsePageType.start_hours,
       ),
       TimeOfUseHoursPage(
         tou_times = tou_data.times,
         title = "End hour:",
-        page_type = TimeOfUsePage.end_hours,
-        next_page_type = TimeOfUsePage.end_minutes,
+        page_type = TimeOfUsePageType.end_hours,
+        next_page_type = TimeOfUsePageType.end_minutes,
       ),
       TimeOfUseMinutesPage(
         tou_times = tou_data.times,
         title = "End minute:",
-        page_type = TimeOfUsePage.end_minutes,
+        page_type = TimeOfUsePageType.end_minutes,
+        prev_page_type = TimeOfUsePageType.end_hours,
       ),
       TimeOfUsePowersPage(tou_powers = tou_data.powers),
       TimeOfUseSocsPage(

@@ -6,7 +6,11 @@ from deye_logger import DeyeLogger
 from pysolarmanv5 import PySolarmanV5Async
 
 class DeyeModbusSolarmanAsync:
-  def __init__(self, logger: DeyeLogger, **kwargs):
+  def __init__(
+    self,
+    logger: DeyeLogger,
+    **kwargs,
+  ):
     self._logger = logger
     self._kwargs = kwargs
     self._log = logging.getLogger()
@@ -54,7 +58,7 @@ class DeyeModbusSolarmanAsync:
         await self._modbus.disconnect()
       except Exception as e:
         if self._verbose:
-          self._log.error(f'{self._logger.name}: error while disconnecting from inverter')
+          self._log.error(f'{self._logger.name}: error while disconnecting from inverter: {e}')
         raise
       finally:
         self._modbus = None

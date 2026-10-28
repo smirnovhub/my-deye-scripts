@@ -3,7 +3,7 @@ from enum import Enum
 from telebot_buttons import *
 from button_style import ButtonStyle
 from time_of_use_data import TimeOfUseData
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from time_of_use_times import TimeOfUseTimes
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
@@ -23,8 +23,8 @@ class TimeOfUseScheduleButtons:
     page.register_button(ButtonNode("Gen"), self._toggle_all_gen)
     page.register_button(ButtonNode("Start"), self._handle_nothing)
     page.register_button(ButtonNode("End"), self._handle_nothing)
-    page.register_button(ButtonNode("Pwr"), self._create_navigation_handler(TimeOfUsePage.powers))
-    page.register_button(ButtonNode("Batt"), self._create_navigation_handler(TimeOfUsePage.socs))
+    page.register_button(ButtonNode("Pwr"), self._create_navigation_handler(TimeOfUsePageType.powers))
+    page.register_button(ButtonNode("Batt"), self._create_navigation_handler(TimeOfUsePageType.socs))
     page.register_button(BreakButtonNode())
 
     charges = self._tou_data.charges.values
@@ -53,10 +53,10 @@ class TimeOfUseScheduleButtons:
 
       page.register_button(grid, self._create_toggle_grid_handler(i))
       page.register_button(gen, self._create_toggle_gen_handler(i))
-      page.register_button(start, self._create_navigation_handler(TimeOfUsePage.start_hours, i))
-      page.register_button(end, self._create_navigation_handler(TimeOfUsePage.end_hours, (i + 1) % count))
-      page.register_button(power, self._create_navigation_handler(TimeOfUsePage.powers, i))
-      page.register_button(soc, self._create_navigation_handler(TimeOfUsePage.socs, i))
+      page.register_button(start, self._create_navigation_handler(TimeOfUsePageType.start_hours, i))
+      page.register_button(end, self._create_navigation_handler(TimeOfUsePageType.end_hours, (i + 1) % count))
+      page.register_button(power, self._create_navigation_handler(TimeOfUsePageType.powers, i))
+      page.register_button(soc, self._create_navigation_handler(TimeOfUsePageType.socs, i))
       page.register_button(BreakButtonNode())
 
   @property

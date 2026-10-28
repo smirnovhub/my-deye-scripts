@@ -15,6 +15,7 @@
     "graphs",
     "locker",
     "statistics",
+    "statistics/printable",
     "utils",
     "websocket"
   ],

@@ -1,12 +1,12 @@
 import telebot
 
 from enum import Enum
-from typing import Any, Union
+from typing import Union
 
 from telebot_buttons import *
 from time_of_use_data import TimeOfUsePowers
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -30,7 +30,7 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return TimeOfUsePage.powers
+    return TimeOfUsePageType.powers
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -40,17 +40,14 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
   def need_user_input(self) -> bool:
     return True
 
-  async def on_navigate(
+  async def on_navigate( # type: ignore[override]
     self,
     navigator: TelebotPageNavigator,
-    **kwargs: Any,
+    *,
+    time_of_use_line_index: int
   ) -> None:
-    index = kwargs.get("time_of_use_line_index")
-    if index is None:
-      raise RuntimeError("time_of_use_line_index not found")
-
-    TimeOfUseHelper.check_upper_bounds(self._tou_powers.values, index)
-    self._time_of_use_line_index = index
+    TimeOfUseHelper.check_upper_bounds(self._tou_powers.values, time_of_use_line_index)
+    self._time_of_use_line_index = time_of_use_line_index
 
   def create_buttons(self) -> None:
     for row_index, row in enumerate(self._values):
@@ -79,7 +76,7 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePageType.edit)
 
   def _create_power_handler(self, power: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -98,4 +95,4 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     else:
       self._tou_powers.values[self._time_of_use_line_index] = power
 
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePageType.edit)

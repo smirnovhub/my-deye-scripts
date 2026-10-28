@@ -1,6 +1,9 @@
+import asyncio
+import logging
 import socket
 
 from typing import Optional
+from logging import Logger
 from urllib.parse import unquote
 
 class CommonUtils:
@@ -13,6 +16,38 @@ class CommonUtils:
   white_heavy_check_mark_emoji = unquote("%e2%9c%85") # ✅
   check_box_with_check_emoji = unquote("%e2%98%91") # ☑️
   nbsp = unquote("%C2%A0")
+
+  @staticmethod
+  async def wait_tasks(timeout: int = 5, logger: Optional[Logger] = None) -> None:
+    log = logger or logging.getLogger()
+
+    # Get all active tasks excluding the current task
+    active_tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+
+    # Wait for all tasks to complete
+    if not active_tasks:
+      log.info("No waiting tasks found")
+      return
+
+    log.info(f"Waiting for {len(active_tasks)} task(s)...")
+
+    try:
+      results = await asyncio.wait_for(
+        asyncio.gather(
+          *active_tasks,
+          return_exceptions = True,
+        ),
+        timeout = timeout,
+      )
+
+      for result in results:
+        if isinstance(result, Exception):
+          # Log the exception captured by gather
+          log.error(f"Task failed: {result}", exc_info = result)
+    except asyncio.TimeoutError:
+      log.warning(f"Timeout {timeout}s occurred while waiting for tasks to complete")
+    else:
+      log.info("All waiting tasks completed")
 
   @staticmethod
   def get_external_ip(host: str = "8.8.8.8", port: int = 53) -> Optional[str]:

@@ -1,12 +1,12 @@
 import telebot
 
 from enum import Enum
-from typing import Any, List, Union
+from typing import List, Union
 
 from telebot_buttons import *
 from time_of_use_data import TimeOfUseSocs
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -32,7 +32,7 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return TimeOfUsePage.socs
+    return TimeOfUsePageType.socs
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -42,17 +42,14 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
   def need_user_input(self) -> bool:
     return True
 
-  async def on_navigate(
+  async def on_navigate( # type: ignore[override]
     self,
     navigator: TelebotPageNavigator,
-    **kwargs: Any,
+    *,
+    time_of_use_line_index: int,
   ) -> None:
-    index = kwargs.get("time_of_use_line_index")
-    if index is None:
-      raise RuntimeError("time_of_use_line_index not found")
-
-    TimeOfUseHelper.check_upper_bounds(self._tou_socs.values, index)
-    self._time_of_use_line_index = index
+    TimeOfUseHelper.check_upper_bounds(self._tou_socs.values, time_of_use_line_index)
+    self._time_of_use_line_index = time_of_use_line_index
 
   def create_buttons(self) -> None:
     for index, value in enumerate(self._values):
@@ -80,7 +77,7 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePageType.edit)
 
   def _create_soc_handler(self, soc: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -102,7 +99,7 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     else:
       self._tou_socs.values[self._time_of_use_line_index] = soc
 
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePageType.edit)
 
   def _generate_values(
     self,

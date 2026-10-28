@@ -1,12 +1,12 @@
 import telebot
 
 from enum import Enum
-from typing import Any, Union
+from typing import Union
 
 from telebot_buttons import *
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_times import TimeOfUseTimes
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -15,13 +15,16 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     self,
     tou_times: TimeOfUseTimes,
     title: str,
-    page_type: TimeOfUsePage,
+    page_type: TimeOfUsePageType,
+    prev_page_type: TimeOfUsePageType,
   ):
     super().__init__()
     self._tou_times = tou_times
     self._title = title
     self._page_type = page_type
+    self._prev_page_type = prev_page_type
     self._time_of_use_line_index = -1
+    self._selected_hour = -1
 
   @property
   def page_type(self) -> Enum:
@@ -35,17 +38,16 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
   def need_user_input(self) -> bool:
     return True
 
-  async def on_navigate(
+  async def on_navigate( # type: ignore[override]
     self,
     navigator: TelebotPageNavigator,
-    **kwargs: Any,
+    *,
+    time_of_use_line_index: int,
+    selected_hour: int,
   ) -> None:
-    index = kwargs.get("time_of_use_line_index")
-    if index is None:
-      raise RuntimeError("time_of_use_line_index not found")
-
-    TimeOfUseHelper.check_bounds(self._tou_times.values, index)
-    self._time_of_use_line_index = index
+    TimeOfUseHelper.check_bounds(self._tou_times.values, time_of_use_line_index)
+    self._time_of_use_line_index = time_of_use_line_index
+    self._selected_hour = selected_hour
 
   def create_buttons(self) -> None:
     minutes = list(range(0, 60, 5))
@@ -78,7 +80,10 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(
+      self._prev_page_type,
+      time_of_use_line_index = self._time_of_use_line_index,
+    )
 
   def _create_minute_handler(self, minute: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -91,5 +96,7 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     navigator: TelebotPageNavigator,
     minute: int,
   ) -> None:
+    TimeOfUseHelper.check_bounds(self._tou_times.values, self._time_of_use_line_index)
+    self._tou_times.values[self._time_of_use_line_index].hour = self._selected_hour
     self._tou_times.values[self._time_of_use_line_index].minute = minute
-    await navigator.navigate(TimeOfUsePage.main)
+    await navigator.navigate(TimeOfUsePageType.edit)
