@@ -40,7 +40,6 @@ class StatisticsHelper:
     self,
     dto: InverterEnergyStatisticsDto,
     holder: Optional[DeyeRegistersHolderAsync] = None,
-    rounding_digits: int = 2,
   ) -> PrintableEnergyStatisticsDto:
     if len(self._loggers.slaves) < 1:
       raise ValueError("Slave inverters not found")
@@ -60,6 +59,7 @@ class StatisticsHelper:
       master_stats.production_pv2 + \
       master_stats.gen_energy
 
+    rounding_digits = 2
     total_kwh_rounded = round(total_kwh, rounding_digits)
 
     def calc_percent(val: float) -> float:
@@ -113,13 +113,13 @@ class StatisticsHelper:
     master_pv2_and_master_gen.label = "Master PV2 + Master Gen"
 
     return PrintableEnergyStatisticsDto(printable_statistics = [
-      total_production.rounded(rounding_digits),
-      master_pv1.rounded(rounding_digits),
-      slave1_pv1.rounded(rounding_digits),
-      master_pv1_and_slave1_pv1.rounded(rounding_digits),
-      master_pv2.rounded(rounding_digits),
-      master_gen.rounded(rounding_digits),
-      master_pv2_and_master_gen.rounded(rounding_digits),
+      total_production,
+      master_pv1,
+      slave1_pv1,
+      master_pv1_and_slave1_pv1,
+      master_pv2,
+      master_gen,
+      master_pv2_and_master_gen,
     ])
 
   async def get_printable_statistics(self, today: date, period: StatisticsPeriod) -> str:

@@ -15,11 +15,3 @@ class PrintableEnergyStatisticsRowDto(DataClassJSONMixin):
       kwh = self.kwh + other.kwh,
       percent = max(0.0, min(100.0, self.percent + other.percent)),
     )
-
-  def rounded(self, digits: int) -> 'PrintableEnergyStatisticsRowDto':
-    return PrintableEnergyStatisticsRowDto(
-      label = self.label,
-      kw = round(self.kw, digits),
-      kwh = round(self.kwh, digits),
-      percent = round(self.percent, digits),
-    )
