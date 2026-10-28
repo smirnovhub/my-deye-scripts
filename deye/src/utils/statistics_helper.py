@@ -18,7 +18,7 @@ class StatisticsHelper:
     self._logger = logger
     self._loggers = DeyeLoggers()
 
-  async def get_production_dto(self, period_date: str) -> InverterEnergyStatisticsDto:
+  async def get_energy_statistics_dto(self, period_date: str) -> InverterEnergyStatisticsDto:
     session = await HttpSessionSingletonAsync.get_session()
     server_url = EnvUtils.get_remote_cache_server_url()
     url = urljoin(server_url, f"/storage/pv-production-{period_date}")
@@ -36,7 +36,7 @@ class StatisticsHelper:
 
       return InverterEnergyStatisticsDto.from_json(payload)
 
-  def get_energy_stats_dto(
+  def get_printable_statistics_dto(
     self,
     dto: InverterEnergyStatisticsDto,
     holder: Optional[DeyeRegistersHolderAsync] = None,
@@ -46,37 +46,40 @@ class StatisticsHelper:
 
     master_stats = dto.energy_statistics.get(self._loggers.master.name)
     slave1 = self._loggers.slaves[0]
-    slave_stats = dto.energy_statistics.get(slave1.name)
+    slave1_stats = dto.energy_statistics.get(slave1.name)
 
     if master_stats is None:
       raise ValueError("Master statistics not found")
 
-    if slave_stats is None:
+    if slave1_stats is None:
       raise ValueError("Slave statistics not found")
 
     master_pv1_kw = 0.0
+    slave1_pv1_kw = 0.0
+    master_pv1_and_slave1_pv1_kw = 0.0
     master_pv2_kw = 0.0
     master_gen_kw = 0.0
-    slave_pv1_kw = 0.0
     master_pv2_and_master_gen_kw = 0.0
     total_kw = 0.0
 
     master_pv1_kwh = round(master_stats.production_pv1, 2)
+    slave1_pv1_kwh = round(slave1_stats.production_pv1, 2)
+    master_pv1_and_slave1_pv1_kwh = round(master_stats.production_pv1 + slave1_stats.production_pv1, 2)
     master_pv2_kwh = round(master_stats.production_pv2, 2)
     master_gen_kwh = round(master_stats.gen_energy, 2)
-    slave_pv1_kwh = round(slave_stats.production_pv1, 2)
     master_pv2_and_master_gen_kwh = round(master_stats.production_pv2 + master_stats.gen_energy, 2)
 
     total_kwh = round(
         master_stats.production_pv1 + \
+        slave1_stats.production_pv1 + \
         master_stats.production_pv2 + \
-        master_stats.gen_energy + \
-        slave_stats.production_pv1, 2)
+        master_stats.gen_energy, 2)
 
     total_kwh_percent = 0.0
     master_pv1_kwh_percent = 0.0
+    slave1_pv1_kwh_percent = 0.0
+    master_pv1_and_slave1_pv1_kwh_percent = 0.0
     master_pv2_kwh_percent = 0.0
-    slave_pv1_kwh_percent = 0.0
     master_gen_kwh_percent = 0.0
     master_pv2_and_master_gen_kwh_percent = 0.0
 
@@ -86,11 +89,15 @@ class StatisticsHelper:
       if master_pv1_kwh > 0:
         master_pv1_kwh_percent = (master_stats.production_pv1 / total_kwh) * 100
 
+      if slave1_pv1_kwh > 0:
+        slave1_pv1_kwh_percent = (slave1_stats.production_pv1 / total_kwh) * 100
+
+      if master_pv1_and_slave1_pv1_kwh > 0:
+        master_pv1_and_slave1_pv1_kwh_percent = (
+          (master_stats.production_pv1 + slave1_stats.production_pv1) / total_kwh) * 100
+
       if master_pv2_kwh > 0:
         master_pv2_kwh_percent = (master_stats.production_pv2 / total_kwh) * 100
-
-      if slave_pv1_kwh > 0:
-        slave_pv1_kwh_percent = (slave_stats.production_pv1 / total_kwh) * 100
 
       if master_gen_kwh > 0:
         master_gen_kwh_percent = (master_stats.gen_energy / total_kwh) * 100
@@ -101,11 +108,12 @@ class StatisticsHelper:
 
     if holder is not None:
       master_pv1_kw = holder.master_registers.pv1_power_register.value / 1000
+      slave1_pv1_kw = holder.all_registers[slave1.name].pv1_power_register.value / 1000
+      master_pv1_and_slave1_pv1_kw = master_pv1_kw + slave1_pv1_kw
       master_pv2_kw = holder.master_registers.pv2_power_register.value / 1000
       master_gen_kw = holder.master_registers.gen_power_register.value / 1000
-      slave_pv1_kw = holder.all_registers[slave1.name].pv1_power_register.value / 1000
       master_pv2_and_master_gen_kw = master_pv2_kw + master_gen_kw
-      total_kw = master_pv1_kw + master_pv2_kw + master_gen_kw + slave_pv1_kw
+      total_kw = master_pv1_kw + slave1_pv1_kw + master_pv2_kw + master_gen_kw
 
     printable_statistics = [
       PrintableEnergyStatisticsRowDto(
@@ -122,9 +130,15 @@ class StatisticsHelper:
       ),
       PrintableEnergyStatisticsRowDto(
         label = "Slave PV1",
-        kw = slave_pv1_kw,
-        kwh = slave_pv1_kwh,
-        percent = slave_pv1_kwh_percent,
+        kw = slave1_pv1_kw,
+        kwh = slave1_pv1_kwh,
+        percent = slave1_pv1_kwh_percent,
+      ),
+      PrintableEnergyStatisticsRowDto(
+        label = "Master PV1 + Slave PV1",
+        kw = master_pv1_and_slave1_pv1_kw,
+        kwh = master_pv1_and_slave1_pv1_kwh,
+        percent = master_pv1_and_slave1_pv1_kwh_percent,
       ),
       PrintableEnergyStatisticsRowDto(
         label = "Master PV2 (South Wall)",
@@ -148,10 +162,10 @@ class StatisticsHelper:
 
     return PrintableEnergyStatisticsDto(printable_statistics = printable_statistics)
 
-  async def get_statistics(self, today: date, period: StatisticsPeriod) -> str:
+  async def get_printable_statistics(self, today: date, period: StatisticsPeriod) -> str:
     period_date = period.get_date_suffix(today)
-    dto = await self.get_production_dto(period_date)
-    stats_dto = self.get_energy_stats_dto(dto)
+    dto = await self.get_energy_statistics_dto(period_date)
+    stats_dto = self.get_printable_statistics_dto(dto)
 
     # Calculate dynamic widths based on actual field values
     label_width = max(len(row.label) for row in stats_dto.printable_statistics)
