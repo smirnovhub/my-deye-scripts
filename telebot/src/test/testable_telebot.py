@@ -55,8 +55,9 @@ class TestableTelebot(AsyncTeleBot):
     return len(self.messages) == 0
 
   def is_messages_contains(self, text: str) -> bool:
+    text_lower = text.lower()
     for message in self.messages:
-      if text.lower() in message.text.lower():
+      if text_lower in message.text:
         return True
     return False
 
@@ -130,7 +131,7 @@ class TestableTelebot(AsyncTeleBot):
 
     reply_markup = kwargs.get("reply_markup")
     reply_markup = reply_markup if isinstance(reply_markup, telebot.types.InlineKeyboardMarkup) else None
-    self.messages.append(MessageTestData(text, reply_markup))
+    self.messages.append(MessageTestData(text.lower(), reply_markup))
 
     return TelebotFakeTestMessage.make(text = text, chat_id = chat_id)
 
