@@ -15,6 +15,7 @@
     "../common/graphs",
     "../common/locker",
     "../common/statistics",
+    "../common/statistics/printable",
     "../common/utils",
     "../common/websocket",
     "src"
