@@ -1,7 +1,7 @@
 import telebot
 
 from enum import Enum
-from typing import Any, Union
+from typing import Union
 
 from telebot_buttons import *
 from time_of_use_data import TimeOfUsePowers
@@ -43,14 +43,11 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
   async def on_navigate(
     self,
     navigator: TelebotPageNavigator,
-    **kwargs: Any,
+    *,
+    time_of_use_line_index: int,
   ) -> None:
-    index = kwargs.get("time_of_use_line_index")
-    if index is None:
-      raise RuntimeError("time_of_use_line_index not found")
-
-    TimeOfUseHelper.check_upper_bounds(self._tou_powers.values, index)
-    self._time_of_use_line_index = index
+    TimeOfUseHelper.check_upper_bounds(self._tou_powers.values, time_of_use_line_index)
+    self._time_of_use_line_index = time_of_use_line_index
 
   def create_buttons(self) -> None:
     for row_index, row in enumerate(self._values):

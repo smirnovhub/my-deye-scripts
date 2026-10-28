@@ -1,7 +1,7 @@
 import telebot
 
 from enum import Enum
-from typing import Any, Union
+from typing import Union
 
 from telebot_buttons import *
 from time_of_use_helper import TimeOfUseHelper
@@ -41,19 +41,12 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
   async def on_navigate(
     self,
     navigator: TelebotPageNavigator,
-    **kwargs: Any,
+    *,
+    time_of_use_line_index: int,
+    selected_hour: int,
   ) -> None:
-    index = kwargs.get("time_of_use_line_index")
-    if index is None:
-      raise RuntimeError("time_of_use_line_index not found")
-
-    TimeOfUseHelper.check_bounds(self._tou_times.values, index)
-    self._time_of_use_line_index = index
-
-    selected_hour = kwargs.get("selected_hour")
-    if selected_hour is None:
-      raise RuntimeError("selected_hour not found")
-
+    TimeOfUseHelper.check_bounds(self._tou_times.values, time_of_use_line_index)
+    self._time_of_use_line_index = time_of_use_line_index
     self._selected_hour = selected_hour
 
   def create_buttons(self) -> None:
@@ -103,6 +96,7 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     navigator: TelebotPageNavigator,
     minute: int,
   ) -> None:
+    TimeOfUseHelper.check_bounds(self._tou_times.values, self._time_of_use_line_index)
     self._tou_times.values[self._time_of_use_line_index].hour = self._selected_hour
     self._tou_times.values[self._time_of_use_line_index].minute = minute
     await navigator.navigate(TimeOfUsePage.edit)
