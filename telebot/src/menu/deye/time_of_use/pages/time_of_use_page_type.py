@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
-class TimeOfUsePage(Enum):
+class TimeOfUsePageType(Enum):
   enable = auto()
   main = auto()
   edit = auto()

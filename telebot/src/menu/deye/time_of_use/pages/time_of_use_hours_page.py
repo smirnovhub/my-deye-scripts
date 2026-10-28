@@ -7,7 +7,7 @@ from typing import Union
 from telebot_buttons import *
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_times import TimeOfUseTimes
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -16,8 +16,8 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     self,
     tou_times: TimeOfUseTimes,
     title: str,
-    page_type: TimeOfUsePage,
-    next_page_type: TimeOfUsePage,
+    page_type: TimeOfUsePageType,
+    next_page_type: TimeOfUsePageType,
   ):
     super().__init__()
     self._tou_times = tou_times
@@ -94,7 +94,7 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
       )
 
   async def _handle_back(self, navigator: TelebotPageNavigator):
-    await navigator.navigate(TimeOfUsePage.edit)
+    await navigator.navigate(TimeOfUsePageType.edit)
 
   def _create_hour_handler(self, hour: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -122,4 +122,4 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     TimeOfUseHelper.check_bounds(self._tou_times.values, self._time_of_use_line_index)
     self._tou_times.values[self._time_of_use_line_index].hour = hour
     self._tou_times.values[self._time_of_use_line_index].minute = minute
-    await navigator.navigate(TimeOfUsePage.edit)
+    await navigator.navigate(TimeOfUsePageType.edit)

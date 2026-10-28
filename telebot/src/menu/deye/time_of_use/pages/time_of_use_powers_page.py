@@ -6,7 +6,7 @@ from typing import Union
 from telebot_buttons import *
 from time_of_use_data import TimeOfUsePowers
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -30,7 +30,7 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return TimeOfUsePage.powers
+    return TimeOfUsePageType.powers
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -76,7 +76,7 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(TimeOfUsePage.edit)
+    await navigator.navigate(TimeOfUsePageType.edit)
 
   def _create_power_handler(self, power: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -95,4 +95,4 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     else:
       self._tou_powers.values[self._time_of_use_line_index] = power
 
-    await navigator.navigate(TimeOfUsePage.edit)
+    await navigator.navigate(TimeOfUsePageType.edit)

@@ -10,7 +10,7 @@ from deye_register import DeyeRegister
 from telebot_utils import TelebotUtils
 from time_of_use_data import TimeOfUseData
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -27,7 +27,7 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return TimeOfUsePage.enable
+    return TimeOfUsePageType.enable
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -59,7 +59,7 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
     except Exception as e:
       await navigator.stop(TelebotUtils.escape_html(str(e)))
     else:
-      await navigator.navigate(TimeOfUsePage.main)
+      await navigator.navigate(TimeOfUsePageType.main)
 
   async def _handle_no(self, navigator: TelebotPageNavigator) -> None:
     await navigator.stop("Time of Use is disabled")

@@ -7,7 +7,7 @@ from typing import Union
 from deye_register import DeyeRegister
 from time_of_use_ask_data import TimeOfUseAskData
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from time_of_use_data import TimeOfUseData
 from time_of_use_week_buttons import TimeOfUseWeekButtons
 from telebot_navigation_page import TelebotNavigationPage
@@ -28,7 +28,7 @@ class TimeOfUseEditPage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return TimeOfUsePage.edit
+    return TimeOfUsePageType.edit
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:

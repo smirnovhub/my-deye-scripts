@@ -6,7 +6,7 @@ from typing import Union
 from telebot_buttons import *
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_page import TimeOfUsePage
+from time_of_use_page_type import TimeOfUsePageType
 from time_of_use_data import TimeOfUseData
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -20,7 +20,7 @@ class TimeOfUseMainPage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return TimeOfUsePage.main
+    return TimeOfUsePageType.main
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -31,7 +31,7 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     self.register_button(CancelButtonNode(), self._handle_cancel)
 
   async def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(TimeOfUsePage.edit)
+    await navigator.navigate(TimeOfUsePageType.edit)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     await navigator.stop(TimeOfUseHelper.get_time_of_use_as_rich_message(
