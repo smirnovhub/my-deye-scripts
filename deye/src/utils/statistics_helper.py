@@ -40,6 +40,7 @@ class StatisticsHelper:
     self,
     dto: InverterEnergyStatisticsDto,
     holder: Optional[DeyeRegistersHolderAsync] = None,
+    rounding_digits: int = 2,
   ) -> PrintableEnergyStatisticsDto:
     if len(self._loggers.slaves) < 1:
       raise ValueError("Slave inverters not found")
@@ -54,23 +55,18 @@ class StatisticsHelper:
     if slave1_stats is None:
       raise ValueError("Slave statistics not found")
 
-    total_kwh = round(
-        master_stats.production_pv1 + \
-        slave1_stats.production_pv1 + \
-        master_stats.production_pv2 + \
-        master_stats.gen_energy, 2)
+    total_kwh = master_stats.production_pv1 + \
+      slave1_stats.production_pv1 + \
+      master_stats.production_pv2 + \
+      master_stats.gen_energy
 
-    total_kwh_percent = 100.0 if total_kwh > 0 else 0.0
+    total_kwh_rounded = round(total_kwh, rounding_digits)
 
     def calc_percent(val: float) -> float:
-      return (val / total_kwh) * 100 if total_kwh > 0 and val > 0 else 0.0
-
-    total_production = PrintableEnergyStatisticsRowDto(
-      label = "Total PV production",
-      kw = 0.0,
-      kwh = total_kwh,
-      percent = total_kwh_percent,
-    )
+      if total_kwh_rounded > 0 and round(val, rounding_digits) > 0:
+        return (val / total_kwh) * 100
+      else:
+        return 0.0
 
     master_pv1 = PrintableEnergyStatisticsRowDto(
       label = "Master PV1",
@@ -105,7 +101,10 @@ class StatisticsHelper:
       slave1_pv1.kw = holder.all_registers[slave1.name].pv1_power_register.value / 1000
       master_pv2.kw = holder.master_registers.pv2_power_register.value / 1000
       master_gen.kw = holder.master_registers.gen_power_register.value / 1000
-      total_production.kw = master_pv1.kw + slave1_pv1.kw + master_pv2.kw + master_gen.kw
+
+    total_production = master_pv1 + slave1_pv1 + master_pv2 + master_gen
+    total_production.label = "Total PV production"
+    total_production.percent = 100.0 if total_kwh_rounded > 0 else 0.0
 
     master_pv1_and_slave1_pv1 = master_pv1 + slave1_pv1
     master_pv1_and_slave1_pv1.label = "Master PV1 + Slave PV1"
@@ -114,13 +113,13 @@ class StatisticsHelper:
     master_pv2_and_master_gen.label = "Master PV2 + Master Gen"
 
     return PrintableEnergyStatisticsDto(printable_statistics = [
-      total_production,
-      master_pv1,
-      slave1_pv1,
-      master_pv1_and_slave1_pv1,
-      master_pv2,
-      master_gen,
-      master_pv2_and_master_gen,
+      total_production.rounded(rounding_digits),
+      master_pv1.rounded(rounding_digits),
+      slave1_pv1.rounded(rounding_digits),
+      master_pv1_and_slave1_pv1.rounded(rounding_digits),
+      master_pv2.rounded(rounding_digits),
+      master_gen.rounded(rounding_digits),
+      master_pv2_and_master_gen.rounded(rounding_digits),
     ])
 
   async def get_printable_statistics(self, today: date, period: StatisticsPeriod) -> str:
