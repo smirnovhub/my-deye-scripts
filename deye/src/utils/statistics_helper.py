@@ -88,11 +88,14 @@ class StatisticsHelper:
         master_pv2_and_master_gen_percent = (
           (master_stats.production_pv2 + master_stats.gen_energy) / total_production) * 100
 
+    width = max(4, len(str(int(total_production))) + 3)
+
     return (
       f"Statistics for {period.description.lower()} {period_date}:\n"
-      f"• Total PV production     : {total_production:.2f} kWh ({total_percent:.0f}%)\n"
-      f"• Master PV1              : {master_pv1:.2f} kWh ({master_pv1_percent:.0f}%)\n"
-      f"• Slave PV1               : {slave_pv1:.2f} kWh ({slave_pv1_percent:.0f}%)\n"
-      f"• Master PV2 (South Wall) : {master_pv2:.2f} kWh ({master_pv2_percent:.0f}%)\n"
-      f"• Master Gen (West Wall)  : {master_gen:.2f} kWh ({master_gen_percent:.0f}%)\n"
-      f"• Master PV2 + Master Gen : {master_pv2_and_master_gen:.2f} kWh ({master_pv2_and_master_gen_percent:.0f}%)")
+      f"• Total PV production     : {total_production:{width}.2f} kWh ({total_percent:.0f}%)\n"
+      f"• Master PV1              : {master_pv1:{width}.2f} kWh ({master_pv1_percent:.0f}%)\n"
+      f"• Slave PV1               : {slave_pv1:{width}.2f} kWh ({slave_pv1_percent:.0f}%)\n"
+      f"• Master PV2 (South Wall) : {master_pv2:{width}.2f} kWh ({master_pv2_percent:.0f}%)\n"
+      f"• Master Gen (West Wall)  : {master_gen:{width}.2f} kWh ({master_gen_percent:.0f}%)\n"
+      f"• Master PV2 + Master Gen : {master_pv2_and_master_gen:{width}.2f} kWh ({master_pv2_and_master_gen_percent:.0f}%)"
+    )
