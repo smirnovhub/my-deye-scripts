@@ -1,6 +1,6 @@
 from enum import Enum
 
-class BatterySettingsPage(Enum):
+class BatterySettingsPageType(Enum):
   # Needed to pass mypy checks
   _name: str
   _title: str

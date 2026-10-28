@@ -7,7 +7,7 @@ from typing import Union
 from telebot_buttons import *
 from battery_settings_helper import BatterySettingsHelper
 from battery_settings_data import BatterySettingsData
-from battery_settings_page import BatterySettingsPage
+from battery_settings_page_type import BatterySettingsPageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 
@@ -23,7 +23,7 @@ class BatterySettingsMainPage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return BatterySettingsPage.main
+    return BatterySettingsPageType.main
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -43,7 +43,7 @@ class BatterySettingsMainPage(TelebotNavigationPage):
     )
 
   async def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(BatterySettingsPage.edit)
+    await navigator.navigate(BatterySettingsPageType.edit)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     await navigator.stop(

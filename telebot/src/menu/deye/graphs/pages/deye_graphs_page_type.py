@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
-class DeyeGraphsPage(Enum):
+class DeyeGraphsPageType(Enum):
   main = auto()
   inverter = auto()
   group = auto()

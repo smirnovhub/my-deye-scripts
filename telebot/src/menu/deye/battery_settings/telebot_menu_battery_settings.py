@@ -10,7 +10,7 @@ from battery_settings_socs_page import BatterySettingsSocsPage
 from battery_settings_main_page import BatterySettingsMainPage
 from battery_settings_edit_page import BatterySettingsEditPage
 from battery_settings_data import BatterySettingsData
-from battery_settings_page import BatterySettingsPage
+from battery_settings_page_type import BatterySettingsPageType
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
@@ -50,14 +50,14 @@ class TelebotMenuBatterySettings(TelebotMenuItemHandlerAsync):
 
     batt_data = BatterySettingsData(
       values = {
-        BatterySettingsPage.shutdown_soc: registers.battery_shutdown_soc_register.value,
-        BatterySettingsPage.low_batt_soc: registers.battery_low_batt_soc_register.value,
-        BatterySettingsPage.restart_soc: registers.battery_restart_soc_register.value,
+        BatterySettingsPageType.shutdown_soc: registers.battery_shutdown_soc_register.value,
+        BatterySettingsPageType.low_batt_soc: registers.battery_low_batt_soc_register.value,
+        BatterySettingsPageType.restart_soc: registers.battery_restart_soc_register.value,
       },
       registers = {
-        BatterySettingsPage.shutdown_soc: registers.battery_shutdown_soc_register,
-        BatterySettingsPage.low_batt_soc: registers.battery_low_batt_soc_register,
-        BatterySettingsPage.restart_soc: registers.battery_restart_soc_register,
+        BatterySettingsPageType.shutdown_soc: registers.battery_shutdown_soc_register,
+        BatterySettingsPageType.low_batt_soc: registers.battery_low_batt_soc_register,
+        BatterySettingsPageType.restart_soc: registers.battery_restart_soc_register,
       },
     )
 

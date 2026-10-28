@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Optional, Union
 
 from telebot_buttons import *
-from deye_graphs_page import DeyeGraphsPage
+from deye_graphs_page_type import DeyeGraphsPageType
 from deye_file_lock import DeyeFileLock
 from deye_file_locker import DeyeFileLocker
 from telebot_page_navigator import TelebotPageNavigator
@@ -37,7 +37,7 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return DeyeGraphsPage.inverter
+    return DeyeGraphsPageType.inverter
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -134,7 +134,7 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
       )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(DeyeGraphsPage.main)
+    await navigator.navigate(DeyeGraphsPageType.main)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     await navigator.stop(f"{self._title} cancel")
@@ -142,7 +142,7 @@ class DeyeGraphsInverterPage(TelebotNavigationPage):
   def _create_navigation_handler(self, inverter: str):
     async def handler(navigator: TelebotPageNavigator) -> None:
       self._provider.set_selected_inverter(inverter)
-      await navigator.navigate(DeyeGraphsPage.group)
+      await navigator.navigate(DeyeGraphsPageType.group)
 
     return handler
 

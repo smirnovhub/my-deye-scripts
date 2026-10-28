@@ -10,7 +10,7 @@ from button_style import ButtonStyle
 from deye_loggers import DeyeLoggers
 from battery_settings_helper import BatterySettingsHelper
 from battery_settings_data import BatterySettingsData
-from battery_settings_page import BatterySettingsPage
+from battery_settings_page_type import BatterySettingsPageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_deye_helper import TelebotDeyeHelper
@@ -31,7 +31,7 @@ class BatterySettingsEditPage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return BatterySettingsPage.edit
+    return BatterySettingsPageType.edit
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -69,7 +69,7 @@ class BatterySettingsEditPage(TelebotNavigationPage):
 
   def _make_buttons(
     self,
-    page_type: BatterySettingsPage,
+    page_type: BatterySettingsPageType,
     title: str,
     style: ButtonStyle,
   ) -> None:

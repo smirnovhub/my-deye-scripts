@@ -2,17 +2,17 @@ from typing import Dict, Tuple
 
 from dataclasses import dataclass
 from deye_register import DeyeRegister
-from battery_settings_page import BatterySettingsPage
+from battery_settings_page_type import BatterySettingsPageType
 
 @dataclass
 class BatterySettingsData:
-  values: Dict[BatterySettingsPage, int]
-  registers: Dict[BatterySettingsPage, DeyeRegister]
+  values: Dict[BatterySettingsPageType, int]
+  registers: Dict[BatterySettingsPageType, DeyeRegister]
 
-  def get_bounds(self, page_type: BatterySettingsPage) -> Tuple[int, int]:
+  def get_bounds(self, page_type: BatterySettingsPageType) -> Tuple[int, int]:
     # Filter: only pages that exist in our values dictionary, in Enum order
     # This ensures we don't try to access missing keys
-    pages = [p for p in BatterySettingsPage if p in self.values]
+    pages = [p for p in BatterySettingsPageType if p in self.values]
 
     if page_type not in pages:
       raise ValueError(f"Page {page_type.name} is not present in values")

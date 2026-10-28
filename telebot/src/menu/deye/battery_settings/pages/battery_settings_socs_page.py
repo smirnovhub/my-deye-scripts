@@ -7,12 +7,12 @@ from telebot_buttons import *
 from battery_settings_data import BatterySettingsData
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
-from battery_settings_page import BatterySettingsPage
+from battery_settings_page_type import BatterySettingsPageType
 
 class BatterySettingsSocsPage(TelebotNavigationPage):
   def __init__(
     self,
-    page_type: BatterySettingsPage,
+    page_type: BatterySettingsPageType,
     batt_data: BatterySettingsData,
   ):
     super().__init__()
@@ -68,7 +68,7 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
     )
 
   async def _handle_back(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.navigate(BatterySettingsPage.edit)
+    await navigator.navigate(BatterySettingsPageType.edit)
 
   def _create_soc_handler(self, soc: int):
     async def handler(navigator: TelebotPageNavigator) -> None:
@@ -85,7 +85,7 @@ class BatterySettingsSocsPage(TelebotNavigationPage):
       raise ValueError(f"{self._page_type.title} value should be from {self._min_value} to {self._max_value}")
 
     self._batt_data.values[self._page_type] = soc
-    await navigator.navigate(BatterySettingsPage.edit)
+    await navigator.navigate(BatterySettingsPageType.edit)
 
   def _generate_values(
     self,

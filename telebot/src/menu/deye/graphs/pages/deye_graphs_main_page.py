@@ -5,7 +5,7 @@ from typing import Union
 from datetime import date, timedelta
 
 from telebot_buttons import *
-from deye_graphs_page import DeyeGraphsPage
+from deye_graphs_page_type import DeyeGraphsPageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
 from deye_graphs_data_provider import DeyeGraphsDataProvider
@@ -22,7 +22,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
 
   @property
   def page_type(self) -> Enum:
-    return DeyeGraphsPage.main
+    return DeyeGraphsPageType.main
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
@@ -36,7 +36,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
       self.register_button(
         ButtonNode("Today"),
         self._create_navigation_handler(
-          target_page = DeyeGraphsPage.inverter,
+          target_page = DeyeGraphsPageType.inverter,
           graph_date = today,
         ),
       )
@@ -45,7 +45,7 @@ class DeyeGraphsMainPage(TelebotNavigationPage):
       self.register_button(
         ButtonNode("Yesterday"),
         self._create_navigation_handler(
-          target_page = DeyeGraphsPage.inverter,
+          target_page = DeyeGraphsPageType.inverter,
           graph_date = yesterday,
         ),
       )
