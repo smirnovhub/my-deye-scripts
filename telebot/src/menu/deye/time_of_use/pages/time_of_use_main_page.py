@@ -24,7 +24,7 @@ class TimeOfUseMainPage(TelebotNavigationPage):
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
-    return TimeOfUseHelper.get_time_of_use_as_rich_message(self._tou_data, )
+    return TimeOfUseHelper.get_time_of_use_as_rich_message(self._tou_data)
 
   def create_buttons(self) -> None:
     self.register_button(ButtonNode("Edit"), self._handle_edit)

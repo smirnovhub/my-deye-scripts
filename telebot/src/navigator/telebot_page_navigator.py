@@ -246,7 +246,7 @@ class TelebotPageNavigator:
 
   async def add_delayed_action(
     self,
-    delay: float,
+    delay: timedelta,
     action: Callable[[], Awaitable[Any]],
   ) -> None:
     """
@@ -254,7 +254,7 @@ class TelebotPageNavigator:
     """
     async def delayed_task_wrapper() -> None:
       try:
-        await asyncio.sleep(delay)
+        await asyncio.sleep(delay.total_seconds())
         await action()
       except asyncio.CancelledError:
         raise
@@ -558,7 +558,7 @@ class TelebotPageNavigator:
       raise RuntimeError("Navigation has not started yet")
 
     if await TelebotUtils.forward_next(self._bot, message):
-      text = main_page.get_goodbye_message()
+      text = current_page.get_goodbye_message()
       await self.stop(text)
     else:
       TelebotAsyncStepManager.register_next_step_handler(

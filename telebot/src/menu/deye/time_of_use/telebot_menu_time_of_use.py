@@ -17,6 +17,7 @@ from telebot_deye_helper import TelebotDeyeHelper
 from time_of_use_data import TimeOfUseData
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
+from time_of_use_undo_page import TimeOfUseUndoPage
 
 class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
   def __init__(
@@ -105,6 +106,10 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
       TimeOfUseSocsPage(
         tou_socs = tou_data.socs,
         minimum_soc = battery_low_batt_soc_register.value - 1,
+      ),
+      TimeOfUseUndoPage(
+        tou_register = tou_register,
+        tou_data = tou_data,
       ),
     ])
 
