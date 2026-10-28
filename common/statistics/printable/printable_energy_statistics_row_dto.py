@@ -7,3 +7,11 @@ class PrintableEnergyStatisticsRowDto(DataClassJSONMixin):
   kw: float
   kwh: float
   percent: float
+
+  def __add__(self, other: 'PrintableEnergyStatisticsRowDto') -> 'PrintableEnergyStatisticsRowDto':
+    return PrintableEnergyStatisticsRowDto(
+      label = "Unlabeled Sum Dto",
+      kw = self.kw + other.kw,
+      kwh = self.kwh + other.kwh,
+      percent = self.percent + other.percent,
+    )

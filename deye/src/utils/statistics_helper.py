@@ -54,113 +54,74 @@ class StatisticsHelper:
     if slave1_stats is None:
       raise ValueError("Slave statistics not found")
 
-    master_pv1_kw = 0.0
-    slave1_pv1_kw = 0.0
-    master_pv1_and_slave1_pv1_kw = 0.0
-    master_pv2_kw = 0.0
-    master_gen_kw = 0.0
-    master_pv2_and_master_gen_kw = 0.0
-    total_kw = 0.0
-
-    master_pv1_kwh = round(master_stats.production_pv1, 2)
-    slave1_pv1_kwh = round(slave1_stats.production_pv1, 2)
-    master_pv1_and_slave1_pv1_kwh = round(master_stats.production_pv1 + slave1_stats.production_pv1, 2)
-    master_pv2_kwh = round(master_stats.production_pv2, 2)
-    master_gen_kwh = round(master_stats.gen_energy, 2)
-    master_pv2_and_master_gen_kwh = round(master_stats.production_pv2 + master_stats.gen_energy, 2)
-
     total_kwh = round(
         master_stats.production_pv1 + \
         slave1_stats.production_pv1 + \
         master_stats.production_pv2 + \
         master_stats.gen_energy, 2)
 
-    total_kwh_percent = 0.0
-    master_pv1_kwh_percent = 0.0
-    slave1_pv1_kwh_percent = 0.0
-    master_pv1_and_slave1_pv1_kwh_percent = 0.0
-    master_pv2_kwh_percent = 0.0
-    master_gen_kwh_percent = 0.0
-    master_pv2_and_master_gen_kwh_percent = 0.0
+    total_kwh_percent = 100.0 if total_kwh > 0 else 0.0
 
-    if total_kwh > 0:
-      total_kwh_percent = 100
+    def calc_percent(val: float) -> float:
+      return (val / total_kwh) * 100 if total_kwh > 0 and val > 0 else 0.0
 
-      if master_pv1_kwh > 0:
-        master_pv1_kwh_percent = (master_stats.production_pv1 / total_kwh) * 100
+    total_production = PrintableEnergyStatisticsRowDto(
+      label = "Total PV production",
+      kw = 0.0,
+      kwh = total_kwh,
+      percent = total_kwh_percent,
+    )
 
-      if slave1_pv1_kwh > 0:
-        slave1_pv1_kwh_percent = (slave1_stats.production_pv1 / total_kwh) * 100
+    master_pv1 = PrintableEnergyStatisticsRowDto(
+      label = "Master PV1",
+      kw = 0.0,
+      kwh = master_stats.production_pv1,
+      percent = calc_percent(master_stats.production_pv1),
+    )
 
-      if master_pv1_and_slave1_pv1_kwh > 0:
-        master_pv1_and_slave1_pv1_kwh_percent = (
-          (master_stats.production_pv1 + slave1_stats.production_pv1) / total_kwh) * 100
+    slave1_pv1 = PrintableEnergyStatisticsRowDto(
+      label = "Slave PV1",
+      kw = 0.0,
+      kwh = slave1_stats.production_pv1,
+      percent = calc_percent(slave1_stats.production_pv1),
+    )
 
-      if master_pv2_kwh > 0:
-        master_pv2_kwh_percent = (master_stats.production_pv2 / total_kwh) * 100
+    master_pv2 = PrintableEnergyStatisticsRowDto(
+      label = "Master PV2 (South Wall)",
+      kw = 0.0,
+      kwh = master_stats.production_pv2,
+      percent = calc_percent(master_stats.production_pv2),
+    )
 
-      if master_gen_kwh > 0:
-        master_gen_kwh_percent = (master_stats.gen_energy / total_kwh) * 100
-
-      if master_pv2_and_master_gen_kwh > 0:
-        master_pv2_and_master_gen_kwh_percent = (
-          (master_stats.production_pv2 + master_stats.gen_energy) / total_kwh) * 100
+    master_gen = PrintableEnergyStatisticsRowDto(
+      label = "Master Gen (West Wall)",
+      kw = 0.0,
+      kwh = master_stats.gen_energy,
+      percent = calc_percent(master_stats.gen_energy),
+    )
 
     if holder is not None:
-      master_pv1_kw = holder.master_registers.pv1_power_register.value / 1000
-      slave1_pv1_kw = holder.all_registers[slave1.name].pv1_power_register.value / 1000
-      master_pv1_and_slave1_pv1_kw = master_pv1_kw + slave1_pv1_kw
-      master_pv2_kw = holder.master_registers.pv2_power_register.value / 1000
-      master_gen_kw = holder.master_registers.gen_power_register.value / 1000
-      master_pv2_and_master_gen_kw = master_pv2_kw + master_gen_kw
-      total_kw = master_pv1_kw + slave1_pv1_kw + master_pv2_kw + master_gen_kw
+      master_pv1.kw = holder.master_registers.pv1_power_register.value / 1000
+      slave1_pv1.kw = holder.all_registers[slave1.name].pv1_power_register.value / 1000
+      master_pv2.kw = holder.master_registers.pv2_power_register.value / 1000
+      master_gen.kw = holder.master_registers.gen_power_register.value / 1000
+      total_production.kw = master_pv1.kw + slave1_pv1.kw + master_pv2.kw + master_gen.kw
 
-    printable_statistics = [
-      PrintableEnergyStatisticsRowDto(
-        label = "Total PV production",
-        kw = total_kw,
-        kwh = total_kwh,
-        percent = total_kwh_percent,
-      ),
-      PrintableEnergyStatisticsRowDto(
-        label = "Master PV1",
-        kw = master_pv1_kw,
-        kwh = master_pv1_kwh,
-        percent = master_pv1_kwh_percent,
-      ),
-      PrintableEnergyStatisticsRowDto(
-        label = "Slave PV1",
-        kw = slave1_pv1_kw,
-        kwh = slave1_pv1_kwh,
-        percent = slave1_pv1_kwh_percent,
-      ),
-      PrintableEnergyStatisticsRowDto(
-        label = "Master PV1 + Slave PV1",
-        kw = master_pv1_and_slave1_pv1_kw,
-        kwh = master_pv1_and_slave1_pv1_kwh,
-        percent = master_pv1_and_slave1_pv1_kwh_percent,
-      ),
-      PrintableEnergyStatisticsRowDto(
-        label = "Master PV2 (South Wall)",
-        kw = master_pv2_kw,
-        kwh = master_pv2_kwh,
-        percent = master_pv2_kwh_percent,
-      ),
-      PrintableEnergyStatisticsRowDto(
-        label = "Master Gen (West Wall)",
-        kw = master_gen_kw,
-        kwh = master_gen_kwh,
-        percent = master_gen_kwh_percent,
-      ),
-      PrintableEnergyStatisticsRowDto(
-        label = "Master PV2 + Master Gen",
-        kw = master_pv2_and_master_gen_kw,
-        kwh = master_pv2_and_master_gen_kwh,
-        percent = master_pv2_and_master_gen_kwh_percent,
-      ),
-    ]
+    master_pv1_and_slave1_pv1 = master_pv1 + slave1_pv1
+    master_pv1_and_slave1_pv1.label = "Master PV1 + Slave PV1"
 
-    return PrintableEnergyStatisticsDto(printable_statistics = printable_statistics)
+    master_pv2_and_master_gen = master_pv2 + master_gen
+    master_pv2_and_master_gen.label = "Master PV2 + Master Gen"
+
+    return PrintableEnergyStatisticsDto(printable_statistics = [
+      total_production,
+      master_pv1,
+      slave1_pv1,
+      master_pv1_and_slave1_pv1,
+      master_pv2,
+      master_gen,
+      master_pv2_and_master_gen,
+    ])
 
   async def get_printable_statistics(self, today: date, period: StatisticsPeriod) -> str:
     period_date = period.get_date_suffix(today)
