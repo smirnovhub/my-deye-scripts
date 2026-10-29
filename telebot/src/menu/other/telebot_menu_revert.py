@@ -109,7 +109,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
     except Exception as e:
       await self.bot.send_message(
         chat_id,
-        f'{str(e)}: trying to reset to HEAD and then stash pop again...',
+        f'{e}: trying to reset to HEAD and then stash pop again...',
       )
       try:
         await self._git_helper.revert_to_revision('HEAD')

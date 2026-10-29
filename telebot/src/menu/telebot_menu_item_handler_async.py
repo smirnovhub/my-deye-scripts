@@ -93,8 +93,8 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        f'Error while checking for updates: {str(e)}',
+        f'Error while checking for updates: {e}',
       )
-      self.logger.info(f'Error while checking for updates: {str(e)}')
+      self.logger.info(f'Error while checking for updates: {e}')
 
     return False
