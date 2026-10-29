@@ -50,13 +50,21 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     self._selected_hour = selected_hour
 
   def create_buttons(self) -> None:
+    old_value = -1
+    if self._time_of_use_line_index >= 0:
+      old_value = self._tou_times.values[self._time_of_use_line_index].minute
+
     minutes = list(range(0, 60, 5))
 
     for i, minute in enumerate(minutes):
       if i > 0 and i % 4 == 0:
         self.register_button(BreakButtonNode())
 
-      btn = ButtonNode(text = f"{minute:02}")
+      style = ButtonStyle.default
+      if minute == old_value:
+        style = ButtonStyle.success
+
+      btn = ButtonNode(text = f"{minute:02}", style = style)
       self.register_button(btn, self._create_minute_handler(minute))
 
     self.register_button(BreakButtonNode())

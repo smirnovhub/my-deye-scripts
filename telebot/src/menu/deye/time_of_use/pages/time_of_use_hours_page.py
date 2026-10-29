@@ -40,21 +40,29 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     return True
 
   async def on_navigate( # type: ignore[override]
-    self,
-    navigator: TelebotPageNavigator,
-    *,
-    time_of_use_line_index: int,
+      self,
+      navigator: TelebotPageNavigator,
+      *,
+      time_of_use_line_index: int,
   ) -> None:
     TimeOfUseHelper.check_bounds(self._tou_times.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
 
   def create_buttons(self) -> None:
-    for i in range(24):
-      if i > 0 and i % 4 == 0:
+    old_value = -1
+    if self._time_of_use_line_index >= 0:
+      old_value = self._tou_times.values[self._time_of_use_line_index].hour
+
+    for hour in range(24):
+      if hour > 0 and hour % 4 == 0:
         self.register_button(BreakButtonNode())
 
-      btn = ButtonNode(text = f"{i:02}")
-      self.register_button(btn, self._create_hour_handler(i))
+      style = ButtonStyle.default
+      if hour == old_value:
+        style = ButtonStyle.success
+
+      btn = ButtonNode(text = f"{hour:02}", style = style)
+      self.register_button(btn, self._create_hour_handler(hour))
 
     self.register_button(BreakButtonNode())
     self.register_button(BackButtonNode(), self._handle_back)

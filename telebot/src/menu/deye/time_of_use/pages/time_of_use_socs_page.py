@@ -4,6 +4,7 @@ from enum import Enum
 from typing import List, Union
 
 from telebot_buttons import *
+from button_style import ButtonStyle
 from time_of_use_data import TimeOfUseSocs
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page_type import TimeOfUsePageType
@@ -20,13 +21,13 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     self._tou_socs = tou_socs
     self._time_of_use_line_index = -1
 
-    self._values = self._generate_values(min_val = minimum_soc)
+    self._socs = self._generate_values(min_val = minimum_soc)
 
-    self._min_val = min(self._values)
-    self._max_val = max(self._values)
+    self._min_soc = min(self._socs)
+    self._max_soc = max(self._socs)
 
-    if minimum_soc > self._min_val:
-      self._min_val = minimum_soc
+    if minimum_soc > self._min_soc:
+      self._min_soc = minimum_soc
 
     self._row_length = 4
 
@@ -43,21 +44,33 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     return True
 
   async def on_navigate( # type: ignore[override]
-    self,
-    navigator: TelebotPageNavigator,
-    *,
-    time_of_use_line_index: int,
+      self,
+      navigator: TelebotPageNavigator,
+      *,
+      time_of_use_line_index: int,
   ) -> None:
     TimeOfUseHelper.check_upper_bounds(self._tou_socs.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
 
   def create_buttons(self) -> None:
-    for index, value in enumerate(self._values):
+    old_value = -1
+    if self._time_of_use_line_index < 0:
+      first_item = self._tou_socs.values[0]
+      if all(x == first_item for x in self._tou_socs.values):
+        old_value = first_item
+    else:
+      old_value = self._tou_socs.values[self._time_of_use_line_index]
+
+    for index, soc in enumerate(self._socs):
       if index > 0 and (index % self._row_length) == 0:
         self.register_button(BreakButtonNode())
 
-      btn = ButtonNode(text = str(value))
-      self.register_button(btn, self._create_soc_handler(value))
+      style = ButtonStyle.default
+      if soc == old_value:
+        style = ButtonStyle.success
+
+      btn = ButtonNode(text = str(soc), style = style)
+      self.register_button(btn, self._create_soc_handler(soc))
 
     self.register_button(BreakButtonNode())
     self.register_button(BackButtonNode(), self._handle_back)
@@ -66,10 +79,10 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     try:
       soc = int(text)
     except Exception:
-      raise ValueError(f"SOC value should be from {self._min_val} to {self._max_val}")
+      raise ValueError(f"SOC value should be from {self._min_soc} to {self._max_soc}")
 
-    if not (self._min_val <= soc <= self._max_val):
-      raise ValueError(f"SOC value should be from {self._min_val} to {self._max_val}")
+    if not (self._min_soc <= soc <= self._max_soc):
+      raise ValueError(f"SOC value should be from {self._min_soc} to {self._max_soc}")
 
     await self._set_soc_and_go_back(
       navigator = navigator,
@@ -90,8 +103,8 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
     navigator: TelebotPageNavigator,
     soc: int,
   ) -> None:
-    if not (self._min_val <= soc <= self._max_val):
-      raise ValueError(f"SOC value should be from {self._min_val} to {self._max_val}")
+    if not (self._min_soc <= soc <= self._max_soc):
+      raise ValueError(f"SOC value should be from {self._min_soc} to {self._max_soc}")
 
     if self._time_of_use_line_index < 0:
       # Replace all elements in the list with the new value
