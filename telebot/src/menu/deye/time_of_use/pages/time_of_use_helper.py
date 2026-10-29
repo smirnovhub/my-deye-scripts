@@ -1,3 +1,5 @@
+import copy
+
 import telebot
 
 from dataclasses import asdict
@@ -47,26 +49,30 @@ class TimeOfUseHelper:
       holder.disconnect()
 
   @staticmethod
-  def clear_unchanged_data(
+  def get_cleared_unchanged_data(
     data_to_clear: TimeOfUseData,
     original_data: TimeOfUseData,
-  ) -> None:
+  ) -> TimeOfUseData:
+    data = copy.deepcopy(data_to_clear)
+
     # Convert parts to dicts for simple comparison
     # Use asdict to compare the entire content, not object references
-    if asdict(data_to_clear.charges) == asdict(original_data.charges):
-      data_to_clear.charges.values = []
+    if asdict(data.charges) == asdict(original_data.charges):
+      data.charges.values = []
 
-    if asdict(data_to_clear.times) == asdict(original_data.times):
-      data_to_clear.times.values = []
+    if asdict(data.times) == asdict(original_data.times):
+      data.times.values = []
 
-    if asdict(data_to_clear.powers) == asdict(original_data.powers):
-      data_to_clear.powers.values = []
+    if asdict(data.powers) == asdict(original_data.powers):
+      data.powers.values = []
 
-    if asdict(data_to_clear.socs) == asdict(original_data.socs):
-      data_to_clear.socs.values = []
+    if asdict(data.socs) == asdict(original_data.socs):
+      data.socs.values = []
 
-    if asdict(data_to_clear.weeks) == asdict(original_data.weeks):
-      data_to_clear.weeks.values = []
+    if asdict(data.weeks) == asdict(original_data.weeks):
+      data.weeks.values = []
+
+    return data
 
   @staticmethod
   def get_time_of_use_as_rich_message(

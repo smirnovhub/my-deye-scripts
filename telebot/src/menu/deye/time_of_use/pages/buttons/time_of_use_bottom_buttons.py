@@ -1,5 +1,3 @@
-import copy
-
 from dataclasses import asdict
 
 from telebot_buttons import *
@@ -68,10 +66,8 @@ class TimeOfUseBottomButtons:
       await navigator.stop(text)
       return
 
-    data = copy.deepcopy(self._tou_data)
-
-    TimeOfUseHelper.clear_unchanged_data(
-      data_to_clear = data,
+    data = TimeOfUseHelper.get_cleared_unchanged_data(
+      data_to_clear = self._tou_data,
       original_data = self._tou_original_data,
     )
 
