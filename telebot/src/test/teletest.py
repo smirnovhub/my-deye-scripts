@@ -14,7 +14,7 @@ from accumulated_info_registers import AccumulatedInfoRegisters
 from slave_info_registers import SlaveInfoRegisters
 from telebot_base_test_module import TelebotBaseTestModule
 from telebot_utils import TelebotUtils
-from telegram_send_message import Telegram
+from telegram_send_message_async import TelegramAsync
 from testable_telebot import TestableTelebot
 from deye_test_helper import DeyeTestHelper
 from solarman_test_server import SolarmanTestServer
@@ -77,9 +77,10 @@ class TeleTest:
       msg = f'An exception occurred while running {type(module).__name__}{info}: {TelebotUtils.escape_html(str(e))}'
       log.info(msg)
       await asyncio.sleep(1)
-      Telegram.send_private_telegram_message(f'{CommonUtils.large_red_circle_emoji} '
-                                             f'<b>Telebot test failed</b> while running '
-                                             f'{type(module).__name__}{info}: {TelebotUtils.escape_html(str(e))}')
+      await TelegramAsync.send_private_telegram_message(
+        f'{CommonUtils.large_red_circle_emoji} '
+        f'<b>Telebot test failed</b> while running '
+        f'{type(module).__name__}{info}: {TelebotUtils.escape_html(str(e))}')
 
   def _clear_data(self, servers: List[SolarmanTestServer], log: logging.Logger):
     self.bot.clear_messages()
