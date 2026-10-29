@@ -167,7 +167,7 @@ class TelebotLoggingHandler(TelebotBaseHandler):
     if file_size <= max_size:
       return # trimming not needed
 
-    logging.warning(f"Trimming log file {file_name} from {file_size} to {max_size}")
+    logging.warning(f"Trimming log file {file_name} from {file_size} to {trim_size}")
 
     with open(file_name, "rb+") as f:
       try:
