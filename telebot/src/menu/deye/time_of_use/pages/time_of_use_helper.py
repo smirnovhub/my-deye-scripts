@@ -97,12 +97,21 @@ class TimeOfUseHelper:
       )
 
     # Header title with enabled status sign
-    header_text = f"{sign(tou_data.week.enabled)} Time of Use schedule:"
+    header_text = "Time of Use schedule:"
     if suffx:
       header_text += f" {suffx}"
 
-    # 1. Days of the week table data
-    days_headers = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    # Days of the week table data
+    days_headers = [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun",
+    ]
+
     days_values = [
       sign(tou_data.week.monday),
       sign(tou_data.week.tuesday),
@@ -123,8 +132,16 @@ class TimeOfUseHelper:
       ) for col_idx, value in enumerate(row_data)
     ] for row_idx, row_data in enumerate(days_rows)]
 
-    # 2. Schedule table data
-    schedule_headers = ["Grid", "Gen", "Start", "End", "Power", "Batt"]
+    # Schedule table data
+    schedule_headers = [
+      "Grid",
+      "Gen",
+      "Start",
+      "End",
+      "Power",
+      "Batt",
+    ]
+
     schedule_rows = [schedule_headers]
 
     charges = tou_data.charges.values
