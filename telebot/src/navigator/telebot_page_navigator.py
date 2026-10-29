@@ -558,9 +558,7 @@ class TelebotPageNavigator:
       raise RuntimeError("Navigation has not started yet")
 
     if await TelebotUtils.forward_next(self._bot, message):
-      text = current_page.get_goodbye_message()
-      if not text:
-        text = main_page.get_goodbye_message()
+      text = current_page.get_goodbye_message() or main_page.get_goodbye_message()
       await self.stop(text)
     else:
       TelebotAsyncStepManager.register_next_step_handler(
