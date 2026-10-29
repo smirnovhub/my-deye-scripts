@@ -5,7 +5,6 @@ import queue
 import struct
 import asyncio
 import logging
-import requests
 
 from pathlib import Path
 from typing import Dict, Optional, Union, List
@@ -247,11 +246,8 @@ class DeyeUtils:
       return DeyeQueueIsEmptyException(f'{message}: Queue is empty (get() timed out)')
     except NoSocketAvailableError as e:
       return DeyeNoSocketAvailableException(f'{message}: {e.__class__.__name__} ({str(e).strip(".")})')
-    except (requests.exceptions.Timeout, asyncio.TimeoutError, TimeoutError):
+    except (asyncio.TimeoutError, TimeoutError):
       return DeyeConnectionErrorException(f'{message}: Connection timed out')
-    except requests.exceptions.ConnectionError as e:
-      text = DeyeUtils.get_exception_text(e)
-      return DeyeConnectionErrorException(f'{message}: Connection error ({text})')
     except OSError as e:
       text = DeyeUtils.get_exception_text(e)
       return DeyeOSErrorException(f'{message}: OS error ({text})')

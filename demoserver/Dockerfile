@@ -25,7 +25,7 @@ RUN apt-get update && \
   echo $TIMEZONE > /etc/timezone
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages six requests
+RUN pip install --no-cache-dir --break-system-packages aiohttp
 
 # Create user without password, with home directory
 RUN useradd -m -u 5555 -s /usr/sbin/nologin $USER_NAME

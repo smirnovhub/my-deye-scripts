@@ -3,7 +3,6 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 from env_utils import EnvUtils
-from telegram_send_message import Telegram
 from http_session_singleton_async import HttpSessionSingletonAsync
 
 class TelegramAsync:
@@ -66,8 +65,13 @@ class TelegramAsync:
     }
 
     session = await HttpSessionSingletonAsync.get_session()
-    async with session.post(Telegram.get_api_url(token), data = payload) as response:
+    async with session.post(TelegramAsync._get_api_url(token), data = payload) as response:
       if response.status != HTTPStatus.OK:
         text = await response.text()
         logger.error(f"Failed to send {message_type} telegram message, "
                      f"chat_id = {chat_id}, status {response.status}: {text}")
+
+  @staticmethod
+  def _get_api_url(token: str) -> str:
+    api_url = "https://api.telegram.org/bot{0}/sendMessage"
+    return api_url.format(token)

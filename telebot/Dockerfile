@@ -31,8 +31,8 @@ RUN apt-get update && \
 
 # Install required Python packages
 RUN pip install --no-cache-dir --break-system-packages \
-  six requests fastapi uvicorn uvloop aiohttp \
-  codespell mypy flake8 types-requests mashumaro websockets
+  fastapi uvicorn uvloop aiohttp mashumaro websockets \
+  codespell mypy flake8 
 
 # Copy some useful health scripts like pids guard, etc.
 COPY --chmod=755 health/*.sh /usr/local/bin/

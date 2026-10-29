@@ -34,7 +34,7 @@ RUN apt-get update && \
   echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages six requests aiohttp
+RUN pip install --no-cache-dir --break-system-packages aiohttp
 
 # Set working directory
 WORKDIR $APP_DIR
