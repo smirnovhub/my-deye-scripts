@@ -10,11 +10,10 @@ from git_helper_async import GitHelperAsync
 from common_utils import CommonUtils
 from telebot_utils import TelebotUtils
 from telebot_menu_item import TelebotMenuItem
-from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
-from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
 from telebot_user_choices import UserChoices
 from telebot_advanced_choice import AdvancedChoice
 from countdown_with_cancel import CountdownWithCancel
+from telebot_menu_item_handler_async import TelebotMenuItemHandlerAsync
 
 class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
   def __init__(
@@ -23,7 +22,6 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
   ):
     super().__init__(bot)
     self._git_helper = GitHelperAsync()
-    self._update_checker = TelebotLocalUpdateCheckerAsync()
 
   @property
   def command(self) -> TelebotMenuItem:
@@ -49,7 +47,7 @@ class TelebotMenuRevert(TelebotMenuItemHandlerAsync):
           f"You are currently on branch '{branch_name}':\n<b>{last_commit}</b>",
           parse_mode = "HTML",
         )
-        await self._update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
+        await self._local_update_checker.check_for_local_updates(self.bot, message.chat.id, force = True)
         return
     except Exception as e:
       await self.bot.send_message(

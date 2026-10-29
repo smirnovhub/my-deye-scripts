@@ -8,12 +8,10 @@ from typing import Optional
 
 from telebot_buttons import *
 from env_utils import EnvUtils
-from deye_utils import DeyeUtils
 from common_utils import CommonUtils
 from git_helper_async import GitHelperAsync
 from telebot_utils import TelebotUtils
 from telebot_constants import TelebotConstants
-from deye_file_with_lock_async import DeyeFileWithLockAsync
 from telebot_user_choices import UserChoices
 from countdown_with_cancel import CountdownWithCancel
 
@@ -26,16 +24,12 @@ class TelebotLocalUpdateCheckerAsync:
 
   File-based locking is used to safely read/write state files.
   """
+  _last_commit_hash: str = ""
+  _last_local_update_ask_time: float = 0
+
   def __init__(self):
     self._git_helper = GitHelperAsync()
     self._logger = logging.getLogger()
-
-    data_dir = TelebotUtils.get_data_dir()
-    self._ask_file_name = f'{data_dir}/last_local_update_ask_time.txt'
-    self._hash_file_name = f'{data_dir}/last_commit_hash.txt'
-
-    DeyeUtils.ensure_dir_and_file_exists(self._ask_file_name)
-    DeyeUtils.ensure_dir_and_file_exists(self._hash_file_name)
 
   async def check_for_local_updates(
     self,
@@ -149,17 +143,8 @@ class TelebotLocalUpdateCheckerAsync:
 
     Returns:
         float: The timestamp in seconds since epoch, or 0 if the file is empty.
-
-    Raises:
-        Exception: If the file cannot be opened or read.
     """
-    async with DeyeFileWithLockAsync(self._ask_file_name, "r") as f:
-      try:
-        str_val = f.readline().strip()
-        return float(str_val) if str_val else 0
-      except Exception:
-        self._logger.info('Error while loading last local update ask time')
-        raise
+    return TelebotLocalUpdateCheckerAsync._last_local_update_ask_time
 
   async def _save_last_local_update_ask_time(self, time: float):
     """
@@ -167,47 +152,23 @@ class TelebotLocalUpdateCheckerAsync:
 
     Args:
         time (float): The timestamp to save, in seconds since epoch.
-
-    Raises:
-        Exception: If the file cannot be opened or written.
     """
-    async with DeyeFileWithLockAsync(self._ask_file_name, "w") as f:
-      try:
-        f.write(str(int(time)))
-      except Exception:
-        self._logger.info('Error while saving last local update ask time')
-        raise
+    TelebotLocalUpdateCheckerAsync._last_local_update_ask_time = time
 
   async def _load_last_commit_hash(self) -> str:
     """
-    Load the last saved commit hash from file.
+    Load the last saved commit hash.
 
     Returns:
         str: The commit hash string.
-
-    Raises:
-        Exception: If the file cannot be opened or read.
     """
-    async with DeyeFileWithLockAsync(self._hash_file_name, "r") as f:
-      try:
-        return str(f.readline().strip())
-      except Exception:
-        self._logger.info('Error while loading last commit hash')
-        raise
+    return TelebotLocalUpdateCheckerAsync._last_commit_hash
 
   async def _save_last_commit_hash(self, hash: str):
     """
-    Save the given commit hash to file.
+    Save the given commit hash.
 
     Args:
         hash (str): The commit hash to save.
-
-    Raises:
-        Exception: If the file cannot be opened or written.
     """
-    async with DeyeFileWithLockAsync(self._hash_file_name, "w") as f:
-      try:
-        f.write(hash)
-      except Exception:
-        self._logger.info('Error while saving last commit hash')
-        raise
+    TelebotLocalUpdateCheckerAsync._last_commit_hash = hash
