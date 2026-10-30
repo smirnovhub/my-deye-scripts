@@ -104,3 +104,9 @@ class DayTimeUtils:
         bool: True if it is daytime, False if it is night.
     """
     return self.is_sun_risen(sunrise_shift) and not self.is_sun_set(sunset_shift)
+
+  def get_sunrise_time(self, at_date: datetime):
+    return self._sun.get_sunrise_time(at_date = at_date).astimezone().replace(tzinfo = None)
+
+  def get_sunset_time(self, at_date: datetime):
+    return self._sun.get_sunset_time(at_date = at_date).astimezone().replace(tzinfo = None)
