@@ -9,6 +9,7 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
   """
   Data transfer object representing the static configuration for current limit
   """
+  max_charge_current: int = 60
   charge_force_coef: float = 2.0
   days_between_full_charge: int = 15
   stop_charge_current: int = 0
