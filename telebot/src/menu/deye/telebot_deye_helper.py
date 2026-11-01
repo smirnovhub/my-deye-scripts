@@ -137,6 +137,7 @@ class TelebotDeyeHelper:
         ['1000', '1500', '2000'],
         ['2500', '3000', '3500'],
         ['4000', '4500', '5000'],
+        ['5500', '6000', '6500'],
       ])
     elif register.name == registers.gen_peak_shaving_power_register.name:
       return TelebotDeyeHelper.build_keyboard_for_register(register, [
