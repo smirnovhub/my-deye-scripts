@@ -8,7 +8,7 @@ class DeyeWebSelectionsConfig:
   def __init__(self):
     registers = DeyeWebConstants.registers
 
-    currents: List[float] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80]
+    currents: List[float] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 80]
 
     self.selections: Dict[str, List[float]] = {
       registers.battery_gen_charge_current_register.name:
