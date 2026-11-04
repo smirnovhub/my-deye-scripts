@@ -6,11 +6,14 @@ import os
 import signal
 import requests
 import telebot
+import traceback
 import logging
 
 from telebot.async_telebot import AsyncTeleBot
 
-from typing import Any, Dict, List, Optional, Sequence
+from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator
+from typing import Any, Dict, List, Optional, Sequence, cast
 
 from telebot_buttons import *
 from env_utils import EnvUtils
@@ -260,6 +263,37 @@ class TelebotUtils:
       asyncio.create_task(bot.process_new_messages([message]))
       return True
     return False
+
+  @staticmethod
+  @asynccontextmanager
+  async def handle_errors_with_details(
+    bot: AsyncTeleBot,
+    chat_id: int,
+    logger: Optional[logging.Logger],
+  ) -> AsyncGenerator[None]:
+    """Context manager to catch exceptions, log them, and send a rich error report."""
+    try:
+      yield
+    except Exception as e:
+      tb_str = traceback.format_exc()
+      log = logger or logging.getLogger()
+      log.error(tb_str)
+
+      error_details = telebot.types.InputRichBlockDetails(
+        summary = cast(telebot.types.RichText, f"Error: {e}"),
+        blocks = [telebot.types.InputRichBlockParagraph(cast(
+          telebot.types.RichText,
+          tb_str[-1024:],
+        ))],
+        is_open = False,
+      )
+
+      rich_msg = telebot.types.InputRichMessage(blocks = [error_details])
+
+      await bot.send_rich_message(
+        chat_id,
+        rich_message = rich_msg,
+      )
 
   @staticmethod
   async def monitor_hanging_tasks(interval: int):
