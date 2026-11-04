@@ -71,16 +71,16 @@ class MyTelebot:
     data_dir = TelebotUtils.get_data_dir()
     DeyeUtils.ensure_dir_exists(data_dir)
 
-    async def print_commands(scope: telebot.types.BotCommandScope, label: str):
+    async def print_commands(scope: telebot.types.BotCommandScope):
       commands = await self.bot.get_my_commands(scope = scope, language_code = None)
-      self.logger.info(f"{label} commands:")
+      self.logger.info(f"{scope.type} commands:")
       for cmd in commands:
         self.logger.info(f"  /{cmd.command} - {cmd.description}")
 
-    await print_commands(telebot.types.BotCommandScopeDefault(), "Default")
-    await print_commands(telebot.types.BotCommandScopeAllPrivateChats(), "AllPrivateChats")
-    await print_commands(telebot.types.BotCommandScopeAllGroupChats(), "AllGroupChats")
-    await print_commands(telebot.types.BotCommandScopeAllChatAdministrators(), "AllChatAdministrators")
+    await print_commands(telebot.types.BotCommandScopeDefault())
+    await print_commands(telebot.types.BotCommandScopeAllPrivateChats())
+    await print_commands(telebot.types.BotCommandScopeAllGroupChats())
+    await print_commands(telebot.types.BotCommandScopeAllChatAdministrators())
 
     try:
       # Save the current commit hash when the bot starts
