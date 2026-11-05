@@ -1,5 +1,5 @@
 from telebot_buttons import *
-from time_of_use_week import TimeOfUseWeek
+from time_of_use_data_holder import TimeOfUseDataHolder
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_switch_button_node import TimeOfUseSwitchButtonNode
@@ -7,10 +7,10 @@ from time_of_use_switch_button_node import TimeOfUseSwitchButtonNode
 class TimeOfUseWeekButtons:
   def __init__(
     self,
-    tou_week: TimeOfUseWeek,
+    tou_data_holder: TimeOfUseDataHolder,
   ):
     super().__init__()
-    self._tou_week = tou_week
+    self._tou_week = tou_data_holder.tou_data.week
 
   def create_buttons(self, page: TelebotNavigationPage) -> None:
     page.register_button(ButtonNode("Mon"), self._toggle_monday)

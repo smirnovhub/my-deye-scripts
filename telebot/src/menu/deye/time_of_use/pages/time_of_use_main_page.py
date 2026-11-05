@@ -5,18 +5,18 @@ from typing import Union
 
 from telebot_buttons import *
 from telebot_page_navigator import TelebotPageNavigator
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page_type import TimeOfUsePageType
-from time_of_use_data import TimeOfUseData
 from telebot_navigation_page import TelebotNavigationPage
 
 class TimeOfUseMainPage(TelebotNavigationPage):
   def __init__(
     self,
-    tou_data: TimeOfUseData,
+    tou_data_holder: TimeOfUseDataHolder,
   ):
     super().__init__()
-    self._tou_data = tou_data
+    self._tou_data_holder = tou_data_holder
 
   @property
   def page_type(self) -> Enum:
@@ -24,7 +24,7 @@ class TimeOfUseMainPage(TelebotNavigationPage):
 
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
-    return TimeOfUseHelper.get_time_of_use_as_rich_message(self._tou_data)
+    return TimeOfUseHelper.get_time_of_use_as_rich_message(self._tou_data_holder.tou_data)
 
   def create_buttons(self) -> None:
     self.register_button(ButtonNode("Edit"), self._handle_edit)
@@ -34,13 +34,14 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     await navigator.navigate(TimeOfUsePageType.edit)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
-    await navigator.stop(TimeOfUseHelper.get_time_of_use_as_rich_message(
-      self._tou_data,
-      suffx = "cancel",
-    ))
+    await navigator.stop(
+      TimeOfUseHelper.get_time_of_use_as_rich_message(
+        self._tou_data_holder.tou_data,
+        suffx = "cancel",
+      ))
 
   def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
     return TimeOfUseHelper.get_time_of_use_as_rich_message(
-      self._tou_data,
+      self._tou_data_holder.tou_data,
       suffx = "cancel",
     )

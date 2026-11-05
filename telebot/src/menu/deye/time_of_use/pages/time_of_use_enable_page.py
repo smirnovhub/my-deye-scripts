@@ -8,7 +8,7 @@ from telebot_buttons import *
 from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from telebot_utils import TelebotUtils
-from time_of_use_data import TimeOfUseData
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
@@ -18,11 +18,11 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
   def __init__(
     self,
     tou_register: DeyeRegister,
-    tou_data: TimeOfUseData,
+    tou_data_holder: TimeOfUseDataHolder,
   ):
     super().__init__()
     self._tou_register = tou_register
-    self._tou_data = tou_data
+    self._tou_data_holder = tou_data_holder
     self._loggers = DeyeLoggers()
 
   @property
@@ -41,10 +41,10 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
 
   async def _handle_yes(self, navigator: TelebotPageNavigator) -> None:
     # Enable Time of Use
-    self._tou_data.week.enabled = True
+    self._tou_data_holder.tou_data.week.enabled = True
 
     # Don't write unnecessary data
-    data = copy.deepcopy(self._tou_data)
+    data = copy.deepcopy(self._tou_data_holder.tou_data)
     data.charges.values.clear()
     data.times.values.clear()
     data.powers.values.clear()
@@ -56,6 +56,7 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
         master_logger = self._loggers.master,
         tou_data = data,
       )
+      self._tou_data_holder.actualize()
     except Exception as e:
       await navigator.stop(TelebotUtils.escape_html(str(e)))
     else:

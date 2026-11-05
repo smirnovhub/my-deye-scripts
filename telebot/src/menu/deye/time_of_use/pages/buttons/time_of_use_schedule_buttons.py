@@ -2,7 +2,7 @@ from enum import Enum
 
 from telebot_buttons import *
 from button_style import ButtonStyle
-from time_of_use_data import TimeOfUseData
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_page_type import TimeOfUsePageType
 from time_of_use_times import TimeOfUseTimes
 from telebot_navigation_page import TelebotNavigationPage
@@ -12,10 +12,10 @@ from time_of_use_switch_button_node import TimeOfUseSwitchButtonNode
 class TimeOfUseScheduleButtons:
   def __init__(
     self,
-    tou_data: TimeOfUseData,
+    tou_data_holder: TimeOfUseDataHolder,
   ):
     super().__init__()
-    self._tou_data = tou_data
+    self._tou_data = tou_data_holder.tou_data
     self._is_data_correct = True
 
   def create_buttons(self, page: TelebotNavigationPage) -> None:

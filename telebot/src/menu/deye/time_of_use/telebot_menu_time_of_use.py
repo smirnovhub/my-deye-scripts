@@ -2,6 +2,7 @@ import telebot
 
 from telebot.async_telebot import AsyncTeleBot
 
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_page_type import TimeOfUsePageType
 from time_of_use_enable_page import TimeOfUseEnablePage
 from time_of_use_hours_page import TimeOfUseHoursPage
@@ -63,20 +64,21 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
       return
 
     navigator = TelebotPageNavigator(self.bot)
+    tou_data_holder = TimeOfUseDataHolder(tou_data)
 
     enable_page = TimeOfUseEnablePage(
       tou_register = tou_register,
-      tou_data = tou_data,
+      tou_data_holder = tou_data_holder,
     )
 
-    main_page = TimeOfUseMainPage(tou_data = tou_data)
+    main_page = TimeOfUseMainPage(tou_data_holder)
 
     navigator.register_pages([
       enable_page,
       main_page,
       TimeOfUseEditPage(
         tou_register = tou_register,
-        tou_data = tou_data,
+        tou_data_holder = tou_data_holder,
       ),
       TimeOfUseHoursPage(
         tou_times = tou_data.times,
@@ -109,7 +111,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
       ),
       TimeOfUseUndoPage(
         tou_register = tou_register,
-        tou_data = tou_data,
+        tou_data_holder = tou_data_holder,
       ),
     ])
 
