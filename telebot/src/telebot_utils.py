@@ -8,15 +8,17 @@ import requests
 import telebot
 import traceback
 import logging
+import zipfile
 
 from telebot.async_telebot import AsyncTeleBot
 
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
-from typing import Any, Dict, List, Optional, Sequence, cast
+from typing import Any, Dict, List, Optional, Sequence
 
 from telebot_buttons import *
 from env_utils import EnvUtils
+from common_utils import CommonUtils
 from button_style import ButtonStyle
 from telebot_constants import TelebotConstants
 
@@ -270,8 +272,8 @@ class TelebotUtils:
     bot: AsyncTeleBot,
     chat_id: int,
     logger: Optional[logging.Logger],
-  ) -> AsyncGenerator[None]:
-    """Context manager to catch exceptions, log them, and send a rich error report."""
+  ) -> AsyncGenerator[None, None]:
+    """Context manager to catch exceptions, log them, and send a rich error report with an attached zip archive."""
     try:
       yield
     except Exception as e:
@@ -279,20 +281,32 @@ class TelebotUtils:
       log = logger or logging.getLogger()
       log.error(tb_str)
 
-      error_details = telebot.types.InputRichBlockDetails(
-        summary = cast(telebot.types.RichText, f"Error: {e}"),
-        blocks = [telebot.types.InputRichBlockParagraph(cast(
-          telebot.types.RichText,
-          tb_str[-1024:],
-        ))],
-        is_open = False,
+      # Create an in-memory zip archive containing the full traceback
+      zip_buffer = io.BytesIO()
+
+      with zipfile.ZipFile(
+          zip_buffer,
+          "w",
+          zipfile.ZIP_DEFLATED,
+      ) as zip_file:
+        zip_file.writestr("stacktrace.txt", tb_str)
+
+      zip_buffer.seek(0)
+
+      # Wrap the buffer into InputFile for Telegram transmission
+      document = telebot.types.InputFile(
+        file = zip_buffer,
+        file_name = "stacktrace.zip",
       )
 
-      rich_msg = telebot.types.InputRichMessage(blocks = [error_details])
+      exc_str = str(e).strip()
+      title = exc_str if exc_str else "An error occurred"
 
-      await bot.send_rich_message(
-        chat_id,
-        rich_message = rich_msg,
+      # Send the zip archive as a document first
+      await bot.send_document(
+        chat_id = chat_id,
+        document = document,
+        caption = f"{CommonUtils.large_red_circle_emoji} {title}",
       )
 
   @staticmethod
