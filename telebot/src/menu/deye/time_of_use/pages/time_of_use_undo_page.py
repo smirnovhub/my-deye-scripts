@@ -5,7 +5,6 @@ from typing import Any, Union
 
 from telebot_buttons import *
 from deye_register import DeyeRegister
-from deye_loggers import DeyeLoggers
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_ask_data import TimeOfUseAskData
 from time_of_use_data_holder import TimeOfUseDataHolder
@@ -22,7 +21,6 @@ class TimeOfUseUndoPage(TelebotNavigationPage):
     super().__init__()
     self._tou_register = tou_register
     self._tou_data_holder = tou_data_holder
-    self._loggers = DeyeLoggers()
     self._ask_data = TimeOfUseAskData()
 
   @property
@@ -70,15 +68,16 @@ class TimeOfUseUndoPage(TelebotNavigationPage):
 
     await TimeOfUseHelper.write_time_of_use(
       tou_register = self._tou_register,
-      master_logger = self._loggers.master,
       tou_data = data,
     )
 
-    self._tou_data_holder.swap_and_actualize()
+    self._tou_data_holder.swap()
     await navigator.navigate(TimeOfUsePageType.main)
 
   async def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
-    self._tou_data_holder.actualize()
+    tou_registers = await TimeOfUseHelper.read_time_of_use()
+    tou_data = TimeOfUseHelper.get_time_of_use_data(tou_registers)
+    self._tou_data_holder.actualize(tou_data)
     await navigator.navigate(TimeOfUsePageType.edit)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:

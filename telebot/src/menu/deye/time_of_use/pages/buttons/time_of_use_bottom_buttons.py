@@ -1,7 +1,6 @@
 from telebot_buttons import *
 from button_style import ButtonStyle
 from deye_register import DeyeRegister
-from deye_loggers import DeyeLoggers
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_ask_data import TimeOfUseAskData
@@ -21,7 +20,6 @@ class TimeOfUseBottomButtons:
     self._tou_register = tou_register
     self._tou_data_holder = tou_data_holder
     self._ask_data = ask_data
-    self._loggers = DeyeLoggers()
 
   def create_buttons(
     self,
@@ -69,7 +67,6 @@ class TimeOfUseBottomButtons:
 
     await TimeOfUseHelper.write_time_of_use(
       tou_register = self._tou_register,
-      master_logger = self._loggers.master,
       tou_data = data,
     )
 

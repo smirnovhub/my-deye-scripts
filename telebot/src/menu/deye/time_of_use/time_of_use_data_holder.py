@@ -23,9 +23,10 @@ class TimeOfUseDataHolder:
   def is_modified(self) -> bool:
     return asdict(self._tou_data) != asdict(self._tou_original_data)
 
-  def actualize(self) -> None:
-    self._tou_original_data = copy.deepcopy(self._tou_data)
+  def actualize(self, tou_data: TimeOfUseData) -> None:
+    self._tou_data = tou_data
+    self._tou_original_data = copy.deepcopy(tou_data)
 
-  def swap_and_actualize(self) -> None:
+  def swap(self) -> None:
     self._tou_data = self._tou_original_data
     self._tou_original_data = copy.deepcopy(self._tou_data)

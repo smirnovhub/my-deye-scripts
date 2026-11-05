@@ -5,7 +5,6 @@ from enum import Enum
 from typing import Union
 
 from telebot_buttons import *
-from deye_loggers import DeyeLoggers
 from deye_register import DeyeRegister
 from telebot_utils import TelebotUtils
 from time_of_use_data_holder import TimeOfUseDataHolder
@@ -23,7 +22,6 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
     super().__init__()
     self._tou_register = tou_register
     self._tou_data_holder = tou_data_holder
-    self._loggers = DeyeLoggers()
 
   @property
   def page_type(self) -> Enum:
@@ -53,10 +51,12 @@ class TimeOfUseEnablePage(TelebotNavigationPage):
     try:
       await TimeOfUseHelper.write_time_of_use(
         tou_register = self._tou_register,
-        master_logger = self._loggers.master,
         tou_data = data,
       )
-      self._tou_data_holder.actualize()
+
+      tou_registers = await TimeOfUseHelper.read_time_of_use()
+      tou_data = TimeOfUseHelper.get_time_of_use_data(tou_registers)
+      self._tou_data_holder.actualize(tou_data)
     except Exception as e:
       await navigator.stop(TelebotUtils.escape_html(str(e)))
     else:

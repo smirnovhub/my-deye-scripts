@@ -3,12 +3,13 @@ import copy
 import telebot
 
 from dataclasses import asdict
-from typing import Any, Sequence, cast
+from typing import Any, Optional, Sequence, cast
 
-from deye_logger import DeyeLogger
+from deye_loggers import DeyeLoggers
 from common_utils import CommonUtils
 from deye_register import DeyeRegister
 from time_of_use_data import TimeOfUseData
+from time_of_use_registers import TimeOfUseRegisters
 from deye_custom_single_registers import DeyeCustomSingleRegisters
 from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder_async import DeyeRegistersHolderAsync
@@ -27,18 +28,58 @@ class TimeOfUseHelper:
       raise RuntimeError(f"Index {index} should be less than {count - 1}")
 
   @staticmethod
+  async def read_time_of_use() -> TimeOfUseRegisters:
+    loggers = DeyeLoggers()
+
+    # Variable to store reference to the created registers object
+    tou_registers: Optional[TimeOfUseRegisters] = None
+
+    def create_registers(prefix):
+      nonlocal tou_registers
+      tou_registers = TimeOfUseRegisters(prefix)
+      return tou_registers
+
+    holder = DeyeRegistersHolderAsync(
+      loggers = [loggers.master],
+      register_creator = create_registers,
+      **TelebotDeyeHelper.holder_kwargs,
+    )
+
+    try:
+      await holder.read_registers()
+    finally:
+      holder.disconnect()
+
+    if tou_registers is None:
+      raise ValueError("Can't read Time of Use registers")
+
+    return tou_registers
+
+  @staticmethod
+  def get_time_of_use_data(registers: TimeOfUseRegisters) -> TimeOfUseData:
+    tou_register = registers.time_of_use_register
+    tou_data = tou_register.value
+
+    if not isinstance(tou_data, TimeOfUseData):
+      raise ValueError(f"Register value type should be {TimeOfUseData.__name__}, but "
+                       f"{type(tou_register.value).__name__} received")
+
+    return tou_data
+
+  @staticmethod
   async def write_time_of_use(
     tou_register: DeyeRegister,
     tou_data: TimeOfUseData,
-    master_logger: DeyeLogger,
   ) -> None:
     if not isinstance(tou_register.value, TimeOfUseData):
       raise RuntimeError(f"Register value type should be {TimeOfUseData.__name__}, but "
                          f"{type(tou_register.value).__name__} received")
 
+    loggers = DeyeLoggers()
+
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolderAsync(
-      loggers = [master_logger],
+      loggers = [loggers.master],
       register_creator = lambda prefix: DeyeCustomSingleRegisters(tou_register, prefix),
       **TelebotDeyeHelper.holder_kwargs,
     )

@@ -31,6 +31,9 @@ class TimeOfUseMainPage(TelebotNavigationPage):
     self.register_button(CancelButtonNode(), self._handle_cancel)
 
   async def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
+    tou_registers = await TimeOfUseHelper.read_time_of_use()
+    tou_data = TimeOfUseHelper.get_time_of_use_data(tou_registers)
+    self._tou_data_holder.actualize(tou_data)
     await navigator.navigate(TimeOfUsePageType.edit)
 
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
