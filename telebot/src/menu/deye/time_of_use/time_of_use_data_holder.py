@@ -25,3 +25,7 @@ class TimeOfUseDataHolder:
 
   def actualize(self) -> None:
     self._tou_original_data = copy.deepcopy(self._tou_data)
+
+  def swap_and_actualize(self) -> None:
+    self._tou_data = self._tou_original_data
+    self._tou_original_data = copy.deepcopy(self._tou_data)

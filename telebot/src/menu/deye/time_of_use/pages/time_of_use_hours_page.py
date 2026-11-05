@@ -6,7 +6,7 @@ from typing import Union
 
 from telebot_buttons import *
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_times import TimeOfUseTimes
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
@@ -14,14 +14,14 @@ from telebot_navigation_page import TelebotNavigationPage
 class TimeOfUseHoursPage(TelebotNavigationPage):
   def __init__(
     self,
-    tou_times: TimeOfUseTimes,
     title: str,
+    tou_data_holder: TimeOfUseDataHolder,
     page_type: TimeOfUsePageType,
     next_page_type: TimeOfUsePageType,
   ):
     super().__init__()
-    self._tou_times = tou_times
     self._title = title
+    self._tou_data_holder = tou_data_holder
     self._page_type = page_type
     self._next_page_type = next_page_type
     self._time_of_use_line_index = -1
@@ -45,13 +45,13 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
       *,
       time_of_use_line_index: int,
   ) -> None:
-    TimeOfUseHelper.check_bounds(self._tou_times.values, time_of_use_line_index)
+    TimeOfUseHelper.check_bounds(self._tou_data_holder.tou_data.times.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
 
   def create_buttons(self) -> None:
     old_value = -1
     if self._time_of_use_line_index >= 0:
-      old_value = self._tou_times.values[self._time_of_use_line_index].hour
+      old_value = self._tou_data_holder.tou_data.times.values[self._time_of_use_line_index].hour
 
     for hour in range(24):
       if hour > 0 and hour % 4 == 0:
@@ -127,7 +127,7 @@ class TimeOfUseHoursPage(TelebotNavigationPage):
     hour: int,
     minute: int,
   ) -> None:
-    TimeOfUseHelper.check_bounds(self._tou_times.values, self._time_of_use_line_index)
-    self._tou_times.values[self._time_of_use_line_index].hour = hour
-    self._tou_times.values[self._time_of_use_line_index].minute = minute
+    TimeOfUseHelper.check_bounds(self._tou_data_holder.tou_data.times.values, self._time_of_use_line_index)
+    self._tou_data_holder.tou_data.times.values[self._time_of_use_line_index].hour = hour
+    self._tou_data_holder.tou_data.times.values[self._time_of_use_line_index].minute = minute
     await navigator.navigate(TimeOfUsePageType.edit)

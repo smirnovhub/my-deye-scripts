@@ -81,32 +81,32 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
         tou_data_holder = tou_data_holder,
       ),
       TimeOfUseHoursPage(
-        tou_times = tou_data.times,
         title = "Start hour:",
+        tou_data_holder = tou_data_holder,
         page_type = TimeOfUsePageType.start_hours,
         next_page_type = TimeOfUsePageType.start_minutes,
       ),
       TimeOfUseMinutesPage(
-        tou_times = tou_data.times,
         title = "Start minute:",
+        tou_data_holder = tou_data_holder,
         page_type = TimeOfUsePageType.start_minutes,
         prev_page_type = TimeOfUsePageType.start_hours,
       ),
       TimeOfUseHoursPage(
-        tou_times = tou_data.times,
         title = "End hour:",
+        tou_data_holder = tou_data_holder,
         page_type = TimeOfUsePageType.end_hours,
         next_page_type = TimeOfUsePageType.end_minutes,
       ),
       TimeOfUseMinutesPage(
-        tou_times = tou_data.times,
         title = "End minute:",
+        tou_data_holder = tou_data_holder,
         page_type = TimeOfUsePageType.end_minutes,
         prev_page_type = TimeOfUsePageType.end_hours,
       ),
-      TimeOfUsePowersPage(tou_powers = tou_data.powers),
+      TimeOfUsePowersPage(tou_data_holder),
       TimeOfUseSocsPage(
-        tou_socs = tou_data.socs,
+        tou_data_holder = tou_data_holder,
         minimum_soc = battery_low_batt_soc_register.value - 1,
       ),
       TimeOfUseUndoPage(

@@ -5,3 +5,8 @@ class TimeOfUseAskData:
   ask_for_fix_times: bool = False
   ask_for_reset_times: bool = False
   ask_for_undo: bool = False
+
+  def reset(self) -> None:
+    self.ask_for_fix_times = False
+    self.ask_for_reset_times = False
+    self.ask_for_undo = False

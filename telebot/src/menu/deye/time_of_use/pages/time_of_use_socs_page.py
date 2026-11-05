@@ -5,7 +5,7 @@ from typing import List, Union
 
 from telebot_buttons import *
 from button_style import ButtonStyle
-from time_of_use_data import TimeOfUseSocs
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
@@ -14,11 +14,11 @@ from telebot_navigation_page import TelebotNavigationPage
 class TimeOfUseSocsPage(TelebotNavigationPage):
   def __init__(
     self,
-    tou_socs: TimeOfUseSocs,
+    tou_data_holder: TimeOfUseDataHolder,
     minimum_soc: int,
   ):
     super().__init__()
-    self._tou_socs = tou_socs
+    self._tou_data_holder = tou_data_holder
     self._time_of_use_line_index = -1
 
     self._socs = self._generate_values(min_val = minimum_soc)
@@ -49,17 +49,17 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
       *,
       time_of_use_line_index: int,
   ) -> None:
-    TimeOfUseHelper.check_upper_bounds(self._tou_socs.values, time_of_use_line_index)
+    TimeOfUseHelper.check_upper_bounds(self._tou_data_holder.tou_data.socs.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
 
   def create_buttons(self) -> None:
     old_value = -1
     if self._time_of_use_line_index < 0:
-      first_item = self._tou_socs.values[0]
-      if all(x == first_item for x in self._tou_socs.values):
+      first_item = self._tou_data_holder.tou_data.socs.values[0]
+      if all(x == first_item for x in self._tou_data_holder.tou_data.socs.values):
         old_value = first_item
     else:
-      old_value = self._tou_socs.values[self._time_of_use_line_index]
+      old_value = self._tou_data_holder.tou_data.socs.values[self._time_of_use_line_index]
 
     for index, soc in enumerate(self._socs):
       if index > 0 and (index % self._row_length) == 0:
@@ -108,9 +108,9 @@ class TimeOfUseSocsPage(TelebotNavigationPage):
 
     if self._time_of_use_line_index < 0:
       # Replace all elements in the list with the new value
-      self._tou_socs.values[:] = [soc] * len(self._tou_socs.values)
+      self._tou_data_holder.tou_data.socs.values[:] = [soc] * len(self._tou_data_holder.tou_data.socs.values)
     else:
-      self._tou_socs.values[self._time_of_use_line_index] = soc
+      self._tou_data_holder.tou_data.socs.values[self._time_of_use_line_index] = soc
 
     await navigator.navigate(TimeOfUsePageType.edit)
 

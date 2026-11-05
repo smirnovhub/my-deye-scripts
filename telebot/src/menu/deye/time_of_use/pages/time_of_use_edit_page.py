@@ -1,9 +1,10 @@
 import telebot
 
 from enum import Enum
-from typing import Union
+from typing import Any, Union
 
 from deye_register import DeyeRegister
+from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_ask_data import TimeOfUseAskData
 from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_helper import TimeOfUseHelper
@@ -31,6 +32,13 @@ class TimeOfUseEditPage(TelebotNavigationPage):
   @property
   def text(self) -> Union[str, telebot.types.InputRichMessage]:
     return "Time of Use schedule:"
+
+  async def on_navigate(
+    self,
+    navigator: TelebotPageNavigator,
+    **kwargs: Any,
+  ) -> None:
+    self._ask_data.reset()
 
   def create_buttons(self) -> None:
     week_buttons = TimeOfUseWeekButtons(self._tou_data_holder)

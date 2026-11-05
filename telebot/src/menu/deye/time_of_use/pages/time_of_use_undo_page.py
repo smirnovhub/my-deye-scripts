@@ -2,7 +2,6 @@ import telebot
 
 from enum import Enum
 from typing import Any, Union
-from datetime import timedelta
 
 from telebot_buttons import *
 from deye_register import DeyeRegister
@@ -42,10 +41,7 @@ class TimeOfUseUndoPage(TelebotNavigationPage):
     navigator: TelebotPageNavigator,
     **kwargs: Any,
   ) -> None:
-    await navigator.add_delayed_action(
-      delay = timedelta(minutes = 5),
-      action = lambda: navigator.stop(self._get_cancel_text()),
-    )
+    self._ask_data.reset()
 
   def create_buttons(self) -> None:
     if self._ask_data.ask_for_undo:
@@ -78,12 +74,8 @@ class TimeOfUseUndoPage(TelebotNavigationPage):
       tou_data = data,
     )
 
-    text = TimeOfUseHelper.get_time_of_use_as_rich_message(
-      tou_data = self._tou_data_holder.tou_original_data,
-      suffx = "undone",
-    )
-
-    await navigator.stop(text)
+    self._tou_data_holder.swap_and_actualize()
+    await navigator.navigate(TimeOfUsePageType.main)
 
   async def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
     self._tou_data_holder.actualize()

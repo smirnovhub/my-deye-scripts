@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Union
 
 from telebot_buttons import *
-from time_of_use_data import TimeOfUsePowers
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
@@ -13,10 +13,10 @@ from telebot_navigation_page import TelebotNavigationPage
 class TimeOfUsePowersPage(TelebotNavigationPage):
   def __init__(
     self,
-    tou_powers: TimeOfUsePowers,
+    tou_data_holder: TimeOfUseDataHolder,
   ):
     super().__init__()
-    self._tou_powers = tou_powers
+    self._tou_data_holder = tou_data_holder
     self._time_of_use_line_index = -1
     self._powers = [
       [0, 250, 500],
@@ -42,17 +42,17 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
 
   async def on_navigate( # type: ignore[override]
       self, navigator: TelebotPageNavigator, *, time_of_use_line_index: int) -> None:
-    TimeOfUseHelper.check_upper_bounds(self._tou_powers.values, time_of_use_line_index)
+    TimeOfUseHelper.check_upper_bounds(self._tou_data_holder.tou_data.powers.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
 
   def create_buttons(self) -> None:
     old_value = -1
     if self._time_of_use_line_index < 0:
-      first_item = self._tou_powers.values[0]
-      if all(x == first_item for x in self._tou_powers.values):
+      first_item = self._tou_data_holder.tou_data.powers.values[0]
+      if all(x == first_item for x in self._tou_data_holder.tou_data.powers.values):
         old_value = first_item
     else:
-      old_value = self._tou_powers.values[self._time_of_use_line_index]
+      old_value = self._tou_data_holder.tou_data.powers.values[self._time_of_use_line_index]
 
     for row_index, row in enumerate(self._powers):
       if row_index > 0:
@@ -99,8 +99,8 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
   ) -> None:
     if self._time_of_use_line_index < 0:
       # Replace all elements in the list with the new value
-      self._tou_powers.values[:] = [power] * len(self._tou_powers.values)
+      self._tou_data_holder.tou_data.powers.values[:] = [power] * len(self._tou_data_holder.tou_data.powers.values)
     else:
-      self._tou_powers.values[self._time_of_use_line_index] = power
+      self._tou_data_holder.tou_data.powers.values[self._time_of_use_line_index] = power
 
     await navigator.navigate(TimeOfUsePageType.edit)
