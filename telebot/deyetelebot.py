@@ -83,7 +83,6 @@ async def main():
     from mytelebot import MyTelebot
     from env_utils import EnvUtils
 
-    asyncio_helper.REQUEST_TIMEOUT = 15
     asyncio_helper.RETRY_ON_ERROR = True
 
     if EnvUtils.is_tests_on():
