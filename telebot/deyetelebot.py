@@ -17,6 +17,7 @@ from common_modules import import_dirs
 
 import_dirs(current_path, ['src', '../deye/src', '../common'])
 
+from telebot import asyncio_helper
 from telebot.async_telebot import AsyncTeleBot
 
 # Should be first in imports list to make possible
@@ -81,6 +82,9 @@ async def main():
   try:
     from mytelebot import MyTelebot
     from env_utils import EnvUtils
+
+    asyncio_helper.REQUEST_TIMEOUT = 15
+    asyncio_helper.RETRY_ON_ERROR = True
 
     if EnvUtils.is_tests_on():
       test_token = EnvUtils.get_telegram_bot_api_test_token()
