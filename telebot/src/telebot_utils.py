@@ -271,7 +271,7 @@ class TelebotUtils:
   async def handle_errors_with_details(
     bot: AsyncTeleBot,
     chat_id: int,
-    logger: Optional[logging.Logger],
+    logger: Optional[logging.Logger] = None,
   ) -> AsyncGenerator[None, None]:
     """Context manager to catch exceptions, log them, and send a rich error report with an attached zip archive."""
     try:

@@ -97,8 +97,8 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
     return False
 
   @asynccontextmanager
-  async def handle_errors_with_details(self, chat_id: int) -> AsyncGenerator[None]:
-    """Context manager to catch exceptions, log them, and send a rich error report."""
+  async def handle_errors_with_details(self, chat_id: int) -> AsyncGenerator[None, None]:
+    """Context manager to catch exceptions, log them, and send a rich error report with an attached zip archive."""
     async with TelebotUtils.handle_errors_with_details(
         bot = self.bot,
         chat_id = chat_id,
