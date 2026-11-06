@@ -1,5 +1,4 @@
 import copy
-
 import telebot
 
 from dataclasses import asdict
@@ -8,6 +7,7 @@ from typing import Any, Optional, Sequence, cast
 from deye_loggers import DeyeLoggers
 from common_utils import CommonUtils
 from deye_register import DeyeRegister
+from telebot_table_cell import TelebotTableCell
 from time_of_use_data import TimeOfUseData
 from time_of_use_registers import TimeOfUseRegisters
 from deye_custom_single_registers import DeyeCustomSingleRegisters
@@ -120,22 +120,10 @@ class TimeOfUseHelper:
     tou_data: TimeOfUseData,
     suffx: str = "",
   ) -> telebot.types.InputRichMessage:
-    def sign(value: bool):
+    def sign(value: bool) -> str:
       on = CommonUtils.large_green_circle_emoji
       off = CommonUtils.large_red_circle_emoji
       return on if value else off
-
-    def create_cell(
-      value: str,
-      row: int,
-      column: int,
-    ) -> telebot.types.RichBlockTableCell:
-      return telebot.types.RichBlockTableCell(
-        text = cast(telebot.types.RichText, value),
-        is_header = row == 0,
-        align = "center",
-        valign = "middle",
-      )
 
     # Header title with enabled status sign
     header_text = "Time of Use schedule:"
@@ -163,15 +151,12 @@ class TimeOfUseHelper:
       sign(tou_data.week.sunday),
     ]
 
-    days_rows = [days_headers, days_values]
+    days_cells_data = [
+      [TelebotTableCell(value = val, is_header = True) for val in days_headers],
+      [TelebotTableCell(value = val, is_header = False) for val in days_values],
+    ]
 
-    days_cells = [[
-      create_cell(
-        value = value,
-        row = row_idx,
-        column = col_idx,
-      ) for col_idx, value in enumerate(row_data)
-    ] for row_idx, row_data in enumerate(days_rows)]
+    days_cells = TelebotTableCell.create_cells(days_cells_data)
 
     # Schedule table data
     schedule_headers = [
@@ -183,7 +168,10 @@ class TimeOfUseHelper:
       "Batt",
     ]
 
-    schedule_rows = [schedule_headers]
+    schedule_rows_data = [[TelebotTableCell(
+      value = val,
+      is_header = True,
+    ) for val in schedule_headers]]
 
     charges = tou_data.charges.values
     times = tou_data.times.values
@@ -199,22 +187,16 @@ class TimeOfUseHelper:
       curr_power = powers[i]
       curr_soc = socs[i]
 
-      schedule_rows.append([
-        sign(curr_charge.grid_charge),
-        sign(curr_charge.gen_charge),
-        f"{curr_time.hour:02d}:{curr_time.minute:02d}",
-        f"{next_time.hour:02d}:{next_time.minute:02d}",
-        str(curr_power),
-        f"{curr_soc}%",
+      schedule_rows_data.append([
+        TelebotTableCell(value = sign(curr_charge.grid_charge)),
+        TelebotTableCell(value = sign(curr_charge.gen_charge)),
+        TelebotTableCell(value = f"{curr_time.hour:02d}:{curr_time.minute:02d}"),
+        TelebotTableCell(value = f"{next_time.hour:02d}:{next_time.minute:02d}"),
+        TelebotTableCell(value = str(curr_power)),
+        TelebotTableCell(value = f"{curr_soc}%"),
       ])
 
-    schedule_cells = [[
-      create_cell(
-        value = value,
-        row = row_idx,
-        column = col_idx,
-      ) for col_idx, value in enumerate(row_data)
-    ] for row_idx, row_data in enumerate(schedule_rows)]
+    schedule_cells = TelebotTableCell.create_cells(schedule_rows_data)
 
     return telebot.types.InputRichMessage(blocks = [
       telebot.types.InputRichBlockParagraph(telebot.types.RichTextBold(cast(
