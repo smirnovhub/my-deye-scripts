@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from cell_align import CellAlign
 
 @dataclass
-class TelebotTableCell:
+class TableCell:
   value: str
   colspan: int = 1
   is_header: bool = False
@@ -14,7 +14,7 @@ class TelebotTableCell:
   is_strikethrough: bool = False
 
   @staticmethod
-  def create_cell(cell: "TelebotTableCell") -> telebot.types.RichBlockTableCell:
+  def create_cell(cell: "TableCell") -> telebot.types.RichBlockTableCell:
     text_val: telebot.types.RichText = cast(telebot.types.RichText, cell.value)
 
     if cell.is_bold or cell.is_header:
@@ -32,5 +32,5 @@ class TelebotTableCell:
     )
 
   @staticmethod
-  def create_cells(cells: List[List["TelebotTableCell"]]) -> List[List[telebot.types.RichBlockTableCell]]:
-    return [[TelebotTableCell.create_cell(cell) for cell in row] for row in cells]
+  def create_cells(cells: List[List["TableCell"]]) -> List[List[telebot.types.RichBlockTableCell]]:
+    return [[TableCell.create_cell(cell) for cell in row] for row in cells]

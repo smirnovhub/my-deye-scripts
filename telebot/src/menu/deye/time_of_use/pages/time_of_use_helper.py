@@ -7,7 +7,7 @@ from typing import Any, Optional, Sequence, cast
 from deye_loggers import DeyeLoggers
 from common_utils import CommonUtils
 from deye_register import DeyeRegister
-from telebot_table_cell import TelebotTableCell
+from table_cell import TableCell
 from time_of_use_data import TimeOfUseData
 from time_of_use_registers import TimeOfUseRegisters
 from deye_custom_single_registers import DeyeCustomSingleRegisters
@@ -152,11 +152,11 @@ class TimeOfUseHelper:
     ]
 
     days_cells_data = [
-      [TelebotTableCell(value = val, is_header = True) for val in days_headers],
-      [TelebotTableCell(value = val, is_header = False) for val in days_values],
+      [TableCell(value = val, is_header = True) for val in days_headers],
+      [TableCell(value = val, is_header = False) for val in days_values],
     ]
 
-    days_cells = TelebotTableCell.create_cells(days_cells_data)
+    days_cells = TableCell.create_cells(days_cells_data)
 
     # Schedule table data
     schedule_headers = [
@@ -168,7 +168,7 @@ class TimeOfUseHelper:
       "Batt",
     ]
 
-    schedule_rows_data = [[TelebotTableCell(
+    schedule_rows_data = [[TableCell(
       value = val,
       is_header = True,
     ) for val in schedule_headers]]
@@ -188,15 +188,15 @@ class TimeOfUseHelper:
       curr_soc = socs[i]
 
       schedule_rows_data.append([
-        TelebotTableCell(value = sign(curr_charge.grid_charge)),
-        TelebotTableCell(value = sign(curr_charge.gen_charge)),
-        TelebotTableCell(value = f"{curr_time.hour:02d}:{curr_time.minute:02d}"),
-        TelebotTableCell(value = f"{next_time.hour:02d}:{next_time.minute:02d}"),
-        TelebotTableCell(value = str(curr_power)),
-        TelebotTableCell(value = f"{curr_soc}%"),
+        TableCell(value = sign(curr_charge.grid_charge)),
+        TableCell(value = sign(curr_charge.gen_charge)),
+        TableCell(value = f"{curr_time.hour:02d}:{curr_time.minute:02d}"),
+        TableCell(value = f"{next_time.hour:02d}:{next_time.minute:02d}"),
+        TableCell(value = str(curr_power)),
+        TableCell(value = f"{curr_soc}%"),
       ])
 
-    schedule_cells = TelebotTableCell.create_cells(schedule_rows_data)
+    schedule_cells = TableCell.create_cells(schedule_rows_data)
 
     return telebot.types.InputRichMessage(blocks = [
       telebot.types.InputRichBlockParagraph(telebot.types.RichTextBold(cast(
