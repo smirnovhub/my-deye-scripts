@@ -1,8 +1,9 @@
 import telebot
 
 from typing import Dict, cast
-from battery_settings_page_type import BatterySettingsPageType
+from cell_align import CellAlign
 from telebot_table_cell import TelebotTableCell
+from battery_settings_page_type import BatterySettingsPageType
 
 class BatterySettingsHelper:
   @staticmethod
@@ -11,7 +12,7 @@ class BatterySettingsHelper:
     values: Dict[BatterySettingsPageType, int],
   ) -> telebot.types.InputRichMessage:
     rows_data = [[
-      TelebotTableCell(value = page.title, align = "left"),
+      TelebotTableCell(value = page.title, align = CellAlign.left),
       TelebotTableCell(value = f"{value}%"),
     ] for page, value in values.items()]
 

@@ -2,13 +2,14 @@ import telebot
 
 from typing import List, cast
 from dataclasses import dataclass
+from cell_align import CellAlign
 
 @dataclass
 class TelebotTableCell:
   value: str
   colspan: int = 1
   is_header: bool = False
-  align: str = "center"
+  align: CellAlign = CellAlign.center
   is_bold: bool = False
   is_strikethrough: bool = False
 
@@ -24,7 +25,7 @@ class TelebotTableCell:
 
     return telebot.types.RichBlockTableCell(
       text = text_val,
-      align = cell.align,
+      align = cell.align.value,
       valign = "middle",
       is_header = True if cell.is_header else None,
       colspan = cell.colspan if cell.colspan > 1 else None,
