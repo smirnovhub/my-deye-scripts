@@ -132,7 +132,7 @@ class TelebotPageNavigator:
         page.create_buttons()
       except Exception as e:
         self._logger.error(traceback.format_exc())
-        return await self.send_message(TelebotUtils.escape_html(str(e)))
+        raise
 
       keyboard = TelebotUtils.get_keyboard_for_buttons(
         buttons = page.buttons,
