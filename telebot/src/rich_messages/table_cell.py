@@ -8,23 +8,23 @@ from cell_align import CellAlign
 class TableCell:
   value: str
   colspan: int = 1
-  is_header: bool = False
   align: CellAlign = CellAlign.center
+  is_header: bool = False
   is_bold: bool = False
   is_strikethrough: bool = False
 
   @staticmethod
   def create_cell(cell: "TableCell") -> telebot.types.RichBlockTableCell:
-    text_val: telebot.types.RichText = cast(telebot.types.RichText, cell.value)
+    text = cast(telebot.types.RichText, cell.value)
 
     if cell.is_bold or cell.is_header:
-      text_val = telebot.types.RichTextBold(text_val)
+      text = telebot.types.RichTextBold(text)
 
     if cell.is_strikethrough:
-      text_val = telebot.types.RichTextStrikethrough(text_val)
+      text = telebot.types.RichTextStrikethrough(text)
 
     return telebot.types.RichBlockTableCell(
-      text = text_val,
+      text = text,
       align = cell.align.value,
       valign = "middle",
       is_header = True if cell.is_header else None,
