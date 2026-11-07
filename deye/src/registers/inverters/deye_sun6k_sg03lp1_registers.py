@@ -634,7 +634,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
       description = 'Time Of Use Power',
       suffix = 'W',
       group = DeyeRegisterGroup.inverter,
-      avg = DeyeRegisterAverageType.fake_accumulate,
+      avg = DeyeRegisterAverageType.only_master,
     )
 
   @cached_property
