@@ -1,8 +1,9 @@
 import asyncio
+import telebot
 
 from telebot.async_telebot import AsyncTeleBot
 
-from typing import List
+from typing import List, Union
 
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_sequential_choice_button import SequentialChoiceButton
@@ -13,17 +14,9 @@ class SequentialChoices:
   async def ask_sequential_choices(
     bot: AsyncTeleBot,
     chat_id: int,
-    text: str,
+    text: Union[str, telebot.types.InputRichMessage],
     root: SequentialChoiceButton,
   ) -> List[SequentialChoiceButton]:
-    if not root.children:
-      await bot.send_message(
-        chat_id,
-        text,
-        parse_mode = "HTML",
-      )
-      return []
-
     navigator = TelebotPageNavigator(bot)
 
     future = asyncio.get_running_loop().create_future()
