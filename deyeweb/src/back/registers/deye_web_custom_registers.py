@@ -20,7 +20,8 @@ class DeyeWebCustomRegisters(DeyeRegisters):
 
     for register_name in self._register_names:
       reg = registers_map.get(register_name)
-      if reg is not None:
-        registers.append(reg)
+      if reg is None:
+        raise ValueError(f"Unknown register: {register_name}")
+      registers.append(reg)
 
     return registers

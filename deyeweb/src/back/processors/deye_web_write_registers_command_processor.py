@@ -4,6 +4,7 @@ from deye_web_utils import DeyeWebUtils
 from deye_web_color import DeyeWebColor
 from deye_web_constants import DeyeWebConstants
 from deye_web_colors_calculator import DeyeWebColorsCalculator
+from deye_web_custom_registers import DeyeWebCustomRegisters
 from deye_web_remote_command import DeyeWebRemoteCommand
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 from deye_web_base_command_processor import DeyeWebBaseCommandProcessor
@@ -30,6 +31,10 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
       name = 'deyeweb',
       loggers = [self.loggers.master],
       socket_timeout = 5,
+      register_creator = lambda prefix: DeyeWebCustomRegisters(
+        register_names = [register_name],
+        prefix = prefix,
+      ),
     )
 
     register = holder.master_registers.get_register_by_name(register_name)
@@ -38,6 +43,13 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
 
     try:
       await holder.write_register(register, register_value)
+      saved_value = register.value
+
+      # Re-read and validate all saved data just after write
+      await holder.read_registers()
+
+      if register.value != saved_value:
+        raise ValueError("Saved value mismatch. Try again")
     finally:
       holder.disconnect()
 
