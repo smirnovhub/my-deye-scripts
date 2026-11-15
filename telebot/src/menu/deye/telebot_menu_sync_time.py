@@ -117,7 +117,11 @@ class TelebotMenuSyncTime(TelebotMenuItemHandlerAsync):
       )
 
       try:
-        await holder.write_register(register, value)
+        await holder.write_register(
+          register,
+          value,
+          validate_after_write = True,
+        )
       finally:
         holder.disconnect()
 

@@ -297,7 +297,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
           return
 
         try:
-          await holder.write_register(register, value)
+          await holder.write_register(
+            register,
+            value,
+            validate_after_write = True,
+          )
+
           await self.print_result_after_write_register(
             register,
             message,
@@ -315,7 +320,12 @@ class TelebotMenuWritableRegisters(TelebotMenuItemHandlerAsync):
 
         return
 
-      await holder.write_register(register, value)
+      await holder.write_register(
+        register,
+        value,
+        validate_after_write = True,
+      )
+
       await self.print_result_after_write_register(
         register,
         message,
