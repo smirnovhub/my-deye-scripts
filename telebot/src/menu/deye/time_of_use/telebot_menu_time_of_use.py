@@ -38,20 +38,14 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
     navigator = TelebotPageNavigator(self.bot)
     tou_data_holder = TimeOfUseDataHolder(tou_data)
 
-    enable_page = TimeOfUseEnablePage(
-      tou_register = tou_register,
-      tou_data_holder = tou_data_holder,
-    )
+    enable_page = TimeOfUseEnablePage(tou_data_holder = tou_data_holder)
 
     main_page = TimeOfUseMainPage(tou_data_holder)
 
     navigator.register_pages([
       enable_page,
       main_page,
-      TimeOfUseEditPage(
-        tou_register = tou_register,
-        tou_data_holder = tou_data_holder,
-      ),
+      TimeOfUseEditPage(tou_data_holder = tou_data_holder),
       TimeOfUseHoursPage(
         title = "Start hour:",
         tou_data_holder = tou_data_holder,
@@ -81,10 +75,7 @@ class TelebotMenuTimeOfUse(TelebotMenuItemHandlerAsync):
         tou_data_holder = tou_data_holder,
         minimum_soc = battery_low_batt_soc_register.value - 1,
       ),
-      TimeOfUseUndoPage(
-        tou_register = tou_register,
-        tou_data_holder = tou_data_holder,
-      ),
+      TimeOfUseUndoPage(tou_data_holder = tou_data_holder),
     ])
 
     if tou_data.week.enabled:

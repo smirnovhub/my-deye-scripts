@@ -1,6 +1,5 @@
 from telebot_buttons import *
 from button_style import ButtonStyle
-from deye_register import DeyeRegister
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_ask_data import TimeOfUseAskData
@@ -12,12 +11,10 @@ from time_of_use_times import TimeOfUseTimes
 class TimeOfUseBottomButtons:
   def __init__(
     self,
-    tou_register: DeyeRegister,
     tou_data_holder: TimeOfUseDataHolder,
     ask_data: TimeOfUseAskData,
   ):
     super().__init__()
-    self._tou_register = tou_register
     self._tou_data_holder = tou_data_holder
     self._ask_data = ask_data
 
@@ -65,10 +62,7 @@ class TimeOfUseBottomButtons:
       original_data = self._tou_data_holder.tou_original_data,
     )
 
-    await TimeOfUseHelper.write_time_of_use(
-      tou_register = self._tou_register,
-      tou_data = data,
-    )
+    await TimeOfUseHelper.write_time_of_use(data)
 
     await navigator.navigate(TimeOfUsePageType.undo)
 

@@ -3,7 +3,6 @@ import telebot
 from enum import Enum
 from typing import Any, Union
 
-from deye_register import DeyeRegister
 from telebot_page_navigator import TelebotPageNavigator
 from time_of_use_ask_data import TimeOfUseAskData
 from time_of_use_data_holder import TimeOfUseDataHolder
@@ -17,11 +16,9 @@ from time_of_use_bottom_buttons import TimeOfUseBottomButtons
 class TimeOfUseEditPage(TelebotNavigationPage):
   def __init__(
     self,
-    tou_register: DeyeRegister,
     tou_data_holder: TimeOfUseDataHolder,
   ):
     super().__init__()
-    self._tou_register = tou_register
     self._tou_data_holder = tou_data_holder
     self._ask_data = TimeOfUseAskData()
 
@@ -45,7 +42,6 @@ class TimeOfUseEditPage(TelebotNavigationPage):
     schedule_buttons = TimeOfUseScheduleButtons(self._tou_data_holder)
 
     bottom_buttons = TimeOfUseBottomButtons(
-      tou_register = self._tou_register,
       tou_data_holder = self._tou_data_holder,
       ask_data = self._ask_data,
     )

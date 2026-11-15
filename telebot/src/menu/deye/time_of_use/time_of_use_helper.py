@@ -6,11 +6,9 @@ from typing import Any, Optional, Sequence, cast
 
 from deye_loggers import DeyeLoggers
 from common_utils import CommonUtils
-from deye_register import DeyeRegister
 from table_cell import TableCell
 from time_of_use_data import TimeOfUseData
 from time_of_use_registers import TimeOfUseRegisters
-from deye_custom_single_registers import DeyeCustomSingleRegisters
 from telebot_deye_helper import TelebotDeyeHelper
 from deye_registers_holder_async import DeyeRegistersHolderAsync
 
@@ -45,13 +43,13 @@ class TimeOfUseHelper:
       **TelebotDeyeHelper.holder_kwargs,
     )
 
+    if tou_registers is None:
+      raise ValueError("Can't create Time of Use registers")
+
     try:
       await holder.read_registers()
     finally:
       holder.disconnect()
-
-    if tou_registers is None:
-      raise ValueError("Can't read Time of Use registers")
 
     return tou_registers
 
@@ -67,25 +65,52 @@ class TimeOfUseHelper:
     return tou_data
 
   @staticmethod
-  async def write_time_of_use(
-    tou_register: DeyeRegister,
-    tou_data: TimeOfUseData,
-  ) -> None:
-    if not isinstance(tou_register.value, TimeOfUseData):
-      raise RuntimeError(f"Register value type should be {TimeOfUseData.__name__}, but "
-                         f"{type(tou_register.value).__name__} received")
-
+  async def write_time_of_use(tou_data: TimeOfUseData) -> None:
     loggers = DeyeLoggers()
+
+    # Variable to store reference to the created registers object
+    tou_registers: Optional[TimeOfUseRegisters] = None
+
+    def create_registers(prefix):
+      nonlocal tou_registers
+      tou_registers = TimeOfUseRegisters(prefix)
+      return tou_registers
 
     # should be local to avoid issues with locks
     holder = DeyeRegistersHolderAsync(
       loggers = [loggers.master],
-      register_creator = lambda prefix: DeyeCustomSingleRegisters(tou_register, prefix),
+      register_creator = create_registers,
       **TelebotDeyeHelper.holder_kwargs,
     )
 
+    if tou_registers is None:
+      raise ValueError("Can't create Time of Use registers")
+
+    tou_registers = cast(TimeOfUseRegisters, tou_registers)
+
     try:
-      await holder.write_register(tou_register, tou_data)
+      await holder.write_register(tou_registers.time_of_use_register, tou_data)
+
+      # Re-read and validate all saved data just after write
+      await holder.read_registers()
+
+      tou_data_new = TimeOfUseHelper.get_time_of_use_data(tou_registers)
+
+      if tou_data.charges.values and asdict(tou_data.charges) != asdict(tou_data_new.charges):
+        raise ValueError("Time of Use 'charges' data mismatch")
+
+      if tou_data.times.values and asdict(tou_data.times) != asdict(tou_data_new.times):
+        raise ValueError("Time of Use 'times' data mismatch")
+
+      if tou_data.powers.values and asdict(tou_data.powers) != asdict(tou_data_new.powers):
+        raise ValueError("Time of Use 'powers' data mismatch")
+
+      if tou_data.socs.values and asdict(tou_data.socs) != asdict(tou_data_new.socs):
+        raise ValueError("Time of Use 'socs' data mismatch")
+
+      if tou_data.weeks.values and asdict(tou_data.weeks) != asdict(tou_data_new.weeks):
+        raise ValueError("Time of Use 'weeks' data mismatch")
+
     finally:
       holder.disconnect()
 
