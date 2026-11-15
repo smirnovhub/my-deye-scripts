@@ -1,6 +1,6 @@
 import asyncio
 
-from typing import Callable, Dict, List, Optional, cast
+from typing import Any, Callable, Dict, List, Optional, cast
 
 from deye_utils import DeyeUtils
 from deye_logger import DeyeLogger
@@ -171,9 +171,17 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
         raise DeyeUtils.get_reraised_exception(
           e, f'{type(self).__name__}: error while reading register {register.name}') from e
 
-  async def write_register(self, register: DeyeRegister, value) -> None:
-    if self._master_interactor == None:
-      raise DeyeValueException(f'{type(self).__name__}: need to set master inverter before write')
+  async def write_register(
+    self,
+    register: DeyeRegister,
+    value: Any,
+    validate_after_write: bool = False,
+  ) -> None:
+    if self._master_interactor is None:
+      raise DeyeValueException(f"{type(self).__name__}: need to set master inverter before write '{register.name}'")
+
+    if value is None:
+      raise DeyeValueException(f"{type(self).__name__}: you can't write None value to register '{register.name}'")
 
     if not self._cache_available:
       self._cache_available = await self._master_interactor.is_cache_available()
@@ -182,7 +190,26 @@ class DeyeRegistersHolderAsync(DeyeRegistersHolder):
       register.write(self._master_interactor, value)
       await self._master_interactor.write_registers_to_inverter()
     except Exception as e:
-      raise DeyeUtils.get_reraised_exception(e, f'{type(self).__name__}: error while writing register') from e
+      raise DeyeUtils.get_reraised_exception(
+        e, f"{type(self).__name__}: error while writing register '{register.name}'") from e
+
+    if validate_after_write:
+      # Save expected value
+      saved_value = register.value
+
+      try:
+        # Read back the written register
+        register.enqueue(self._master_interactor)
+        await self._master_interactor.process_enqueued_registers()
+        register.read([self._master_interactor])
+      except Exception as e:
+        raise DeyeUtils.get_reraised_exception(
+          e, f"{type(self).__name__}: error while validating register '{register.name}' after write") from e
+
+      # Verify written value
+      if register.value != saved_value:
+        raise DeyeValueException(f"Saved data mismatch for register '{register.name}': "
+                                 f"expected {saved_value}, got {register.value}")
 
   async def reset_cache(self) -> None:
     tasks = [interactor.reset_cache() for interactor in self._interactors]
