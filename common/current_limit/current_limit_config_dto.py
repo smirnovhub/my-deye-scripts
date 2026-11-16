@@ -25,6 +25,16 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
     },
   )
 
+  stop_charge_current: int = field(
+    default = 0,
+    metadata = {
+      SELECTION_VALUES_KEY: [
+        [0, 1, 2, 3],
+      ],
+      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.charging,
+    },
+  )
+
   charge_force_coef: float = field(
     default = 2.0,
     metadata = {
@@ -103,6 +113,11 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
     },
   )
 
+  def validate(self) -> None:
+    # Validate dates to catch invalid days like Feb 31
+    date(1999, self.winter_start_month, self.winter_start_day)
+    date(1999, self.winter_end_month, self.winter_end_day)
+
   @property
   def is_winter(self) -> bool:
     # Get current date as a (month, day) tuple
@@ -119,5 +134,4 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
     # Cross-year case (e.g., Nov 15 to Mar 1)
     return current >= start or current < end
 
-  stop_charge_current: int = 0
   dont_regulate_dates: List[date] = field(default_factory = list)
