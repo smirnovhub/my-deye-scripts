@@ -115,8 +115,15 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
 
   def validate(self) -> None:
     # Validate dates to catch invalid days like Feb 31
-    date(1999, self.winter_start_month, self.winter_start_day)
-    date(1999, self.winter_end_month, self.winter_end_day)
+    try:
+      date(1999, self.winter_start_month, self.winter_start_day)
+    except ValueError as e:
+      raise ValueError(f"Invalid winter start date: {e}") from e
+
+    try:
+      date(1999, self.winter_end_month, self.winter_end_day)
+    except ValueError as ee:
+      raise ValueError(f"Invalid winter end date: {ee}") from ee
 
   @property
   def is_winter(self) -> bool:
