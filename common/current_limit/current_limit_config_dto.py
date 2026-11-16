@@ -21,7 +21,7 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
         [45, 50, 55, 60],
         [65, 70, 75, 80],
       ],
-      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.charging.value,
+      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.charging,
     },
   )
 
@@ -32,7 +32,7 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
         [1.5, 2.0, 2.5, 3.0],
         [3.5, 4.0, 4.5, 5.0],
       ],
-      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.charging.value,
+      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.charging,
     },
   )
 
@@ -43,7 +43,7 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
         [7, 10, 15],
         [20, 25, 30],
       ],
-      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.charging.value,
+      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.charging,
     },
   )
 
@@ -55,7 +55,7 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
         [5, 6, 7, 8],
         [9, 10, 11, 12],
       ],
-      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.winter.value,
+      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.winter,
     },
   )
 
@@ -71,7 +71,7 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
         [26, 27, 28, 29, 30],
       ],
       SELECTION_GROUP_KEY:
-      CurrentLimitConfigGroup.winter.value,
+      CurrentLimitConfigGroup.winter,
     },
   )
 
@@ -83,7 +83,7 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
         [5, 6, 7, 8],
         [9, 10, 11, 12],
       ],
-      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.winter.value,
+      SELECTION_GROUP_KEY: CurrentLimitConfigGroup.winter,
     },
   )
 
@@ -99,7 +99,7 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
         [26, 27, 28, 29, 30],
       ],
       SELECTION_GROUP_KEY:
-      CurrentLimitConfigGroup.winter.value,
+      CurrentLimitConfigGroup.winter,
     },
   )
 
