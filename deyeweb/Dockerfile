@@ -1,4 +1,4 @@
-FROM php:8.4-apache AS baseweb
+FROM php:8.5-apache AS baseweb
 
 # Repository settings
 ARG DEYE_REPOSITORY_NAME
