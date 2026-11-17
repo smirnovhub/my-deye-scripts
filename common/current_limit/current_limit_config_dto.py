@@ -113,6 +113,8 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
     },
   )
 
+  dont_regulate_dates: List[date] = field(default_factory = list)
+
   def validate(self) -> None:
     # Validate dates to catch invalid days like Feb 31
     try:
@@ -141,4 +143,6 @@ class CurrentLimitConfigDto(DataClassJSONMixin):
     # Cross-year case (e.g., Nov 15 to Mar 1)
     return current >= start or current < end
 
-  dont_regulate_dates: List[date] = field(default_factory = list)
+  @property
+  def do_not_regulate(self) -> bool:
+    return date.today() in self.dont_regulate_dates
