@@ -1,4 +1,4 @@
-ARG PHP_VERSION
+ARG PHP_VERSION=unknown
 FROM php:${PHP_VERSION}
 
 # Set the correct time zone according to your actual location.

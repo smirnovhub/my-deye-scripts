@@ -1,4 +1,6 @@
-ARG PHP_VERSION
+ARG PHP_VERSION=unknown
+ARG PYTHON_VERSION=unknown
+
 FROM php:${PHP_VERSION} AS baseweb
 
 # Repository settings
@@ -124,7 +126,6 @@ ENV DEYE_LOG_NAME=demoweb
 ### deyebackserver ###
 ######################
 
-ARG PYTHON_VERSION
 FROM python:${PYTHON_VERSION} AS deyebackserver
 
 ENV DEYE_LOG_NAME=backserver
