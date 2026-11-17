@@ -1,4 +1,5 @@
-FROM php:8.5-apache AS baseweb
+ARG PHP_VERSION
+FROM php:${PHP_VERSION} AS baseweb
 
 # Repository settings
 ARG DEYE_REPOSITORY_NAME
