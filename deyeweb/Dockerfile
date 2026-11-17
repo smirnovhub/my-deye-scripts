@@ -124,7 +124,8 @@ ENV DEYE_LOG_NAME=demoweb
 ### deyebackserver ###
 ######################
 
-FROM python:3.14-slim AS deyebackserver
+ARG PYTHON_VERSION
+FROM python:${PYTHON_VERSION} AS deyebackserver
 
 ENV DEYE_LOG_NAME=backserver
 

@@ -1,4 +1,5 @@
-FROM python:3.14-slim
+ARG PYTHON_VERSION
+FROM python:${PYTHON_VERSION}
 
 ENV DEYE_LOG_NAME=datacollector
 
