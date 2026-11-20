@@ -15,7 +15,7 @@ class SequentialChoicePageType(Enum):
 class SequentialChoicePage(TelebotNavigationPage):
   def __init__(
     self,
-    text: str,
+    text: Union[str, telebot.types.InputRichMessage],
     root: SequentialChoiceButton,
     chat_id: int,
     result_future: asyncio.Future[List[SequentialChoiceButton]],
@@ -40,11 +40,11 @@ class SequentialChoicePage(TelebotNavigationPage):
     return True
 
   def create_buttons(self) -> None:
-    print(self._current_node)
     children = self._current_node.children
 
     for i, child in enumerate(children):
-      self.register_button(child, self._handle_step)
+      if not BreakButtonNode.row_break_str in (child.text, child.data):
+        self.register_button(child, self._handle_step)
 
       if (i + 1) % self._current_node.max_children_per_row == 0 or (i + 1) == len(children):
         self.register_button(BreakButtonNode())

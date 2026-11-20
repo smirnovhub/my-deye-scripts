@@ -1,3 +1,5 @@
+import copy
+
 from typing import Any, List
 
 from deye_register_group import DeyeRegisterGroup
@@ -57,6 +59,10 @@ class TimeOfUseWritableDeyeRegister(BaseDeyeRegister):
       list(range(self.power_address, self.power_address + self.items_count)) + \
       list(range(self.soc_address, self.soc_address + self.items_count)) + \
       [self.weekly_address]
+
+  @property
+  def value(self) -> Any:
+    return copy.deepcopy(self._value)
 
   def enqueue(self, interactor: DeyeModbusInteractor) -> None:
     if interactor.is_master or self._avg != DeyeRegisterAverageType.only_master:

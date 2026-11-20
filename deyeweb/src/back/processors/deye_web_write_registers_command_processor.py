@@ -37,7 +37,11 @@ class DeyeWebWriteRegistersCommandProcessor(DeyeWebBaseCommandProcessor):
       raise ValueError(f"Unknown register '{register_name}'")
 
     try:
-      await holder.write_register(register, register_value)
+      await holder.write_register(
+        register,
+        register_value,
+        validate_after_write = True,
+      )
     finally:
       holder.disconnect()
 

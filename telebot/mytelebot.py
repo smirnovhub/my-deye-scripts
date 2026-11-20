@@ -71,23 +71,23 @@ class MyTelebot:
     data_dir = TelebotUtils.get_data_dir()
     DeyeUtils.ensure_dir_exists(data_dir)
 
-    async def print_commands(scope: telebot.types.BotCommandScope, label: str):
+    async def print_commands(scope: telebot.types.BotCommandScope):
       commands = await self.bot.get_my_commands(scope = scope, language_code = None)
-      self.logger.info(f"{label} commands:")
+      self.logger.info(f"{scope.type} commands:")
       for cmd in commands:
         self.logger.info(f"  /{cmd.command} - {cmd.description}")
 
-    await print_commands(telebot.types.BotCommandScopeDefault(), "Default")
-    await print_commands(telebot.types.BotCommandScopeAllPrivateChats(), "AllPrivateChats")
-    await print_commands(telebot.types.BotCommandScopeAllGroupChats(), "AllGroupChats")
-    await print_commands(telebot.types.BotCommandScopeAllChatAdministrators(), "AllChatAdministrators")
+    await print_commands(telebot.types.BotCommandScopeDefault())
+    await print_commands(telebot.types.BotCommandScopeAllPrivateChats())
+    await print_commands(telebot.types.BotCommandScopeAllGroupChats())
+    await print_commands(telebot.types.BotCommandScopeAllChatAdministrators())
 
     try:
       # Save the current commit hash when the bot starts
       # This ensures that future checks can detect local repository changes
       await self.update_checker.update_last_commit_hash()
     except Exception as e:
-      message = f'Error while updating last commit hash: {str(e)}'
+      message = f'Error while updating last commit hash: {e}'
       self.logger.info(message)
       await TelegramAsync.send_private_telegram_message(message)
 
@@ -130,7 +130,7 @@ class MyTelebot:
       await self.bot.set_my_commands(admin_commands,
                                      scope = telebot.types.BotCommandScopeChat(chat_id = self.admin_user_id))
     except Exception as e:
-      self.logger.info(f'An exception occurred while setting commands for user {self.admin_user_id}: {str(e)}')
+      self.logger.info(f'An exception occurred while setting commands for user {self.admin_user_id}: {e}')
 
     for user in self.users.allowed_users:
       if user.id == self.admin_user_id:
@@ -158,7 +158,7 @@ class MyTelebot:
         await self.bot.set_my_commands(authorized_commands,
                                        scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:
-        self.logger.info(f'An exception occurred while setting commands for user {user.id}: {str(e)}')
+        self.logger.info(f'An exception occurred while setting commands for user {user.id}: {e}')
 
     for user in self.users.blocked_users:
       if user.id == self.admin_user_id:
@@ -168,7 +168,7 @@ class MyTelebot:
       try:
         await self.bot.set_my_commands([], scope = telebot.types.BotCommandScopeChat(chat_id = user.id))
       except Exception as e:
-        self.logger.info(f'An exception occurred while setting command for blocked user {user.id}: {str(e)}')
+        self.logger.info(f'An exception occurred while setting command for blocked user {user.id}: {e}')
 
   def get_common_handlers(self, bot: AsyncTeleBot) -> List[TelebotBaseHandler]:
     return [

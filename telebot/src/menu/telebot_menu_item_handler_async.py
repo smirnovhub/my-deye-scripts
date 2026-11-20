@@ -1,10 +1,13 @@
 import telebot
-import traceback
+
+from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator
 
 from telebot.async_telebot import AsyncTeleBot
 from telebot_menu_item_handler import TelebotMenuItemHandler
 from telebot_local_update_checker_async import TelebotLocalUpdateCheckerAsync
 from telebot_remote_update_checker_async import TelebotRemoteUpdateCheckerAsync
+from telebot_utils import TelebotUtils
 
 class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
   """
@@ -41,20 +44,14 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
     """
     Async processing pipeline
     """
-    try:
-      if not await self.is_authorized(message):
-        return
+    if not await self.is_authorized(message):
+      return
 
+    async with self.handle_errors_with_details(chat_id = message.chat.id):
       if await self.has_updates(message):
         return
 
       await self.process_message(message)
-    except Exception as e:
-      await self.bot.send_message(
-        message.chat.id,
-        str(e),
-      )
-      self.logger.error(traceback.format_exc())
 
   async def process_message(self, message: telebot.types.Message) -> None:
     """
@@ -93,8 +90,18 @@ class TelebotMenuItemHandlerAsync(TelebotMenuItemHandler):
     except Exception as e:
       await self.bot.send_message(
         message.chat.id,
-        f'Error while checking for updates: {str(e)}',
+        f'Error while checking for updates: {e}',
       )
-      self.logger.info(f'Error while checking for updates: {str(e)}')
+      self.logger.info(f'Error while checking for updates: {e}')
 
     return False
+
+  @asynccontextmanager
+  async def handle_errors_with_details(self, chat_id: int) -> AsyncGenerator[None, None]:
+    """Context manager to catch exceptions, log them, and send a rich error report with an attached zip archive."""
+    async with TelebotUtils.handle_errors_with_details(
+        bot = self.bot,
+        chat_id = chat_id,
+        logger = self.logger,
+    ):
+      yield

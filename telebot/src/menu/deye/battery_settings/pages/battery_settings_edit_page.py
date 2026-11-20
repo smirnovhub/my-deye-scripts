@@ -126,7 +126,11 @@ class BatterySettingsEditPage(TelebotNavigationPage):
         register = self._batt_data.registers[page]
         reg = registers.get_register_by_name(register.name)
         if reg.value != value:
-          await holder.write_register(register, value)
+          await holder.write_register(
+            register,
+            value,
+            validate_after_write = True,
+          )
 
       message = BatterySettingsHelper.get_data_as_rich_message(
         title = f"{self._title} saved",

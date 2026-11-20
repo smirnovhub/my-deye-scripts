@@ -59,14 +59,10 @@ class StatisticsHelper:
       master_stats.production_pv2 + \
       master_stats.gen_energy
 
-    rounding_digits = 2
-    total_kwh_rounded = round(total_kwh, rounding_digits)
-
     def calc_percent(val: float) -> float:
-      if total_kwh_rounded > 0 and round(val, rounding_digits) > 0:
+      if total_kwh > 0:
         return (val / total_kwh) * 100
-      else:
-        return 0.0
+      return 0.0
 
     master_pv1 = PrintableEnergyStatisticsRowDto(
       label = "Master PV1",
@@ -104,7 +100,7 @@ class StatisticsHelper:
 
     total_production = master_pv1 + slave1_pv1 + master_pv2 + master_gen
     total_production.label = "Total PV production"
-    total_production.percent = 100.0 if total_kwh_rounded > 0 else 0.0
+    total_production.percent = 100.0 if total_kwh > 0 else 0.0
 
     master_pv1_and_slave1_pv1 = master_pv1 + slave1_pv1
     master_pv1_and_slave1_pv1.label = "Master PV1 + Slave PV1"

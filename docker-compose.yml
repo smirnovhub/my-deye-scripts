@@ -15,6 +15,8 @@ services:
       dockerfile: deyeweb/Dockerfile
       target: deyeweb
       args:
+        PHP_VERSION: ${PHP_VERSION}
+        PYTHON_VERSION: ${PYTHON_VERSION}
         DEYE_REPOSITORY_NAME: ${DEYE_REPOSITORY_NAME}
         DEYE_REPOSITORY_URL: ${DEYE_REPOSITORY_URL}
         DEYE_REPOSITORY_BRANCH: ${DEYE_REPOSITORY_BRANCH}
@@ -85,6 +87,7 @@ services:
       dockerfile: deyeweb/Dockerfile
       target: deyebackserver
       args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
         DEYE_REPOSITORY_NAME: ${DEYE_REPOSITORY_NAME}
         DEYE_REPOSITORY_URL: ${DEYE_REPOSITORY_URL}
         DEYE_REPOSITORY_BRANCH: ${DEYE_REPOSITORY_BRANCH}
@@ -153,6 +156,8 @@ services:
     build:
       context: .
       dockerfile: data_collector/Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -201,13 +206,14 @@ services:
           memory: ${GLOBAL_MEMORY_LIMIT}
     volumes:
       # Mount shared folder with read-write permissions
-      - deye_shared_volume:/home/datacollector/data_collector/data
+      - deye_shared_volume:/home/datacollector/${DEYE_REPOSITORY_NAME}/data_collector/data
 
   telebot:
     build:
       context: .
       dockerfile: telebot/Dockerfile
       args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
         DEYE_REPOSITORY_NAME: ${DEYE_REPOSITORY_NAME}
         DEYE_REPOSITORY_URL: ${DEYE_REPOSITORY_URL}
         DEYE_REPOSITORY_BRANCH: ${DEYE_REPOSITORY_BRANCH}
@@ -274,6 +280,8 @@ services:
     build:
       context: .
       dockerfile: deye_graph_server/Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -298,6 +306,8 @@ services:
     build:
       context: .
       dockerfile: deye_graph_generator/Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -329,6 +339,8 @@ services:
     build:
       context: .
       dockerfile: deyestorage/Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -355,6 +367,8 @@ services:
     build:
       context: .
       dockerfile: deyeproxy/Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -386,6 +400,8 @@ services:
     build:
       context: .
       dockerfile: deyeproxy/Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -417,6 +433,8 @@ services:
     build:
       context: .
       dockerfile: deyeproxy/Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -448,6 +466,8 @@ services:
     build:
       context: .
       dockerfile: deyeproxy/Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -477,6 +497,8 @@ services:
     build:
       context: .
       dockerfile: logobserver/Dockerfile
+      args:
+        PHP_VERSION: ${PHP_VERSION}
     depends_on:
       init-permissions:
         condition: service_completed_successfully

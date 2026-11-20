@@ -1,33 +1,22 @@
-import copy
-
-from dataclasses import asdict
-
 from telebot_buttons import *
 from button_style import ButtonStyle
-from deye_register import DeyeRegister
-from deye_loggers import DeyeLoggers
 from telebot_navigation_page import TelebotNavigationPage
 from telebot_page_navigator import TelebotPageNavigator
-from telebot_utils import TelebotUtils
 from time_of_use_ask_data import TimeOfUseAskData
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_data import TimeOfUseData
+from time_of_use_page_type import TimeOfUsePageType
 from time_of_use_times import TimeOfUseTimes
 
 class TimeOfUseBottomButtons:
   def __init__(
     self,
-    tou_register: DeyeRegister,
-    tou_data: TimeOfUseData,
-    tou_original_data: TimeOfUseData,
+    tou_data_holder: TimeOfUseDataHolder,
     ask_data: TimeOfUseAskData,
   ):
     super().__init__()
-    self._tou_register = tou_register
-    self._tou_data = tou_data
-    self._tou_original_data = tou_original_data
+    self._tou_data_holder = tou_data_holder
     self._ask_data = ask_data
-    self._loggers = DeyeLoggers()
 
   def create_buttons(
     self,
@@ -45,7 +34,7 @@ class TimeOfUseBottomButtons:
       page.register_button(ButtonNode("Yes"), self._handle_reset_yes)
       page.register_button(ButtonNode("No"), self._handle_reset_no)
     else:
-      if self._need_save():
+      if self._tou_data_holder.is_modified:
         callback = self._handle_save if can_save else self._handle_fix_ask
         page.register_button(ButtonNode("Save"), callback)
 
@@ -63,29 +52,19 @@ class TimeOfUseBottomButtons:
     self._ask_data.ask_for_reset_times = False
 
   async def _handle_save(self, navigator: TelebotPageNavigator) -> None:
-    if not self._need_save():
-      text = TimeOfUseHelper.get_time_of_use_as_rich_message(tou_data = self._tou_data)
+    if not self._tou_data_holder.is_modified:
+      text = TimeOfUseHelper.get_time_of_use_as_rich_message(tou_data = self._tou_data_holder.tou_data)
       await navigator.stop(text)
       return
 
-    data = copy.deepcopy(self._tou_data)
-
-    TimeOfUseHelper.clear_unchanged_data(
-      data_to_clear = data,
-      original_data = self._tou_original_data,
+    data = TimeOfUseHelper.get_cleared_unchanged_data(
+      data_to_clear = self._tou_data_holder.tou_data,
+      original_data = self._tou_data_holder.tou_original_data,
     )
 
-    try:
-      await TimeOfUseHelper.write_time_of_use(
-        tou_register = self._tou_register,
-        master_logger = self._loggers.master,
-        tou_data = data,
-      )
-    except Exception as e:
-      await navigator.stop(TelebotUtils.escape_html(str(e)))
-    else:
-      text = TimeOfUseHelper.get_time_of_use_as_rich_message(tou_data = self._tou_data, suffx = "saved")
-      await navigator.stop(text)
+    await TimeOfUseHelper.write_time_of_use(data)
+
+    await navigator.navigate(TimeOfUsePageType.undo)
 
   async def _handle_fix_yes(self, navigator: TelebotPageNavigator) -> None:
     self._ask_data.ask_for_fix_times = False
@@ -116,15 +95,12 @@ class TimeOfUseBottomButtons:
   async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
     await navigator.stop(
       TimeOfUseHelper.get_time_of_use_as_rich_message(
-        tou_data = self._tou_original_data,
+        tou_data = self._tou_data_holder.tou_original_data,
         suffx = "cancel",
       ))
 
-  def _need_save(self) -> bool:
-    return asdict(self._tou_data) != asdict(self._tou_original_data)
-
   def _need_fix_intervals(self) -> bool:
-    times = self._tou_data.times.values
+    times = self._tou_data_holder.tou_data.times.values
     count = len(times)
 
     for i in range(count):
@@ -140,7 +116,7 @@ class TimeOfUseBottomButtons:
     """
     Checks if the time intervals need to be reset to their default hourly steps.
     """
-    times = self._tou_data.times.values
+    times = self._tou_data_holder.tou_data.times.values
     count = len(times)
 
     # If there's nothing to check, no reset is needed
@@ -162,7 +138,7 @@ class TimeOfUseBottomButtons:
     return False
 
   def _fix_time_intervals(self) -> None:
-    times = self._tou_data.times.values
+    times = self._tou_data_holder.tou_data.times.values
     if not times:
       return
 
@@ -227,7 +203,7 @@ class TimeOfUseBottomButtons:
     """
     Directly updates the hour and minute attributes of existing TimeOfUseTime objects.
     """
-    times = self._tou_data.times.values
+    times = self._tou_data_holder.tou_data.times.values
     if not times:
       return
 

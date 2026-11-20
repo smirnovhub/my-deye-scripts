@@ -5,7 +5,7 @@ from typing import Union
 
 from telebot_buttons import *
 from time_of_use_helper import TimeOfUseHelper
-from time_of_use_times import TimeOfUseTimes
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
 from telebot_navigation_page import TelebotNavigationPage
@@ -13,14 +13,14 @@ from telebot_navigation_page import TelebotNavigationPage
 class TimeOfUseMinutesPage(TelebotNavigationPage):
   def __init__(
     self,
-    tou_times: TimeOfUseTimes,
     title: str,
+    tou_data_holder: TimeOfUseDataHolder,
     page_type: TimeOfUsePageType,
     prev_page_type: TimeOfUsePageType,
   ):
     super().__init__()
-    self._tou_times = tou_times
     self._title = title
+    self._tou_data_holder = tou_data_holder
     self._page_type = page_type
     self._prev_page_type = prev_page_type
     self._time_of_use_line_index = -1
@@ -45,18 +45,26 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     time_of_use_line_index: int,
     selected_hour: int,
   ) -> None:
-    TimeOfUseHelper.check_bounds(self._tou_times.values, time_of_use_line_index)
+    TimeOfUseHelper.check_bounds(self._tou_data_holder.tou_data.times.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
     self._selected_hour = selected_hour
 
   def create_buttons(self) -> None:
+    old_value = -1
+    if self._time_of_use_line_index >= 0:
+      old_value = self._tou_data_holder.tou_data.times.values[self._time_of_use_line_index].minute
+
     minutes = list(range(0, 60, 5))
 
     for i, minute in enumerate(minutes):
       if i > 0 and i % 4 == 0:
         self.register_button(BreakButtonNode())
 
-      btn = ButtonNode(text = f"{minute:02}")
+      style = ButtonStyle.default
+      if minute == old_value:
+        style = ButtonStyle.success
+
+      btn = ButtonNode(text = f"{minute:02}", style = style)
       self.register_button(btn, self._create_minute_handler(minute))
 
     self.register_button(BreakButtonNode())
@@ -96,7 +104,7 @@ class TimeOfUseMinutesPage(TelebotNavigationPage):
     navigator: TelebotPageNavigator,
     minute: int,
   ) -> None:
-    TimeOfUseHelper.check_bounds(self._tou_times.values, self._time_of_use_line_index)
-    self._tou_times.values[self._time_of_use_line_index].hour = self._selected_hour
-    self._tou_times.values[self._time_of_use_line_index].minute = minute
+    TimeOfUseHelper.check_bounds(self._tou_data_holder.tou_data.times.values, self._time_of_use_line_index)
+    self._tou_data_holder.tou_data.times.values[self._time_of_use_line_index].hour = self._selected_hour
+    self._tou_data_holder.tou_data.times.values[self._time_of_use_line_index].minute = minute
     await navigator.navigate(TimeOfUsePageType.edit)

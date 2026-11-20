@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Union
 
 from telebot_buttons import *
-from time_of_use_data import TimeOfUsePowers
+from time_of_use_data_holder import TimeOfUseDataHolder
 from time_of_use_helper import TimeOfUseHelper
 from time_of_use_page_type import TimeOfUsePageType
 from telebot_page_navigator import TelebotPageNavigator
@@ -13,20 +13,20 @@ from telebot_navigation_page import TelebotNavigationPage
 class TimeOfUsePowersPage(TelebotNavigationPage):
   def __init__(
     self,
-    tou_powers: TimeOfUsePowers,
+    tou_data_holder: TimeOfUseDataHolder,
   ):
     super().__init__()
-    self._tou_powers = tou_powers
+    self._tou_data_holder = tou_data_holder
     self._time_of_use_line_index = -1
-    self._values = [
+    self._powers = [
       [0, 250, 500],
       [1000, 1250, 1500],
       [2000, 2500, 3000],
       [3500, 4000, 4500],
       [5000, 5500, 6000],
     ]
-    self._min_val = min(x for row in self._values for x in row)
-    self._max_val = max(x for row in self._values for x in row)
+    self._min_val = min(x for row in self._powers for x in row)
+    self._max_val = max(x for row in self._powers for x in row)
 
   @property
   def page_type(self) -> Enum:
@@ -41,22 +41,30 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
     return True
 
   async def on_navigate( # type: ignore[override]
-    self,
-    navigator: TelebotPageNavigator,
-    *,
-    time_of_use_line_index: int
-  ) -> None:
-    TimeOfUseHelper.check_upper_bounds(self._tou_powers.values, time_of_use_line_index)
+      self, navigator: TelebotPageNavigator, *, time_of_use_line_index: int) -> None:
+    TimeOfUseHelper.check_upper_bounds(self._tou_data_holder.tou_data.powers.values, time_of_use_line_index)
     self._time_of_use_line_index = time_of_use_line_index
 
   def create_buttons(self) -> None:
-    for row_index, row in enumerate(self._values):
+    old_value = -1
+    if self._time_of_use_line_index < 0:
+      first_item = self._tou_data_holder.tou_data.powers.values[0]
+      if all(x == first_item for x in self._tou_data_holder.tou_data.powers.values):
+        old_value = first_item
+    else:
+      old_value = self._tou_data_holder.tou_data.powers.values[self._time_of_use_line_index]
+
+    for row_index, row in enumerate(self._powers):
       if row_index > 0:
         self.register_button(BreakButtonNode())
 
-      for value in row:
-        btn = ButtonNode(text = str(value))
-        self.register_button(btn, self._create_power_handler(value))
+      for power in row:
+        style = ButtonStyle.default
+        if power == old_value:
+          style = ButtonStyle.success
+
+        btn = ButtonNode(text = str(power), style = style)
+        self.register_button(btn, self._create_power_handler(power))
 
     self.register_button(BreakButtonNode())
     self.register_button(BackButtonNode(), self._handle_back)
@@ -91,8 +99,8 @@ class TimeOfUsePowersPage(TelebotNavigationPage):
   ) -> None:
     if self._time_of_use_line_index < 0:
       # Replace all elements in the list with the new value
-      self._tou_powers.values[:] = [power] * len(self._tou_powers.values)
+      self._tou_data_holder.tou_data.powers.values[:] = [power] * len(self._tou_data_holder.tou_data.powers.values)
     else:
-      self._tou_powers.values[self._time_of_use_line_index] = power
+      self._tou_data_holder.tou_data.powers.values[self._time_of_use_line_index] = power
 
     await navigator.navigate(TimeOfUsePageType.edit)

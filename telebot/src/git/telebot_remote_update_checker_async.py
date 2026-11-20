@@ -5,12 +5,9 @@ import telebot
 from telebot.async_telebot import AsyncTeleBot
 
 from env_utils import EnvUtils
-from deye_utils import DeyeUtils
-from telebot_utils import TelebotUtils
 from git_helper_async import GitHelperAsync
 from telebot_constants import TelebotConstants
 from telebot_menu_item import TelebotMenuItem
-from deye_file_with_lock_async import DeyeFileWithLockAsync
 from telebot_command_choice import CommandChoice
 
 class TelebotRemoteUpdateCheckerAsync:
@@ -22,14 +19,11 @@ class TelebotRemoteUpdateCheckerAsync:
 
   File-based locking is used to safely read/write the timestamp of the last update check.
   """
+  _last_remote_update_ask_time: float = 0
+
   def __init__(self):
     self._git_helper = GitHelperAsync()
     self._logger = logging.getLogger()
-
-    data_dir = TelebotUtils.get_data_dir()
-    self._ask_file_name = f'{data_dir}/last_remote_update_ask_time.txt'
-
-    DeyeUtils.ensure_dir_and_file_exists(self._ask_file_name)
 
   async def is_on_branch(self):
     if EnvUtils.is_tests_on():
@@ -98,18 +92,9 @@ class TelebotRemoteUpdateCheckerAsync:
     Load the timestamp of the last time the user was asked about remote updates.
 
     Returns:
-        float: The timestamp in seconds since epoch, or 0 if the file is empty.
-
-    Raises:
-        Exception: If the file cannot be opened or read.
+        float: The timestamp in seconds since epoch, or 0.
     """
-    async with DeyeFileWithLockAsync(self._ask_file_name, "r") as f:
-      try:
-        str_val = f.readline().strip()
-        return float(str_val) if str_val else 0
-      except Exception:
-        self._logger.info('Error while loading last remote update ask time')
-        raise
+    return TelebotRemoteUpdateCheckerAsync._last_remote_update_ask_time
 
   async def _save_last_remote_update_ask_time(self, time: float):
     """
@@ -117,13 +102,5 @@ class TelebotRemoteUpdateCheckerAsync:
 
     Args:
         time (float): The timestamp to save, in seconds since epoch.
-
-    Raises:
-        Exception: If the file cannot be opened or written.
     """
-    async with DeyeFileWithLockAsync(self._ask_file_name, "w") as f:
-      try:
-        f.write(str(int(time)))
-      except Exception:
-        self._logger.info('Error while saving last remote update ask time')
-        raise
+    TelebotRemoteUpdateCheckerAsync._last_remote_update_ask_time = time

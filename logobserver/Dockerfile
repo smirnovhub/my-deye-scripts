@@ -1,4 +1,5 @@
-FROM php:8.4-apache
+ARG PHP_VERSION=unknown
+FROM php:${PHP_VERSION}
 
 # Set the correct time zone according to your actual location.
 # Otherwise, the local time will be incorrect!

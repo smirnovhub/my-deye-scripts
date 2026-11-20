@@ -174,7 +174,7 @@ class TelebotMenuTest(TelebotMenuItemHandlerAsync):
         chat_id,
         f'{CommonUtils.large_red_circle_emoji} '
         f'Tests failed after {t}. '
-        f'Check log files for details: {str(e)}',
+        f'Check log files for details: {e}',
       )
     finally:
       self.remove_logs(tests_scripts)

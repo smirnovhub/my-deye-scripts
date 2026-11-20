@@ -10,3 +10,4 @@ class TimeOfUsePageType(Enum):
   end_minutes = auto()
   powers = auto()
   socs = auto()
+  undo = auto()

@@ -1,0 +1,243 @@
+import copy
+import telebot
+
+from dataclasses import asdict
+from typing import Any, Optional, Sequence, cast
+
+from deye_loggers import DeyeLoggers
+from common_utils import CommonUtils
+from table_cell import TableCell
+from time_of_use_data import TimeOfUseData
+from time_of_use_registers import TimeOfUseRegisters
+from telebot_deye_helper import TelebotDeyeHelper
+from deye_registers_holder_async import DeyeRegistersHolderAsync
+
+class TimeOfUseHelper:
+  @staticmethod
+  def check_bounds(collection: Sequence[Any], index: int) -> None:
+    count = len(collection)
+    if not (0 <= index < count):
+      raise RuntimeError(f"Index {index} is out of bounds (0 to {count - 1})")
+
+  @staticmethod
+  def check_upper_bounds(collection: Sequence[Any], index: int) -> None:
+    count = len(collection)
+    if index >= count:
+      raise RuntimeError(f"Index {index} should be less than {count - 1}")
+
+  @staticmethod
+  async def read_time_of_use() -> TimeOfUseRegisters:
+    loggers = DeyeLoggers()
+
+    # Variable to store reference to the created registers object
+    tou_registers: Optional[TimeOfUseRegisters] = None
+
+    def create_registers(prefix):
+      nonlocal tou_registers
+      tou_registers = TimeOfUseRegisters(prefix)
+      return tou_registers
+
+    holder = DeyeRegistersHolderAsync(
+      loggers = [loggers.master],
+      register_creator = create_registers,
+      **TelebotDeyeHelper.holder_kwargs,
+    )
+
+    if tou_registers is None:
+      raise ValueError("Can't create Time of Use registers")
+
+    try:
+      await holder.read_registers()
+    finally:
+      holder.disconnect()
+
+    return tou_registers
+
+  @staticmethod
+  def get_time_of_use_data(registers: TimeOfUseRegisters) -> TimeOfUseData:
+    tou_register = registers.time_of_use_register
+    tou_data = tou_register.value
+
+    if not isinstance(tou_data, TimeOfUseData):
+      raise ValueError(f"Register value type should be {TimeOfUseData.__name__}, but "
+                       f"{type(tou_register.value).__name__} received")
+
+    return tou_data
+
+  @staticmethod
+  async def write_time_of_use(tou_data: TimeOfUseData) -> None:
+    loggers = DeyeLoggers()
+
+    # Variable to store reference to the created registers object
+    tou_registers: Optional[TimeOfUseRegisters] = None
+
+    def create_registers(prefix):
+      nonlocal tou_registers
+      tou_registers = TimeOfUseRegisters(prefix)
+      return tou_registers
+
+    # should be local to avoid issues with locks
+    holder = DeyeRegistersHolderAsync(
+      loggers = [loggers.master],
+      register_creator = create_registers,
+      **TelebotDeyeHelper.holder_kwargs,
+    )
+
+    if tou_registers is None:
+      raise ValueError("Can't create Time of Use registers")
+
+    tou_registers = cast(TimeOfUseRegisters, tou_registers)
+
+    try:
+      await holder.write_register(tou_registers.time_of_use_register, tou_data)
+
+      # Re-read and validate all saved data just after write
+      await holder.read_registers()
+
+      tou_data_new = TimeOfUseHelper.get_time_of_use_data(tou_registers)
+
+      if tou_data.charges.values and asdict(tou_data.charges) != asdict(tou_data_new.charges):
+        raise ValueError("Time of Use 'charges' data mismatch")
+
+      if tou_data.times.values and asdict(tou_data.times) != asdict(tou_data_new.times):
+        raise ValueError("Time of Use 'times' data mismatch")
+
+      if tou_data.powers.values and asdict(tou_data.powers) != asdict(tou_data_new.powers):
+        raise ValueError("Time of Use 'powers' data mismatch")
+
+      if tou_data.socs.values and asdict(tou_data.socs) != asdict(tou_data_new.socs):
+        raise ValueError("Time of Use 'socs' data mismatch")
+
+      if tou_data.weeks.values and asdict(tou_data.weeks) != asdict(tou_data_new.weeks):
+        raise ValueError("Time of Use 'weeks' data mismatch")
+
+    finally:
+      holder.disconnect()
+
+  @staticmethod
+  def get_cleared_unchanged_data(
+    data_to_clear: TimeOfUseData,
+    original_data: TimeOfUseData,
+  ) -> TimeOfUseData:
+    data = copy.deepcopy(data_to_clear)
+
+    # Convert parts to dicts for simple comparison
+    # Use asdict to compare the entire content, not object references
+    if asdict(data.charges) == asdict(original_data.charges):
+      data.charges.values = []
+
+    if asdict(data.times) == asdict(original_data.times):
+      data.times.values = []
+
+    if asdict(data.powers) == asdict(original_data.powers):
+      data.powers.values = []
+
+    if asdict(data.socs) == asdict(original_data.socs):
+      data.socs.values = []
+
+    if asdict(data.weeks) == asdict(original_data.weeks):
+      data.weeks.values = []
+
+    return data
+
+  @staticmethod
+  def get_time_of_use_as_rich_message(
+    tou_data: TimeOfUseData,
+    suffx: str = "",
+  ) -> telebot.types.InputRichMessage:
+    def sign(value: bool) -> str:
+      on = CommonUtils.large_green_circle_emoji
+      off = CommonUtils.large_red_circle_emoji
+      return on if value else off
+
+    # Header title with enabled status sign
+    header_text = "Time of Use schedule:"
+    if suffx:
+      header_text += f" {suffx}"
+
+    # Days of the week table data
+    days_headers = [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun",
+    ]
+
+    days_values = [
+      sign(tou_data.week.monday),
+      sign(tou_data.week.tuesday),
+      sign(tou_data.week.wednesday),
+      sign(tou_data.week.thursday),
+      sign(tou_data.week.friday),
+      sign(tou_data.week.saturday),
+      sign(tou_data.week.sunday),
+    ]
+
+    days_cells_data = [
+      [TableCell(value = val, is_header = True) for val in days_headers],
+      [TableCell(value = val, is_header = False) for val in days_values],
+    ]
+
+    days_cells = TableCell.create_cells(days_cells_data)
+
+    # Schedule table data
+    schedule_headers = [
+      "Grid",
+      "Gen",
+      "Start",
+      "End",
+      "Power",
+      "Batt",
+    ]
+
+    schedule_rows_data = [[TableCell(
+      value = val,
+      is_header = True,
+    ) for val in schedule_headers]]
+
+    charges = tou_data.charges.values
+    times = tou_data.times.values
+    powers = tou_data.powers.values
+    socs = tou_data.socs.values
+
+    count = len(times)
+    for i in range(count):
+      curr_charge = charges[i]
+      curr_time = times[i]
+      # Next time for the interval end, wrapping around to the first element
+      next_time = times[(i + 1) % count]
+      curr_power = powers[i]
+      curr_soc = socs[i]
+
+      schedule_rows_data.append([
+        TableCell(value = sign(curr_charge.grid_charge)),
+        TableCell(value = sign(curr_charge.gen_charge)),
+        TableCell(value = f"{curr_time.hour:02d}:{curr_time.minute:02d}"),
+        TableCell(value = f"{next_time.hour:02d}:{next_time.minute:02d}"),
+        TableCell(value = str(curr_power)),
+        TableCell(value = f"{curr_soc}%"),
+      ])
+
+    schedule_cells = TableCell.create_cells(schedule_rows_data)
+
+    return telebot.types.InputRichMessage(blocks = [
+      telebot.types.InputRichBlockParagraph(telebot.types.RichTextBold(cast(
+        telebot.types.RichText,
+        header_text,
+      ))),
+      telebot.types.InputRichBlockTable(
+        cells = days_cells,
+        is_bordered = True,
+        is_striped = False,
+        is_compact = True,
+      ),
+      telebot.types.InputRichBlockTable(
+        cells = schedule_cells,
+        is_bordered = True,
+        is_striped = False,
+        is_compact = True,
+      ),
+    ])

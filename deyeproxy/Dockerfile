@@ -1,4 +1,5 @@
-FROM python:3.14-slim
+ARG PYTHON_VERSION=unknown
+FROM python:${PYTHON_VERSION}
 
 ENV DEYE_LOG_NAME=deyeproxy
 ENV LOG_LEVEL=INFO

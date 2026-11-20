@@ -1,0 +1,87 @@
+import telebot
+
+from enum import Enum
+from typing import Any, Union
+
+from telebot_buttons import *
+from telebot_page_navigator import TelebotPageNavigator
+from time_of_use_ask_data import TimeOfUseAskData
+from time_of_use_data_holder import TimeOfUseDataHolder
+from time_of_use_helper import TimeOfUseHelper
+from time_of_use_page_type import TimeOfUsePageType
+from telebot_navigation_page import TelebotNavigationPage
+
+class TimeOfUseUndoPage(TelebotNavigationPage):
+  def __init__(
+    self,
+    tou_data_holder: TimeOfUseDataHolder,
+  ):
+    super().__init__()
+    self._tou_data_holder = tou_data_holder
+    self._ask_data = TimeOfUseAskData()
+
+  @property
+  def page_type(self) -> Enum:
+    return TimeOfUsePageType.undo
+
+  @property
+  def text(self) -> Union[str, telebot.types.InputRichMessage]:
+    return TimeOfUseHelper.get_time_of_use_as_rich_message(
+      self._tou_data_holder.tou_data,
+      suffx = "saved",
+    )
+
+  async def on_navigate(
+    self,
+    navigator: TelebotPageNavigator,
+    **kwargs: Any,
+  ) -> None:
+    self._ask_data.reset()
+
+  def create_buttons(self) -> None:
+    if self._ask_data.ask_for_undo:
+      self.register_button(ButtonNode("Really want to undo?"))
+      self.register_button(BreakButtonNode())
+      self.register_button(ButtonNode("Yes"), self._handle_undo_yes)
+      self.register_button(ButtonNode("No"), self._handle_undo_no)
+    else:
+      self.register_button(ButtonNode("Undo"), self._handle_undo)
+      self.register_button(ButtonNode("Edit"), self._handle_edit)
+      self.register_button(CancelButtonNode(), self._handle_cancel)
+
+  async def _handle_undo(self, navigator: TelebotPageNavigator) -> None:
+    self._ask_data.ask_for_undo = True
+    await navigator.update()
+
+  async def _handle_undo_no(self, navigator: TelebotPageNavigator) -> None:
+    self._ask_data.ask_for_undo = False
+    await navigator.update()
+
+  async def _handle_undo_yes(self, navigator: TelebotPageNavigator) -> None:
+    data = TimeOfUseHelper.get_cleared_unchanged_data(
+      data_to_clear = self._tou_data_holder.tou_original_data,
+      original_data = self._tou_data_holder.tou_data,
+    )
+
+    await TimeOfUseHelper.write_time_of_use(data)
+
+    self._tou_data_holder.swap()
+    await navigator.navigate(TimeOfUsePageType.main)
+
+  async def _handle_edit(self, navigator: TelebotPageNavigator) -> None:
+    tou_registers = await TimeOfUseHelper.read_time_of_use()
+    tou_data = TimeOfUseHelper.get_time_of_use_data(tou_registers)
+    self._tou_data_holder.actualize(tou_data)
+    await navigator.navigate(TimeOfUsePageType.edit)
+
+  async def _handle_cancel(self, navigator: TelebotPageNavigator) -> None:
+    await navigator.stop(self._get_cancel_text())
+
+  def get_goodbye_message(self) -> Union[str, telebot.types.InputRichMessage]:
+    return self._get_cancel_text()
+
+  def _get_cancel_text(self) -> telebot.types.InputRichMessage:
+    return TimeOfUseHelper.get_time_of_use_as_rich_message(
+      self._tou_data_holder.tou_data,
+      suffx = "cancel",
+    )

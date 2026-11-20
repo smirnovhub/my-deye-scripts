@@ -1,4 +1,7 @@
-FROM php:8.4-apache AS baseweb
+ARG PHP_VERSION=unknown
+ARG PYTHON_VERSION=unknown
+
+FROM php:${PHP_VERSION} AS baseweb
 
 # Repository settings
 ARG DEYE_REPOSITORY_NAME
@@ -34,7 +37,7 @@ RUN apt-get update && \
   echo "alias ls='ls --color=auto'" >> /root/.bashrc
 
 # Install required Python packages
-RUN pip install --no-cache-dir --break-system-packages six requests aiohttp
+RUN pip install --no-cache-dir --break-system-packages aiohttp
 
 # Set working directory
 WORKDIR $APP_DIR
@@ -123,7 +126,7 @@ ENV DEYE_LOG_NAME=demoweb
 ### deyebackserver ###
 ######################
 
-FROM python:3.14-slim AS deyebackserver
+FROM python:${PYTHON_VERSION} AS deyebackserver
 
 ENV DEYE_LOG_NAME=backserver
 

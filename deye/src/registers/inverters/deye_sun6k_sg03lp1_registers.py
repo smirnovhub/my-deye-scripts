@@ -345,7 +345,7 @@ class DeyeSun6kSg03Lp1Registers(DeyeBaseRegisters):
     return IntWritableDeyeRegister(
       address = 293,
       min_value = 1000,
-      max_value = 6000,
+      max_value = 7000,
       description = 'Grid Peak Shaving Power',
       suffix = 'W',
       group = DeyeRegisterGroup.grid,
